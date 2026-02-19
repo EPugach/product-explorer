@@ -1,450 +1,197 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NPSP Galaxy Explorer</title>
+<title>NPSP Architecture Explorer</title>
 <style>
-  :root {
-    --bg-deep: #050510;
-    --bg-panel: rgba(10, 15, 30, 0.92);
-    --bg-card: rgba(15, 22, 45, 0.95);
-    --border-glow: rgba(100, 140, 255, 0.3);
-    --accent-blue: #4d8bff;
-    --accent-cyan: #00d4ff;
-    --accent-purple: #a855f7;
-    --accent-green: #22c55e;
-    --accent-orange: #f59e0b;
-    --accent-pink: #ec4899;
-    --accent-red: #ef4444;
-    --accent-teal: #14b8a6;
-    --accent-lime: #84cc16;
-    --accent-rose: #f43f5e;
-    --accent-indigo: #6366f1;
-    --accent-amber: #d97706;
-    --accent-sky: #0ea5e9;
-    --accent-emerald: #10b981;
-    --accent-violet: #7c3aed;
-    --accent-fuchsia: #d946ef;
-    --text-primary: #e2e8f0;
-    --text-secondary: #94a3b8;
-    --text-dim: #64748b;
-    --transition-zoom: 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
-    background: var(--bg-deep); color: var(--text-primary);
-    overflow: hidden; height: 100vh; width: 100vw;
-  }
-  #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-
-  /* Nav */
-  #navbar {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 24px; background: linear-gradient(180deg, rgba(5,5,16,0.97) 0%, rgba(5,5,16,0.8) 100%);
-    border-bottom: 1px solid var(--border-glow); backdrop-filter: blur(12px);
-  }
-  #navbar .logo { font-size: 13px; font-weight: 700; letter-spacing: 2px;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-  #navbar .logo span { font-weight: 400; opacity: 0.6; }
-  #breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-  .crumb { color: var(--text-secondary); cursor: pointer; padding: 4px 10px; border-radius: 4px; transition: all 0.2s; }
-  .crumb:hover { background: rgba(77,139,255,0.15); color: var(--accent-blue); }
-  .crumb.active { color: var(--accent-cyan); font-weight: 600; }
-  .crumb-sep { color: var(--text-dim); font-size: 10px; }
-  #zoom-indicator { font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
-  .zoom-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); transition: all 0.3s; }
-  .zoom-dot.active { background: var(--accent-cyan); box-shadow: 0 0 8px var(--accent-cyan); }
-
-  /* Search */
-  #search-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200;
-    background: rgba(5,5,16,0.85); backdrop-filter: blur(16px);
-    display: none; flex-direction: column; align-items: center; padding-top: 12vh;
-  }
-  #search-overlay.open { display: flex; }
-  .search-container { width: 600px; max-width: 90vw; }
-  .search-input-wrap {
-    position: relative; display: flex; align-items: center;
-    background: rgba(15, 22, 45, 0.95); border: 1px solid rgba(100, 140, 255, 0.35);
-    border-radius: 12px; padding: 4px; box-shadow: 0 0 40px rgba(77,139,255,0.15), 0 20px 60px rgba(0,0,0,0.4);
-    transition: border-color 0.3s, box-shadow 0.3s;
-  }
-  .search-input-wrap:focus-within {
-    border-color: var(--accent-cyan); box-shadow: 0 0 60px rgba(0,212,255,0.2), 0 20px 60px rgba(0,0,0,0.4);
-  }
-  .search-icon { padding: 12px 8px 12px 16px; color: var(--text-dim); font-size: 16px; }
-  #searchInput {
-    flex: 1; background: none; border: none; outline: none;
-    color: var(--text-primary); font-family: inherit; font-size: 16px; padding: 12px 8px;
-  }
-  #searchInput::placeholder { color: var(--text-dim); }
-  .search-nav { display: flex; align-items: center; gap: 4px; padding-right: 8px; }
-  .search-count { font-size: 11px; color: var(--text-dim); white-space: nowrap; padding: 0 8px; }
-  .search-nav-btn {
-    background: rgba(100,140,255,0.1); border: 1px solid rgba(100,140,255,0.2);
-    color: var(--text-secondary); width: 28px; height: 28px; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-family: inherit; font-size: 14px; transition: all 0.2s;
-  }
-  .search-nav-btn:hover { background: rgba(100,140,255,0.2); color: var(--accent-blue); border-color: var(--accent-blue); }
-  .search-close {
-    background: none; border: none; color: var(--text-dim); font-size: 11px;
-    padding: 6px 12px; cursor: pointer; font-family: inherit; transition: color 0.2s;
-  }
-  .search-close:hover { color: var(--text-primary); }
-  .search-hint { font-size: 10px; color: var(--text-dim); margin-top: 12px; text-align: center; }
-  .search-hint kbd { background: rgba(100,140,255,0.1); padding: 2px 6px; border-radius: 3px; font-family: inherit; border: 1px solid rgba(100,140,255,0.2); }
-
-  /* Search Results */
-  .search-results { margin-top: 16px; max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
-  .search-result {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 16px; border-radius: 8px;
-    background: rgba(15, 22, 45, 0.8); border: 1px solid rgba(100,140,255,0.08);
-    cursor: pointer; transition: all 0.2s;
-  }
-  .search-result:hover, .search-result.active {
-    background: rgba(77,139,255,0.12); border-color: rgba(77,139,255,0.3); transform: translateX(4px);
-  }
-  .search-result .sr-icon {
-    width: 36px; height: 36px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
-  }
-  .search-result .sr-body { flex: 1; min-width: 0; }
-  .search-result .sr-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-  .search-result .sr-path { font-size: 10px; color: var(--text-dim); }
-  .search-result .sr-desc { font-size: 11px; color: var(--text-secondary); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .search-result .sr-match { color: var(--accent-cyan); font-weight: 600; }
-  .sr-level { font-size: 9px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; background: rgba(100,140,255,0.1); color: var(--accent-blue); }
-
-  /* Stage */
-  #stage { position: relative; width: 100vw; height: 100vh; perspective: 1200px; overflow: hidden; }
-  .view-layer {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: center;
-    transition: opacity var(--transition-zoom), transform var(--transition-zoom);
-    pointer-events: none; opacity: 0;
-  }
-  .view-layer.active { pointer-events: auto; opacity: 1; }
-  .view-layer.zoom-out { transform: scale(2.5) translateZ(200px); opacity: 0; filter: blur(4px); }
-  .view-layer.zoom-in { transform: scale(0.3) translateZ(-400px); opacity: 0; filter: blur(4px); }
-
-  /* Galaxy */
-  #galaxy-view { flex-direction: column; padding-top: 50px; }
-  .galaxy-title { text-align: center; margin-bottom: 8px; z-index: 2; }
-  .galaxy-title h1 {
-    font-size: 24px; font-weight: 800; letter-spacing: 4px;
-    background: linear-gradient(135deg, #fff 0%, var(--accent-cyan) 50%, var(--accent-purple) 100%);
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 4px;
-  }
-  .galaxy-title p { font-size: 11px; color: var(--text-secondary); max-width: 600px; line-height: 1.5; margin: 0 auto; }
-  .galaxy-subtitle { font-size: 9px; color: var(--text-dim); margin-top: 4px; letter-spacing: 1px; }
-  #galaxy-map { position: relative; width: 1100px; height: 600px; z-index: 2; }
-  .planet {
-    position: absolute; display: flex; flex-direction: column; align-items: center;
-    cursor: pointer; transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .planet:hover { transform: scale(1.15); }
-  .planet:hover .planet-ring { opacity: 1; }
-  .planet:hover .planet-label { color: #fff; }
-  .planet.highlight .planet-orb { box-shadow: 0 0 30px var(--accent-cyan), 0 0 80px rgba(0,212,255,0.4) !important; }
-  .planet-orb {
-    width: var(--size); height: var(--size); border-radius: 50%;
-    box-shadow: 0 0 20px var(--color), 0 0 60px color-mix(in srgb, var(--color) 30%, transparent);
-    position: relative; z-index: 2; display: flex; align-items: center; justify-content: center;
-    font-size: calc(var(--size) * 0.35); animation: pulse 4s ease-in-out infinite; animation-delay: var(--delay, 0s);
-  }
-  .planet-ring {
-    position: absolute; top: 50%; left: 50%;
-    width: calc(var(--size) + 24px); height: calc(var(--size) + 24px);
-    margin-top: calc((var(--size) + 24px) / -2); margin-left: calc((var(--size) + 24px) / -2);
-    border-radius: 50%; border: 1px solid color-mix(in srgb, var(--color) 40%, transparent);
-    opacity: 0; transition: opacity 0.3s; z-index: 1;
-  }
-  .planet-label { margin-top: 6px; font-size: 9px; font-weight: 600; color: var(--text-secondary);
-    letter-spacing: 1px; text-transform: uppercase; transition: color 0.3s; text-align: center; white-space: nowrap; }
-  .planet-desc { font-size: 8px; color: var(--text-dim); margin-top: 2px; text-align: center; max-width: 100px; }
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 20px var(--color), 0 0 60px color-mix(in srgb, var(--color) 30%, transparent); }
-    50% { box-shadow: 0 0 30px var(--color), 0 0 80px color-mix(in srgb, var(--color) 40%, transparent); }
-  }
-  .galaxy-connections { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-  .galaxy-connections line { stroke: rgba(100, 140, 255, 0.25); stroke-width: 1.5; stroke-dasharray: 6 4; filter: drop-shadow(0 0 3px rgba(100, 140, 255, 0.15)); transition: stroke-opacity 0.3s, stroke 0.3s; }
-  .galaxy-connections line.dimmed { stroke: rgba(100, 140, 255, 0.08); }
-  .galaxy-connections line.highlighted { stroke: rgba(140, 180, 255, 0.5); stroke-width: 2; filter: drop-shadow(0 0 6px rgba(100, 140, 255, 0.3)); }
-  .galaxy-stats {
-    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 24px; z-index: 3; background: var(--bg-panel);
-    border: 1px solid var(--border-glow); border-radius: 10px; padding: 10px 20px;
-  }
-  .stat-item { text-align: center; }
-  .stat-value { font-size: 16px; font-weight: 700; color: var(--accent-cyan); }
-  .stat-label { font-size: 8px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
-
-  /* Planet View */
-  #planet-view { padding: 54px 40px 40px; align-items: flex-start; overflow-y: auto; }
-  .planet-content { width: 100%; max-width: 1200px; margin: 0 auto; }
-  .planet-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid rgba(100,140,255,0.15); }
-  .planet-header-orb { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-  .planet-header h2 { font-size: 20px; font-weight: 700; }
-  .planet-header p { font-size: 11px; color: var(--text-secondary); line-height: 1.6; max-width: 700px; }
-  .component-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-bottom: 20px; }
-  .component-card {
-    background: var(--bg-card); border: 1px solid rgba(100,140,255,0.12);
-    border-radius: 10px; padding: 16px; cursor: pointer; transition: all 0.3s;
-    position: relative; overflow: hidden;
-  }
-  .component-card:hover { border-color: var(--accent-blue); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(77,139,255,0.15); }
-  .component-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--card-accent, var(--accent-blue)); opacity: 0; transition: opacity 0.3s; }
-  .component-card:hover::before { opacity: 1; }
-  .component-card.highlight { border-color: var(--accent-cyan) !important; box-shadow: 0 0 20px rgba(0,212,255,0.2) !important; }
-  .component-card h3 { font-size: 12px; font-weight: 600; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-  .component-card h3 .icon { font-size: 15px; }
-  .component-card .card-desc { font-size: 10px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px; }
-  .card-tags { display: flex; flex-wrap: wrap; gap: 3px; }
-  .card-tag { font-size: 8px; padding: 2px 6px; border-radius: 3px; background: rgba(77,139,255,0.1); color: var(--accent-blue); border: 1px solid rgba(77,139,255,0.2); }
-  .card-tag.obj { background: rgba(168,85,247,0.1); color: var(--accent-purple); border-color: rgba(168,85,247,0.2); }
-  .card-tag.trigger { background: rgba(239,68,68,0.1); color: var(--accent-red); border-color: rgba(239,68,68,0.2); }
-  .data-flow { background: var(--bg-card); border: 1px solid rgba(100,140,255,0.12); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
-  .data-flow h3 { font-size: 12px; font-weight: 600; margin-bottom: 10px; color: var(--accent-cyan); }
-  .flow-diagram { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 10px; }
-  .flow-node { background: rgba(77,139,255,0.1); border: 1px solid rgba(77,139,255,0.25); padding: 5px 10px; border-radius: 6px; white-space: nowrap; }
-  .flow-arrow { color: var(--accent-cyan); font-size: 12px; }
-  .connections-section { background: var(--bg-card); border: 1px solid rgba(100,140,255,0.12); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
-  .connections-section h3 { font-size: 12px; font-weight: 600; margin-bottom: 8px; color: var(--accent-purple); }
-  .connection-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(100,140,255,0.06); font-size: 10px; cursor: pointer; transition: color 0.2s; }
-  .connection-item:hover { color: var(--accent-cyan); }
-  .connection-item:last-child { border-bottom: none; }
-  .conn-planet { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; }
-
-  /* Core View */
-  #core-view { padding: 54px 40px 40px; align-items: flex-start; overflow-y: auto; }
-  .core-content { width: 100%; max-width: 1100px; margin: 0 auto; }
-  .core-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(239,68,68,0.2); }
-  .core-header h2 { font-size: 18px; font-weight: 700; }
-  .core-header .badge { font-size: 9px; padding: 3px 8px; border-radius: 4px; background: rgba(239,68,68,0.15); color: var(--accent-red); text-transform: uppercase; letter-spacing: 1px; }
-  .trigger-section { background: var(--bg-card); border: 1px solid rgba(100,140,255,0.12); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
-  .trigger-section h3 { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
-  .trigger-section .trigger-desc { font-size: 10px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; }
-  .execution-flow { display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px; }
-  .exec-step { display: flex; align-items: center; gap: 8px; font-size: 10px; padding: 4px 10px; background: rgba(77,139,255,0.05); border-radius: 4px; border-left: 2px solid var(--accent-blue); }
-  .exec-step .step-num { color: var(--accent-cyan); font-weight: 700; min-width: 18px; }
-  .code-block { background: #0d1117; border: 1px solid rgba(100,140,255,0.15); border-radius: 8px; overflow: hidden; margin-top: 8px; }
-  .code-header { display: flex; align-items: center; justify-content: space-between; padding: 5px 14px; background: rgba(100,140,255,0.06); border-bottom: 1px solid rgba(100,140,255,0.1); font-size: 10px; color: var(--text-dim); }
-  .code-header .lang { color: var(--accent-orange); font-weight: 600; }
-  .code-header .copy-btn { background: none; border: 1px solid rgba(100,140,255,0.2); color: var(--text-dim); font-size: 9px; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
-  .code-header .copy-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
-  .code-body { padding: 12px; overflow-x: auto; font-size: 10px; line-height: 1.6; tab-size: 2; }
-  .code-body pre { font-family: 'SF Mono', 'Fira Code', monospace; white-space: pre; }
-  .kw { color: #ff7b72; } .ty { color: #79c0ff; } .fn { color: #d2a8ff; }
-  .st { color: #a5d6ff; } .cm { color: #8b949e; } .nu { color: #79c0ff; }
-  .an { color: #ffa657; } .op { color: #ff7b72; } .var { color: #ffa657; }
-  .code-lab { background: var(--bg-card); border: 1px solid rgba(34,197,94,0.2); border-radius: 10px; padding: 16px; margin-top: 20px; margin-bottom: 40px; }
-  .code-lab h3 { font-size: 12px; font-weight: 600; color: var(--accent-green); margin-bottom: 4px; }
-  .code-lab .lab-desc { font-size: 10px; color: var(--text-secondary); margin-bottom: 12px; }
-  .lab-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
-  .lab-tab { font-size: 9px; padding: 4px 10px; border-radius: 4px; background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.15); color: var(--text-secondary); cursor: pointer; font-family: inherit; transition: all 0.2s; }
-  .lab-tab.active, .lab-tab:hover { background: rgba(34,197,94,0.15); color: var(--accent-green); border-color: rgba(34,197,94,0.3); }
-  .back-btn {
-    position: fixed; top: 50px; left: 20px; z-index: 50;
-    background: var(--bg-panel); border: 1px solid var(--border-glow);
-    color: var(--text-secondary); font-size: 10px; padding: 5px 12px;
-    border-radius: 6px; cursor: pointer; font-family: inherit;
-    display: none; align-items: center; gap: 6px; transition: all 0.2s; backdrop-filter: blur(8px);
-  }
-  .back-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
-  .back-btn.visible { display: flex; }
-  .help-hint {
-    position: fixed; bottom: 12px; right: 12px; z-index: 50;
-    font-size: 9px; color: var(--text-dim); background: var(--bg-panel);
-    padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(100,140,255,0.1);
-  }
-  .help-hint kbd { background: rgba(100,140,255,0.1); padding: 2px 5px; border-radius: 3px; font-family: inherit; border: 1px solid rgba(100,140,255,0.2); }
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(100,140,255,0.2); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(100,140,255,0.4); }
-  @media (max-width: 900px) {
-    #galaxy-map { width: 100%; height: auto; min-height: 700px; }
-    .galaxy-stats { flex-wrap: wrap; gap: 12px; }
-    .component-grid { grid-template-columns: 1fr; }
-    .search-container { width: 95vw; }
-  }
+@font-face { font-family: 'Salesforce Sans'; src: local('Salesforce Sans'), local('SalesforceSans-Regular'); font-weight: 400; }
+@font-face { font-family: 'Salesforce Sans'; src: local('Salesforce Sans Bold'), local('SalesforceSans-Bold'); font-weight: 700; }
+:root {
+  --sf-blue: #0176D3; --sf-blue-dark: #014486; --sf-indigo: #5867E8; --sf-cloud-blue: #EAF5FE;
+  --sf-charcoal: #181818; --sf-hot-orange: #D83A00; --sf-green: #41B658; --sf-teal: #04E1CB;
+  --sf-navy: #032D60; --sf-white: #FFFFFF;
+  --font: 'Salesforce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+}
+[data-theme="light"] {
+  --bg-primary: #FFFFFF; --bg-secondary: #EAF5FE; --bg-tertiary: #F3F3F3; --bg-panel: #FFFFFF;
+  --text-primary: #181818; --text-secondary: #444444; --text-dim: #706E6B; --border-color: #DDDBDA;
+  --accent: #0176D3; --accent-hover: #014486; --accent-light: #EEF4FF; --graph-bg: #F4F6F9;
+  --node-shadow: rgba(0,0,0,0.12); --connection-color: rgba(1,118,211,0.35);
+  --card-bg: #FFFFFF; --card-border: #DDDBDA; --code-bg: #F4F6F9;
+  --search-bg: rgba(255,255,255,0.98); --badge-bg: #EEF4FF; --badge-text: #0176D3;
+}
+[data-theme="dark"] {
+  --bg-primary: #0B1222; --bg-secondary: #16213E; --bg-tertiary: #1A1F36; --bg-panel: #16213E;
+  --text-primary: #E5E5E5; --text-secondary: #B0B0B0; --text-dim: #706E6B; --border-color: #2A3F5F;
+  --accent: #5867E8; --accent-hover: #8E9BEF; --accent-light: #1A1F36; --graph-bg: #0B1222;
+  --node-shadow: rgba(0,0,0,0.5); --connection-color: rgba(88,103,232,0.4);
+  --card-bg: #16213E; --card-border: #2A3F5F; --code-bg: #0F172A;
+  --search-bg: rgba(11,18,34,0.98); --badge-bg: #1A1F36; --badge-text: #8E9BEF;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: var(--font); background: var(--bg-primary); color: var(--text-primary); overflow: hidden; height: 100vh; }
+.navbar { position:fixed; top:0; left:0; right:0; z-index:100; height:48px; background:var(--bg-panel);
+  border-bottom:1px solid var(--border-color); display:flex; align-items:center; padding:0 16px; gap:12px; }
+.nav-logo { display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; color:var(--accent); white-space:nowrap; }
+.nav-logo svg { width:24px; height:24px; fill:var(--accent); }
+.nav-breadcrumb { display:flex; align-items:center; gap:6px; font-size:12px; flex:1; min-width:0; }
+.crumb { color:var(--text-dim); cursor:pointer; padding:2px 6px; border-radius:4px; white-space:nowrap; }
+.crumb:hover { background:var(--accent-light); color:var(--accent); }
+.crumb.active { color:var(--text-primary); font-weight:600; cursor:default; }
+.crumb.active:hover { background:transparent; }
+.crumb-sep { color:var(--text-dim); font-size:10px; }
+.nav-actions { display:flex; align-items:center; gap:8px; }
+.nav-btn { background:none; border:1px solid var(--border-color); border-radius:6px; padding:4px 10px;
+  font-size:12px; color:var(--text-secondary); cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:4px; }
+.nav-btn:hover { border-color:var(--accent); color:var(--accent); }
+#backBtn { display:none; }
+#backBtn.visible { display:flex; }
+.stage { position:fixed; top:48px; left:0; right:0; bottom:0; }
+.view-layer { position:absolute; inset:0; opacity:0; pointer-events:none; transition:opacity 0.4s ease, transform 0.4s ease; transform:translateX(30px); overflow-y:auto; }
+.view-layer.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.view-layer.slide-out { opacity:0; transform:translateX(-30px); }
+#graph-view { background:var(--graph-bg); display:flex; flex-direction:column; }
+#graph-canvas { flex:1; cursor:grab; }
+#graph-canvas:active { cursor:grabbing; }
+.graph-stats { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:20px;
+  background:var(--bg-panel); border:1px solid var(--border-color); border-radius:8px; padding:8px 16px; z-index:5; }
+.stat-item { text-align:center; }
+.stat-value { font-size:15px; font-weight:700; color:var(--accent); }
+.stat-label { font-size:8px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+.legend-panel { position:absolute; bottom:60px; left:12px; background:var(--bg-panel); border:1px solid var(--border-color);
+  border-radius:8px; padding:12px; font-size:11px; z-index:5; max-width:220px; display:none; }
+.legend-panel.open { display:block; }
+.legend-title { font-weight:700; font-size:12px; margin-bottom:8px; }
+.legend-item { display:flex; align-items:center; gap:6px; margin-bottom:4px; color:var(--text-secondary); }
+.legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.legend-line { width:20px; height:2px; background:var(--connection-color); flex-shrink:0; }
+.legend-size-sm { width:10px; height:10px; border-radius:50%; background:var(--accent); opacity:0.5; }
+.legend-size-lg { width:18px; height:18px; border-radius:50%; background:var(--accent); opacity:0.5; }
+#domain-view { background:var(--bg-primary); padding:24px; }
+.domain-header { display:flex; align-items:center; gap:16px; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border-color); }
+.domain-header-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; }
+.domain-header h2 { font-size:20px; font-weight:700; }
+.domain-header p { font-size:12px; color:var(--text-secondary); margin-top:4px; line-height:1.5; max-width:700px; }
+.component-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; margin-bottom:24px; }
+.component-card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:14px;
+  cursor:pointer; transition:border-color 0.2s,box-shadow 0.2s; border-left:3px solid var(--card-accent,var(--accent)); }
+.component-card:hover { border-color:var(--accent); box-shadow:0 2px 8px var(--node-shadow); }
+.component-card h3 { font-size:13px; font-weight:600; margin-bottom:6px; }
+.component-card h3 .icon { margin-right:4px; }
+.card-desc { font-size:11px; color:var(--text-secondary); line-height:1.5; margin-bottom:8px;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.card-tags { display:flex; flex-wrap:wrap; gap:4px; }
+.card-tag { font-size:9px; padding:2px 6px; border-radius:4px; background:var(--badge-bg); color:var(--badge-text); font-family:var(--font-mono); }
+.card-tag.trigger { background:rgba(217,58,0,0.1); color:var(--sf-hot-orange); }
+.data-flow { margin-bottom:24px; }
+.data-flow h3 { font-size:13px; font-weight:700; margin-bottom:10px; }
+.flow-diagram { display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
+.flow-node { font-size:11px; padding:4px 10px; background:var(--badge-bg); border:1px solid var(--border-color); border-radius:4px; }
+.flow-arrow { color:var(--accent); font-size:14px; }
+.connections-section h3 { font-size:13px; font-weight:700; margin-bottom:10px; }
+.connection-item { display:flex; align-items:center; gap:10px; padding:8px; border-radius:6px; cursor:pointer; margin-bottom:4px; }
+.connection-item:hover { background:var(--accent-light); }
+.conn-planet { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.connection-item strong { font-size:12px; }
+.connection-item div:last-child > div { font-size:10px; color:var(--text-dim); margin-top:2px; }
+#core-view { background:var(--bg-primary); padding:24px; }
+.core-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-color); }
+.core-header h2 { font-size:18px; }
+.badge { font-size:9px; padding:2px 8px; border-radius:4px; background:var(--badge-bg); color:var(--badge-text); font-weight:600; letter-spacing:0.5px; }
+.trigger-section { margin-bottom:20px; }
+.trigger-section h3 { font-size:13px; font-weight:700; margin-bottom:8px; }
+.trigger-desc { font-size:12px; color:var(--text-secondary); line-height:1.6; margin-bottom:8px; }
+.execution-flow { display:flex; flex-direction:column; gap:6px; }
+.exec-step { display:flex; align-items:flex-start; gap:8px; font-size:11px; line-height:1.5; }
+.step-num { background:var(--accent); color:white; width:20px; height:20px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; }
+.code-block { border:1px solid var(--border-color); border-radius:8px; overflow:hidden; margin-bottom:12px; }
+.code-header { display:flex; align-items:center; gap:8px; padding:6px 12px; background:var(--bg-tertiary); border-bottom:1px solid var(--border-color); font-size:11px; }
+.code-header .lang { padding:1px 6px; background:var(--accent); color:white; border-radius:3px; font-size:9px; font-weight:600; }
+.copy-btn { margin-left:auto; background:none; border:1px solid var(--border-color); padding:2px 8px; border-radius:4px;
+  font-size:10px; cursor:pointer; color:var(--text-secondary); font-family:var(--font); }
+.copy-btn:hover { border-color:var(--accent); color:var(--accent); }
+.code-body { padding:12px; background:var(--code-bg); overflow-x:auto; }
+.code-body pre { font-family:var(--font-mono); font-size:11px; line-height:1.6; white-space:pre; }
+.code-body .kw { color:#0176D3; } .code-body .ty { color:#5867E8; } .code-body .fn { color:#D83A00; }
+.code-body .st { color:#41B658; } .code-body .cm { color:#706E6B; } .code-body .nu { color:#D83A00; } .code-body .an { color:#04E1CB; }
+[data-theme="dark"] .code-body .kw { color:#8E9BEF; } [data-theme="dark"] .code-body .ty { color:#90D0FE; }
+[data-theme="dark"] .code-body .fn { color:#FF784F; } [data-theme="dark"] .code-body .nu { color:#FF784F; }
+.code-lab { margin-top:16px; }
+.code-lab h3 { font-size:13px; font-weight:700; margin-bottom:4px; }
+.lab-desc { font-size:11px; color:var(--text-dim); margin-bottom:8px; }
+.lab-tabs { display:flex; gap:4px; margin-bottom:12px; }
+.lab-tab { background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:4px; padding:4px 10px;
+  font-size:10px; cursor:pointer; font-family:var(--font); color:var(--text-secondary); }
+.lab-tab.active { background:var(--accent); color:white; border-color:var(--accent); }
+.search-overlay { position:fixed; inset:0; z-index:200; background:var(--search-bg); backdrop-filter:blur(8px);
+  display:flex; flex-direction:column; align-items:center; padding-top:80px; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+.search-overlay.open { opacity:1; pointer-events:all; }
+.search-box { width:90%; max-width:560px; }
+.search-input { width:100%; padding:12px 16px; font-size:16px; border:2px solid var(--border-color); border-radius:8px;
+  background:var(--bg-panel); color:var(--text-primary); font-family:var(--font); outline:none; }
+.search-input:focus { border-color:var(--accent); }
+.search-hint { font-size:10px; color:var(--text-dim); margin-top:6px; text-align:center; }
+.search-results { width:90%; max-width:560px; margin-top:12px; max-height:50vh; overflow-y:auto; }
+.search-result { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:6px; cursor:pointer; }
+.search-result:hover,.search-result.active { background:var(--accent-light); }
+.sr-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.sr-body { flex:1; min-width:0; }
+.sr-title { font-size:13px; font-weight:600; }
+.sr-path { font-size:10px; color:var(--text-dim); }
+.sr-desc { font-size:10px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sr-level { font-size:9px; color:var(--text-dim); text-transform:uppercase; padding:2px 6px; background:var(--bg-tertiary); border-radius:3px; }
+.sr-match { color:var(--accent); font-weight:700; }
+.search-nav { display:none; justify-content:center; gap:12px; margin-top:8px; font-size:11px; color:var(--text-dim); align-items:center; }
+::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:3px; }
 </style>
 </head>
 <body>
-<canvas id="starfield"></canvas>
-
-<!-- Search Overlay -->
-<div id="search-overlay">
-  <div class="search-container">
-    <div class="search-input-wrap">
-      <span class="search-icon">&#x1F50D;</span>
-      <input type="text" id="searchInput" placeholder="Search triggers, classes, objects, concepts..." autocomplete="off" spellcheck="false">
-      <div class="search-nav" id="searchNav" style="display:none">
-        <span class="search-count" id="searchCount">0/0</span>
-        <button class="search-nav-btn" onclick="cycleResult(-1)" title="Previous (Shift+Enter)">&#x25B2;</button>
-        <button class="search-nav-btn" onclick="cycleResult(1)" title="Next (Enter)">&#x25BC;</button>
-      </div>
-      <button class="search-close" onclick="closeSearch()">ESC</button>
-    </div>
-    <div class="search-results" id="searchResults"></div>
-    <div class="search-hint">
-      <kbd>Enter</kbd> next result &middot; <kbd>Shift+Enter</kbd> previous &middot; <kbd>ESC</kbd> close &middot; Click to navigate
-    </div>
+<div class="search-overlay" id="search-overlay">
+  <div class="search-box">
+    <input type="text" class="search-input" id="searchInput" placeholder="Search domains, components, classes..." autocomplete="off">
+    <div class="search-hint">Type to search across all 16 NPSP domains &middot; ESC to close</div>
   </div>
+  <div class="search-results" id="searchResults"></div>
+  <div class="search-nav" id="searchNav"><span id="searchCount"></span><span>&#x2191;&#x2193; navigate &middot; Enter select</span></div>
 </div>
-
-<nav id="navbar">
-  <div class="logo">NPSP <span>GALAXY EXPLORER</span></div>
-  <div id="breadcrumb">
-    <span class="crumb active" data-level="galaxy">Galaxy</span>
+<nav class="navbar">
+  <div class="nav-logo">
+    <svg viewBox="0 0 24 24"><path d="M19.6 9.2c-.1-2.3-2-4.1-4.3-4.1-.8 0-1.5.2-2.1.6C12.4 4 10.8 3 9 3 6.4 3 4.3 5.1 4.3 7.7c0 .3 0 .5.1.8C2.5 9 1.2 10.6 1.2 12.5c0 2.3 1.9 4.2 4.2 4.2h3.1c.2.6.5 1.1.9 1.6l.1.1c.8.8 1.9 1.3 3 1.3s2.2-.5 3-1.3l.1-.1c.4-.5.7-1 .9-1.6h2.9c2.7 0 4.9-2.2 4.9-4.9 0-2.4-1.8-4.4-4.2-4.8-.2-.6-.3-1.2-.5-1.8z"/></svg>
+    NPSP Architecture Explorer
   </div>
-  <div style="display:flex;align-items:center;gap:16px">
-    <button onclick="openSearch()" style="background:rgba(100,140,255,0.08);border:1px solid rgba(100,140,255,0.2);color:var(--text-dim);font-size:10px;padding:4px 12px;border-radius:6px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent-blue)';this.style.color='var(--accent-blue)'" onmouseout="this.style.borderColor='rgba(100,140,255,0.2)';this.style.color='var(--text-dim)'">
-      &#x1F50D; <span>Search</span> <kbd style="background:rgba(100,140,255,0.1);padding:1px 4px;border-radius:3px;font-size:8px;border:1px solid rgba(100,140,255,0.2);margin-left:4px">/</kbd>
-    </button>
-    <div id="zoom-indicator">
-      <span style="font-size:9px;margin-right:4px">ZOOM</span>
-      <div class="zoom-dot active" data-z="1"></div>
-      <div class="zoom-dot" data-z="2"></div>
-      <div class="zoom-dot" data-z="3"></div>
-    </div>
+  <button class="nav-btn" id="backBtn" onclick="goBack()">&#x2190; Back</button>
+  <div class="nav-breadcrumb" id="breadcrumb"></div>
+  <div class="nav-actions">
+    <button class="nav-btn" onclick="openSearch()" title="Search (/)">&#x1F50D; Search</button>
+    <button class="nav-btn" id="legendBtn" onclick="toggleLegend()">Legend</button>
+    <button class="nav-btn" id="themeToggle" onclick="toggleTheme()">&#x1F319;</button>
   </div>
 </nav>
-
-<button class="back-btn" id="backBtn" onclick="goBack()"><span>&larr;</span> Back</button>
-
-<div id="stage">
-  <!-- GALAXY VIEW -->
-  <div id="galaxy-view" class="view-layer active">
-    <div class="galaxy-title">
-      <h1>NONPROFIT SUCCESS PACK</h1>
-      <p>The most widely adopted nonprofit technology on Salesforce. 843 Apex classes, 26 triggers, 65 custom objects. NPSP transforms Salesforce into a purpose-built nonprofit CRM for donations, constituent management, recurring giving, and fundraising analytics.</p>
-      <div class="galaxy-subtitle">CLICK A PLANET TO EXPLORE &middot; PRESS / TO SEARCH &middot; 16 FEATURE DOMAINS</div>
+<div class="stage">
+  <div class="view-layer active" id="graph-view">
+    <canvas id="graph-canvas"></canvas>
+    <div class="legend-panel" id="legend-panel">
+      <div class="legend-title">Legend</div>
+      <div class="legend-item"><div class="legend-size-lg"></div> More code / complexity</div>
+      <div class="legend-item"><div class="legend-size-sm"></div> Less code / complexity</div>
+      <div class="legend-item"><div class="legend-line"></div> Architectural dependency</div>
+      <div style="margin-top:6px;font-size:10px;color:var(--text-dim)">Hover a node to highlight connections.<br>Click to explore. Drag to rearrange.</div>
     </div>
-    <div id="galaxy-map">
-      <svg class="galaxy-connections" id="galaxy-svg" viewBox="0 0 1100 600">
-        <!-- Dynamic connections rendered by renderConnections() -->
-      </svg>
-
-      <!-- Row 1: Core giving -->
-      <div class="planet" data-planet="donations" style="left:445px;top:5px;--size:64px;--color:#4d8bff;--delay:0s" onclick="enterPlanet('donations')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#7db3ff,#4d8bff,#2563eb)">&#x1F4B0;</div>
-        <div class="planet-ring"></div><div class="planet-label">Donations</div><div class="planet-desc">Core giving</div>
-      </div>
-      <div class="planet" data-planet="contacts" style="left:155px;top:80px;--size:58px;--color:#a855f7;--delay:0.5s" onclick="enterPlanet('contacts')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#c084fc,#a855f7,#7c3aed)">&#x1F465;</div>
-        <div class="planet-ring"></div><div class="planet-label">Contacts</div><div class="planet-desc">Households</div>
-      </div>
-      <div class="planet" data-planet="recurring" style="left:740px;top:40px;--size:68px;--color:#22c55e;--delay:1s" onclick="enterPlanet('recurring')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#4ade80,#22c55e,#16a34a)">&#x1F504;</div>
-        <div class="planet-ring"></div><div class="planet-label">Recurring</div><div class="planet-desc">89 classes</div>
-      </div>
-
-      <!-- Row 2: Data processing -->
-      <div class="planet" data-planet="rollups" style="left:445px;top:140px;--size:64px;--color:#f59e0b;--delay:0.3s" onclick="enterPlanet('rollups')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#fbbf24,#f59e0b,#d97706)">&#x1F4CA;</div>
-        <div class="planet-ring"></div><div class="planet-label">Rollups (CRLP)</div><div class="planet-desc">76 classes</div>
-      </div>
-      <div class="planet" data-planet="softcredits" style="left:40px;top:210px;--size:42px;--color:#ec4899;--delay:0.7s" onclick="enterPlanet('softcredits')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#f472b6,#ec4899,#db2777)">&#x1F91D;</div>
-        <div class="planet-ring"></div><div class="planet-label">Soft Credits</div><div class="planet-desc">Attribution</div>
-      </div>
-      <div class="planet" data-planet="allocations" style="left:880px;top:180px;--size:46px;--color:#06b6d4;--delay:1.2s" onclick="enterPlanet('allocations')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#22d3ee,#06b6d4,#0891b2)">&#x1F4C2;</div>
-        <div class="planet-ring"></div><div class="planet-label">Allocations</div><div class="planet-desc">Fund acct</div>
-      </div>
-
-      <!-- Row 3: Architecture & management -->
-      <div class="planet" data-planet="tdtm" style="left:265px;top:225px;--size:56px;--color:#ef4444;--delay:0.9s" onclick="enterPlanet('tdtm')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#f87171,#ef4444,#dc2626)">&#x26A1;</div>
-        <div class="planet-ring"></div><div class="planet-label">TDTM</div><div class="planet-desc">Trigger arch</div>
-      </div>
-      <div class="planet" data-planet="batch" style="left:625px;top:195px;--size:52px;--color:#8b5cf6;--delay:1.5s" onclick="enterPlanet('batch')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#a78bfa,#8b5cf6,#7c3aed)">&#x2699;</div>
-        <div class="planet-ring"></div><div class="planet-label">Batch Jobs</div><div class="planet-desc">45 classes</div>
-      </div>
-
-      <!-- Row 4: Relationships, Addresses, Affiliations -->
-      <div class="planet" data-planet="relationships" style="left:135px;top:340px;--size:42px;--color:#f43f5e;--delay:1.1s" onclick="enterPlanet('relationships')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#fb7185,#f43f5e,#e11d48)">&#x1F517;</div>
-        <div class="planet-ring"></div><div class="planet-label">Relationships</div><div class="planet-desc">Reciprocal</div>
-      </div>
-      <div class="planet" data-planet="addresses" style="left:320px;top:360px;--size:44px;--color:#14b8a6;--delay:1.3s" onclick="enterPlanet('addresses')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#2dd4bf,#14b8a6,#0d9488)">&#x1F4CD;</div>
-        <div class="planet-ring"></div><div class="planet-label">Addresses</div><div class="planet-desc">20 classes</div>
-      </div>
-      <div class="planet" data-planet="affiliations" style="left:785px;top:325px;--size:36px;--color:#6366f1;--delay:1.4s" onclick="enterPlanet('affiliations')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#818cf8,#6366f1,#4f46e5)">&#x1F3E2;</div>
-        <div class="planet-ring"></div><div class="planet-label">Affiliations</div><div class="planet-desc">Org links</div>
-      </div>
-
-      <!-- Row 5: Engagement, BDI, Gift Entry, Levels -->
-      <div class="planet" data-planet="engagement" style="left:50px;top:445px;--size:40px;--color:#84cc16;--delay:1.6s" onclick="enterPlanet('engagement')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#a3e635,#84cc16,#65a30d)">&#x1F4CB;</div>
-        <div class="planet-ring"></div><div class="planet-label">Engagement</div><div class="planet-desc">Plans</div>
-      </div>
-      <div class="planet" data-planet="bdi" style="left:340px;top:400px;--size:58px;--color:#d97706;--delay:1.7s" onclick="enterPlanet('bdi')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#fbbf24,#d97706,#b45309)">&#x1F4E5;</div>
-        <div class="planet-ring"></div><div class="planet-label">BDI</div><div class="planet-desc">66 classes</div>
-      </div>
-      <div class="planet" data-planet="giftentry" style="left:555px;top:405px;--size:48px;--color:#0ea5e9;--delay:1.8s" onclick="enterPlanet('giftentry')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#38bdf8,#0ea5e9,#0284c7)">&#x1F381;</div>
-        <div class="planet-ring"></div><div class="planet-label">Gift Entry</div><div class="planet-desc">Modern UI</div>
-      </div>
-      <div class="planet" data-planet="levels" style="left:905px;top:425px;--size:36px;--color:#10b981;--delay:1.9s" onclick="enterPlanet('levels')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#34d399,#10b981,#059669)">&#x1F3C6;</div>
-        <div class="planet-ring"></div><div class="planet-label">Levels</div><div class="planet-desc">Donor tiers</div>
-      </div>
-
-      <!-- Row 6: Error handling, Settings, Elevate -->
-      <div class="planet" data-planet="errors" style="left:215px;top:500px;--size:44px;--color:#d946ef;--delay:2.0s" onclick="enterPlanet('errors')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#e879f9,#d946ef,#c026d3)">&#x26A0;</div>
-        <div class="planet-ring"></div><div class="planet-label">Errors</div><div class="planet-desc">22 classes</div>
-      </div>
-      <div class="planet" data-planet="settings" style="left:440px;top:485px;--size:52px;--color:#64748b;--delay:2.1s" onclick="enterPlanet('settings')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#94a3b8,#64748b,#475569)">&#x2699;</div>
-        <div class="planet-ring"></div><div class="planet-label">Settings</div><div class="planet-desc">14+ objects</div>
-      </div>
-      <div class="planet" data-planet="elevate" style="left:705px;top:492px;--size:40px;--color:#7c3aed;--delay:2.2s" onclick="enterPlanet('elevate')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#a78bfa,#7c3aed,#6d28d9)">&#x1F4B3;</div>
-        <div class="planet-ring"></div><div class="planet-label">Elevate</div><div class="planet-desc">Payments</div>
-      </div>
-    </div>
-    <div class="galaxy-stats">
+    <div class="graph-stats">
       <div class="stat-item"><div class="stat-value">843</div><div class="stat-label">Apex Classes</div></div>
       <div class="stat-item"><div class="stat-value">26</div><div class="stat-label">Triggers</div></div>
       <div class="stat-item"><div class="stat-value">65</div><div class="stat-label">Custom Objects</div></div>
-      <div class="stat-item"><div class="stat-value">45</div><div class="stat-label">Batch Jobs</div></div>
-      <div class="stat-item"><div class="stat-value">100+</div><div class="stat-label">LWC Components</div></div>
       <div class="stat-item"><div class="stat-value">16</div><div class="stat-label">Domains</div></div>
     </div>
   </div>
-
-  <!-- PLANET VIEW -->
-  <div id="planet-view" class="view-layer">
-    <div class="planet-content" id="planet-content"></div>
-  </div>
-
-  <!-- CORE VIEW -->
-  <div id="core-view" class="view-layer">
-    <div class="core-content" id="core-content"></div>
-  </div>
+  <div class="view-layer" id="domain-view"><div id="domain-content"></div></div>
+  <div class="view-layer" id="core-view"><div id="core-content"></div></div>
 </div>
-
-<div class="help-hint">
-  <kbd>/</kbd> search &middot; <kbd>ESC</kbd> zoom out &middot; Click planets to explore
-</div>
-
 <script>
-// ══════════════════════════════════════════════════════════════
-//  NPSP KNOWLEDGE BASE — 16 Feature Domains, 843 classes
-// ══════════════════════════════════════════════════════════════
 const NPSP = {
 
 donations: {
@@ -702,125 +449,262 @@ elevate: {
 
 };
 
+
 const PLANET_META = {};
 for (const [k,v] of Object.entries(NPSP)) { PLANET_META[k] = {icon:v.icon, color:v.color}; }
 
-let currentLevel="galaxy", currentPlanet=null, currentComponent=null, navHistory=[];
+// == THEME ==
+const cachedColors = {};
+function readCSSColors() {
+  const s = getComputedStyle(document.documentElement);
+  cachedColors.bg = s.getPropertyValue('--graph-bg').trim();
+  cachedColors.text = s.getPropertyValue('--text-primary').trim();
+  cachedColors.textSec = s.getPropertyValue('--text-secondary').trim();
+  cachedColors.textDim = s.getPropertyValue('--text-dim').trim();
+  cachedColors.accent = s.getPropertyValue('--accent').trim();
+  cachedColors.conn = s.getPropertyValue('--connection-color').trim();
+  cachedColors.border = s.getPropertyValue('--border-color').trim();
+  cachedColors.panel = s.getPropertyValue('--bg-panel').trim();
+}
+function initTheme() {
+  const saved = localStorage.getItem('npsp-pro-theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon(); readCSSColors();
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('npsp-pro-theme', next);
+  updateThemeIcon(); readCSSColors();
+}
+function updateThemeIcon() {
+  const theme = document.documentElement.getAttribute('data-theme');
+  document.getElementById('themeToggle').textContent = theme === 'light' ? '\u{1F319}' : '\u{2600}';
+}
+function toggleLegend() { document.getElementById('legend-panel').classList.toggle('open'); }
 
-// ── Starfield ──
-function initStarfield(){const c=document.getElementById("starfield"),x=c.getContext("2d");c.width=innerWidth;c.height=innerHeight;const s=[];for(let i=0;i<350;i++)s.push({x:Math.random()*c.width,y:Math.random()*c.height,sz:Math.random()*1.5+0.3,op:Math.random()*0.8+0.2,tw:Math.random()*0.02+0.005});let f=0;(function a(){x.clearRect(0,0,c.width,c.height);f++;for(const st of s){const t=Math.sin(f*st.tw)*0.3+0.7;x.beginPath();x.arc(st.x,st.y,st.sz,0,Math.PI*2);x.fillStyle=`rgba(180,200,255,${st.op*t})`;x.fill()}requestAnimationFrame(a)})();addEventListener("resize",()=>{c.width=innerWidth;c.height=innerHeight})}
+// == NODE SIZING ==
+const CODEBASE_WEIGHT = {
+  recurring:89,rollups:76,bdi:66,settings:64,donations:50,batch:45,contacts:39,
+  allocations:28,errors:22,addresses:20,giftentry:19,elevate:14,engagement:12,
+  softcredits:8,relationships:6,levels:6,tdtm:15,affiliations:4
+};
+const FOUNDATIONAL = {tdtm:2.5,settings:1.3,errors:1.2};
+function calcRadius(key) {
+  const d=NPSP[key],cw=CODEBASE_WEIGHT[key]||5,compW=d.components.length*10,connW=d.connections.length*3,mult=FOUNDATIONAL[key]||1.0;
+  const raw=(cw+compW+connW)*mult;
+  const scores=Object.keys(NPSP).map(k=>{const dd=NPSP[k];return((CODEBASE_WEIGHT[k]||5)+dd.components.length*10+dd.connections.length*3)*(FOUNDATIONAL[k]||1.0);});
+  const mn=Math.min(...scores),mx=Math.max(...scores);
+  return 28+((raw-mn)/(mx-mn))*24;
+}
 
-// ── Dynamic Connections ──
-function renderConnections(){
-  const svg=document.getElementById("galaxy-svg");
-  svg.querySelectorAll("line").forEach(l=>l.remove());
-  const map=document.getElementById("galaxy-map");
-  const mapRect=map.getBoundingClientRect();
-  const svgW=1100,svgH=600;
-  const scaleX=svgW/mapRect.width,scaleY=svgH/mapRect.height;
-  const centers={};
-  document.querySelectorAll(".planet[data-planet]").forEach(el=>{
-    const id=el.dataset.planet;
-    const sz=parseFloat(getComputedStyle(el).getPropertyValue("--size"));
-    const left=parseFloat(el.style.left);
-    const top=parseFloat(el.style.top);
-    centers[id]={x:left+sz/2,y:top+sz/2};
+// == FORCE GRAPH ==
+let nodes=[],edges=[],nodeMap={};
+let canvas,ctx,canvasW,canvasH;
+let zoom=1,panX=0,panY=0;
+let dragNode=null,hoveredNode=null;
+let isDragging=false,isPanning=false;
+let lastMouse={x:0,y:0};
+let alpha=1.0,graphSettled=false;
+
+function initGraph() {
+  canvas=document.getElementById('graph-canvas');
+  ctx=canvas.getContext('2d');
+  resizeCanvas();
+  const keys=Object.keys(NPSP);
+  const cx=canvasW/2,cy=canvasH/2;
+  nodes=keys.map((key,i)=>{
+    const angle=(i/keys.length)*Math.PI*2;
+    const spread=Math.min(canvasW,canvasH)*0.3;
+    return {id:key,label:NPSP[key].name,icon:NPSP[key].icon,color:NPSP[key].color,radius:calcRadius(key),
+      x:cx+Math.cos(angle)*spread+(Math.random()-0.5)*60,
+      y:cy+Math.sin(angle)*spread+(Math.random()-0.5)*60,
+      vx:0,vy:0,fx:null,fy:null};
   });
-  const drawn=new Set();
-  for(const[pid,planet] of Object.entries(NPSP)){
-    if(!centers[pid])continue;
-    for(const conn of planet.connections){
-      const tid=conn.planet;
-      if(!centers[tid])continue;
-      const key=[pid,tid].sort().join("--");
-      if(drawn.has(key))continue;
-      drawn.add(key);
-      const line=document.createElementNS("http://www.w3.org/2000/svg","line");
-      line.setAttribute("x1",centers[pid].x);
-      line.setAttribute("y1",centers[pid].y);
-      line.setAttribute("x2",centers[tid].x);
-      line.setAttribute("y2",centers[tid].y);
-      line.dataset.from=pid;
-      line.dataset.to=tid;
-      svg.appendChild(line);
-    }
+  nodeMap={};nodes.forEach(n=>nodeMap[n.id]=n);
+  const edgeSet=new Set();
+  for(const n of nodes){for(const conn of NPSP[n.id].connections){
+    const key=[n.id,conn.planet].sort().join('--');
+    if(!edgeSet.has(key)&&nodeMap[conn.planet]){edgeSet.add(key);edges.push({source:n.id,target:conn.planet,label:conn.desc});}
+  }}
+  alpha=1.0;graphSettled=false;requestAnimationFrame(tick);
+}
+function resizeCanvas(){
+  const rect=canvas.parentElement.getBoundingClientRect();
+  canvas.width=rect.width*devicePixelRatio;canvas.height=rect.height*devicePixelRatio;
+  canvas.style.width=rect.width+'px';canvas.style.height=rect.height+'px';
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  canvasW=rect.width;canvasH=rect.height;
+}
+function simulate(){
+  if(alpha<0.001){graphSettled=true;return;}
+  alpha*=0.99;
+  for(let i=0;i<nodes.length;i++){for(let j=i+1;j<nodes.length;j++){
+    const a=nodes[i],b=nodes[j];let dx=b.x-a.x,dy=b.y-a.y;
+    const dist=Math.sqrt(dx*dx+dy*dy)||1;const minDist=a.radius+b.radius+80;
+    const force=(minDist*minDist)/(dist*dist)*1.5*alpha;
+    const fx=(dx/dist)*force,fy=(dy/dist)*force;
+    a.vx-=fx;a.vy-=fy;b.vx+=fx;b.vy+=fy;
+  }}
+  for(const e of edges){
+    const s=nodeMap[e.source],t=nodeMap[e.target];if(!s||!t)continue;
+    let dx=t.x-s.x,dy=t.y-s.y;const dist=Math.sqrt(dx*dx+dy*dy)||1;
+    const force=(dist-180)*0.04*alpha;
+    const fx=(dx/dist)*force,fy=(dy/dist)*force;
+    s.vx+=fx;s.vy+=fy;t.vx-=fx;t.vy-=fy;
+  }
+  const cx=canvasW/2,cy=canvasH/2;
+  for(const n of nodes){n.vx+=(cx-n.x)*0.008*alpha;n.vy+=(cy-n.y)*0.008*alpha;}
+  for(const n of nodes){
+    if(n.fx!==null){n.x=n.fx;n.vx=0;}else{n.vx*=0.6;n.x+=n.vx;}
+    if(n.fy!==null){n.y=n.fy;n.vy=0;}else{n.vy*=0.6;n.y+=n.vy;}
+    n.x=Math.max(n.radius+10,Math.min(canvasW-n.radius-10,n.x));
+    n.y=Math.max(n.radius+10,Math.min(canvasH-n.radius-10,n.y));
   }
 }
-function highlightConnections(planetId){
-  document.querySelectorAll("#galaxy-svg line").forEach(line=>{
-    if(!planetId){line.classList.remove("highlighted","dimmed");return}
-    if(line.dataset.from===planetId||line.dataset.to===planetId){
-      line.classList.add("highlighted");line.classList.remove("dimmed");
-    }else{
-      line.classList.add("dimmed");line.classList.remove("highlighted");
+function render(){
+  ctx.save();ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  ctx.clearRect(0,0,canvasW,canvasH);
+  ctx.save();ctx.translate(panX,panY);ctx.scale(zoom,zoom);
+  const fontFam=getComputedStyle(document.body).fontFamily;
+  for(const e of edges){
+    const s=nodeMap[e.source],t=nodeMap[e.target];if(!s||!t)continue;
+    const isHL=hoveredNode&&(e.source===hoveredNode.id||e.target===hoveredNode.id);
+    ctx.beginPath();
+    const mx=(s.x+t.x)/2,my=(s.y+t.y)/2,dx=t.x-s.x,dy=t.y-s.y;
+    const perpX=-dy*0.1,perpY=dx*0.1;
+    ctx.moveTo(s.x,s.y);ctx.quadraticCurveTo(mx+perpX,my+perpY,t.x,t.y);
+    if(hoveredNode){ctx.globalAlpha=isHL?0.8:0.08;ctx.strokeStyle=isHL?(cachedColors.accent||'#0176D3'):(cachedColors.conn||'rgba(1,118,211,0.35)');ctx.lineWidth=isHL?2.5:1;}
+    else{ctx.globalAlpha=0.5;ctx.strokeStyle=cachedColors.conn||'rgba(1,118,211,0.35)';ctx.lineWidth=1.5;}
+    ctx.stroke();ctx.globalAlpha=1;
+    if(isHL&&zoom>0.5){
+      ctx.font='9px '+fontFam;ctx.fillStyle=cachedColors.textDim||'#706E6B';ctx.textAlign='center';
+      const lbl=e.label.length>35?e.label.substring(0,35)+'...':e.label;
+      ctx.fillText(lbl,mx+perpX*0.5,my+perpY*0.5-4);
     }
-  });
+  }
+  for(const n of nodes){
+    const isH=hoveredNode&&hoveredNode.id===n.id;
+    const sc=isH?1.1:1,r=n.radius*sc;
+    ctx.shadowColor=n.color;ctx.shadowBlur=isH?16:8;
+    ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.fillStyle=n.color;
+    if(hoveredNode&&!isH)ctx.globalAlpha=0.4;ctx.fill();ctx.globalAlpha=1;ctx.shadowBlur=0;
+    ctx.strokeStyle=cachedColors.panel||'#FFFFFF';ctx.lineWidth=2.5;ctx.stroke();
+    ctx.font=Math.round(r*0.65)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    if(hoveredNode&&!isH)ctx.globalAlpha=0.4;ctx.fillText(n.icon,n.x,n.y);ctx.globalAlpha=1;
+    ctx.font='600 11px '+fontFam;ctx.fillStyle=cachedColors.text||'#181818';ctx.textAlign='center';ctx.textBaseline='top';
+    if(hoveredNode&&!isH)ctx.globalAlpha=0.3;ctx.fillText(n.label,n.x,n.y+r+6);ctx.globalAlpha=1;
+  }
+  ctx.restore();ctx.restore();
 }
-document.querySelectorAll(".planet[data-planet]").forEach(el=>{
-  el.addEventListener("mouseenter",()=>highlightConnections(el.dataset.planet));
-  el.addEventListener("mouseleave",()=>highlightConnections(null));
-});
+function tick(){
+  if(currentLevel!=='graph')return;
+  simulate();render();
+  if(!graphSettled||dragNode||hoveredNode)requestAnimationFrame(tick);
+}
+function screenToGraph(sx,sy){return{x:(sx-panX)/zoom,y:(sy-panY)/zoom};}
+function hitTest(sx,sy){const{x,y}=screenToGraph(sx,sy);for(let i=nodes.length-1;i>=0;i--){const n=nodes[i],dx=x-n.x,dy=y-n.y;if(dx*dx+dy*dy<n.radius*n.radius*1.3)return n;}return null;}
+function setupCanvasEvents(){
+  canvas.addEventListener('mousedown',e=>{
+    const rect=canvas.getBoundingClientRect();const sx=e.clientX-rect.left,sy=e.clientY-rect.top;
+    const node=hitTest(sx,sy);
+    if(node&&e.button===0){dragNode=node;node.fx=node.x;node.fy=node.y;isDragging=false;alpha=Math.max(alpha,0.3);graphSettled=false;requestAnimationFrame(tick);}
+    else if(e.button===0){isPanning=true;}
+    lastMouse={x:e.clientX,y:e.clientY};
+  });
+  canvas.addEventListener('mousemove',e=>{
+    const rect=canvas.getBoundingClientRect();const sx=e.clientX-rect.left,sy=e.clientY-rect.top;
+    if(dragNode){const dx=e.clientX-lastMouse.x,dy=e.clientY-lastMouse.y;if(Math.abs(dx)+Math.abs(dy)>3)isDragging=true;const{x,y}=screenToGraph(sx,sy);dragNode.fx=x;dragNode.fy=y;dragNode.x=x;dragNode.y=y;}
+    else if(isPanning){panX+=e.clientX-lastMouse.x;panY+=e.clientY-lastMouse.y;render();}
+    else{const node=hitTest(sx,sy);if(node!==hoveredNode){hoveredNode=node;canvas.style.cursor=node?'pointer':'grab';if(!graphSettled||hoveredNode){graphSettled=false;requestAnimationFrame(tick);}}}
+    lastMouse={x:e.clientX,y:e.clientY};
+  });
+  canvas.addEventListener('mouseup',e=>{
+    if(dragNode&&!isDragging){dragNode.fx=null;dragNode.fy=null;enterDomain(dragNode.id);}
+    else if(dragNode){dragNode.fx=null;dragNode.fy=null;alpha=Math.max(alpha,0.1);graphSettled=false;requestAnimationFrame(tick);}
+    dragNode=null;isPanning=false;
+  });
+  canvas.addEventListener('mouseleave',()=>{if(hoveredNode){hoveredNode=null;render();}isPanning=false;if(dragNode){dragNode.fx=null;dragNode.fy=null;dragNode=null;}});
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();const rect=canvas.getBoundingClientRect();
+    const sx=e.clientX-rect.left,sy=e.clientY-rect.top;
+    const oldZoom=zoom;zoom*=e.deltaY<0?1.1:0.9;zoom=Math.max(0.3,Math.min(3,zoom));
+    panX=sx-(sx-panX)*(zoom/oldZoom);panY=sy-(sy-panY)*(zoom/oldZoom);render();
+  },{passive:false});
+  window.addEventListener('resize',()=>{resizeCanvas();render();});
+}
 
-// ── Views ──
-function showView(id,dir){document.querySelectorAll(".view-layer").forEach(v=>{if(v.classList.contains("active")){v.classList.remove("active");v.classList.add(dir==="in"?"zoom-out":"zoom-in");setTimeout(()=>v.classList.remove("zoom-out","zoom-in"),800)}});const t=document.getElementById(id);t.classList.remove("zoom-out","zoom-in");t.classList.add(dir==="in"?"zoom-in":"zoom-out");requestAnimationFrame(()=>requestAnimationFrame(()=>{t.classList.remove("zoom-out","zoom-in");t.classList.add("active")}))}
+// == NAVIGATION ==
+let currentLevel='graph',currentDomain=null,currentComponent=null,navHistory=[];
+function showView(id){
+  document.querySelectorAll('.view-layer').forEach(v=>{if(v.classList.contains('active')){v.classList.remove('active');v.classList.add('slide-out');setTimeout(()=>v.classList.remove('slide-out'),400);}});
+  document.getElementById(id).classList.add('active');
+  if(id==='graph-view'){graphSettled=false;alpha=Math.max(alpha,0.01);requestAnimationFrame(tick);}
+}
+function updateBreadcrumb(){
+  const bc=document.getElementById('breadcrumb');
+  let h='<span class="crumb'+(currentLevel==='graph'?' active':'')+'" onclick="navigateTo(\'graph\')">Architecture</span>';
+  if(currentDomain){h+='<span class="crumb-sep">\u25B8</span><span class="crumb'+(currentLevel==='domain'?' active':'')+'" onclick="navigateTo(\'domain\')">'+NPSP[currentDomain].name+'</span>';}
+  if(currentComponent){const c=NPSP[currentDomain].components.find(x=>x.id===currentComponent);if(c)h+='<span class="crumb-sep">\u25B8</span><span class="crumb active">'+c.name+'</span>';}
+  bc.innerHTML=h;
+  document.getElementById('backBtn').classList.toggle('visible',currentLevel!=='graph');
+}
+function enterDomain(id){navHistory.push({level:currentLevel,domain:currentDomain,component:currentComponent});currentLevel='domain';currentDomain=id;currentComponent=null;renderDomainView(id);showView('domain-view');updateBreadcrumb();}
+function enterCore(did,cid){navHistory.push({level:currentLevel,domain:currentDomain,component:currentComponent});currentLevel='core';currentComponent=cid;renderCoreView(did,cid);showView('core-view');updateBreadcrumb();}
+function navigateTo(level){if(level===currentLevel)return;if(level==='graph'){currentLevel='graph';currentDomain=null;currentComponent=null;showView('graph-view');}else if(level==='domain'){currentLevel='domain';currentComponent=null;showView('domain-view');}updateBreadcrumb();}
+function goBack(){if(navHistory.length>0){const p=navHistory.pop();if(p.level==='graph')navigateTo('graph');else if(p.level==='domain'){currentDomain=p.domain;navigateTo('domain');}}else{if(currentLevel==='core')navigateTo('domain');else if(currentLevel==='domain')navigateTo('graph');}}
 
-function updateBreadcrumb(){const bc=document.getElementById("breadcrumb");let h='<span class="crumb'+(currentLevel==="galaxy"?" active":"")+'" onclick="navigateTo(\'galaxy\')">Galaxy</span>';if(currentPlanet){h+='<span class="crumb-sep">\u25B8</span><span class="crumb'+(currentLevel==="planet"?" active":"")+'" onclick="navigateTo(\'planet\')">'+NPSP[currentPlanet].name+"</span>"}if(currentComponent){const c=NPSP[currentPlanet].components.find(x=>x.id===currentComponent);if(c)h+='<span class="crumb-sep">\u25B8</span><span class="crumb active">'+c.name+"</span>"}bc.innerHTML=h;document.querySelectorAll(".zoom-dot").forEach((d,i)=>d.classList.toggle("active",(i===0&&currentLevel==="galaxy")||(i===1&&currentLevel==="planet")||(i===2&&currentLevel==="core")));document.getElementById("backBtn").classList.toggle("visible",currentLevel!=="galaxy")}
+// == RENDER DOMAIN ==
+function renderDomainView(id){
+  const p=NPSP[id],el=document.getElementById('domain-content');
+  el.innerHTML='<div class="domain-header"><div class="domain-header-icon" style="background:'+p.color+'22;border:2px solid '+p.color+'">'+p.icon+'</div><div><h2 style="color:'+p.color+'">'+p.name+'</h2><p>'+p.description+'</p></div></div>'+
+  '<div class="component-grid">'+p.components.map(c=>'<div class="component-card" style="--card-accent:'+p.color+'" onclick="enterCore(\''+id+'\',\''+c.id+'\')"><h3><span class="icon">'+c.icon+'</span> '+c.name+'</h3><div class="card-desc">'+c.desc+'</div><div class="card-tags">'+(c.tags||[]).map(t=>'<span class="card-tag">'+t+'</span>').join('')+(c.triggerTags||[]).map(t=>'<span class="card-tag trigger">'+t+'</span>').join('')+'</div></div>').join('')+'</div>'+
+  '<div class="data-flow"><h3>Data Flow</h3><div class="flow-diagram">'+p.dataFlow.map((n,i)=>(i>0?'<span class="flow-arrow">\u2192</span>':'')+('<span class="flow-node">'+n+'</span>')).join('')+'</div></div>'+
+  '<div class="connections-section"><h3>Connected Systems</h3>'+p.connections.map(c=>'<div class="connection-item" onclick="enterDomain(\''+c.planet+'\')"><div class="conn-planet" style="background:'+(PLANET_META[c.planet]?.color||'#64748b')+'22;border:1px solid '+(PLANET_META[c.planet]?.color||'#64748b')+'">'+(PLANET_META[c.planet]?.icon||'\u2B50')+'</div><div><strong>'+(NPSP[c.planet]?.name||c.planet)+'</strong><div>'+c.desc+'</div></div></div>').join('')+'</div>';
+  document.getElementById('domain-view').scrollTop=0;
+}
 
-function enterPlanet(id){navHistory.push({level:currentLevel,planet:currentPlanet,component:currentComponent});currentLevel="planet";currentPlanet=id;currentComponent=null;renderPlanetView(id);showView("planet-view","in");updateBreadcrumb()}
-
-function enterCore(pid,cid){navHistory.push({level:currentLevel,planet:currentPlanet,component:currentComponent});currentLevel="core";currentComponent=cid;renderCoreView(pid,cid);showView("core-view","in");updateBreadcrumb()}
-
-function navigateTo(level){if(level===currentLevel)return;if(level==="galaxy"){currentLevel="galaxy";currentPlanet=null;currentComponent=null;showView("galaxy-view","out")}else if(level==="planet"){currentLevel="planet";currentComponent=null;showView("planet-view","out")}updateBreadcrumb()}
-
-function goBack(){if(navHistory.length>0){const p=navHistory.pop();if(p.level==="galaxy")navigateTo("galaxy");else if(p.level==="planet"){currentPlanet=p.planet;navigateTo("planet")}}else{if(currentLevel==="core")navigateTo("planet");else if(currentLevel==="planet")navigateTo("galaxy")}}
-
-// ── Render Planet ──
-function renderPlanetView(id){const p=NPSP[id],el=document.getElementById("planet-content");el.innerHTML=`<div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}">${p.icon}</div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p></div></div><div class="component-grid">${p.components.map(c=>`<div class="component-card" data-component="${c.id}" style="--card-accent:${p.color}" onclick="enterCore('${id}','${c.id}')"><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div><div class="card-tags">${(c.tags||[]).map(t=>`<span class="card-tag">${t}</span>`).join("")}${(c.triggerTags||[]).map(t=>`<span class="card-tag trigger">${t}</span>`).join("")}</div></div>`).join("")}</div><div class="data-flow"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n,i)=>(i>0?'<span class="flow-arrow">\u2192</span>':"")+`<span class="flow-node">${n}</span>`).join("")}</div></div><div class="connections-section"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map(c=>`<div class="connection-item" onclick="enterPlanet('${c.planet}')"><div class="conn-planet" style="background:${PLANET_META[c.planet]?.color||"#64748b"}">${PLANET_META[c.planet]?.icon||"\u{2B50}"}</div><div><strong>${NPSP[c.planet]?.name||c.planet}</strong><div style="color:var(--text-dim);font-size:9px;margin-top:2px">${c.desc}</div></div></div>`).join("")}</div>`;document.getElementById("planet-view").scrollTop=0}
-
-// ── Render Core ──
-function renderCoreView(pid,cid){const p=NPSP[pid],c=p.components.find(x=>x.id===cid);if(!c)return;const el=document.getElementById("core-content");let h=`<div class="core-header"><span style="font-size:22px">${c.icon}</span><div><h2>${c.name}</h2><span class="badge">TRIGGER LEVEL</span></div></div><div class="trigger-section"><h3>\u{1F4CB} Overview</h3><div class="trigger-desc">${c.desc}</div><div class="card-tags">${(c.tags||[]).map(t=>`<span class="card-tag">${t}</span>`).join("")}${(c.triggerTags||[]).map(t=>`<span class="card-tag trigger">${t}</span>`).join("")}</div></div>`;if(c.executionFlow)h+=`<div class="trigger-section"><h3>\u{26A1} Execution Flow</h3><div class="execution-flow">${c.executionFlow.map((s,i)=>`<div class="exec-step"><span class="step-num">${i+1}</span><span>${s}</span></div>`).join("")}</div></div>`;if(c.code)h+=`<div class="trigger-section"><h3>\u{1F4BB} Source Code Pattern</h3><div class="code-block"><div class="code-header"><span class="lang">${c.code.lang}</span><span>${c.code.title}</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><div class="code-body"><pre>${c.code.body}</pre></div></div></div>`;h+=`<div class="code-lab"><h3>\u{1F9EA} Code Lab: Explore Further</h3><div class="lab-desc">Related patterns for understanding this component deeper.</div><div class="lab-tabs"><button class="lab-tab active" onclick="switchTab(this,'pattern')">TDTM Pattern</button><button class="lab-tab" onclick="switchTab(this,'testing')">Test Pattern</button><button class="lab-tab" onclick="switchTab(this,'extension')">Extension Point</button></div><div id="lab-content"></div></div>`;el.innerHTML=h;switchTab(el.querySelector(".lab-tab.active"),"pattern");document.getElementById("core-view").scrollTop=0}
+// == RENDER CORE ==
+function renderCoreView(pid,cid){
+  const p=NPSP[pid],c=p.components.find(x=>x.id===cid);if(!c)return;
+  const el=document.getElementById('core-content');
+  let h='<div class="core-header"><span style="font-size:22px">'+c.icon+'</span><div><h2>'+c.name+'</h2><span class="badge">TRIGGER LEVEL</span></div></div>';
+  h+='<div class="trigger-section"><h3>Overview</h3><div class="trigger-desc">'+c.desc+'</div><div class="card-tags">'+(c.tags||[]).map(t=>'<span class="card-tag">'+t+'</span>').join('')+(c.triggerTags||[]).map(t=>'<span class="card-tag trigger">'+t+'</span>').join('')+'</div></div>';
+  if(c.executionFlow)h+='<div class="trigger-section"><h3>Execution Flow</h3><div class="execution-flow">'+c.executionFlow.map((s,i)=>'<div class="exec-step"><span class="step-num">'+(i+1)+'</span><span>'+s+'</span></div>').join('')+'</div></div>';
+  if(c.code)h+='<div class="trigger-section"><h3>Source Code Pattern</h3><div class="code-block"><div class="code-header"><span class="lang">'+c.code.lang+'</span><span>'+c.code.title+'</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><div class="code-body"><pre>'+c.code.body+'</pre></div></div></div>';
+  h+='<div class="code-lab"><h3>Code Lab: Explore Further</h3><div class="lab-desc">Related patterns for understanding this component deeper.</div><div class="lab-tabs"><button class="lab-tab active" onclick="switchTab(this,\'pattern\')">TDTM Pattern</button><button class="lab-tab" onclick="switchTab(this,\'testing\')">Test Pattern</button><button class="lab-tab" onclick="switchTab(this,\'extension\')">Extension Point</button></div><div id="lab-content"></div></div>';
+  el.innerHTML=h;switchTab(el.querySelector('.lab-tab.active'),'pattern');document.getElementById('core-view').scrollTop=0;
+}
 
 const labPatterns={pattern:{title:"TDTM Handler Pattern",code:'<span class="cm">// Create a custom TDTM handler</span>\n<span class="kw">public class</span> <span class="ty">MyCustomHandler</span>\n  <span class="kw">extends</span> <span class="ty">TDTM_Runnable</span> {\n\n  <span class="kw">public override</span> <span class="ty">DmlWrapper</span> <span class="fn">run</span>(\n    <span class="ty">List&lt;SObject&gt;</span> newList,\n    <span class="ty">List&lt;SObject&gt;</span> oldList,\n    <span class="ty">TDTM_Runnable.Action</span> triggerAction,\n    <span class="ty">Schema.DescribeSObjectResult</span> objResult\n  ) {\n    <span class="kw">if</span> (triggerAction == <span class="ty">Action</span>.AfterInsert) {\n      <span class="kw">for</span> (<span class="ty">SObject</span> record : newList) {\n        <span class="cm">// Custom logic here</span>\n      }\n    }\n    <span class="kw">return null</span>;\n  }\n}\n\n<span class="cm">// Or extend TDTM_RunnableMutable for</span>\n<span class="cm">// handlers that need to mutate records</span>'},testing:{title:"Test Pattern for TDTM Handlers",code:'<span class="an">@isTest</span>\n<span class="kw">private class</span> <span class="ty">MyHandler_TEST</span> {\n\n  <span class="an">@testSetup</span>\n  <span class="kw">static void</span> <span class="fn">setup</span>() {\n    <span class="ty">UTIL_UnitTestData_TEST</span>\n      .<span class="fn">createDefaultSettings</span>();\n  }\n\n  <span class="an">@isTest</span>\n  <span class="kw">static void</span> <span class="fn">testHandler</span>() {\n    <span class="ty">Contact</span> c = <span class="ty">UTIL_UnitTestData_TEST</span>\n      .<span class="fn">createTestContact</span>();\n\n    <span class="ty">Test</span>.startTest();\n    <span class="ty">Opportunity</span> opp = <span class="kw">new</span> <span class="ty">Opportunity</span>(\n      ContactId = c.Id,\n      Amount = <span class="nu">100</span>,\n      CloseDate = <span class="ty">Date</span>.today(),\n      StageName = <span class="st">\'Closed Won\'</span>,\n      Name = <span class="st">\'Test\'</span>\n    );\n    <span class="kw">insert</span> opp;\n    <span class="ty">Test</span>.stopTest();\n\n    opp = [<span class="kw">SELECT</span> Name <span class="kw">FROM</span> <span class="ty">Opportunity</span>\n           <span class="kw">WHERE</span> Id = :opp.Id];\n    <span class="ty">System</span>.assertNotEquals(\n      <span class="st">\'Test\'</span>, opp.Name);\n  }\n}'},extension:{title:"Extension Point: Custom Logic",code:'<span class="cm">// Extend NPSP without modifying its code</span>\n\n<span class="cm">// Option 1: Custom TDTM handler (recommended)</span>\n<span class="ty">npsp__Trigger_Handler__c</span> handler =\n  <span class="kw">new</span> <span class="ty">npsp__Trigger_Handler__c</span>(\n    npsp__Class__c = <span class="st">\'MyCustomHandler\'</span>,\n    npsp__Object__c = <span class="st">\'Opportunity\'</span>,\n    npsp__Trigger_Action__c =\n      <span class="st">\'AfterInsert;AfterUpdate\'</span>,\n    npsp__Load_Order__c = <span class="nu">99</span>,\n    npsp__Active__c = <span class="kw">true</span>,\n    npsp__User_Managed__c = <span class="kw">true</span>\n      <span class="cm">// Prevents NPSP from overwriting</span>\n  );\n<span class="kw">insert</span> handler;\n\n<span class="cm">// Option 2: Flow / Process Builder</span>\n<span class="cm">// Runs after all TDTM handlers</span>\n\n<span class="cm">// Option 3: Custom Rollup (CMDT)</span>\n<span class="cm">// Via NPSP Settings UI, no code</span>'}};
 
-function switchTab(tab,type){tab.parentElement.querySelectorAll(".lab-tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const p=labPatterns[type];document.getElementById("lab-content").innerHTML=`<div class="code-block"><div class="code-header"><span class="lang">Apex</span><span>${p.title}</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><div class="code-body"><pre>${p.code}</pre></div></div>`}
 
-function copyCode(btn){const pre=btn.closest(".code-block").querySelector("pre");navigator.clipboard.writeText(pre.textContent).then(()=>{btn.textContent="Copied!";setTimeout(()=>btn.textContent="Copy",1500)})}
+function switchTab(tab,type){tab.parentElement.querySelectorAll('.lab-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');const p=labPatterns[type];document.getElementById('lab-content').innerHTML='<div class="code-block"><div class="code-header"><span class="lang">Apex</span><span>'+p.title+'</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><div class="code-body"><pre>'+p.code+'</pre></div></div>';}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.textContent).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500)});}
 
-// ══════════════════════════════════════════════════════════════
-//  SEARCH ENGINE
-// ══════════════════════════════════════════════════════════════
+// == SEARCH ENGINE ==
 let searchResults=[],searchIndex=-1;
-
-function buildSearchIndex(){const idx=[];for(const[pid,planet] of Object.entries(NPSP)){idx.push({type:"planet",id:pid,name:planet.name,desc:planet.description,icon:planet.icon,color:planet.color,tags:[],level:"Galaxy",action:()=>enterPlanet(pid)});for(const comp of planet.components){const allTags=[...(comp.tags||[]),...(comp.triggerTags||[])];idx.push({type:"component",id:comp.id,planetId:pid,name:comp.name,desc:comp.desc,icon:comp.icon,color:planet.color,tags:allTags,level:planet.name,action:()=>{if(currentPlanet!==pid)enterPlanet(pid);setTimeout(()=>enterCore(pid,comp.id),currentPlanet!==pid?900:0)}});for(const tag of allTags){idx.push({type:"tag",id:tag,planetId:pid,componentId:comp.id,name:tag,desc:comp.desc,icon:comp.icon,color:planet.color,tags:[],level:planet.name+" > "+comp.name,action:()=>{if(currentPlanet!==pid)enterPlanet(pid);setTimeout(()=>enterCore(pid,comp.id),currentPlanet!==pid?900:0)}})}}}return idx}
-
+function buildSearchIndex(){const idx=[];for(const[pid,planet] of Object.entries(NPSP)){idx.push({type:'planet',id:pid,name:planet.name,desc:planet.description,icon:planet.icon,color:planet.color,tags:[],level:'Architecture',action:()=>enterDomain(pid)});for(const comp of planet.components){const allTags=[...(comp.tags||[]),...(comp.triggerTags||[])];idx.push({type:'component',id:comp.id,planetId:pid,name:comp.name,desc:comp.desc,icon:comp.icon,color:planet.color,tags:allTags,level:planet.name,action:()=>{if(currentDomain!==pid)enterDomain(pid);setTimeout(()=>enterCore(pid,comp.id),currentDomain!==pid?500:0)}});for(const tag of allTags){idx.push({type:'tag',id:tag,planetId:pid,componentId:comp.id,name:tag,desc:comp.desc,icon:comp.icon,color:planet.color,tags:[],level:planet.name+' > '+comp.name,action:()=>{if(currentDomain!==pid)enterDomain(pid);setTimeout(()=>enterCore(pid,comp.id),currentDomain!==pid?500:0)}})}}}return idx}
 const fullIndex=buildSearchIndex();
+function searchNPSP(query){if(!query.trim())return[];const q=query.toLowerCase();const scored=[];for(const item of fullIndex){let score=0;const nm=item.name.toLowerCase(),ds=item.desc.toLowerCase(),tgs=item.tags.map(t=>t.toLowerCase());if(nm===q)score+=100;else if(nm.startsWith(q))score+=80;else if(nm.includes(q))score+=60;if(ds.includes(q))score+=30;for(const t of tgs){if(t===q)score+=90;else if(t.includes(q))score+=50}if(score>0)scored.push({...item,score})}scored.sort((a,b)=>b.score-a.score);const seen=new Set,deduped=[];for(const r of scored){const key=r.type+':'+r.id+(r.planetId||'');if(!seen.has(key)){seen.add(key);deduped.push(r);if(deduped.length>=25)break}}return deduped}
+function highlightMatch(text,query){if(!query)return text;const re=new RegExp('('+query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');return text.replace(re,'<span class="sr-match">$1</span>')}
+function renderSearchResults(results,query){const el=document.getElementById('searchResults');if(results.length===0&&query.trim()){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:11px">No results for "'+query.replace(/</g,'&lt;')+'"</div>';return}el.innerHTML=results.map((r,i)=>'<div class="search-result'+(i===searchIndex?' active':'')+'" data-idx="'+i+'" onclick="activateResult('+i+')" onmouseenter="searchIndex='+i+';highlightActive()"><div class="sr-icon" style="background:'+r.color+'22;border:1px solid '+r.color+'44">'+r.icon+'</div><div class="sr-body"><div class="sr-title">'+highlightMatch(r.name,query)+'</div><div class="sr-path">'+r.level+'</div><div class="sr-desc">'+highlightMatch(r.desc.substring(0,100),query)+(r.desc.length>100?'...':'')+'</div></div><span class="sr-level">'+r.type+'</span></div>').join('')}
+function highlightActive(){document.querySelectorAll('.search-result').forEach((el,i)=>el.classList.toggle('active',i===searchIndex))}
+function activateResult(idx){const r=searchResults[idx];if(r){closeSearch();setTimeout(()=>r.action(),100)}}
+function cycleResult(dir){if(searchResults.length===0)return;searchIndex=(searchIndex+dir+searchResults.length)%searchResults.length;highlightActive();document.getElementById('searchCount').textContent=(searchIndex+1)+'/'+searchResults.length;const active=document.querySelector('.search-result.active');if(active)active.scrollIntoView({block:'nearest'})}
+function openSearch(){const ov=document.getElementById('search-overlay');ov.classList.add('open');const inp=document.getElementById('searchInput');inp.value='';inp.focus();searchResults=[];searchIndex=-1;document.getElementById('searchResults').innerHTML='';document.getElementById('searchNav').style.display='none'}
+function closeSearch(){document.getElementById('search-overlay').classList.remove('open')}
+document.getElementById('searchInput').addEventListener('input',function(){const q=this.value;searchResults=searchNPSP(q);searchIndex=searchResults.length>0?0:-1;renderSearchResults(searchResults,q);const nav=document.getElementById('searchNav');if(searchResults.length>0){nav.style.display='flex';document.getElementById('searchCount').textContent=(searchIndex+1)+'/'+searchResults.length}else{nav.style.display='none'}});
+document.getElementById('searchInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();if(e.shiftKey)cycleResult(-1);else if(searchResults.length>0&&searchIndex>=0)activateResult(searchIndex);else cycleResult(1)}if(e.key==='ArrowDown'){e.preventDefault();cycleResult(1)}if(e.key==='ArrowUp'){e.preventDefault();cycleResult(-1)}if(e.key==='Escape'){closeSearch()}});
+document.addEventListener('keydown',e=>{if(e.key==='/'&&!document.getElementById('search-overlay').classList.contains('open')&&document.activeElement.tagName!=='INPUT'){e.preventDefault();openSearch()}if(e.key==='Escape'&&!document.getElementById('search-overlay').classList.contains('open')){goBack()}});
 
-function searchNPSP(query){if(!query.trim())return[];const q=query.toLowerCase();const scored=[];for(const item of fullIndex){let score=0;const nm=item.name.toLowerCase(),ds=item.desc.toLowerCase(),tgs=item.tags.map(t=>t.toLowerCase());if(nm===q)score+=100;else if(nm.startsWith(q))score+=80;else if(nm.includes(q))score+=60;if(ds.includes(q))score+=30;for(const t of tgs){if(t===q)score+=90;else if(t.includes(q))score+=50}if(score>0)scored.push({...item,score})}scored.sort((a,b)=>b.score-a.score);const seen=new Set,deduped=[];for(const r of scored){const key=r.type+":"+r.id+(r.planetId||"");if(!seen.has(key)){seen.add(key);deduped.push(r);if(deduped.length>=25)break}}return deduped}
-
-function highlightMatch(text,query){if(!query)return text;const re=new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")})`,"gi");return text.replace(re,'<span class="sr-match">$1</span>')}
-
-function renderSearchResults(results,query){const el=document.getElementById("searchResults");if(results.length===0&&query.trim()){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:11px">No results for "'+query.replace(/</g,"&lt;")+'"</div>';return}el.innerHTML=results.map((r,i)=>`<div class="search-result${i===searchIndex?" active":""}" data-idx="${i}" onclick="activateResult(${i})" onmouseenter="searchIndex=${i};highlightActive()"><div class="sr-icon" style="background:${r.color}22;border:1px solid ${r.color}44">${r.icon}</div><div class="sr-body"><div class="sr-title">${highlightMatch(r.name,query)}</div><div class="sr-path">${r.level}</div><div class="sr-desc">${highlightMatch(r.desc.substring(0,100),query)}${r.desc.length>100?"...":""}</div></div><span class="sr-level">${r.type}</span></div>`).join("")}
-
-function highlightActive(){document.querySelectorAll(".search-result").forEach((el,i)=>el.classList.toggle("active",i===searchIndex))}
-
-function activateResult(idx){const r=searchResults[idx];if(r){closeSearch();setTimeout(()=>{r.action();if(r.type==="planet"){setTimeout(()=>{const pe=document.querySelector(`.planet[data-planet="${r.id}"]`);if(pe){pe.classList.add("highlight");setTimeout(()=>pe.classList.remove("highlight"),2000)}},100)}},100)}}
-
-function cycleResult(dir){if(searchResults.length===0)return;searchIndex=(searchIndex+dir+searchResults.length)%searchResults.length;highlightActive();document.getElementById("searchCount").textContent=`${searchIndex+1}/${searchResults.length}`;const active=document.querySelector(".search-result.active");if(active)active.scrollIntoView({block:"nearest"})}
-
-function openSearch(){const ov=document.getElementById("search-overlay");ov.classList.add("open");const inp=document.getElementById("searchInput");inp.value="";inp.focus();searchResults=[];searchIndex=-1;document.getElementById("searchResults").innerHTML="";document.getElementById("searchNav").style.display="none"}
-
-function closeSearch(){document.getElementById("search-overlay").classList.remove("open");document.querySelectorAll(".planet.highlight,.component-card.highlight").forEach(e=>e.classList.remove("highlight"))}
-
-document.getElementById("searchInput").addEventListener("input",function(){const q=this.value;searchResults=searchNPSP(q);searchIndex=searchResults.length>0?0:-1;renderSearchResults(searchResults,q);const nav=document.getElementById("searchNav");if(searchResults.length>0){nav.style.display="flex";document.getElementById("searchCount").textContent=`${searchIndex+1}/${searchResults.length}`}else{nav.style.display="none"}});
-
-document.getElementById("searchInput").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();if(e.shiftKey)cycleResult(-1);else if(searchResults.length>0&&searchIndex>=0)activateResult(searchIndex);else cycleResult(1)}if(e.key==="ArrowDown"){e.preventDefault();cycleResult(1)}if(e.key==="ArrowUp"){e.preventDefault();cycleResult(-1)}if(e.key==="Escape"){closeSearch()}});
-
-// ── Keyboard shortcuts ──
-document.addEventListener("keydown",e=>{if(e.key==="/"&&!document.getElementById("search-overlay").classList.contains("open")&&document.activeElement.tagName!=="INPUT"){e.preventDefault();openSearch()}if(e.key==="Escape"&&!document.getElementById("search-overlay").classList.contains("open")){goBack()}});
-
-initStarfield();
-renderConnections();
+// == INIT ==
+initTheme();
+initGraph();
+setupCanvasEvents();
 updateBreadcrumb();
+
 </script>
 </body>
 </html>
