@@ -3,17 +3,18 @@
 Build the professional NPSP Architecture Explorer from the scaffold + NPSP data.
 
 Usage:
-  python build_pro.py              # Builds npsp-professional.html from index.html data
-  python build_pro.py --check      # Verify the output file has all required components
+  python build_pro.py              # Builds npsp-professional.html + galaxy-v2 data
+  python build_pro.py --check      # Verify all output files have required components
 
 This script:
 1. Reads the NPSP data object from index.html (the galaxy version)
 2. Reads the labPatterns code lab data from index.html
 3. Injects both into the npsp-professional.html scaffold along with the
    force-directed graph engine, theme toggle, navigation, and search code
+4. Writes the NPSP data + labPatterns to galaxy-v2/js/npsp-data.js
 
 Re-run this script after modifying the NPSP data in index.html to sync
-the professional version with the latest data.
+all versions with the latest data.
 """
 import os
 import sys
@@ -21,6 +22,7 @@ import sys
 BASE = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(BASE, 'index.html')
 PRO = os.path.join(BASE, 'npsp-professional.html')
+V2_DATA = os.path.join(BASE, 'galaxy-v2', 'js', 'npsp-data.js')
 
 def extract_npsp_data(lines):
     """Extract the NPSP data object from index.html lines."""
@@ -79,6 +81,23 @@ def build():
         f.write(result)
 
     print(f"Built {PRO} ({len(result):,} chars)")
+
+    # Sync galaxy-v2 data file
+    v2_dir = os.path.dirname(V2_DATA)
+    if os.path.isdir(v2_dir):
+        v2_content = (
+            '// NPSP Knowledge Base - 16 Feature Domains, 843 classes\n'
+            '// This file is auto-generated. Edit the NPSP object in index.html\n'
+            '// then run: python build_pro.py to sync all versions.\n\n'
+            + npsp_data + '\n\n'
+            'const PLANET_META = {};\n'
+            'for (const [k,v] of Object.entries(NPSP)) { PLANET_META[k] = {icon:v.icon, color:v.color}; }\n\n'
+            + lab_patterns + '\n'
+        )
+        with open(V2_DATA, 'w', encoding='utf-8') as f:
+            f.write(v2_content)
+        print(f"Built {V2_DATA} ({len(v2_content):,} chars)")
+
     return result
 
 def check(content=None):
