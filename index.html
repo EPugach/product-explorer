@@ -173,7 +173,9 @@
     50% { box-shadow: 0 0 30px var(--color), 0 0 80px color-mix(in srgb, var(--color) 40%, transparent); }
   }
   .galaxy-connections { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-  .galaxy-connections line { stroke: rgba(100, 140, 255, 0.06); stroke-width: 1; stroke-dasharray: 4 4; }
+  .galaxy-connections line { stroke: rgba(100, 140, 255, 0.25); stroke-width: 1.5; stroke-dasharray: 6 4; filter: drop-shadow(0 0 3px rgba(100, 140, 255, 0.15)); transition: stroke-opacity 0.3s, stroke 0.3s; }
+  .galaxy-connections line.dimmed { stroke: rgba(100, 140, 255, 0.08); }
+  .galaxy-connections line.highlighted { stroke: rgba(140, 180, 255, 0.5); stroke-width: 2; filter: drop-shadow(0 0 6px rgba(100, 140, 255, 0.3)); }
   .galaxy-stats {
     position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
     display: flex; gap: 24px; z-index: 3; background: var(--bg-panel);
@@ -326,21 +328,12 @@
       <div class="galaxy-subtitle">CLICK A PLANET TO EXPLORE &middot; PRESS / TO SEARCH &middot; 16 FEATURE DOMAINS</div>
     </div>
     <div id="galaxy-map">
-      <svg class="galaxy-connections" viewBox="0 0 1100 600">
-        <!-- Core connections -->
-        <line x1="500" y1="60" x2="200" y2="130"/><line x1="500" y1="60" x2="800" y2="100"/>
-        <line x1="500" y1="60" x2="500" y2="190"/><line x1="200" y1="130" x2="80" y2="260"/>
-        <line x1="800" y1="100" x2="920" y2="230"/><line x1="500" y1="190" x2="320" y2="280"/>
-        <line x1="500" y1="190" x2="680" y2="250"/><line x1="80" y1="260" x2="180" y2="390"/>
-        <line x1="920" y1="230" x2="820" y2="370"/><line x1="320" y1="280" x2="180" y2="390"/>
-        <line x1="680" y1="250" x2="820" y2="370"/><line x1="180" y1="390" x2="400" y2="450"/>
-        <line x1="820" y1="370" x2="600" y2="450"/><line x1="400" y1="450" x2="600" y2="450"/>
-        <line x1="500" y1="530" x2="400" y2="450"/><line x1="500" y1="530" x2="600" y2="450"/>
-        <line x1="320" y1="280" x2="680" y2="250"/>
+      <svg class="galaxy-connections" id="galaxy-svg" viewBox="0 0 1100 600">
+        <!-- Dynamic connections rendered by renderConnections() -->
       </svg>
 
       <!-- Row 1: Core giving -->
-      <div class="planet" data-planet="donations" style="left:455px;top:10px;--size:62px;--color:#4d8bff;--delay:0s" onclick="enterPlanet('donations')">
+      <div class="planet" data-planet="donations" style="left:445px;top:5px;--size:64px;--color:#4d8bff;--delay:0s" onclick="enterPlanet('donations')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#7db3ff,#4d8bff,#2563eb)">&#x1F4B0;</div>
         <div class="planet-ring"></div><div class="planet-label">Donations</div><div class="planet-desc">Core giving</div>
       </div>
@@ -348,17 +341,17 @@
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#c084fc,#a855f7,#7c3aed)">&#x1F465;</div>
         <div class="planet-ring"></div><div class="planet-label">Contacts</div><div class="planet-desc">Households</div>
       </div>
-      <div class="planet" data-planet="recurring" style="left:755px;top:50px;--size:54px;--color:#22c55e;--delay:1s" onclick="enterPlanet('recurring')">
+      <div class="planet" data-planet="recurring" style="left:740px;top:40px;--size:68px;--color:#22c55e;--delay:1s" onclick="enterPlanet('recurring')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#4ade80,#22c55e,#16a34a)">&#x1F504;</div>
         <div class="planet-ring"></div><div class="planet-label">Recurring</div><div class="planet-desc">89 classes</div>
       </div>
 
       <!-- Row 2: Data processing -->
-      <div class="planet" data-planet="rollups" style="left:455px;top:145px;--size:58px;--color:#f59e0b;--delay:0.3s" onclick="enterPlanet('rollups')">
+      <div class="planet" data-planet="rollups" style="left:445px;top:140px;--size:64px;--color:#f59e0b;--delay:0.3s" onclick="enterPlanet('rollups')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#fbbf24,#f59e0b,#d97706)">&#x1F4CA;</div>
         <div class="planet-ring"></div><div class="planet-label">Rollups (CRLP)</div><div class="planet-desc">76 classes</div>
       </div>
-      <div class="planet" data-planet="softcredits" style="left:40px;top:210px;--size:44px;--color:#ec4899;--delay:0.7s" onclick="enterPlanet('softcredits')">
+      <div class="planet" data-planet="softcredits" style="left:40px;top:210px;--size:42px;--color:#ec4899;--delay:0.7s" onclick="enterPlanet('softcredits')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#f472b6,#ec4899,#db2777)">&#x1F91D;</div>
         <div class="planet-ring"></div><div class="planet-label">Soft Credits</div><div class="planet-desc">Attribution</div>
       </div>
@@ -368,11 +361,11 @@
       </div>
 
       <!-- Row 3: Architecture & management -->
-      <div class="planet" data-planet="tdtm" style="left:275px;top:230px;--size:50px;--color:#ef4444;--delay:0.9s" onclick="enterPlanet('tdtm')">
+      <div class="planet" data-planet="tdtm" style="left:265px;top:225px;--size:56px;--color:#ef4444;--delay:0.9s" onclick="enterPlanet('tdtm')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#f87171,#ef4444,#dc2626)">&#x26A1;</div>
         <div class="planet-ring"></div><div class="planet-label">TDTM</div><div class="planet-desc">Trigger arch</div>
       </div>
-      <div class="planet" data-planet="batch" style="left:635px;top:200px;--size:46px;--color:#8b5cf6;--delay:1.5s" onclick="enterPlanet('batch')">
+      <div class="planet" data-planet="batch" style="left:625px;top:195px;--size:52px;--color:#8b5cf6;--delay:1.5s" onclick="enterPlanet('batch')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#a78bfa,#8b5cf6,#7c3aed)">&#x2699;</div>
         <div class="planet-ring"></div><div class="planet-label">Batch Jobs</div><div class="planet-desc">45 classes</div>
       </div>
@@ -382,43 +375,43 @@
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#fb7185,#f43f5e,#e11d48)">&#x1F517;</div>
         <div class="planet-ring"></div><div class="planet-label">Relationships</div><div class="planet-desc">Reciprocal</div>
       </div>
-      <div class="planet" data-planet="addresses" style="left:320px;top:360px;--size:40px;--color:#14b8a6;--delay:1.3s" onclick="enterPlanet('addresses')">
+      <div class="planet" data-planet="addresses" style="left:320px;top:360px;--size:44px;--color:#14b8a6;--delay:1.3s" onclick="enterPlanet('addresses')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#2dd4bf,#14b8a6,#0d9488)">&#x1F4CD;</div>
         <div class="planet-ring"></div><div class="planet-label">Addresses</div><div class="planet-desc">20 classes</div>
       </div>
-      <div class="planet" data-planet="affiliations" style="left:780px;top:320px;--size:40px;--color:#6366f1;--delay:1.4s" onclick="enterPlanet('affiliations')">
+      <div class="planet" data-planet="affiliations" style="left:785px;top:325px;--size:36px;--color:#6366f1;--delay:1.4s" onclick="enterPlanet('affiliations')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#818cf8,#6366f1,#4f46e5)">&#x1F3E2;</div>
         <div class="planet-ring"></div><div class="planet-label">Affiliations</div><div class="planet-desc">Org links</div>
       </div>
 
       <!-- Row 5: Engagement, BDI, Gift Entry, Levels -->
-      <div class="planet" data-planet="engagement" style="left:50px;top:440px;--size:42px;--color:#84cc16;--delay:1.6s" onclick="enterPlanet('engagement')">
+      <div class="planet" data-planet="engagement" style="left:50px;top:445px;--size:40px;--color:#84cc16;--delay:1.6s" onclick="enterPlanet('engagement')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#a3e635,#84cc16,#65a30d)">&#x1F4CB;</div>
         <div class="planet-ring"></div><div class="planet-label">Engagement</div><div class="planet-desc">Plans</div>
       </div>
-      <div class="planet" data-planet="bdi" style="left:355px;top:410px;--size:48px;--color:#d97706;--delay:1.7s" onclick="enterPlanet('bdi')">
+      <div class="planet" data-planet="bdi" style="left:340px;top:400px;--size:58px;--color:#d97706;--delay:1.7s" onclick="enterPlanet('bdi')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#fbbf24,#d97706,#b45309)">&#x1F4E5;</div>
         <div class="planet-ring"></div><div class="planet-label">BDI</div><div class="planet-desc">66 classes</div>
       </div>
-      <div class="planet" data-planet="giftentry" style="left:555px;top:410px;--size:46px;--color:#0ea5e9;--delay:1.8s" onclick="enterPlanet('giftentry')">
+      <div class="planet" data-planet="giftentry" style="left:555px;top:405px;--size:48px;--color:#0ea5e9;--delay:1.8s" onclick="enterPlanet('giftentry')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#38bdf8,#0ea5e9,#0284c7)">&#x1F381;</div>
         <div class="planet-ring"></div><div class="planet-label">Gift Entry</div><div class="planet-desc">Modern UI</div>
       </div>
-      <div class="planet" data-planet="levels" style="left:900px;top:420px;--size:38px;--color:#10b981;--delay:1.9s" onclick="enterPlanet('levels')">
+      <div class="planet" data-planet="levels" style="left:905px;top:425px;--size:36px;--color:#10b981;--delay:1.9s" onclick="enterPlanet('levels')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#34d399,#10b981,#059669)">&#x1F3C6;</div>
         <div class="planet-ring"></div><div class="planet-label">Levels</div><div class="planet-desc">Donor tiers</div>
       </div>
 
       <!-- Row 6: Error handling, Settings, Elevate -->
-      <div class="planet" data-planet="errors" style="left:220px;top:500px;--size:38px;--color:#d946ef;--delay:2.0s" onclick="enterPlanet('errors')">
+      <div class="planet" data-planet="errors" style="left:215px;top:500px;--size:44px;--color:#d946ef;--delay:2.0s" onclick="enterPlanet('errors')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#e879f9,#d946ef,#c026d3)">&#x26A0;</div>
         <div class="planet-ring"></div><div class="planet-label">Errors</div><div class="planet-desc">22 classes</div>
       </div>
-      <div class="planet" data-planet="settings" style="left:455px;top:490px;--size:40px;--color:#64748b;--delay:2.1s" onclick="enterPlanet('settings')">
+      <div class="planet" data-planet="settings" style="left:440px;top:485px;--size:52px;--color:#64748b;--delay:2.1s" onclick="enterPlanet('settings')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#94a3b8,#64748b,#475569)">&#x2699;</div>
         <div class="planet-ring"></div><div class="planet-label">Settings</div><div class="planet-desc">14+ objects</div>
       </div>
-      <div class="planet" data-planet="elevate" style="left:700px;top:490px;--size:38px;--color:#7c3aed;--delay:2.2s" onclick="enterPlanet('elevate')">
+      <div class="planet" data-planet="elevate" style="left:705px;top:492px;--size:40px;--color:#7c3aed;--delay:2.2s" onclick="enterPlanet('elevate')">
         <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#a78bfa,#7c3aed,#6d28d9)">&#x1F4B3;</div>
         <div class="planet-ring"></div><div class="planet-label">Elevate</div><div class="planet-desc">Payments</div>
       </div>
@@ -717,6 +710,57 @@ let currentLevel="galaxy", currentPlanet=null, currentComponent=null, navHistory
 // ── Starfield ──
 function initStarfield(){const c=document.getElementById("starfield"),x=c.getContext("2d");c.width=innerWidth;c.height=innerHeight;const s=[];for(let i=0;i<350;i++)s.push({x:Math.random()*c.width,y:Math.random()*c.height,sz:Math.random()*1.5+0.3,op:Math.random()*0.8+0.2,tw:Math.random()*0.02+0.005});let f=0;(function a(){x.clearRect(0,0,c.width,c.height);f++;for(const st of s){const t=Math.sin(f*st.tw)*0.3+0.7;x.beginPath();x.arc(st.x,st.y,st.sz,0,Math.PI*2);x.fillStyle=`rgba(180,200,255,${st.op*t})`;x.fill()}requestAnimationFrame(a)})();addEventListener("resize",()=>{c.width=innerWidth;c.height=innerHeight})}
 
+// ── Dynamic Connections ──
+function renderConnections(){
+  const svg=document.getElementById("galaxy-svg");
+  svg.querySelectorAll("line").forEach(l=>l.remove());
+  const map=document.getElementById("galaxy-map");
+  const mapRect=map.getBoundingClientRect();
+  const svgW=1100,svgH=600;
+  const scaleX=svgW/mapRect.width,scaleY=svgH/mapRect.height;
+  const centers={};
+  document.querySelectorAll(".planet[data-planet]").forEach(el=>{
+    const id=el.dataset.planet;
+    const sz=parseFloat(getComputedStyle(el).getPropertyValue("--size"));
+    const left=parseFloat(el.style.left);
+    const top=parseFloat(el.style.top);
+    centers[id]={x:left+sz/2,y:top+sz/2};
+  });
+  const drawn=new Set();
+  for(const[pid,planet] of Object.entries(NPSP)){
+    if(!centers[pid])continue;
+    for(const conn of planet.connections){
+      const tid=conn.planet;
+      if(!centers[tid])continue;
+      const key=[pid,tid].sort().join("--");
+      if(drawn.has(key))continue;
+      drawn.add(key);
+      const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+      line.setAttribute("x1",centers[pid].x);
+      line.setAttribute("y1",centers[pid].y);
+      line.setAttribute("x2",centers[tid].x);
+      line.setAttribute("y2",centers[tid].y);
+      line.dataset.from=pid;
+      line.dataset.to=tid;
+      svg.appendChild(line);
+    }
+  }
+}
+function highlightConnections(planetId){
+  document.querySelectorAll("#galaxy-svg line").forEach(line=>{
+    if(!planetId){line.classList.remove("highlighted","dimmed");return}
+    if(line.dataset.from===planetId||line.dataset.to===planetId){
+      line.classList.add("highlighted");line.classList.remove("dimmed");
+    }else{
+      line.classList.add("dimmed");line.classList.remove("highlighted");
+    }
+  });
+}
+document.querySelectorAll(".planet[data-planet]").forEach(el=>{
+  el.addEventListener("mouseenter",()=>highlightConnections(el.dataset.planet));
+  el.addEventListener("mouseleave",()=>highlightConnections(null));
+});
+
 // ── Views ──
 function showView(id,dir){document.querySelectorAll(".view-layer").forEach(v=>{if(v.classList.contains("active")){v.classList.remove("active");v.classList.add(dir==="in"?"zoom-out":"zoom-in");setTimeout(()=>v.classList.remove("zoom-out","zoom-in"),800)}});const t=document.getElementById(id);t.classList.remove("zoom-out","zoom-in");t.classList.add(dir==="in"?"zoom-in":"zoom-out");requestAnimationFrame(()=>requestAnimationFrame(()=>{t.classList.remove("zoom-out","zoom-in");t.classList.add("active")}))}
 
@@ -775,6 +819,7 @@ document.getElementById("searchInput").addEventListener("keydown",function(e){if
 document.addEventListener("keydown",e=>{if(e.key==="/"&&!document.getElementById("search-overlay").classList.contains("open")&&document.activeElement.tagName!=="INPUT"){e.preventDefault();openSearch()}if(e.key==="Escape"&&!document.getElementById("search-overlay").classList.contains("open")){goBack()}});
 
 initStarfield();
+renderConnections();
 updateBreadcrumb();
 </script>
 </body>
