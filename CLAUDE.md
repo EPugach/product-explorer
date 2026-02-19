@@ -43,6 +43,7 @@ No build step, no package manager, no external dependencies. Galaxy v2 uses mult
 | `galaxy-v2/js/search.js` | Fuzzy search engine with overlay |
 | `galaxy-v2/js/main.js` | Init, animation loops, canvas events, keyboard shortcuts |
 | `build_pro.py` | Build script — syncs NPSP data into professional version and galaxy-v2 |
+| `npsp-architecture-reference.json` | Comprehensive NPSP architecture reference (1,391 lines) — repo stats, class inventories, domain breakdowns, data model |
 | `CLAUDE.md` | This file — project documentation and editing guidelines |
 
 ## Build Script
