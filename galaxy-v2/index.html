@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NPSP Galaxy Explorer v2</title>
+  <link rel="stylesheet" href="css/galaxy.css">
+</head>
+<body>
+
+  <!-- ── Canvases ── -->
+  <canvas id="starfield"></canvas>
+  <canvas id="graph-canvas"></canvas>
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- ── Search Overlay ── -->
+  <div id="search-overlay">
+    <div class="search-container">
+      <div class="search-input-wrap">
+        <span class="search-icon">&#x1F50D;</span>
+        <input type="text" id="searchInput" placeholder="Search domains, components, classes, tags..." autocomplete="off" spellcheck="false">
+        <div class="search-nav" id="searchNav" style="display:none">
+          <span class="search-count" id="searchCount">0/0</span>
+          <button class="search-nav-btn" onclick="cycleResult(-1)">&#x25B2;</button>
+          <button class="search-nav-btn" onclick="cycleResult(1)">&#x25BC;</button>
+        </div>
+        <button class="search-close" onclick="closeSearch()">ESC</button>
+      </div>
+      <div class="search-hint">
+        <kbd>Enter</kbd> to select &middot; <kbd>&#x2191;&#x2193;</kbd> to navigate &middot; <kbd>Esc</kbd> to close
+      </div>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+  </div>
+
+  <!-- ── Navbar ── -->
+  <nav id="navbar">
+    <div class="logo">NPSP GALAXY EXPLORER <span>v2</span></div>
+    <div id="breadcrumb"></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="search-close" onclick="openSearch()" style="font-size:13px;color:var(--text-dim);cursor:pointer;background:none;border:none;font-family:inherit" title="Search (/)">&#x1F50D;</button>
+    </div>
+  </nav>
+
+  <!-- ── Back Button ── -->
+  <button class="back-btn" id="backBtn" onclick="goBack()">&#x2190; Back</button>
+
+  <!-- ── Stage ── -->
+  <div id="stage">
+    <div id="galaxy-view" class="view-layer active">
+      <div class="galaxy-stats">
+        <div class="stat-item"><div class="stat-value" id="statDomains">0</div><div class="stat-label">Domains</div></div>
+        <div class="stat-item"><div class="stat-value" id="statComponents">0</div><div class="stat-label">Components</div></div>
+        <div class="stat-item"><div class="stat-value" id="statConnections">0</div><div class="stat-label">Connections</div></div>
+        <div class="stat-item"><div class="stat-value" id="statClasses">0</div><div class="stat-label">Apex Classes</div></div>
+      </div>
+    </div>
+    <div id="domain-view" class="view-layer">
+      <div class="planet-content" id="domain-content"></div>
+    </div>
+    <div id="core-view" class="view-layer">
+      <div class="core-content" id="core-content"></div>
+    </div>
+  </div>
+
+  <!-- ── Help Hint ── -->
+  <div class="help-hint">
+    <kbd>/</kbd> Search &middot; <kbd>Esc</kbd> Back &middot; Drag nodes &middot; Scroll to zoom
+  </div>
+
+  <!-- ── Scripts ── -->
+  <script src="js/npsp-data.js"></script>
+  <script src="js/starfield.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
