@@ -1112,3 +1112,16 @@ body {
   font-family: var(--font-mono);
   color: var(--text-dim);
 }
+
+/* Entity detail view (Level 4) */
+#entity-view {
+  padding: 72px 40px 40px;
+  align-items: flex-start;
+  overflow-y: auto;
+  z-index: 6;
+}
+.entity-content {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}

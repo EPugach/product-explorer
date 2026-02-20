@@ -10,6 +10,8 @@ for (const [k, v] of Object.entries(NPSP)) {
 let currentLevel = 'galaxy';
 let currentPlanet = null;
 let currentComponent = null;
+let currentEntity = null;        // {type, name}
+let currentEntityTab = null;     // which tab was active
 let navHistory = [];
 
 // Read transition duration from CSS custom property
@@ -64,7 +66,8 @@ function updateBreadcrumb() {
     d.classList.toggle('active',
       (i === 0 && currentLevel === 'galaxy') ||
       (i === 1 && currentLevel === 'planet') ||
-      (i === 2 && currentLevel === 'core')
+      (i === 2 && currentLevel === 'core') ||
+      (i === 3 && currentLevel === 'entity')
     );
   });
 
@@ -93,6 +96,22 @@ function enterCore(pid, cid) {
   currentComponent = cid;
   renderCoreView(pid, cid);
   showView('core-view', 'in');
+  updateBreadcrumb();
+}
+
+function enterEntity(pid, cid, entityType, entityName) {
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+    entity: currentEntity,
+    entityTab: currentEntityTab
+  });
+  currentLevel = 'entity';
+  currentEntity = { type: entityType, name: entityName };
+  currentEntityTab = entityType;
+  renderEntityView(pid, cid, entityType, entityName);
+  showView('entity-view', 'in');
   updateBreadcrumb();
 }
 
@@ -127,21 +146,33 @@ function navigateTo(level) {
     currentLevel = 'planet';
     currentComponent = null;
     showView('planet-view', 'out');
+  } else if (level === 'core') {
+    currentLevel = 'core';
+    currentEntity = null;
+    showView('core-view', 'out');
   }
   updateBreadcrumb();
 }
 
 function goBack() {
   if (navHistory.length > 0) {
-    const p = navHistory.pop();
-    if (p.level === 'galaxy') {
+    const prev = navHistory.pop();
+    if (prev.level === 'galaxy') {
       navigateTo('galaxy');
-    } else if (p.level === 'planet') {
-      currentPlanet = p.planet;
+    } else if (prev.level === 'planet') {
+      currentPlanet = prev.planet;
       navigateTo('planet');
+    } else if (prev.level === 'core') {
+      currentLevel = 'core';
+      currentPlanet = prev.planet;
+      currentComponent = prev.component;
+      currentEntity = null;
+      showView('core-view', 'out');
+      updateBreadcrumb();
     }
   } else {
-    if (currentLevel === 'core') navigateTo('planet');
+    if (currentLevel === 'entity') navigateTo('core');
+    else if (currentLevel === 'core') navigateTo('planet');
     else if (currentLevel === 'planet') navigateTo('galaxy');
   }
 }
@@ -378,7 +409,9 @@ function renderEntityGrid(component, entityType, pid) {
   return '<div class="entity-grid">' +
     entities.map(function(e, i) {
       return '<div class="entity-card" style="animation-delay:' + (i * 30) + 'ms" ' +
-        'role="button" tabindex="0">' +
+        'onclick="enterEntity(\'' + pid + '\',\'' + component.id + '\',\'' + entityType + '\',\'' + e.name.replace(/'/g, "\\'") + '\')" ' +
+        'role="button" tabindex="0" ' +
+        'onkeydown="if(event.key===\'Enter\')enterEntity(\'' + pid + '\',\'' + component.id + '\',\'' + entityType + '\',\'' + e.name.replace(/'/g, "\\'") + '\')">' +
         '<div class="entity-card-header">' +
         '<span class="entity-type-icon ' + cfg.badgeClass + '">' + cfg.icon + '</span>' +
         '<span class="entity-name">' + e.name + '</span>' +
@@ -391,6 +424,24 @@ function renderEntityGrid(component, entityType, pid) {
         '</div>';
     }).join('') +
     '</div>';
+}
+
+// ── Render Entity View (stub — full rendering in Task 11) ──
+function renderEntityView(pid, cid, entityType, entityName) {
+  var p = NPSP[pid];
+  var c = p.components.find(function(x) { return x.id === cid; });
+  var el = document.getElementById('entity-content');
+  el.innerHTML = '<div class="bc">' +
+    '<span class="bc-link" onclick="navigateTo(\'galaxy\')">NPSP</span>' +
+    '<span class="bc-sep">\u276F</span>' +
+    '<span class="bc-link" onclick="navigateTo(\'planet\')">' + p.name + '</span>' +
+    '<span class="bc-sep">\u276F</span>' +
+    '<span class="bc-link" onclick="navigateTo(\'core\')">' + (c ? c.name : '') + '</span>' +
+    '<span class="bc-sep">\u276F</span>' +
+    '<span class="bc-here">' + entityName + '</span></div>' +
+    '<h2>' + entityName + '</h2>' +
+    '<p style="color:var(--text-dim)">Entity detail view coming in next task.</p>';
+  document.getElementById('entity-view').scrollTop = 0;
 }
 
 // ── Code Lab Patterns ──
