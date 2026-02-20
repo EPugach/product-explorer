@@ -388,12 +388,26 @@ function setupKeyboard() {
 
 // ── Build Stats ──
 function buildStats() {
-  // Canonical NPSP codebase numbers from architecture reference
-  document.getElementById('statClasses').textContent = '843';
-  document.getElementById('statTriggers').textContent = '26';
-  document.getElementById('statObjects').textContent = '65';
-  document.getElementById('statDomains').textContent = '18';
-  document.getElementById('statComponents').textContent = '55';
+  var totalClasses = 0, totalTriggers = 0, totalObjects = 0;
+  var totalComponents = 0, domains = 0;
+
+  for (var pid in NPSP) {
+    domains++;
+    var p = NPSP[pid];
+    totalComponents += p.components.length;
+    if (p._entities) {
+      totalClasses += (p._entities.classes || []).length;
+      totalTriggers += (p._entities.triggers || []).length;
+      totalObjects += (p._entities.objects || []).length;
+    }
+  }
+
+  // Use actual counts if entities are loaded, otherwise fallback to canonical
+  document.getElementById('statClasses').textContent = totalClasses || '843';
+  document.getElementById('statTriggers').textContent = totalTriggers || '26';
+  document.getElementById('statObjects').textContent = totalObjects || '65';
+  document.getElementById('statDomains').textContent = domains || '18';
+  document.getElementById('statComponents').textContent = totalComponents || '55';
 }
 
 // ── Resize Handler ──
