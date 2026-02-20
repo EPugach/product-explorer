@@ -31,25 +31,6 @@ function buildSearchIndex() {
       }
     }
   }
-  // Add documentation entries to search index
-  if (typeof DOC_SEARCH_META !== 'undefined') {
-    for (var i = 0; i < DOC_SEARCH_META.length; i++) {
-      var doc = DOC_SEARCH_META[i];
-      idx.push({
-        type: 'doc',
-        id: doc.path,
-        planetId: doc.domain,
-        componentId: doc.component,
-        name: doc.title,
-        desc: 'Official Salesforce documentation',
-        icon: '\u{1F4DA}',
-        color: '#00d4ff',
-        tags: [],
-        level: NPSP[doc.domain] ? NPSP[doc.domain].name : doc.domain,
-        action: (function(d) { return function() { navigateToCore(d.domain, d.component); }; })(doc)
-      });
-    }
-  }
   return idx;
 }
 

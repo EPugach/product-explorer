@@ -229,11 +229,6 @@ function renderCoreView(pid, cid) {
       '</div></div>';
   }
 
-  // Documentation section placeholder (populated asynchronously)
-  h += '<div class="trigger-section doc-section" id="doc-section" style="animation-delay:90ms;display:none">' +
-    '<h3>\u{1F4DA} Official Documentation</h3>' +
-    '<div class="doc-body"></div></div>';
-
   if (c.code) {
     h += '<div class="trigger-section" style="animation-delay:120ms">' +
       '<h3>\u{1F4BB} Source Code Pattern</h3>' +
@@ -256,12 +251,6 @@ function renderCoreView(pid, cid) {
   el.innerHTML = h;
   switchTab(el.querySelector('.lab-tab.active'), 'pattern');
   document.getElementById('core-view').scrollTop = 0;
-
-  // Async: load documentation into the placeholder
-  var docEl = document.getElementById('doc-section');
-  if (docEl && typeof renderDocsSection === 'function') {
-    renderDocsSection(pid, cid, docEl);
-  }
 }
 
 // ── Code Lab Patterns ──
