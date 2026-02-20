@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-//  NAVIGATION — Views, breadcrumbs, state management
+//  NAVIGATION — Views, breadcrumbs, state, staggered animations
 // ══════════════════════════════════════════════════════════════
 
 const PLANET_META = {};
@@ -12,58 +12,8 @@ let currentPlanet = null;
 let currentComponent = null;
 let navHistory = [];
 
-// ── Dynamic Connections ──
-function renderConnections() {
-  const svg = document.getElementById('galaxy-svg');
-  svg.querySelectorAll('line').forEach(l => l.remove());
-  const map = document.getElementById('galaxy-map');
-  const mapRect = map.getBoundingClientRect();
-  const svgW = 1100, svgH = 600;
-  const scaleX = svgW / mapRect.width, scaleY = svgH / mapRect.height;
-  const centers = {};
-  document.querySelectorAll('.planet[data-planet]').forEach(el => {
-    const id = el.dataset.planet;
-    const sz = parseFloat(getComputedStyle(el).getPropertyValue('--size'));
-    const left = parseFloat(el.style.left);
-    const top = parseFloat(el.style.top);
-    centers[id] = { x: left + sz / 2, y: top + sz / 2 };
-  });
-  const drawn = new Set();
-  for (const [pid, planet] of Object.entries(NPSP)) {
-    if (!centers[pid]) continue;
-    for (const conn of planet.connections) {
-      const tid = conn.planet;
-      if (!centers[tid]) continue;
-      const key = [pid, tid].sort().join('--');
-      if (drawn.has(key)) continue;
-      drawn.add(key);
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', centers[pid].x);
-      line.setAttribute('y1', centers[pid].y);
-      line.setAttribute('x2', centers[tid].x);
-      line.setAttribute('y2', centers[tid].y);
-      line.dataset.from = pid;
-      line.dataset.to = tid;
-      svg.appendChild(line);
-    }
-  }
-}
-
-function highlightConnections(planetId) {
-  document.querySelectorAll('#galaxy-svg line').forEach(line => {
-    if (!planetId) {
-      line.classList.remove('highlighted', 'dimmed');
-      return;
-    }
-    if (line.dataset.from === planetId || line.dataset.to === planetId) {
-      line.classList.add('highlighted');
-      line.classList.remove('dimmed');
-    } else {
-      line.classList.add('dimmed');
-      line.classList.remove('highlighted');
-    }
-  });
-}
+// Transition duration matches CSS --duration-normal
+const TRANSITION_MS = 400;
 
 // ── View Transitions ──
 function showView(id, dir) {
@@ -71,7 +21,7 @@ function showView(id, dir) {
     if (v.classList.contains('active')) {
       v.classList.remove('active');
       v.classList.add(dir === 'in' ? 'zoom-out' : 'zoom-in');
-      setTimeout(() => v.classList.remove('zoom-out', 'zoom-in'), 800);
+      setTimeout(() => v.classList.remove('zoom-out', 'zoom-in'), TRANSITION_MS);
     }
   });
   const t = document.getElementById(id);
@@ -83,32 +33,45 @@ function showView(id, dir) {
   }));
 }
 
-// Direct jump to a view without animation (for search navigation)
 function showViewDirect(id) {
   document.querySelectorAll('.view-layer').forEach(v => {
     v.classList.remove('active', 'zoom-out', 'zoom-in');
   });
-  const t = document.getElementById(id);
-  t.classList.add('active');
+  document.getElementById(id).classList.add('active');
 }
 
+// ── Canvas visibility ──
+function setGalaxyCanvasVisible(visible) {
+  const graph = document.getElementById('graph-canvas');
+  const particle = document.getElementById('particle-canvas');
+  if (visible) {
+    graph.classList.remove('hidden');
+    particle.classList.remove('hidden');
+  } else {
+    graph.classList.add('hidden');
+    particle.classList.add('hidden');
+  }
+}
+
+// ── Breadcrumb ──
 function updateBreadcrumb() {
   const bc = document.getElementById('breadcrumb');
   let h = '<span class="crumb' + (currentLevel === 'galaxy' ? ' active' : '') +
-    '" onclick="navigateTo(\'galaxy\')">NPSP</span>';
+    '" onclick="navigateTo(\'galaxy\')" role="link" tabindex="0">NPSP</span>';
   if (currentPlanet) {
-    h += '<span class="crumb-sep">\u25B8</span><span class="crumb' +
+    h += '<span class="crumb-sep" aria-hidden="true">\u25B8</span><span class="crumb' +
       (currentLevel === 'planet' ? ' active' : '') +
-      '" onclick="navigateTo(\'planet\')">' + NPSP[currentPlanet].name + '</span>';
+      '" onclick="navigateTo(\'planet\')" role="link" tabindex="0">' + NPSP[currentPlanet].name + '</span>';
   }
   if (currentComponent) {
     const c = NPSP[currentPlanet].components.find(x => x.id === currentComponent);
     if (c) {
-      h += '<span class="crumb-sep">\u25B8</span><span class="crumb active">' + c.name + '</span>';
+      h += '<span class="crumb-sep" aria-hidden="true">\u25B8</span><span class="crumb active">' + c.name + '</span>';
     }
   }
   bc.innerHTML = h;
 
+  // Zoom dots
   document.querySelectorAll('.zoom-dot').forEach((d, i) => {
     d.classList.toggle('active',
       (i === 0 && currentLevel === 'galaxy') ||
@@ -117,15 +80,24 @@ function updateBreadcrumb() {
     );
   });
 
+  // Back button
   document.getElementById('backBtn').classList.toggle('visible', currentLevel !== 'galaxy');
+
+  // Stats bar visibility
+  const stats = document.querySelector('.galaxy-stats');
+  if (stats) {
+    stats.style.display = currentLevel === 'galaxy' ? 'flex' : 'none';
+  }
 }
 
+// ── Navigation Actions ──
 function enterPlanet(id) {
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
   currentLevel = 'planet';
   currentPlanet = id;
   currentComponent = null;
   renderPlanetView(id);
+  setGalaxyCanvasVisible(false);
   showView('planet-view', 'in');
   updateBreadcrumb();
 }
@@ -139,16 +111,14 @@ function enterCore(pid, cid) {
   updateBreadcrumb();
 }
 
-// Direct navigation to core (skips intermediate planet animation)
-// Used by search to avoid the level-2/level-3 overlap bug
 function navigateToCore(pid, cid) {
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
   currentLevel = 'core';
   currentPlanet = pid;
   currentComponent = cid;
-  // Render planet view silently (for back-navigation context)
   renderPlanetView(pid);
   renderCoreView(pid, cid);
+  setGalaxyCanvasVisible(false);
   showViewDirect('core-view');
   updateBreadcrumb();
 }
@@ -159,7 +129,14 @@ function navigateTo(level) {
     currentLevel = 'galaxy';
     currentPlanet = null;
     currentComponent = null;
+    setGalaxyCanvasVisible(true);
     showView('galaxy-view', 'out');
+    // Restart graph + particle animation
+    if (typeof graphSettled !== 'undefined') {
+      graphSettled = false;
+      requestAnimationFrame(graphTick);
+      requestAnimationFrame(particleTick);
+    }
   } else if (level === 'planet') {
     currentLevel = 'planet';
     currentComponent = null;
@@ -183,33 +160,100 @@ function goBack() {
   }
 }
 
-// ── Render Planet ──
+// ── Render Planet View ──
 function renderPlanetView(id) {
   const p = NPSP[id];
   const el = document.getElementById('planet-content');
-  el.innerHTML = `<div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}">${p.icon}</div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p></div></div><div class="component-grid">${p.components.map(c => `<div class="component-card" data-component="${c.id}" style="--card-accent:${p.color}" onclick="enterCore('${id}','${c.id}')"><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div><div class="card-tags">${(c.tags || []).map(t => `<span class="card-tag">${t}</span>`).join('')}${(c.triggerTags || []).map(t => `<span class="card-tag trigger">${t}</span>`).join('')}</div></div>`).join('')}</div><div class="data-flow"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n, i) => (i > 0 ? '<span class="flow-arrow">\u2192</span>' : '') + `<span class="flow-node">${n}</span>`).join('')}</div></div><div class="connections-section"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map(c => `<div class="connection-item" onclick="enterPlanet('${c.planet}')"><div class="conn-planet" style="background:${PLANET_META[c.planet]?.color || '#64748b'}">${PLANET_META[c.planet]?.icon || '\u{2B50}'}</div><div><strong>${NPSP[c.planet]?.name || c.planet}</strong><div style="color:var(--text-dim);font-size:11px;margin-top:2px">${c.desc}</div></div></div>`).join('')}</div>`;
+  el.innerHTML = '<div class="planet-header">' +
+    '<div class="planet-header-orb" style="background:' + p.color + ';box-shadow:0 0 20px ' + p.color + '">' + p.icon + '</div>' +
+    '<div><h2 style="color:' + p.color + '">' + p.name + '</h2><p>' + p.description + '</p></div></div>' +
+    '<div class="component-grid">' +
+    p.components.map(function(c, i) {
+      return '<div class="component-card" data-component="' + c.id + '" style="--card-accent:' + p.color + ';animation-delay:' + (i * 30) + 'ms" ' +
+        'onclick="enterCore(\'' + id + '\',\'' + c.id + '\')" role="button" tabindex="0" ' +
+        'onkeydown="if(event.key===\'Enter\')enterCore(\'' + id + '\',\'' + c.id + '\')">' +
+        '<h3><span class="icon">' + c.icon + '</span> ' + c.name + '</h3>' +
+        '<div class="card-desc">' + c.desc + '</div>' +
+        '<div class="card-tags">' +
+        (c.tags || []).map(function(t) { return '<span class="card-tag">' + t + '</span>'; }).join('') +
+        (c.triggerTags || []).map(function(t) { return '<span class="card-tag trigger">' + t + '</span>'; }).join('') +
+        '</div></div>';
+    }).join('') +
+    '</div>' +
+    '<div class="data-flow" style="animation-delay:' + (p.components.length * 30 + 60) + 'ms">' +
+    '<h3>\u{1F500} Data Flow</h3>' +
+    '<div class="flow-diagram">' +
+    p.dataFlow.map(function(n, i) {
+      return (i > 0 ? '<span class="flow-arrow">\u2192</span>' : '') + '<span class="flow-node">' + n + '</span>';
+    }).join('') +
+    '</div></div>' +
+    '<div class="connections-section" style="animation-delay:' + (p.components.length * 30 + 120) + 'ms">' +
+    '<h3>\u{1F30C} Connected Systems</h3>' +
+    p.connections.map(function(c) {
+      return '<div class="connection-item" onclick="enterPlanet(\'' + c.planet + '\')" role="button" tabindex="0" ' +
+        'onkeydown="if(event.key===\'Enter\')enterPlanet(\'' + c.planet + '\')">' +
+        '<div class="conn-planet" style="background:' + (PLANET_META[c.planet] ? PLANET_META[c.planet].color : '#64748b') + '">' +
+        (PLANET_META[c.planet] ? PLANET_META[c.planet].icon : '\u{2B50}') + '</div>' +
+        '<div><strong>' + (NPSP[c.planet] ? NPSP[c.planet].name : c.planet) + '</strong>' +
+        '<div style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px">' + c.desc + '</div></div></div>';
+    }).join('') +
+    '</div>';
   document.getElementById('planet-view').scrollTop = 0;
 }
 
-// ── Render Core ──
+// ── Render Core View ──
 function renderCoreView(pid, cid) {
   const p = NPSP[pid];
-  const c = p.components.find(x => x.id === cid);
+  const c = p.components.find(function(x) { return x.id === cid; });
   if (!c) return;
   const el = document.getElementById('core-content');
-  let h = `<div class="core-header"><span style="font-size:24px">${c.icon}</span><div><h2>${c.name}</h2><span class="badge">TRIGGER LEVEL</span></div></div><div class="trigger-section"><h3>\u{1F4CB} Overview</h3><div class="trigger-desc">${c.desc}</div><div class="card-tags">${(c.tags || []).map(t => `<span class="card-tag">${t}</span>`).join('')}${(c.triggerTags || []).map(t => `<span class="card-tag trigger">${t}</span>`).join('')}</div></div>`;
+  let h = '<div class="core-header">' +
+    '<span style="font-size:24px">' + c.icon + '</span>' +
+    '<div><h2>' + c.name + '</h2><span class="badge">TRIGGER LEVEL</span></div></div>' +
+    '<div class="trigger-section" style="animation-delay:0ms">' +
+    '<h3>\u{1F4CB} Overview</h3>' +
+    '<div class="trigger-desc">' + c.desc + '</div>' +
+    '<div class="card-tags">' +
+    (c.tags || []).map(function(t) { return '<span class="card-tag">' + t + '</span>'; }).join('') +
+    (c.triggerTags || []).map(function(t) { return '<span class="card-tag trigger">' + t + '</span>'; }).join('') +
+    '</div></div>';
+
   if (c.executionFlow) {
-    h += `<div class="trigger-section"><h3>\u{26A1} Execution Flow</h3><div class="execution-flow">${c.executionFlow.map((s, i) => `<div class="exec-step"><span class="step-num">${i + 1}</span><span>${s}</span></div>`).join('')}</div></div>`;
+    h += '<div class="trigger-section" style="animation-delay:60ms">' +
+      '<h3>\u{26A1} Execution Flow</h3>' +
+      '<div class="execution-flow">' +
+      c.executionFlow.map(function(s, i) {
+        return '<div class="exec-step" style="animation-delay:' + (80 + i * 40) + 'ms">' +
+          '<span class="step-num">' + (i + 1) + '</span><span>' + s + '</span></div>';
+      }).join('') +
+      '</div></div>';
   }
+
   if (c.code) {
-    h += `<div class="trigger-section"><h3>\u{1F4BB} Source Code Pattern</h3><div class="code-block"><div class="code-header"><span class="lang">${c.code.lang}</span><span>${c.code.title}</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><div class="code-body"><pre>${c.code.body}</pre></div></div></div>`;
+    h += '<div class="trigger-section" style="animation-delay:120ms">' +
+      '<h3>\u{1F4BB} Source Code Pattern</h3>' +
+      '<div class="code-block"><div class="code-header">' +
+      '<span class="lang">' + c.code.lang + '</span>' +
+      '<span>' + c.code.title + '</span>' +
+      '<button class="copy-btn" onclick="copyCode(this)" aria-label="Copy code">Copy</button>' +
+      '</div><div class="code-body"><pre>' + c.code.body + '</pre></div></div></div>';
   }
-  h += `<div class="code-lab"><h3>\u{1F9EA} Code Lab: Explore Further</h3><div class="lab-desc">Related patterns for understanding this component deeper.</div><div class="lab-tabs"><button class="lab-tab active" onclick="switchTab(this,'pattern')">TDTM Pattern</button><button class="lab-tab" onclick="switchTab(this,'testing')">Test Pattern</button><button class="lab-tab" onclick="switchTab(this,'extension')">Extension Point</button></div><div id="lab-content"></div></div>`;
+
+  h += '<div class="code-lab" style="animation-delay:180ms">' +
+    '<h3>\u{1F9EA} Code Lab: Explore Further</h3>' +
+    '<div class="lab-desc">Related patterns for understanding this component deeper.</div>' +
+    '<div class="lab-tabs">' +
+    '<button class="lab-tab active" onclick="switchTab(this,\'pattern\')" aria-label="TDTM Pattern">TDTM Pattern</button>' +
+    '<button class="lab-tab" onclick="switchTab(this,\'testing\')" aria-label="Test Pattern">Test Pattern</button>' +
+    '<button class="lab-tab" onclick="switchTab(this,\'extension\')" aria-label="Extension Point">Extension Point</button>' +
+    '</div><div id="lab-content"></div></div>';
+
   el.innerHTML = h;
   switchTab(el.querySelector('.lab-tab.active'), 'pattern');
   document.getElementById('core-view').scrollTop = 0;
 }
 
+// ── Code Lab Patterns ──
 const labPatterns = {
   pattern: {
     title: 'TDTM Handler Pattern',
@@ -226,16 +270,23 @@ const labPatterns = {
 };
 
 function switchTab(tab, type) {
-  tab.parentElement.querySelectorAll('.lab-tab').forEach(t => t.classList.remove('active'));
+  tab.parentElement.querySelectorAll('.lab-tab').forEach(function(t) { t.classList.remove('active'); });
   tab.classList.add('active');
-  const p = labPatterns[type];
-  document.getElementById('lab-content').innerHTML = `<div class="code-block"><div class="code-header"><span class="lang">Apex</span><span>${p.title}</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><div class="code-body"><pre>${p.code}</pre></div></div>`;
+  var p = labPatterns[type];
+  document.getElementById('lab-content').innerHTML = '<div class="code-block"><div class="code-header">' +
+    '<span class="lang">Apex</span><span>' + p.title + '</span>' +
+    '<button class="copy-btn" onclick="copyCode(this)" aria-label="Copy code">Copy</button>' +
+    '</div><div class="code-body"><pre>' + p.code + '</pre></div></div>';
 }
 
 function copyCode(btn) {
-  const pre = btn.closest('.code-block').querySelector('pre');
-  navigator.clipboard.writeText(pre.textContent).then(() => {
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy', 1500);
+  var pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent).then(function() {
+    btn.textContent = '\u2713 Copied';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 1500);
   });
 }
