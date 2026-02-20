@@ -426,22 +426,176 @@ function renderEntityGrid(component, entityType, pid) {
     '</div>';
 }
 
-// ── Render Entity View (stub — full rendering in Task 11) ──
+// ── Render Entity View (Level 4 detail) ──
 function renderEntityView(pid, cid, entityType, entityName) {
   var p = NPSP[pid];
   var c = p.components.find(function(x) { return x.id === cid; });
+  if (!c || !c.entities) return;
+
+  var entity = (c.entities[entityType] || []).find(function(e) { return e.name === entityName; });
+  if (!entity) return;
+
   var el = document.getElementById('entity-content');
-  el.innerHTML = '<div class="bc">' +
+
+  // Breadcrumb
+  var h = '<div class="bc">' +
     '<span class="bc-link" onclick="navigateTo(\'galaxy\')">NPSP</span>' +
     '<span class="bc-sep">\u276F</span>' +
     '<span class="bc-link" onclick="navigateTo(\'planet\')">' + p.name + '</span>' +
     '<span class="bc-sep">\u276F</span>' +
-    '<span class="bc-link" onclick="navigateTo(\'core\')">' + (c ? c.name : '') + '</span>' +
+    '<span class="bc-link" onclick="goBack()">' + c.name + '</span>' +
     '<span class="bc-sep">\u276F</span>' +
-    '<span class="bc-here">' + entityName + '</span></div>' +
-    '<h2>' + entityName + '</h2>' +
-    '<p style="color:var(--text-dim)">Entity detail view coming in next task.</p>';
+    '<span class="bc-here">' + entity.name + '</span></div>';
+
+  // Render based on entity type
+  if (entityType === 'classes') {
+    h += renderClassDetail(entity);
+  } else if (entityType === 'objects') {
+    h += renderObjectDetail(entity);
+  } else if (entityType === 'triggers') {
+    h += renderTriggerDetail(entity);
+  } else if (entityType === 'lwcs') {
+    h += renderLwcDetail(entity);
+  } else if (entityType === 'metadata') {
+    h += renderMetadataDetail(entity);
+  }
+
+  el.innerHTML = h;
   document.getElementById('entity-view').scrollTop = 0;
+}
+
+// ── Apex Class Detail Renderer ──
+function renderClassDetail(entity) {
+  var typeColors = {
+    tdtm_handler: { bg: 'rgba(239,68,68,0.1)', color: '#ef4444', label: 'TDTM Handler' },
+    batch: { bg: 'rgba(168,85,247,0.1)', color: '#a855f7', label: 'Batch Job' },
+    service: { bg: 'rgba(34,197,94,0.1)', color: '#22c55e', label: 'Service' },
+    utility: { bg: 'rgba(245,158,11,0.1)', color: '#f59e0b', label: 'Utility' },
+    controller: { bg: 'rgba(6,182,212,0.1)', color: '#06b6d4', label: 'Controller' },
+    scheduled: { bg: 'rgba(124,58,237,0.1)', color: '#7c3aed', label: 'Scheduled' },
+    'class': { bg: 'rgba(77,139,255,0.1)', color: '#4d8bff', label: 'Class' }
+  };
+  var tc = typeColors[entity.type] || typeColors['class'];
+
+  var h = '<div class="entity-detail-header">' +
+    '<div class="entity-detail-icon badge-class">{ }</div>' +
+    '<div>' +
+    '<h2 class="entity-detail-name">' + entity.name + '</h2>' +
+    '<span class="entity-detail-type" style="background:' + tc.bg + ';color:' + tc.color + '">' + tc.label + '</span>' +
+    (entity.linesOfCode ? '<span class="entity-detail-meta">' + entity.linesOfCode + ' lines of code</span>' : '') +
+    '</div></div>';
+
+  // Description
+  h += '<div class="entity-detail-section">' +
+    '<h3>Description</h3>' +
+    '<p>' + (entity.description || 'No description available.') + '</p>' +
+    '</div>';
+
+  // TDTM handler context
+  if (entity.type === 'tdtm_handler' && entity.object) {
+    h += '<div class="entity-detail-section">' +
+      '<h3>\u26A1 Trigger Context</h3>' +
+      '<div class="entity-detail-table">' +
+      '<div class="edt-row"><span class="edt-label">Object:</span><span>' + entity.object + '</span></div>' +
+      (entity.triggerActions ? '<div class="edt-row"><span class="edt-label">Events:</span><span>' +
+        entity.triggerActions.map(function(a) {
+          return '<span class="card-tag trigger">' + a + '</span>';
+        }).join(' ') + '</span></div>' : '') +
+      (entity.loadOrder ? '<div class="edt-row"><span class="edt-label">Load Order:</span><span>' + entity.loadOrder + '</span></div>' : '') +
+      '</div></div>';
+  }
+
+  // Inheritance
+  if (entity.extends) {
+    h += '<div class="entity-detail-section">' +
+      '<h3>Inheritance</h3>' +
+      '<div class="entity-detail-table">' +
+      '<div class="edt-row"><span class="edt-label">Extends:</span><span class="entity-detail-code">' + entity.extends + '</span></div>' +
+      (entity.implements ? '<div class="edt-row"><span class="edt-label">Implements:</span><span class="entity-detail-code">' + entity.implements + '</span></div>' : '') +
+      '</div></div>';
+  }
+
+  // Key methods
+  if (entity.keyMethods && entity.keyMethods.length > 0) {
+    h += '<div class="entity-detail-section">' +
+      '<h3>Key Methods</h3>' +
+      '<div class="entity-methods">' +
+      entity.keyMethods.map(function(m) {
+        return '<span class="entity-method">' + m + '</span>';
+      }).join('') +
+      '</div></div>';
+  }
+
+  // Referenced objects
+  if (entity.referencedObjects && entity.referencedObjects.length > 0) {
+    h += '<div class="entity-detail-section">' +
+      '<h3>\u{1F517} Referenced Objects</h3>' +
+      '<div class="entity-refs">' +
+      entity.referencedObjects.map(function(r) {
+        return '<span class="entity-ref badge-object">' + r + '</span>';
+      }).join('') +
+      '</div></div>';
+  }
+
+  // Source link
+  if (entity.sourceUrl) {
+    h += '<div class="entity-detail-section">' +
+      '<a class="entity-source-link" href="' + entity.sourceUrl + '" target="_blank" rel="noopener noreferrer">' +
+      '\u{1F4C4} View Source on GitHub \u2197</a></div>';
+  }
+
+  return h;
+}
+
+// ── Object Detail Renderer (stub) ──
+function renderObjectDetail(entity) {
+  return '<div class="entity-detail-header">' +
+    '<div class="entity-detail-icon badge-object">\u{1F5C3}</div>' +
+    '<div><h2 class="entity-detail-name">' + entity.name + '</h2>' +
+    (entity.label ? '<span class="entity-detail-meta">' + entity.label + '</span>' : '') +
+    '</div></div>' +
+    '<div class="entity-detail-section"><h3>Description</h3>' +
+    '<p>' + (entity.description || 'Custom object in the NPSP data model.') + '</p></div>' +
+    (entity.fieldCount ? '<div class="entity-detail-section"><h3>Fields</h3>' +
+      '<p>' + entity.fieldCount + ' custom fields</p></div>' : '');
+}
+
+// ── Trigger Detail Renderer (stub) ──
+function renderTriggerDetail(entity) {
+  return '<div class="entity-detail-header">' +
+    '<div class="entity-detail-icon badge-trigger">\u26A1</div>' +
+    '<div><h2 class="entity-detail-name">' + entity.name + '</h2></div></div>' +
+    '<div class="entity-detail-section"><h3>Trigger Configuration</h3>' +
+    '<div class="entity-detail-table">' +
+    '<div class="edt-row"><span class="edt-label">Object:</span><span>' + (entity.object || 'Unknown') + '</span></div>' +
+    (entity.events ? '<div class="edt-row"><span class="edt-label">Events:</span><span>' +
+      entity.events.map(function(ev) { return '<span class="card-tag trigger">' + ev + '</span>'; }).join(' ') +
+      '</span></div>' : '') +
+    '</div></div>';
+}
+
+// ── LWC Detail Renderer (stub) ──
+function renderLwcDetail(entity) {
+  return '<div class="entity-detail-header">' +
+    '<div class="entity-detail-icon badge-lwc">\u{1F9E9}</div>' +
+    '<div><h2 class="entity-detail-name">' + entity.name + '</h2></div></div>' +
+    '<div class="entity-detail-section"><h3>Description</h3>' +
+    '<p>' + (entity.description || 'Lightning Web Component.') + '</p></div>' +
+    (entity.imports && entity.imports.length > 0 ? '<div class="entity-detail-section"><h3>Imports</h3>' +
+      '<div class="entity-methods">' + entity.imports.map(function(i) {
+        return '<span class="entity-method">' + i + '</span>';
+      }).join('') + '</div></div>' : '');
+}
+
+// ── Metadata Detail Renderer (stub) ──
+function renderMetadataDetail(entity) {
+  return '<div class="entity-detail-header">' +
+    '<div class="entity-detail-icon badge-metadata">\u2699</div>' +
+    '<div><h2 class="entity-detail-name">' + entity.name + '</h2></div></div>' +
+    '<div class="entity-detail-section"><h3>Description</h3>' +
+    '<p>' + (entity.description || 'Custom metadata type.') + '</p></div>' +
+    (entity.recordCount ? '<div class="entity-detail-section"><h3>Records</h3>' +
+      '<p>' + entity.recordCount + ' metadata records</p></div>' : '');
 }
 
 // ── Code Lab Patterns ──
