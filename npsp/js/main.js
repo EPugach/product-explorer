@@ -2,6 +2,50 @@
 //  MAIN — Init, animation loop, canvas events, touch, tooltip
 // ══════════════════════════════════════════════════════════════
 
+// ── Merge generated entities into NPSP data ──
+function mergeEntities() {
+  if (typeof NPSP_ENTITIES === 'undefined') return;
+  for (var domainKey in NPSP_ENTITIES) {
+    if (!NPSP[domainKey]) continue;
+    var entities = NPSP_ENTITIES[domainKey];
+    // Attach domain-level entity counts
+    NPSP[domainKey]._entities = entities;
+    // Map entities to individual component groups by tag matching
+    for (var ci = 0; ci < NPSP[domainKey].components.length; ci++) {
+      var comp = NPSP[domainKey].components[ci];
+      var tags = (comp.tags || []).map(function(t) { return t.toLowerCase(); });
+      var tagSet = {};
+      for (var ti = 0; ti < tags.length; ti++) tagSet[tags[ti]] = true;
+      comp.entities = {
+        classes: (entities.classes || []).filter(function(c) {
+          return tagSet[c.name.toLowerCase()] || matchesByPrefix(c.name, comp.tags);
+        }),
+        objects: (entities.objects || []).filter(function(o) {
+          return tagSet[o.name.toLowerCase()];
+        }),
+        triggers: (entities.triggers || []).filter(function(t) {
+          return tagSet[t.object.toLowerCase()] || tagSet[t.name.toLowerCase()];
+        }),
+        lwcs: (entities.lwcs || []).filter(function(l) {
+          return tagSet[l.name.toLowerCase()];
+        }),
+        metadata: (entities.metadata || []).filter(function(m) {
+          return tagSet[m.name.toLowerCase()];
+        })
+      };
+    }
+  }
+}
+
+function matchesByPrefix(className, tags) {
+  if (!tags) return false;
+  var classPrefix = className.split('_')[0] + '_';
+  for (var i = 0; i < tags.length; i++) {
+    if (tags[i].startsWith(classPrefix)) return true;
+  }
+  return false;
+}
+
 // ── Tooltip ──
 let tooltipEl = null;
 
@@ -349,6 +393,7 @@ function onResize() {
 
 // ── Init ──
 function init() {
+  mergeEntities();
   createTooltip();
   initStarfield();
   initGraph();
