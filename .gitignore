@@ -1,0 +1,11 @@
+# Ignore everything
+*
+
+# Allow essential files
+!.gitignore
+!README.md
+!LICENSE
+
+# Allow the npsp explorer app
+!npsp/
+!npsp/**
