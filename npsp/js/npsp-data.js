@@ -135,7 +135,7 @@ relationships: {
     {id:"rel-campaign",name:"Auto-Create from Campaigns",icon:"\u{1F4E3}",desc:"REL_Relationships_Cm_TDTM auto-creates relationships when Contacts are co-members of a Campaign. Configurable via Relationship_Auto_Create_Settings__c.",tags:["REL_Relationships_Cm_TDTM","CampaignMember"],triggerTags:["after insert","after update"],docs:["Auto-created Relationships allow a custom Contact lookup field on the Contact or Campaign Member objects to automatically trigger the creation of a new Relationship between two Contacts. For example, a \"Referred by\" lookup field on Campaign Member can establish a referral relationship when someone brings a new constituent to an event.","Before adding an auto-created relationship, an administrator must create a custom Contact lookup field on either Contact or Campaign Member, add the necessary picklist values to the Relationship Type field, and configure any new reciprocal relationship entries.","By default, NPSP prevents duplicate auto-created relationships of the same type between the same two Contacts. Configure auto-creation rules in NPSP Settings under Relationships Autocreation, specifying the object, field, relationship type, and applicable campaign types."],docUrl:"https://help.salesforce.com/s/articleView?id=sfdo.npsp_manage_relationships_settings.htm&language=en_US&type=5"}
   ],
   dataFlow:["Contact A","Relationship__c","Reciprocal auto-created","Contact B"],
-  connections:[{planet:"contacts",desc:"Relationships exist between Contacts"},{planet:"contacts",desc:"Preserved during contact merges"}]
+  connections:[{planet:"contacts",desc:"Relationships exist between Contacts and are preserved during merges"}]
 },
 
 addresses: {
