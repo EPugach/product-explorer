@@ -408,6 +408,7 @@ function onResize() {
 // ── Init ──
 function init() {
   mergeEntities();
+  rebuildSearchIndex();
   createTooltip();
   initStarfield();
   initGraph();

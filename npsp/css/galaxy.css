@@ -283,6 +283,16 @@ body {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sr-match { color: var(--glow-accent); font-weight: 600; }
+/* Search result type badge */
+.sr-type {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
 .sr-level {
   font-size: 12px; font-family: var(--font-mono);
   color: var(--text-dim);

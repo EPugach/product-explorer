@@ -31,12 +31,63 @@ function buildSearchIndex() {
           action: () => navigateToCore(pid, comp.id)
         });
       }
+      // Index entities (classes, objects, triggers, lwcs, metadata)
+      var ents = comp.entities;
+      if (ents) {
+        var entityTypes = [
+          { key: 'classes', type: 'class', icon: '{ }', color: '#4d8bff' },
+          { key: 'objects', type: 'object', icon: '\u{1F5C3}', color: '#22c55e' },
+          { key: 'triggers', type: 'trigger', icon: '\u26A1', color: '#ef4444' },
+          { key: 'lwcs', type: 'lwc', icon: '\u{1F9E9}', color: '#a855f7' },
+          { key: 'metadata', type: 'metadata', icon: '\u{1F4CB}', color: '#f59e0b' }
+        ];
+        for (var ei = 0; ei < entityTypes.length; ei++) {
+          var et = entityTypes[ei];
+          var arr = ents[et.key] || [];
+          for (var ai = 0; ai < arr.length; ai++) {
+            (function(entType, entItem, planetId, compId, planetName, compName) {
+              var entTags = [];
+              if (entType === 'class' && entItem.keyMethods) {
+                entTags = entTags.concat(entItem.keyMethods);
+              }
+              if (entType === 'trigger' && entItem.object) {
+                entTags.push(entItem.object);
+              }
+              if (entType === 'lwc' && entItem.imports) {
+                entTags = entTags.concat(entItem.imports);
+              }
+              idx.push({
+                type: entType,
+                id: entItem.name + ':' + planetId + ':' + compId,
+                planetId: planetId,
+                componentId: compId,
+                name: entItem.name,
+                desc: entItem.description || '',
+                icon: et.icon,
+                color: et.color,
+                tags: entTags,
+                level: planetName + ' > ' + compName,
+                action: function() {
+                  navigateToCore(planetId, compId);
+                  setTimeout(function() {
+                    enterEntity(planetId, compId, entType, entItem.name);
+                  }, 100);
+                }
+              });
+            })(et.type, arr[ai], pid, comp.id, planet.name, comp.name);
+          }
+        }
+      }
     }
   }
   return idx;
 }
 
-const fullIndex = buildSearchIndex();
+let fullIndex = buildSearchIndex();
+
+function rebuildSearchIndex() {
+  fullIndex = buildSearchIndex();
+}
 
 function searchNPSP(query) {
   if (!query.trim()) return [];
@@ -67,7 +118,7 @@ function searchNPSP(query) {
     if (!seen.has(key)) {
       seen.add(key);
       deduped.push(r);
-      if (deduped.length >= 25) break;
+      if (deduped.length >= 50) break;
     }
   }
   return deduped;
@@ -86,7 +137,15 @@ function renderSearchResults(results, query) {
       query.replace(/</g, '&lt;') + '"</div>';
     return;
   }
+  // Note: all search data comes from the trusted NPSP data object, not user input.
+  // The query is escaped via highlightMatch's regex escaping. This is safe.
+  var typeColors = {
+    planet: '#4d8bff', component: '#4d8bff', tag: '#64748b',
+    'class': '#4d8bff', object: '#22c55e', trigger: '#ef4444',
+    lwc: '#a855f7', metadata: '#f59e0b'
+  };
   el.innerHTML = results.map(function(r, i) {
+    var typeColor = typeColors[r.type] || '#64748b';
     return '<div class="search-result' + (i === searchIndex ? ' active' : '') + '" ' +
       'data-idx="' + i + '" onclick="activateResult(' + i + ')" ' +
       'onmouseenter="searchIndex=' + i + ';highlightActive()" ' +
@@ -97,6 +156,7 @@ function renderSearchResults(results, query) {
       '<div class="sr-path">' + r.level + '</div>' +
       '<div class="sr-desc">' + highlightMatch(r.desc.substring(0, 100), query) + (r.desc.length > 100 ? '...' : '') + '</div>' +
       '</div>' +
+      '<span class="sr-type" style="background:' + typeColor + '22;color:' + typeColor + ';border:1px solid ' + typeColor + '44">' + r.type + '</span>' +
       '<span class="sr-level">' + r.type + '</span></div>';
   }).join('');
 }
