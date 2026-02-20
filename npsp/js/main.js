@@ -369,6 +369,20 @@ function setupKeyboard() {
         document.activeElement.tagName !== 'INPUT') {
       cyclePreset();
     }
+    // Tab navigation with left/right arrows (when on core view)
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
+        document.activeElement.tagName !== 'INPUT' &&
+        currentLevel === 'core') {
+      var tabs = document.querySelectorAll('.entity-tab');
+      if (tabs.length > 1) {
+        var activeIdx = Array.from(tabs).findIndex(function(t) { return t.classList.contains('active'); });
+        if (e.key === 'ArrowLeft' && activeIdx > 0) {
+          tabs[activeIdx - 1].click();
+        } else if (e.key === 'ArrowRight' && activeIdx < tabs.length - 1) {
+          tabs[activeIdx + 1].click();
+        }
+      }
+    }
   });
 }
 
