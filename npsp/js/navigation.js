@@ -226,22 +226,9 @@ function renderPlanetView(id) {
   document.getElementById('planet-view').scrollTop = 0;
 }
 
-// ── Render Core View ──
-function renderCoreView(pid, cid) {
-  const p = NPSP[pid];
-  const c = p.components.find(function(x) { return x.id === cid; });
-  if (!c) return;
-  const el = document.getElementById('core-content');
-  let h = '<div class="bc">' +
-    '<span class="bc-link" onclick="navigateTo(\'galaxy\')">NPSP</span>' +
-    '<span class="bc-sep">\u276F</span>' +
-    '<span class="bc-link" onclick="navigateTo(\'planet\')">' + p.name + '</span>' +
-    '<span class="bc-sep">\u276F</span>' +
-    '<span class="bc-here">' + c.name + '</span></div>' +
-    '<div class="core-header">' +
-    '<span style="font-size:24px">' + c.icon + '</span>' +
-    '<div><h2>' + c.name + '</h2><span class="badge">TRIGGER LEVEL</span></div></div>' +
-    '<div class="trigger-section" style="animation-delay:0ms">' +
+// ── Render Overview Tab (extracted from core view body) ──
+function renderOverviewTab(c) {
+  var h = '<div class="trigger-section" style="animation-delay:0ms">' +
     '<h3>\u{1F4CB} Overview</h3>' +
     '<div class="trigger-desc">' + c.desc + '</div>' +
     '<div class="card-tags">' +
@@ -251,7 +238,7 @@ function renderCoreView(pid, cid) {
 
   if (c.executionFlow) {
     h += '<div class="trigger-section" style="animation-delay:60ms">' +
-      '<h3>\u{26A1} Execution Flow</h3>' +
+      '<h3>\u26A1 Execution Flow</h3>' +
       '<div class="execution-flow">' +
       c.executionFlow.map(function(s, i) {
         return '<div class="exec-step" style="animation-delay:' + (80 + i * 40) + 'ms">' +
@@ -266,7 +253,7 @@ function renderCoreView(pid, cid) {
       c.docs.map(function(p) { return '<p class="doc-para">' + p + '</p>'; }).join('');
     if (c.docUrl) {
       h += '<a class="doc-source-link" href="' + c.docUrl + '" target="_blank" rel="noopener noreferrer">' +
-        '\u{1F517} View on Salesforce Help \u{2197}</a>';
+        '\u{1F517} View on Salesforce Help \u2197</a>';
     }
     h += '</div>';
   }
@@ -290,9 +277,120 @@ function renderCoreView(pid, cid) {
     '<button class="lab-tab" onclick="switchTab(this,\'extension\')" aria-label="Extension Point">Extension Point</button>' +
     '</div><div id="lab-content"></div></div>';
 
+  return h;
+}
+
+// ── Render Core View ──
+function renderCoreView(pid, cid) {
+  const p = NPSP[pid];
+  const c = p.components.find(function(x) { return x.id === cid; });
+  if (!c) return;
+  const el = document.getElementById('core-content');
+
+  // Build tab data
+  var tabs = [{key: 'overview', label: 'Overview', count: null}];
+  if (c.entities) {
+    if (c.entities.classes && c.entities.classes.length > 0)
+      tabs.push({key: 'classes', label: 'Classes', count: c.entities.classes.length});
+    if (c.entities.objects && c.entities.objects.length > 0)
+      tabs.push({key: 'objects', label: 'Objects', count: c.entities.objects.length});
+    if (c.entities.triggers && c.entities.triggers.length > 0)
+      tabs.push({key: 'triggers', label: 'Triggers', count: c.entities.triggers.length});
+    if (c.entities.lwcs && c.entities.lwcs.length > 0)
+      tabs.push({key: 'lwcs', label: 'LWCs', count: c.entities.lwcs.length});
+    if (c.entities.metadata && c.entities.metadata.length > 0)
+      tabs.push({key: 'metadata', label: 'Metadata', count: c.entities.metadata.length});
+  }
+
+  // Tab bar HTML (only show if there are entity tabs beyond Overview)
+  var tabBar = '';
+  if (tabs.length > 1) {
+    tabBar = '<div class="entity-tab-bar">' +
+      tabs.map(function(t) {
+        return '<button class="entity-tab' + (t.key === 'overview' ? ' active' : '') +
+          '" data-tab="' + t.key + '" onclick="switchEntityTab(\'' + pid + '\',\'' + cid + '\',\'' + t.key + '\')">' +
+          t.label + (t.count !== null ? ' <span class="tab-count">' + t.count + '</span>' : '') +
+          '</button>';
+      }).join('') + '</div>';
+  }
+
+  // Header + breadcrumb + tab bar + content
+  let h = '<div class="bc">' +
+    '<span class="bc-link" onclick="navigateTo(\'galaxy\')">NPSP</span>' +
+    '<span class="bc-sep">\u276F</span>' +
+    '<span class="bc-link" onclick="navigateTo(\'planet\')">' + p.name + '</span>' +
+    '<span class="bc-sep">\u276F</span>' +
+    '<span class="bc-here">' + c.name + '</span></div>' +
+    '<div class="core-header">' +
+    '<span style="font-size:24px">' + c.icon + '</span>' +
+    '<div><h2>' + c.name + '</h2><span class="badge">TRIGGER LEVEL</span></div></div>' +
+    tabBar +
+    '<div id="entity-tab-content">' +
+    renderOverviewTab(c) +
+    '</div>';
+
   el.innerHTML = h;
-  switchTab(el.querySelector('.lab-tab.active'), 'pattern');
+  // Init Code Lab if on overview
+  var labTab = el.querySelector('.lab-tab.active');
+  if (labTab) switchTab(labTab, 'pattern');
   document.getElementById('core-view').scrollTop = 0;
+}
+
+// ── Switch Entity Tab ──
+function switchEntityTab(pid, cid, tabKey) {
+  // Update active tab styling
+  document.querySelectorAll('.entity-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === tabKey);
+  });
+
+  var contentEl = document.getElementById('entity-tab-content');
+  var p = NPSP[pid];
+  var c = p.components.find(function(x) { return x.id === cid; });
+  if (!c) return;
+
+  if (tabKey === 'overview') {
+    contentEl.innerHTML = renderOverviewTab(c);
+    var labTab = contentEl.querySelector('.lab-tab.active');
+    if (labTab) switchTab(labTab, 'pattern');
+  } else {
+    contentEl.innerHTML = renderEntityGrid(c, tabKey, pid);
+  }
+
+  document.getElementById('core-view').scrollTop = 0;
+}
+
+// ── Render Entity Grid ──
+function renderEntityGrid(component, entityType, pid) {
+  var entities = (component.entities && component.entities[entityType]) || [];
+  if (entities.length === 0) {
+    return '<div class="trigger-section"><p style="color:var(--text-dim)">No ' + entityType + ' found.</p></div>';
+  }
+
+  var typeConfig = {
+    classes:  { icon: '{ }', color: 'rgba(77,139,255,', badgeClass: 'badge-class' },
+    objects:  { icon: '\u{1F5C3}', color: 'rgba(34,197,94,', badgeClass: 'badge-object' },
+    triggers: { icon: '\u26A1', color: 'rgba(239,68,68,', badgeClass: 'badge-trigger' },
+    lwcs:     { icon: '\u{1F9E9}', color: 'rgba(168,85,247,', badgeClass: 'badge-lwc' },
+    metadata: { icon: '\u2699', color: 'rgba(245,158,11,', badgeClass: 'badge-metadata' }
+  };
+  var cfg = typeConfig[entityType] || typeConfig.classes;
+
+  return '<div class="entity-grid">' +
+    entities.map(function(e, i) {
+      return '<div class="entity-card" style="animation-delay:' + (i * 30) + 'ms" ' +
+        'role="button" tabindex="0">' +
+        '<div class="entity-card-header">' +
+        '<span class="entity-type-icon ' + cfg.badgeClass + '">' + cfg.icon + '</span>' +
+        '<span class="entity-name">' + e.name + '</span>' +
+        '</div>' +
+        (e.type ? '<span class="entity-type-label">' + e.type.replace('_', ' ') + '</span>' : '') +
+        '<div class="entity-desc">' + (e.description || 'No description available.').substring(0, 150) +
+        (e.description && e.description.length > 150 ? '...' : '') + '</div>' +
+        (e.linesOfCode ? '<span class="entity-loc">' + e.linesOfCode + ' lines</span>' : '') +
+        (e.fieldCount ? '<span class="entity-loc">' + e.fieldCount + ' fields</span>' : '') +
+        '</div>';
+    }).join('') +
+    '</div>';
 }
 
 // ── Code Lab Patterns ──
