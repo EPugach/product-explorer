@@ -4,41 +4,57 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NPSP Architecture Explorer</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-HJTE1NYP82"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-HJTE1NYP82');
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/galaxy.css">
 </head>
 <body>
+
+<!-- Canvas layers: starfield (z0) > force graph (z1) > particles (z2) -->
 <canvas id="starfield"></canvas>
+<canvas id="graph-canvas"></canvas>
+<canvas id="particle-canvas"></canvas>
 
 <!-- Search Overlay -->
-<div id="search-overlay">
+<div id="search-overlay" role="dialog" aria-label="Search NPSP architecture">
   <div class="search-container">
     <div class="search-input-wrap">
-      <span class="search-icon">&#x1F50D;</span>
-      <input type="text" id="searchInput" placeholder="Search triggers, classes, objects, concepts..." autocomplete="off" spellcheck="false">
+      <span class="search-icon" aria-hidden="true">&#x1F50D;</span>
+      <input type="text" id="searchInput" placeholder="Search triggers, classes, objects, concepts..." autocomplete="off" spellcheck="false" aria-label="Search NPSP architecture">
       <div class="search-nav" id="searchNav" style="display:none">
-        <span class="search-count" id="searchCount">0/0</span>
-        <button class="search-nav-btn" onclick="cycleResult(-1)" title="Previous (Shift+Enter)">&#x25B2;</button>
-        <button class="search-nav-btn" onclick="cycleResult(1)" title="Next (Enter)">&#x25BC;</button>
+        <span class="search-count" id="searchCount" aria-live="polite">0/0</span>
+        <button class="search-nav-btn" onclick="cycleResult(-1)" title="Previous (Shift+Enter)" aria-label="Previous result">&#x25B2;</button>
+        <button class="search-nav-btn" onclick="cycleResult(1)" title="Next (Enter)" aria-label="Next result">&#x25BC;</button>
       </div>
-      <button class="search-close" onclick="closeSearch()">ESC</button>
+      <button class="search-close" onclick="closeSearch()" aria-label="Close search">ESC</button>
     </div>
-    <div class="search-results" id="searchResults"></div>
+    <div class="search-results" id="searchResults" role="listbox" aria-label="Search results"></div>
     <div class="search-hint">
       <kbd>Enter</kbd> next result &middot; <kbd>Shift+Enter</kbd> previous &middot; <kbd>ESC</kbd> close &middot; Click to navigate
     </div>
   </div>
 </div>
 
-<nav id="navbar">
-  <div id="breadcrumb">
+<!-- Navbar -->
+<nav id="navbar" aria-label="Navigation">
+  <div id="breadcrumb" aria-label="Breadcrumb navigation">
     <span class="crumb active" data-level="galaxy">NPSP</span>
   </div>
-  <div style="display:flex;align-items:center;gap:16px">
-    <button class="search-btn" onclick="openSearch()">
+  <div class="nav-actions">
+    <button class="search-btn" onclick="openSearch()" aria-label="Open search">
       &#x1F50D; <span>Search</span> <kbd>/</kbd>
     </button>
-    <div id="zoom-indicator">
-      <span style="font-size:11px;margin-right:4px">ZOOM</span>
+    <div id="zoom-indicator" aria-hidden="true">
+      <span style="font-size:10px;margin-right:4px">ZOOM</span>
       <div class="zoom-dot active" data-z="1"></div>
       <div class="zoom-dot" data-z="2"></div>
       <div class="zoom-dot" data-z="3"></div>
@@ -46,112 +62,24 @@
   </div>
 </nav>
 
-<button class="back-btn" id="backBtn" onclick="goBack()"><span>&larr;</span> Back</button>
+<!-- Back button -->
+<button class="back-btn" id="backBtn" onclick="goBack()" aria-label="Go back"><span>&larr;</span> Back</button>
 
+<!-- Stage -->
 <div id="stage">
-  <!-- GALAXY VIEW -->
+  <!-- GALAXY VIEW (canvas-based, minimal DOM) -->
   <div id="galaxy-view" class="view-layer active">
     <div class="galaxy-title">
       <h1>NONPROFIT SUCCESS PACK</h1>
       <p>The most widely adopted nonprofit technology on Salesforce. 843 Apex classes, 26 triggers, 65 custom objects. NPSP transforms Salesforce into a purpose-built nonprofit CRM for donations, constituent management, recurring giving, and fundraising analytics.</p>
-      <div class="galaxy-subtitle">CLICK A PLANET TO EXPLORE &middot; PRESS / TO SEARCH &middot; 16 FEATURE DOMAINS</div>
-    </div>
-    <div id="galaxy-map">
-      <svg class="galaxy-connections" id="galaxy-svg" viewBox="0 0 1100 600">
-        <!-- Dynamic connections rendered by renderConnections() -->
-      </svg>
-
-      <!-- Row 1: Core giving -->
-      <div class="planet" data-planet="donations" style="left:445px;top:5px;--size:64px;--color:#4d8bff;--delay:0s" onclick="enterPlanet('donations')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#7db3ff,#4d8bff,#2563eb)">&#x1F4B0;</div>
-        <div class="planet-ring"></div><div class="planet-label">Donations</div><div class="planet-desc">Core giving</div>
-      </div>
-      <div class="planet" data-planet="contacts" style="left:155px;top:80px;--size:58px;--color:#a855f7;--delay:0.5s" onclick="enterPlanet('contacts')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#c084fc,#a855f7,#7c3aed)">&#x1F465;</div>
-        <div class="planet-ring"></div><div class="planet-label">Contacts</div><div class="planet-desc">Households</div>
-      </div>
-      <div class="planet" data-planet="recurring" style="left:740px;top:40px;--size:68px;--color:#22c55e;--delay:1s" onclick="enterPlanet('recurring')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#4ade80,#22c55e,#16a34a)">&#x1F504;</div>
-        <div class="planet-ring"></div><div class="planet-label">Recurring</div><div class="planet-desc">89 classes</div>
-      </div>
-
-      <!-- Row 2: Data processing -->
-      <div class="planet" data-planet="rollups" style="left:445px;top:140px;--size:64px;--color:#f59e0b;--delay:0.3s" onclick="enterPlanet('rollups')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#fbbf24,#f59e0b,#d97706)">&#x1F4CA;</div>
-        <div class="planet-ring"></div><div class="planet-label">Rollups (CRLP)</div><div class="planet-desc">76 classes</div>
-      </div>
-      <div class="planet" data-planet="softcredits" style="left:40px;top:210px;--size:42px;--color:#ec4899;--delay:0.7s" onclick="enterPlanet('softcredits')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#f472b6,#ec4899,#db2777)">&#x1F91D;</div>
-        <div class="planet-ring"></div><div class="planet-label">Soft Credits</div><div class="planet-desc">Attribution</div>
-      </div>
-      <div class="planet" data-planet="allocations" style="left:880px;top:180px;--size:46px;--color:#06b6d4;--delay:1.2s" onclick="enterPlanet('allocations')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#22d3ee,#06b6d4,#0891b2)">&#x1F4C2;</div>
-        <div class="planet-ring"></div><div class="planet-label">Allocations</div><div class="planet-desc">Fund acct</div>
-      </div>
-
-      <!-- Row 3: Architecture & management -->
-      <div class="planet" data-planet="tdtm" style="left:265px;top:225px;--size:56px;--color:#ef4444;--delay:0.9s" onclick="enterPlanet('tdtm')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#f87171,#ef4444,#dc2626)">&#x26A1;</div>
-        <div class="planet-ring"></div><div class="planet-label">TDTM</div><div class="planet-desc">Trigger arch</div>
-      </div>
-      <div class="planet" data-planet="batch" style="left:625px;top:195px;--size:52px;--color:#8b5cf6;--delay:1.5s" onclick="enterPlanet('batch')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#a78bfa,#8b5cf6,#7c3aed)">&#x2699;</div>
-        <div class="planet-ring"></div><div class="planet-label">Batch Jobs</div><div class="planet-desc">45 classes</div>
-      </div>
-
-      <!-- Row 4: Relationships, Addresses, Affiliations -->
-      <div class="planet" data-planet="relationships" style="left:135px;top:340px;--size:42px;--color:#f43f5e;--delay:1.1s" onclick="enterPlanet('relationships')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#fb7185,#f43f5e,#e11d48)">&#x1F517;</div>
-        <div class="planet-ring"></div><div class="planet-label">Relationships</div><div class="planet-desc">Reciprocal</div>
-      </div>
-      <div class="planet" data-planet="addresses" style="left:270px;top:340px;--size:44px;--color:#14b8a6;--delay:1.3s" onclick="enterPlanet('addresses')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#2dd4bf,#14b8a6,#0d9488)">&#x1F4CD;</div>
-        <div class="planet-ring"></div><div class="planet-label">Addresses</div><div class="planet-desc">20 classes</div>
-      </div>
-      <div class="planet" data-planet="affiliations" style="left:785px;top:325px;--size:36px;--color:#6366f1;--delay:1.4s" onclick="enterPlanet('affiliations')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#818cf8,#6366f1,#4f46e5)">&#x1F3E2;</div>
-        <div class="planet-ring"></div><div class="planet-label">Affiliations</div><div class="planet-desc">Org links</div>
-      </div>
-
-      <!-- Row 5: Engagement, BDI, Gift Entry, Levels -->
-      <div class="planet" data-planet="engagement" style="left:50px;top:445px;--size:40px;--color:#84cc16;--delay:1.6s" onclick="enterPlanet('engagement')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#a3e635,#84cc16,#65a30d)">&#x1F4CB;</div>
-        <div class="planet-ring"></div><div class="planet-label">Engagement</div><div class="planet-desc">Plans</div>
-      </div>
-      <div class="planet" data-planet="bdi" style="left:340px;top:400px;--size:58px;--color:#d97706;--delay:1.7s" onclick="enterPlanet('bdi')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#fbbf24,#d97706,#b45309)">&#x1F4E5;</div>
-        <div class="planet-ring"></div><div class="planet-label">BDI</div><div class="planet-desc">66 classes</div>
-      </div>
-      <div class="planet" data-planet="giftentry" style="left:555px;top:405px;--size:48px;--color:#0ea5e9;--delay:1.8s" onclick="enterPlanet('giftentry')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#38bdf8,#0ea5e9,#0284c7)">&#x1F381;</div>
-        <div class="planet-ring"></div><div class="planet-label">Gift Entry</div><div class="planet-desc">Modern UI</div>
-      </div>
-      <div class="planet" data-planet="levels" style="left:905px;top:425px;--size:36px;--color:#10b981;--delay:1.9s" onclick="enterPlanet('levels')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#34d399,#10b981,#059669)">&#x1F3C6;</div>
-        <div class="planet-ring"></div><div class="planet-label">Levels</div><div class="planet-desc">Donor tiers</div>
-      </div>
-
-      <!-- Row 6: Error handling, Settings, Elevate -->
-      <div class="planet" data-planet="errors" style="left:215px;top:500px;--size:44px;--color:#d946ef;--delay:2.0s" onclick="enterPlanet('errors')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#e879f9,#d946ef,#c026d3)">&#x26A0;</div>
-        <div class="planet-ring"></div><div class="planet-label">Errors</div><div class="planet-desc">22 classes</div>
-      </div>
-      <div class="planet" data-planet="settings" style="left:440px;top:485px;--size:52px;--color:#64748b;--delay:2.1s" onclick="enterPlanet('settings')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#94a3b8,#64748b,#475569)">&#x2699;</div>
-        <div class="planet-ring"></div><div class="planet-label">Settings</div><div class="planet-desc">14+ objects</div>
-      </div>
-      <div class="planet" data-planet="elevate" style="left:705px;top:492px;--size:40px;--color:#7c3aed;--delay:2.2s" onclick="enterPlanet('elevate')">
-        <div class="planet-orb" style="background:radial-gradient(circle at 35% 35%,#a78bfa,#7c3aed,#6d28d9)">&#x1F4B3;</div>
-        <div class="planet-ring"></div><div class="planet-label">Elevate</div><div class="planet-desc">Payments</div>
-      </div>
+      <div class="galaxy-subtitle">CLICK A PLANET TO EXPLORE &middot; PRESS / TO SEARCH &middot; DRAG TO REARRANGE</div>
     </div>
     <div class="galaxy-stats">
-      <div class="stat-item"><div class="stat-value">843</div><div class="stat-label">Apex Classes</div></div>
-      <div class="stat-item"><div class="stat-value">26</div><div class="stat-label">Triggers</div></div>
-      <div class="stat-item"><div class="stat-value">65</div><div class="stat-label">Custom Objects</div></div>
-      <div class="stat-item"><div class="stat-value">45</div><div class="stat-label">Batch Jobs</div></div>
-      <div class="stat-item"><div class="stat-value">100+</div><div class="stat-label">LWC Components</div></div>
-      <div class="stat-item"><div class="stat-value">16</div><div class="stat-label">Domains</div></div>
+      <div class="stat-item"><div class="stat-value" id="statClasses">843</div><div class="stat-label">Apex Classes</div></div>
+      <div class="stat-item"><div class="stat-value" id="statTriggers">26</div><div class="stat-label">Triggers</div></div>
+      <div class="stat-item"><div class="stat-value" id="statObjects">65</div><div class="stat-label">Custom Objects</div></div>
+      <div class="stat-item"><div class="stat-value" id="statDomains">18</div><div class="stat-label">Domains</div></div>
+      <div class="stat-item"><div class="stat-value" id="statComponents">55</div><div class="stat-label">Components</div></div>
     </div>
   </div>
 
@@ -166,12 +94,17 @@
   </div>
 </div>
 
-<div class="help-hint">
-  <kbd>/</kbd> search &middot; <kbd>ESC</kbd> zoom out &middot; Click planets to explore
+<!-- Help hint -->
+<div class="help-hint" aria-hidden="true">
+  <kbd>/</kbd> search &middot; <kbd>ESC</kbd> back &middot; Drag planets &middot; Scroll to zoom
 </div>
 
+<!-- Scripts: data first, then systems, then integration -->
 <script src="js/npsp-data.js"></script>
 <script src="js/starfield.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/particles.js"></script>
 <script src="js/navigation.js"></script>
 <script src="js/search.js"></script>
 <script src="js/main.js"></script>
