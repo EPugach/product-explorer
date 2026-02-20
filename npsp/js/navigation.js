@@ -12,8 +12,12 @@ let currentPlanet = null;
 let currentComponent = null;
 let navHistory = [];
 
-// Transition duration matches CSS --duration-normal
-const TRANSITION_MS = 400;
+// Read transition duration from CSS custom property
+function getTransitionMs() {
+  var val = getComputedStyle(document.documentElement)
+    .getPropertyValue('--transition-duration').trim();
+  return parseInt(val) || 700;
+}
 
 // ── View Transitions ──
 function showView(id, dir) {
@@ -21,7 +25,7 @@ function showView(id, dir) {
     if (v.classList.contains('active')) {
       v.classList.remove('active');
       v.classList.add(dir === 'in' ? 'zoom-out' : 'zoom-in');
-      setTimeout(() => v.classList.remove('zoom-out', 'zoom-in'), TRANSITION_MS);
+      setTimeout(() => v.classList.remove('zoom-out', 'zoom-in'), getTransitionMs());
     }
   });
   const t = document.getElementById(id);
@@ -55,22 +59,6 @@ function setGalaxyCanvasVisible(visible) {
 
 // ── Breadcrumb ──
 function updateBreadcrumb() {
-  const bc = document.getElementById('breadcrumb');
-  let h = '<span class="crumb' + (currentLevel === 'galaxy' ? ' active' : '') +
-    '" onclick="navigateTo(\'galaxy\')" role="link" tabindex="0">NPSP</span>';
-  if (currentPlanet) {
-    h += '<span class="crumb-sep" aria-hidden="true">\u25B8</span><span class="crumb' +
-      (currentLevel === 'planet' ? ' active' : '') +
-      '" onclick="navigateTo(\'planet\')" role="link" tabindex="0">' + NPSP[currentPlanet].name + '</span>';
-  }
-  if (currentComponent) {
-    const c = NPSP[currentPlanet].components.find(x => x.id === currentComponent);
-    if (c) {
-      h += '<span class="crumb-sep" aria-hidden="true">\u25B8</span><span class="crumb active">' + c.name + '</span>';
-    }
-  }
-  bc.innerHTML = h;
-
   // Zoom dots
   document.querySelectorAll('.zoom-dot').forEach((d, i) => {
     d.classList.toggle('active',
@@ -79,9 +67,6 @@ function updateBreadcrumb() {
       (i === 2 && currentLevel === 'core')
     );
   });
-
-  // Back button
-  document.getElementById('backBtn').classList.toggle('visible', currentLevel !== 'galaxy');
 
   // Stats bar visibility
   const stats = document.querySelector('.galaxy-stats');
@@ -129,6 +114,7 @@ function navigateTo(level) {
     currentLevel = 'galaxy';
     currentPlanet = null;
     currentComponent = null;
+    resetZoomPan();
     setGalaxyCanvasVisible(true);
     showView('galaxy-view', 'out');
     // Restart graph + particle animation
@@ -164,7 +150,11 @@ function goBack() {
 function renderPlanetView(id) {
   const p = NPSP[id];
   const el = document.getElementById('planet-content');
-  el.innerHTML = '<div class="planet-header">' +
+  el.innerHTML = '<div class="bc">' +
+    '<span class="bc-link" onclick="navigateTo(\'galaxy\')">NPSP</span>' +
+    '<span class="bc-sep">\u276F</span>' +
+    '<span class="bc-here">' + p.name + '</span></div>' +
+    '<div class="planet-header">' +
     '<div class="planet-header-orb" style="background:' + p.color + ';box-shadow:0 0 20px ' + p.color + '">' + p.icon + '</div>' +
     '<div><h2 style="color:' + p.color + '">' + p.name + '</h2><p>' + p.description + '</p></div></div>' +
     '<div class="component-grid">' +
@@ -207,7 +197,13 @@ function renderCoreView(pid, cid) {
   const c = p.components.find(function(x) { return x.id === cid; });
   if (!c) return;
   const el = document.getElementById('core-content');
-  let h = '<div class="core-header">' +
+  let h = '<div class="bc">' +
+    '<span class="bc-link" onclick="navigateTo(\'galaxy\')">NPSP</span>' +
+    '<span class="bc-sep">\u276F</span>' +
+    '<span class="bc-link" onclick="navigateTo(\'planet\')">' + p.name + '</span>' +
+    '<span class="bc-sep">\u276F</span>' +
+    '<span class="bc-here">' + c.name + '</span></div>' +
+    '<div class="core-header">' +
     '<span style="font-size:24px">' + c.icon + '</span>' +
     '<div><h2>' + c.name + '</h2><span class="badge">TRIGGER LEVEL</span></div></div>' +
     '<div class="trigger-section" style="animation-delay:0ms">' +
@@ -231,9 +227,13 @@ function renderCoreView(pid, cid) {
 
   if (c.docs && c.docs.length > 0) {
     h += '<div class="trigger-section doc-section" style="animation-delay:90ms">' +
-      '<h3>\u{1F4DA} Official Documentation</h3>' +
-      c.docs.map(function(p) { return '<p class="doc-para">' + p + '</p>'; }).join('') +
-      '</div>';
+      '<h3>\u{1F4DA} Documentation</h3>' +
+      c.docs.map(function(p) { return '<p class="doc-para">' + p + '</p>'; }).join('');
+    if (c.docUrl) {
+      h += '<a class="doc-source-link" href="' + c.docUrl + '" target="_blank" rel="noopener noreferrer">' +
+        '\u{1F517} View on Salesforce Help \u{2197}</a>';
+    }
+    h += '</div>';
   }
 
   if (c.code) {

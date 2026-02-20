@@ -205,3 +205,51 @@ function onGraphResize() {
   alpha = Math.max(alpha, 0.3);
   graphSettled = false;
 }
+
+// ── Zoom-to-planet animation ──
+var zoomAnimId = null;
+
+function animateZoomTo(node, duration, callback) {
+  var startZoom = zoom, startPanX = panX, startPanY = panY;
+
+  // Target: zoom centered on planet
+  var targetZoom = Math.min(canvasW / (node.radius * 6), 3);
+  var targetPanX = canvasW / 2 - node.x * targetZoom;
+  var targetPanY = canvasH / 2 - node.y * targetZoom;
+
+  var startTime = performance.now();
+
+  // Skip animation for reduced motion
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (callback) callback();
+    return;
+  }
+
+  function step(now) {
+    var t = Math.min((now - startTime) / duration, 1);
+    // Ease-out cubic for smooth deceleration
+    var e = 1 - Math.pow(1 - t, 3);
+
+    zoom = startZoom + (targetZoom - startZoom) * e;
+    panX = startPanX + (targetPanX - startPanX) * e;
+    panY = startPanY + (targetPanY - startPanY) * e;
+
+    renderGraph();
+    renderParticles();
+
+    if (t < 1) {
+      zoomAnimId = requestAnimationFrame(step);
+    } else {
+      zoomAnimId = null;
+      if (callback) callback();
+    }
+  }
+
+  if (zoomAnimId) cancelAnimationFrame(zoomAnimId);
+  zoomAnimId = requestAnimationFrame(step);
+}
+
+function resetZoomPan() {
+  if (zoomAnimId) { cancelAnimationFrame(zoomAnimId); zoomAnimId = null; }
+  zoom = 1; panX = 0; panY = 0;
+}

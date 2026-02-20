@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/galaxy.css">
+<link rel="stylesheet" href="css/galaxy.css?v=5">
 </head>
 <body>
 
@@ -24,46 +24,34 @@
 <canvas id="graph-canvas"></canvas>
 <canvas id="particle-canvas"></canvas>
 
-<!-- Search Overlay -->
-<div id="search-overlay" role="dialog" aria-label="Search NPSP architecture">
-  <div class="search-container">
-    <div class="search-input-wrap">
-      <span class="search-icon" aria-hidden="true">&#x1F50D;</span>
-      <input type="text" id="searchInput" placeholder="Search triggers, classes, objects, concepts..." autocomplete="off" spellcheck="false" aria-label="Search NPSP architecture">
-      <div class="search-nav" id="searchNav" style="display:none">
-        <span class="search-count" id="searchCount" aria-live="polite">0/0</span>
-        <button class="search-nav-btn" onclick="cycleResult(-1)" title="Previous (Shift+Enter)" aria-label="Previous result">&#x25B2;</button>
-        <button class="search-nav-btn" onclick="cycleResult(1)" title="Next (Enter)" aria-label="Next result">&#x25BC;</button>
-      </div>
-      <button class="search-close" onclick="closeSearch()" aria-label="Close search">ESC</button>
-    </div>
-    <div class="search-results" id="searchResults" role="listbox" aria-label="Search results"></div>
-    <div class="search-hint">
-      <kbd>Enter</kbd> next result &middot; <kbd>Shift+Enter</kbd> previous &middot; <kbd>ESC</kbd> close &middot; Click to navigate
-    </div>
-  </div>
-</div>
-
 <!-- Navbar -->
 <nav id="navbar" aria-label="Navigation">
-  <div id="breadcrumb" aria-label="Breadcrumb navigation">
-    <span class="crumb active" data-level="galaxy">NPSP</span>
-  </div>
-  <div class="nav-actions">
-    <button class="search-btn" onclick="openSearch()" aria-label="Open search">
-      &#x1F50D; <span>Search</span> <kbd>/</kbd>
-    </button>
-    <div id="zoom-indicator" aria-hidden="true">
-      <span style="font-size:10px;margin-right:4px">ZOOM</span>
-      <div class="zoom-dot active" data-z="1"></div>
-      <div class="zoom-dot" data-z="2"></div>
-      <div class="zoom-dot" data-z="3"></div>
+  <div class="nav-brand" onclick="navigateTo('galaxy')" style="cursor:pointer" role="button" tabindex="0">NPSP EXPLORER</div>
+  <div class="search-box" id="searchBox">
+    <div class="search-shell" id="searchShell">
+      <span class="s-icon" aria-hidden="true">&#x1F50D;</span>
+      <input type="text" id="searchInput" placeholder="Search components, triggers, objects..." autocomplete="off" spellcheck="false" aria-label="Search NPSP architecture">
+      <span class="s-kbd">/</span>
     </div>
+    <div class="search-drop" id="searchDrop">
+      <div id="searchResults" role="listbox" aria-label="Search results"></div>
+      <div class="search-hint">
+        <span><kbd>&#8593;&#8595;</kbd> navigate</span>
+        <span><kbd>Enter</kbd> select</span>
+        <span><kbd>Esc</kbd> close</span>
+      </div>
+    </div>
+  </div>
+  <div id="zoom-indicator" aria-hidden="true">
+    <span style="font-size:10px;margin-right:4px">ZOOM</span>
+    <div class="zoom-dot active" data-z="1"></div>
+    <div class="zoom-dot" data-z="2"></div>
+    <div class="zoom-dot" data-z="3"></div>
   </div>
 </nav>
 
-<!-- Back button -->
-<button class="back-btn" id="backBtn" onclick="goBack()" aria-label="Go back"><span>&larr;</span> Back</button>
+<!-- Search scrim -->
+<div class="search-scrim" id="searchScrim"></div>
 
 <!-- Stage -->
 <div id="stage">
@@ -96,17 +84,17 @@
 
 <!-- Help hint -->
 <div class="help-hint" aria-hidden="true">
-  <kbd>/</kbd> search &middot; <kbd>ESC</kbd> back &middot; Drag planets &middot; Scroll to zoom
+  <kbd>/</kbd> search &middot; <kbd>ESC</kbd> back &middot; <kbd>T</kbd> transitions &middot; Drag planets
 </div>
 
 <!-- Scripts: data first, then systems, then integration -->
-<script src="js/npsp-data.js"></script>
-<script src="js/starfield.js"></script>
-<script src="js/physics.js"></script>
-<script src="js/renderer.js"></script>
-<script src="js/particles.js"></script>
-<script src="js/navigation.js"></script>
-<script src="js/search.js"></script>
-<script src="js/main.js"></script>
+<script src="js/npsp-data.js?v=5"></script>
+<script src="js/starfield.js?v=5"></script>
+<script src="js/physics.js?v=5"></script>
+<script src="js/renderer.js?v=5"></script>
+<script src="js/particles.js?v=5"></script>
+<script src="js/navigation.js?v=5"></script>
+<script src="js/search.js?v=5"></script>
+<script src="js/main.js?v=5"></script>
 </body>
 </html>

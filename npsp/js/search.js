@@ -18,7 +18,9 @@ function buildSearchIndex() {
       idx.push({
         type: 'component', id: comp.id, planetId: pid,
         name: comp.name, desc: comp.desc, icon: comp.icon, color: planet.color,
-        tags: allTags, level: planet.name,
+        tags: allTags,
+        docText: (comp.docs || []).join(' '),
+        level: planet.name,
         action: () => navigateToCore(pid, comp.id)
       });
       for (const tag of allTags) {
@@ -49,6 +51,8 @@ function searchNPSP(query) {
     else if (nm.startsWith(q)) score += 80;
     else if (nm.includes(q)) score += 60;
     if (ds.includes(q)) score += 30;
+    const dt = (item.docText || '').toLowerCase();
+    if (dt.includes(q)) score += 20;
     for (const t of tgs) {
       if (t === q) score += 90;
       else if (t.includes(q)) score += 50;
@@ -116,25 +120,50 @@ function cycleResult(dir) {
   if (searchResults.length === 0) return;
   searchIndex = (searchIndex + dir + searchResults.length) % searchResults.length;
   highlightActive();
-  document.getElementById('searchCount').textContent = (searchIndex + 1) + '/' + searchResults.length;
   const active = document.querySelector('.search-result.active');
   if (active) active.scrollIntoView({ block: 'nearest' });
 }
 
 function openSearch() {
-  const ov = document.getElementById('search-overlay');
-  ov.classList.add('open');
-  ov.setAttribute('role', 'dialog');
-  ov.setAttribute('aria-label', 'Search NPSP architecture');
-  const inp = document.getElementById('searchInput');
-  inp.value = '';
-  inp.focus();
-  searchResults = [];
-  searchIndex = -1;
-  document.getElementById('searchResults').innerHTML = '';
-  document.getElementById('searchNav').style.display = 'none';
+  document.getElementById('searchInput').focus();
 }
 
 function closeSearch() {
-  document.getElementById('search-overlay').classList.remove('open');
+  var shell = document.getElementById('searchShell');
+  var drop = document.getElementById('searchDrop');
+  var scrim = document.getElementById('searchScrim');
+  shell.classList.remove('expanded', 'focused');
+  drop.classList.remove('open');
+  scrim.classList.remove('visible');
+  searchResults = [];
+  searchIndex = -1;
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchInput').blur();
+  document.getElementById('searchResults').textContent = '';
+}
+
+function expandSearch(query) {
+  var shell = document.getElementById('searchShell');
+  var drop = document.getElementById('searchDrop');
+  var scrim = document.getElementById('searchScrim');
+  shell.classList.remove('focused');
+  shell.classList.add('expanded');
+  drop.classList.add('open');
+  scrim.classList.add('visible');
+  searchResults = searchNPSP(query);
+  searchIndex = searchResults.length > 0 ? 0 : -1;
+  renderSearchResults(searchResults, query);
+}
+
+function collapseSearch() {
+  var shell = document.getElementById('searchShell');
+  var drop = document.getElementById('searchDrop');
+  var scrim = document.getElementById('searchScrim');
+  shell.classList.remove('expanded');
+  shell.classList.add('focused');
+  drop.classList.remove('open');
+  scrim.classList.remove('visible');
+  searchResults = [];
+  searchIndex = -1;
+  document.getElementById('searchResults').textContent = '';
 }

@@ -113,8 +113,12 @@ function setupCanvasEvents() {
   graphCanvas.addEventListener('mouseup', function() {
     graphCanvas.classList.remove('dragging');
     if (dragNode && !isDragging) {
+      var node = dragNode;
       dragNode.fx = null; dragNode.fy = null;
-      enterPlanet(dragNode.id);
+      dragNode = null; isPanning = false;
+      hideTooltip();
+      enterPlanet(node.id);
+      return;
     } else if (dragNode) {
       dragNode.fx = null; dragNode.fy = null;
       alpha = Math.max(alpha, 0.1);
@@ -211,64 +215,115 @@ function setupCanvasEvents() {
 
   graphCanvas.addEventListener('touchend', function(e) {
     if (touchStartNode && Date.now() - touchStartTime < 300) {
-      enterPlanet(touchStartNode.id);
+      var node = touchStartNode;
+      touchStartNode = null;
+      lastTouchDist = 0;
+      enterPlanet(node.id);
+      return;
     }
     touchStartNode = null;
     lastTouchDist = 0;
   });
 }
 
+// ── Transition Presets ──
+var PRESETS = ['', 'transition-cinematic', 'transition-snappy'];
+var PRESET_NAMES = ['Gentle', 'Cinematic', 'Snappy'];
+var presetIndex = 0;
+
+function cyclePreset() {
+  document.body.classList.remove('transition-cinematic', 'transition-snappy');
+  presetIndex = (presetIndex + 1) % PRESETS.length;
+  if (PRESETS[presetIndex]) document.body.classList.add(PRESETS[presetIndex]);
+  showPresetIndicator(PRESET_NAMES[presetIndex]);
+}
+
+function showPresetIndicator(name) {
+  var el = document.getElementById('preset-indicator');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'preset-indicator';
+    document.body.appendChild(el);
+  }
+  el.textContent = 'Transition: ' + name;
+  el.classList.add('visible');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(function() { el.classList.remove('visible'); }, 1500);
+}
+
 // ── Keyboard Shortcuts ──
 function setupKeyboard() {
-  // Search input handler
-  document.getElementById('searchInput').addEventListener('input', function() {
-    var q = this.value;
-    searchResults = searchNPSP(q);
-    searchIndex = searchResults.length > 0 ? 0 : -1;
-    renderSearchResults(searchResults, q);
-    var nav = document.getElementById('searchNav');
-    if (searchResults.length > 0) {
-      nav.style.display = 'flex';
-      document.getElementById('searchCount').textContent = (searchIndex + 1) + '/' + searchResults.length;
+  var searchInput = document.getElementById('searchInput');
+  var searchShell = document.getElementById('searchShell');
+
+  // Search input focus/blur
+  searchInput.addEventListener('focus', function() {
+    if (this.value.length > 0) {
+      expandSearch(this.value);
     } else {
-      nav.style.display = 'none';
+      searchShell.classList.add('focused');
+    }
+  });
+
+  searchInput.addEventListener('blur', function() {
+    setTimeout(function() {
+      if (document.activeElement !== searchInput) {
+        var dropOpen = document.getElementById('searchDrop').classList.contains('open');
+        if (dropOpen) {
+          closeSearch();
+        } else {
+          searchShell.classList.remove('focused');
+        }
+      }
+    }, 150);
+  });
+
+  // Search input handler
+  searchInput.addEventListener('input', function() {
+    var q = this.value;
+    if (q.length > 0) {
+      expandSearch(q);
+    } else {
+      collapseSearch();
     }
   });
 
   // Search keyboard navigation
-  document.getElementById('searchInput').addEventListener('keydown', function(e) {
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      closeSearch();
+      return;
+    }
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (e.shiftKey) cycleResult(-1);
-      else if (searchResults.length > 0 && searchIndex >= 0) activateResult(searchIndex);
-      else cycleResult(1);
+      if (searchResults.length > 0 && searchIndex >= 0) activateResult(searchIndex);
     }
-    if (e.key === 'ArrowDown') { e.preventDefault(); cycleResult(1); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); cycleResult(-1); }
-    if (e.key === 'Escape') { closeSearch(); }
+    var dropOpen = document.getElementById('searchDrop').classList.contains('open');
+    if (dropOpen) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); cycleResult(1); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); cycleResult(-1); }
+    }
   });
 
-  // Click outside search to close
-  document.getElementById('search-overlay').addEventListener('click', function(e) {
-    if (e.target === this) closeSearch();
+  // Click scrim to close search
+  document.getElementById('searchScrim').addEventListener('click', function() {
+    closeSearch();
   });
 
   // Global shortcuts
   document.addEventListener('keydown', function(e) {
-    if (e.key === '/' && !document.getElementById('search-overlay').classList.contains('open') &&
+    if (e.key === '/' && document.activeElement !== searchInput &&
         document.activeElement.tagName !== 'INPUT') {
       e.preventDefault();
       openSearch();
     }
-    if (e.key === 'Escape' && !document.getElementById('search-overlay').classList.contains('open')) {
+    if (e.key === 'Escape' && document.activeElement.tagName !== 'INPUT') {
       goBack();
     }
-  });
-
-  // Breadcrumb keyboard support
-  document.getElementById('breadcrumb').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && e.target.classList.contains('crumb')) {
-      e.target.click();
+    if ((e.key === 't' || e.key === 'T') && document.activeElement !== searchInput &&
+        document.activeElement.tagName !== 'INPUT') {
+      cyclePreset();
     }
   });
 }
