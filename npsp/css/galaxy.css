@@ -1228,6 +1228,16 @@ body {
   padding: 3px 10px;
   border-radius: 4px;
 }
+/* Clickable cross-link for entity references */
+.entity-link {
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.entity-link:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.2);
+}
+
 .entity-source-link {
   display: inline-block;
   font-size: var(--text-xs);

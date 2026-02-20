@@ -426,6 +426,21 @@ function renderEntityGrid(component, entityType, pid) {
     '</div>';
 }
 
+// ── Cross-Domain Entity Lookup ──
+function findEntityAcrossDomains(entityName, entityType) {
+  for (var pid in NPSP) {
+    var domain = NPSP[pid];
+    for (var ci = 0; ci < domain.components.length; ci++) {
+      var comp = domain.components[ci];
+      if (comp.entities && comp.entities[entityType]) {
+        var match = comp.entities[entityType].find(function(e) { return e.name === entityName; });
+        if (match) return { pid: pid, cid: comp.id, entity: match };
+      }
+    }
+  }
+  return null;
+}
+
 // ── Render Entity View (Level 4 detail) ──
 function renderEntityView(pid, cid, entityType, entityName) {
   var p = NPSP[pid];
@@ -531,8 +546,14 @@ function renderClassDetail(entity) {
     h += '<div class="entity-detail-section">' +
       '<h3>\u{1F517} Referenced Objects</h3>' +
       '<div class="entity-refs">' +
-      entity.referencedObjects.map(function(r) {
-        return '<span class="entity-ref badge-object">' + r + '</span>';
+      entity.referencedObjects.map(function(refName) {
+        var found = findEntityAcrossDomains(refName, 'objects');
+        if (found) {
+          return '<span class="entity-ref badge-object entity-link" ' +
+            'onclick="enterEntity(\'' + found.pid + '\',\'' + found.cid + '\',\'objects\',\'' + refName.replace(/'/g, "\\'") + '\')" ' +
+            'role="button" tabindex="0">' + refName + ' \u2197</span>';
+        }
+        return '<span class="entity-ref badge-object">' + refName + '</span>';
       }).join('') +
       '</div></div>';
   }
@@ -629,7 +650,15 @@ function renderTriggerDetail(entity) {
       entity.handlers.map(function(handler, i) {
         return '<div class="handler-chain-item">' +
           '<span class="handler-order">' + (i + 1) + '</span>' +
-          '<span class="entity-detail-code">' + handler + '</span>' +
+          (function() {
+            var found = findEntityAcrossDomains(handler, 'classes');
+            if (found) {
+              return '<span class="entity-detail-code entity-link" ' +
+                'onclick="enterEntity(\'' + found.pid + '\',\'' + found.cid + '\',\'classes\',\'' + handler.replace(/'/g, "\\'") + '\')" ' +
+                'role="button" tabindex="0">' + handler + ' \u2197</span>';
+            }
+            return '<span class="entity-detail-code">' + handler + '</span>';
+          })() +
           '</div>';
       }).join('') +
       '</div></div>';
