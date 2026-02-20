@@ -229,6 +229,13 @@ function renderCoreView(pid, cid) {
       '</div></div>';
   }
 
+  if (c.docs && c.docs.length > 0) {
+    h += '<div class="trigger-section doc-section" style="animation-delay:90ms">' +
+      '<h3>\u{1F4DA} Official Documentation</h3>' +
+      c.docs.map(function(p) { return '<p class="doc-para">' + p + '</p>'; }).join('') +
+      '</div>';
+  }
+
   if (c.code) {
     h += '<div class="trigger-section" style="animation-delay:120ms">' +
       '<h3>\u{1F4BB} Source Code Pattern</h3>' +
