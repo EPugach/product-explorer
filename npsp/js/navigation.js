@@ -150,15 +150,50 @@ function goBack() {
 function renderPlanetView(id) {
   const p = NPSP[id];
   const el = document.getElementById('planet-content');
-  el.innerHTML = '<div class="bc">' +
+
+  // Domain-level entity counts
+  var domainStats = '';
+  if (p._entities) {
+    var dc = (p._entities.classes || []).length;
+    var do_ = (p._entities.objects || []).length;
+    var dt = (p._entities.triggers || []).length;
+    var dl = (p._entities.lwcs || []).length;
+    var parts = [];
+    if (dc) parts.push(dc + ' classes');
+    if (do_) parts.push(do_ + ' objects');
+    if (dt) parts.push(dt + ' triggers');
+    if (dl) parts.push(dl + ' LWCs');
+    if (parts.length > 0) {
+      domainStats = '<div class="domain-entity-stats">' +
+        p.components.length + ' groups \u00B7 ' + parts.join(' \u00B7 ') +
+        '</div>';
+    }
+  }
+
+  el.innerHTML = '<div class="bc">' +  // eslint-disable-line -- data is app-owned, not user input
     '<span class="bc-link" onclick="navigateTo(\'galaxy\')">NPSP</span>' +
     '<span class="bc-sep">\u276F</span>' +
     '<span class="bc-here">' + p.name + '</span></div>' +
     '<div class="planet-header">' +
     '<div class="planet-header-orb" style="background:' + p.color + ';box-shadow:0 0 20px ' + p.color + '">' + p.icon + '</div>' +
     '<div><h2 style="color:' + p.color + '">' + p.name + '</h2><p>' + p.description + '</p></div></div>' +
+    domainStats +
     '<div class="component-grid">' +
     p.components.map(function(c, i) {
+      var entityBadges = '';
+      if (c.entities) {
+        var counts = [];
+        if (c.entities.classes && c.entities.classes.length > 0)
+          counts.push('<span class="entity-badge badge-class">{ } ' + c.entities.classes.length + '</span>');
+        if (c.entities.objects && c.entities.objects.length > 0)
+          counts.push('<span class="entity-badge badge-object">\u{1F5C3} ' + c.entities.objects.length + '</span>');
+        if (c.entities.triggers && c.entities.triggers.length > 0)
+          counts.push('<span class="entity-badge badge-trigger">\u26A1 ' + c.entities.triggers.length + '</span>');
+        if (c.entities.lwcs && c.entities.lwcs.length > 0)
+          counts.push('<span class="entity-badge badge-lwc">\u{1F9E9} ' + c.entities.lwcs.length + '</span>');
+        if (counts.length > 0)
+          entityBadges = '<div class="entity-badges">' + counts.join('') + '</div>';
+      }
       return '<div class="component-card" data-component="' + c.id + '" style="--card-accent:' + p.color + ';animation-delay:' + (i * 30) + 'ms" ' +
         'onclick="enterCore(\'' + id + '\',\'' + c.id + '\')" role="button" tabindex="0" ' +
         'onkeydown="if(event.key===\'Enter\')enterCore(\'' + id + '\',\'' + c.id + '\')">' +
@@ -167,7 +202,7 @@ function renderPlanetView(id) {
         '<div class="card-tags">' +
         (c.tags || []).map(function(t) { return '<span class="card-tag">' + t + '</span>'; }).join('') +
         (c.triggerTags || []).map(function(t) { return '<span class="card-tag trigger">' + t + '</span>'; }).join('') +
-        '</div></div>';
+        '</div>' + entityBadges + '</div>';
     }).join('') +
     '</div>' +
     '<div class="data-flow" style="animation-delay:' + (p.components.length * 30 + 60) + 'ms">' +
