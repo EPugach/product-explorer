@@ -547,55 +547,152 @@ function renderClassDetail(entity) {
   return h;
 }
 
-// ── Object Detail Renderer (stub) ──
+// ── Object Detail Renderer ──
 function renderObjectDetail(entity) {
-  return '<div class="entity-detail-header">' +
+  var h = '<div class="entity-detail-header">' +
     '<div class="entity-detail-icon badge-object">\u{1F5C3}</div>' +
-    '<div><h2 class="entity-detail-name">' + entity.name + '</h2>' +
-    (entity.label ? '<span class="entity-detail-meta">' + entity.label + '</span>' : '') +
-    '</div></div>' +
-    '<div class="entity-detail-section"><h3>Description</h3>' +
-    '<p>' + (entity.description || 'Custom object in the NPSP data model.') + '</p></div>' +
-    (entity.fieldCount ? '<div class="entity-detail-section"><h3>Fields</h3>' +
-      '<p>' + entity.fieldCount + ' custom fields</p></div>' : '');
-}
-
-// ── Trigger Detail Renderer (stub) ──
-function renderTriggerDetail(entity) {
-  return '<div class="entity-detail-header">' +
-    '<div class="entity-detail-icon badge-trigger">\u26A1</div>' +
-    '<div><h2 class="entity-detail-name">' + entity.name + '</h2></div></div>' +
-    '<div class="entity-detail-section"><h3>Trigger Configuration</h3>' +
-    '<div class="entity-detail-table">' +
-    '<div class="edt-row"><span class="edt-label">Object:</span><span>' + (entity.object || 'Unknown') + '</span></div>' +
-    (entity.events ? '<div class="edt-row"><span class="edt-label">Events:</span><span>' +
-      entity.events.map(function(ev) { return '<span class="card-tag trigger">' + ev + '</span>'; }).join(' ') +
-      '</span></div>' : '') +
+    '<div>' +
+    '<h2 class="entity-detail-name">' + (entity.label || entity.name) + '</h2>' +
+    '<span class="entity-detail-meta" style="display:block;margin-top:2px">' + entity.name + '</span>' +
+    '<span class="entity-detail-meta">' + (entity.fieldCount || 0) + ' fields</span>' +
     '</div></div>';
+
+  h += '<div class="entity-detail-section">' +
+    '<h3>Description</h3>' +
+    '<p>' + (entity.description || 'Custom object in the NPSP managed package.') + '</p>' +
+    '</div>';
+
+  if (entity.relationships && entity.relationships.length > 0) {
+    h += '<div class="entity-detail-section">' +
+      '<h3>\u{1F517} Relationships</h3>' +
+      '<div class="entity-detail-table">' +
+      entity.relationships.map(function(r) {
+        return '<div class="edt-row">' +
+          '<span class="edt-label">' + r.type + ':</span>' +
+          '<span><span class="entity-detail-code">' + r.field + '</span> \u2192 ' + r.target + '</span></div>';
+      }).join('') +
+      '</div></div>';
+  }
+
+  if (entity.keyFields && entity.keyFields.length > 0) {
+    h += '<div class="entity-detail-section">' +
+      '<h3>Fields (' + entity.keyFields.length + (entity.keyFields.length >= 15 ? '+' : '') + ')</h3>' +
+      '<div class="entity-fields-table">' +
+      '<div class="eft-header"><span>Field</span><span>Type</span><span>Description</span></div>' +
+      entity.keyFields.map(function(f) {
+        return '<div class="eft-row">' +
+          '<span class="entity-detail-code">' + f.name + '</span>' +
+          '<span class="eft-type">' + f.type + '</span>' +
+          '<span class="eft-desc">' + (f.desc || f.label || '') + '</span></div>';
+      }).join('') +
+      '</div></div>';
+  }
+
+  if (entity.sourceUrl) {
+    h += '<div class="entity-detail-section">' +
+      '<a class="entity-source-link" href="' + entity.sourceUrl + '" target="_blank" rel="noopener noreferrer">' +
+      '\u{1F4C4} View on GitHub \u2197</a></div>';
+  }
+
+  return h;
 }
 
-// ── LWC Detail Renderer (stub) ──
+// ── Trigger Detail Renderer ──
+function renderTriggerDetail(entity) {
+  var h = '<div class="entity-detail-header">' +
+    '<div class="entity-detail-icon badge-trigger">\u26A1</div>' +
+    '<div>' +
+    '<h2 class="entity-detail-name">' + entity.name + '</h2>' +
+    '<span class="entity-detail-meta">Trigger on ' + entity.object + '</span>' +
+    '</div></div>';
+
+  h += '<div class="entity-detail-section">' +
+    '<h3>Description</h3>' +
+    '<p>TDTM trigger for the ' + entity.object + ' object. All NPSP triggers follow the one-trigger-per-object pattern, dispatching to registered handler classes via the TDTM framework.</p>' +
+    '</div>';
+
+  if (entity.events && entity.events.length > 0) {
+    h += '<div class="entity-detail-section">' +
+      '<h3>\u26A1 Registered Events</h3>' +
+      '<div class="entity-methods">' +
+      entity.events.map(function(e) {
+        return '<span class="card-tag trigger">' + e + '</span>';
+      }).join('') +
+      '</div></div>';
+  }
+
+  if (entity.handlers && entity.handlers.length > 0) {
+    h += '<div class="entity-detail-section">' +
+      '<h3>\u{1F517} Handler Chain</h3>' +
+      '<p style="margin-bottom:8px;font-size:var(--text-xs);color:var(--text-dim)">Handlers execute in Load_Order__c sequence:</p>' +
+      '<div class="trigger-handler-chain">' +
+      entity.handlers.map(function(handler, i) {
+        return '<div class="handler-chain-item">' +
+          '<span class="handler-order">' + (i + 1) + '</span>' +
+          '<span class="entity-detail-code">' + handler + '</span>' +
+          '</div>';
+      }).join('') +
+      '</div></div>';
+  }
+
+  if (entity.sourceUrl) {
+    h += '<div class="entity-detail-section">' +
+      '<a class="entity-source-link" href="' + entity.sourceUrl + '" target="_blank" rel="noopener noreferrer">' +
+      '\u{1F4C4} View Source on GitHub \u2197</a></div>';
+  }
+
+  return h;
+}
+
+// ── LWC Detail Renderer ──
 function renderLwcDetail(entity) {
-  return '<div class="entity-detail-header">' +
+  var h = '<div class="entity-detail-header">' +
     '<div class="entity-detail-icon badge-lwc">\u{1F9E9}</div>' +
-    '<div><h2 class="entity-detail-name">' + entity.name + '</h2></div></div>' +
-    '<div class="entity-detail-section"><h3>Description</h3>' +
-    '<p>' + (entity.description || 'Lightning Web Component.') + '</p></div>' +
-    (entity.imports && entity.imports.length > 0 ? '<div class="entity-detail-section"><h3>Imports</h3>' +
-      '<div class="entity-methods">' + entity.imports.map(function(i) {
+    '<div>' +
+    '<h2 class="entity-detail-name">' + entity.name + '</h2>' +
+    '<span class="entity-detail-type" style="background:rgba(168,85,247,0.1);color:#a855f7">Lightning Web Component</span>' +
+    '</div></div>';
+
+  h += '<div class="entity-detail-section">' +
+    '<h3>Description</h3>' +
+    '<p>' + (entity.description || 'Lightning Web Component in the NPSP managed package.') + '</p>' +
+    '</div>';
+
+  if (entity.imports && entity.imports.length > 0) {
+    h += '<div class="entity-detail-section">' +
+      '<h3>Imports</h3>' +
+      '<div class="entity-methods">' +
+      entity.imports.map(function(i) {
         return '<span class="entity-method">' + i + '</span>';
-      }).join('') + '</div></div>' : '');
+      }).join('') +
+      '</div></div>';
+  }
+
+  if (entity.sourceUrl) {
+    h += '<div class="entity-detail-section">' +
+      '<a class="entity-source-link" href="' + entity.sourceUrl + '" target="_blank" rel="noopener noreferrer">' +
+      '\u{1F4C4} View on GitHub \u2197</a></div>';
+  }
+
+  return h;
 }
 
-// ── Metadata Detail Renderer (stub) ──
+// ── Metadata Detail Renderer ──
 function renderMetadataDetail(entity) {
-  return '<div class="entity-detail-header">' +
+  var h = '<div class="entity-detail-header">' +
     '<div class="entity-detail-icon badge-metadata">\u2699</div>' +
-    '<div><h2 class="entity-detail-name">' + entity.name + '</h2></div></div>' +
-    '<div class="entity-detail-section"><h3>Description</h3>' +
-    '<p>' + (entity.description || 'Custom metadata type.') + '</p></div>' +
-    (entity.recordCount ? '<div class="entity-detail-section"><h3>Records</h3>' +
-      '<p>' + entity.recordCount + ' metadata records</p></div>' : '');
+    '<div>' +
+    '<h2 class="entity-detail-name">' + entity.name + '</h2>' +
+    '<span class="entity-detail-type" style="background:rgba(245,158,11,0.1);color:#f59e0b">Custom Metadata Type</span>' +
+    (entity.recordCount ? '<span class="entity-detail-meta">' + entity.recordCount + ' records</span>' : '') +
+    '</div></div>';
+
+  h += '<div class="entity-detail-section">' +
+    '<h3>Description</h3>' +
+    '<p>' + (entity.description || 'Custom Metadata Type used for NPSP configuration.') + '</p>' +
+    '</div>';
+
+  return h;
 }
 
 // ── Code Lab Patterns ──
