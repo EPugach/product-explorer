@@ -193,6 +193,30 @@ function renderGraph() {
     }
   }
 
+  // ── B7: Keyboard focus ring on focused planet ──
+  if (typeof focusedPlanetIndex !== 'undefined' && focusedPlanetIndex >= 0) {
+    const sorted = [...nodes].sort((a, b) => a.x - b.x);
+    const focusedNode = sorted[focusedPlanetIndex];
+    if (focusedNode) {
+      const fr = focusedNode.radius + 8;
+      const pulseAlpha = 0.6 + Math.sin(renderFrame * 0.04) * 0.2;
+      ctx.save();
+      ctx.strokeStyle = focusedNode.color || '#4d8bff';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = focusedNode.color || '#4d8bff';
+      ctx.shadowBlur = 15;
+      ctx.globalAlpha = pulseAlpha;
+      ctx.beginPath();
+      ctx.arc(focusedNode.x, focusedNode.y, fr, 0, Math.PI * 2);
+      ctx.stroke();
+      // Second stroke for stronger glow
+      ctx.shadowBlur = 25;
+      ctx.globalAlpha = pulseAlpha * 0.5;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   ctx.restore();
   ctx.restore();
 }

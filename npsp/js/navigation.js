@@ -80,6 +80,8 @@ function updateBreadcrumb() {
 
 // ── Navigation Actions ──
 function enterPlanet(id) {
+  // B7: Reset keyboard focus when entering a planet
+  if (typeof focusedPlanetIndex !== 'undefined') focusedPlanetIndex = -1;
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
   currentLevel = 'planet';
   currentPlanet = id;
@@ -88,6 +90,19 @@ function enterPlanet(id) {
   setGalaxyCanvasVisible(false);
   showView('planet-view', 'in');
   updateBreadcrumb();
+  // B5: Screen reader announcement
+  const p = NPSP[id];
+  if (p && typeof announce === 'function') {
+    announce(`Viewing ${p.name} domain, ${p.components.length} components`);
+  }
+  // B4: Focus management — move focus to heading after transition
+  setTimeout(() => {
+    const heading = document.querySelector('#planet-content h2');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  }, getTransitionMs() + 50);
 }
 
 function enterCore(pid, cid) {
@@ -97,6 +112,20 @@ function enterCore(pid, cid) {
   renderCoreView(pid, cid);
   showView('core-view', 'in');
   updateBreadcrumb();
+  // B5: Screen reader announcement
+  const p = NPSP[pid];
+  const c = p ? p.components.find(x => x.id === cid) : null;
+  if (c && typeof announce === 'function') {
+    announce(`Viewing ${c.name} in ${p.name}`);
+  }
+  // B4: Focus management — move focus to heading after transition
+  setTimeout(() => {
+    const heading = document.querySelector('#core-content h2');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  }, getTransitionMs() + 50);
 }
 
 function enterEntity(pid, cid, entityType, entityName) {
@@ -114,6 +143,18 @@ function enterEntity(pid, cid, entityType, entityName) {
   showView('entity-view', 'in');
   updateBreadcrumb();
   if (typeof track === 'function') track('entity_view', { type: entityType, name: entityName });
+  // B5: Screen reader announcement
+  if (typeof announce === 'function') {
+    announce(`Viewing ${entityType}: ${entityName}`);
+  }
+  // B4: Focus management — move focus to entity heading after transition
+  setTimeout(() => {
+    const heading = document.querySelector('#entity-content h2');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  }, getTransitionMs() + 50);
 }
 
 function navigateToCore(pid, cid) {
@@ -143,14 +184,39 @@ function navigateTo(level) {
       requestAnimationFrame(graphTick);
       requestAnimationFrame(particleTick);
     }
+    // B5 + B4: Announce and focus canvas
+    if (typeof announce === 'function') announce('Returned to galaxy overview');
+    setTimeout(() => {
+      const canvas = document.getElementById('graph-canvas');
+      if (canvas) canvas.focus({ preventScroll: true });
+    }, getTransitionMs() + 50);
   } else if (level === 'planet') {
     currentLevel = 'planet';
     currentComponent = null;
     showView('planet-view', 'out');
+    // B5 + B4: Announce and focus heading
+    const pName = currentPlanet && NPSP[currentPlanet] ? NPSP[currentPlanet].name : 'domain';
+    if (typeof announce === 'function') announce(`Returned to ${pName} domain`);
+    setTimeout(() => {
+      const heading = document.querySelector('#planet-content h2');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      }
+    }, getTransitionMs() + 50);
   } else if (level === 'core') {
     currentLevel = 'core';
     currentEntity = null;
     showView('core-view', 'out');
+    // B5 + B4: Announce and focus heading
+    if (typeof announce === 'function') announce('Returned to component view');
+    setTimeout(() => {
+      const heading = document.querySelector('#core-content h2');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      }
+    }, getTransitionMs() + 50);
   }
   updateBreadcrumb();
 }
