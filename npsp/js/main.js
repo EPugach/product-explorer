@@ -62,9 +62,10 @@ function toggleTheme() {
 // since inline onclick handlers were replaced with addEventListener
 
 // ── Merge generated entities into NPSP data ──
+let _entityData = null;
 function mergeEntities() {
-  if (typeof window.NPSP_ENTITIES === 'undefined') return;
-  const NPSP_ENTITIES = window.NPSP_ENTITIES;
+  if (!_entityData) return;
+  const NPSP_ENTITIES = _entityData;
   for (const domainKey in NPSP_ENTITIES) {
     if (!NPSP[domainKey]) continue;
     const entities = NPSP_ENTITIES[domainKey];
@@ -592,21 +593,19 @@ window.addEventListener('popstate', () => {
   }
 });
 
-// ── Lazy Entity Loading ──
-const loadEntities = () => {
-  const script = document.createElement('script');
-  script.src = 'js/npsp-entities.js?v=4';
-  script.onload = () => {
+// ── Lazy Entity Loading (dynamic import, ES module) ──
+const loadEntities = async () => {
+  try {
+    const module = await import('./npsp-entities.js?v=5');
+    _entityData = module.default;
     setEntitiesLoaded(true);
     mergeEntities();
     rebuildSearchIndex();
     buildStats();
     refreshCurrentView();
-  };
-  script.onerror = () => {
-    console.warn('Failed to load entity data');
-  };
-  document.head.appendChild(script);
+  } catch (e) {
+    console.warn('Failed to load entity data', e);
+  }
 };
 
 // ── First-Visit Onboarding Hint ──
