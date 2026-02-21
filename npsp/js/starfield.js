@@ -13,6 +13,9 @@ const BRIGHT_STAR_COUNT = 3;
 let mouseX = -9999;
 let mouseY = -9999;
 let brightStars = [];
+let starfieldPaused = false;
+let starfieldAnimId = null;
+let starfieldFrame = 0;
 
 function initStarfield() {
   starfieldCanvas = document.getElementById('starfield');
@@ -52,71 +55,88 @@ function initStarfield() {
   }
 
   // Track mouse for repulsion
-  document.addEventListener('mousemove', function(e) {
+  document.addEventListener('mousemove', (e) => {
     mouseX = e.clientX;
     mouseY = e.clientY;
   });
 
-  document.addEventListener('mouseleave', function() {
+  document.addEventListener('mouseleave', () => {
     mouseX = -9999;
     mouseY = -9999;
   });
 
-  let frame = 0;
-  (function animate() {
-    starfieldCtx.clearRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
-    frame++;
+  // Start animation loop
+  starfieldAnimId = requestAnimationFrame(starfieldAnimate);
+}
 
-    // Regular stars
-    for (const star of stars) {
-      const dx = star.x - mouseX;
-      const dy = star.y - mouseY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+// Animation loop — hoisted to module scope so pause/resume can access it
+function starfieldAnimate() {
+  if (starfieldPaused) { starfieldAnimId = null; return; }
+  starfieldCtx.clearRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
+  starfieldFrame++;
 
-      if (dist < REPULSE_RADIUS && dist > 0) {
-        const force = (1 - dist / REPULSE_RADIUS) * REPULSE_STRENGTH;
-        const angle = Math.atan2(dy, dx);
-        const targetX = star.baseX + Math.cos(angle) * force;
-        const targetY = star.baseY + Math.sin(angle) * force;
-        star.x += (targetX - star.x) * 0.1;
-        star.y += (targetY - star.y) * 0.1;
-      } else {
-        star.x += (star.baseX - star.x) * RETURN_SPEED;
-        star.y += (star.baseY - star.y) * RETURN_SPEED;
-      }
+  // Regular stars
+  for (const star of stars) {
+    const dx = star.x - mouseX;
+    const dy = star.y - mouseY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
 
-      const twinkle = Math.sin(frame * star.tw) * 0.3 + 0.7;
-      starfieldCtx.beginPath();
-      starfieldCtx.arc(star.x, star.y, star.sz, 0, Math.PI * 2);
-      starfieldCtx.fillStyle = `hsla(${star.hue}, ${star.sat}%, ${star.light}%, ${star.op * twinkle})`;
-      starfieldCtx.fill();
+    if (dist < REPULSE_RADIUS && dist > 0) {
+      const force = (1 - dist / REPULSE_RADIUS) * REPULSE_STRENGTH;
+      const angle = Math.atan2(dy, dx);
+      const targetX = star.baseX + Math.cos(angle) * force;
+      const targetY = star.baseY + Math.sin(angle) * force;
+      star.x += (targetX - star.x) * 0.1;
+      star.y += (targetY - star.y) * 0.1;
+    } else {
+      star.x += (star.baseX - star.x) * RETURN_SPEED;
+      star.y += (star.baseY - star.y) * RETURN_SPEED;
     }
 
-    // Bright stars with cross flares
-    for (const bs of brightStars) {
-      bs.twinklePhase += bs.twinkleSpeed;
-      const glow = 0.4 + Math.sin(bs.twinklePhase) * 0.3;
-      const fl = bs.flareLength * glow;
+    const twinkle = Math.sin(starfieldFrame * star.tw) * 0.3 + 0.7;
+    starfieldCtx.beginPath();
+    starfieldCtx.arc(star.x, star.y, star.sz, 0, Math.PI * 2);
+    starfieldCtx.fillStyle = `hsla(${star.hue}, ${star.sat}%, ${star.light}%, ${star.op * twinkle})`;
+    starfieldCtx.fill();
+  }
 
-      // Core
-      starfieldCtx.beginPath();
-      starfieldCtx.arc(bs.x, bs.y, bs.size * glow, 0, Math.PI * 2);
-      starfieldCtx.fillStyle = `rgba(200, 220, 255, ${glow * 0.8})`;
-      starfieldCtx.fill();
+  // Bright stars with cross flares
+  for (const bs of brightStars) {
+    bs.twinklePhase += bs.twinkleSpeed;
+    const glow = 0.4 + Math.sin(bs.twinklePhase) * 0.3;
+    const fl = bs.flareLength * glow;
 
-      // Cross flare (4 points)
-      starfieldCtx.strokeStyle = `rgba(200, 220, 255, ${glow * 0.3})`;
-      starfieldCtx.lineWidth = 0.5;
-      starfieldCtx.beginPath();
-      starfieldCtx.moveTo(bs.x - fl, bs.y);
-      starfieldCtx.lineTo(bs.x + fl, bs.y);
-      starfieldCtx.moveTo(bs.x, bs.y - fl);
-      starfieldCtx.lineTo(bs.x, bs.y + fl);
-      starfieldCtx.stroke();
-    }
+    // Core
+    starfieldCtx.beginPath();
+    starfieldCtx.arc(bs.x, bs.y, bs.size * glow, 0, Math.PI * 2);
+    starfieldCtx.fillStyle = `rgba(200, 220, 255, ${glow * 0.8})`;
+    starfieldCtx.fill();
 
-    requestAnimationFrame(animate);
-  })();
+    // Cross flare (4 points)
+    starfieldCtx.strokeStyle = `rgba(200, 220, 255, ${glow * 0.3})`;
+    starfieldCtx.lineWidth = 0.5;
+    starfieldCtx.beginPath();
+    starfieldCtx.moveTo(bs.x - fl, bs.y);
+    starfieldCtx.lineTo(bs.x + fl, bs.y);
+    starfieldCtx.moveTo(bs.x, bs.y - fl);
+    starfieldCtx.lineTo(bs.x, bs.y + fl);
+    starfieldCtx.stroke();
+  }
+
+  starfieldAnimId = requestAnimationFrame(starfieldAnimate);
+}
+
+// Pause/resume starfield animation (used by navigation + Page Visibility)
+function pauseStarfield() {
+  starfieldPaused = true;
+}
+
+function resumeStarfield() {
+  if (!starfieldPaused) return;
+  starfieldPaused = false;
+  if (!starfieldAnimId) {
+    starfieldAnimId = requestAnimationFrame(starfieldAnimate);
+  }
 }
 
 function resizeStarfield() {

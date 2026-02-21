@@ -101,10 +101,31 @@ function hideTooltip() {
   if (tooltipEl) tooltipEl.classList.remove('visible');
 }
 
+// ── Page Visibility — pause all animation when tab is hidden ──
+let pageHidden = false;
+
+document.addEventListener('visibilitychange', () => {
+  pageHidden = document.hidden;
+  if (document.hidden) {
+    if (typeof pauseStarfield === 'function') pauseStarfield();
+  } else {
+    // Resume starfield only if on galaxy view
+    if (currentLevel === 'galaxy' && typeof resumeStarfield === 'function') {
+      resumeStarfield();
+    }
+    // Restart graph + particle loops if on galaxy view
+    if (currentLevel === 'galaxy') {
+      graphSettled = false;
+      requestAnimationFrame(graphTick);
+      requestAnimationFrame(particleTick);
+    }
+  }
+});
+
 // ── Animation Loops ──
 // Graph physics loop (stops when settled)
 function graphTick() {
-  if (currentLevel !== 'galaxy') return;
+  if (pageHidden || currentLevel !== 'galaxy') return;
   simulate();
   applyOrbitalDrift();
   renderGraph();
@@ -113,7 +134,7 @@ function graphTick() {
 
 // Particle loop (runs indefinitely on galaxy view)
 function particleTick() {
-  if (currentLevel !== 'galaxy') return;
+  if (pageHidden || currentLevel !== 'galaxy') return;
   updateParticles();
   renderParticles();
   requestAnimationFrame(particleTick);
@@ -484,6 +505,34 @@ function onResize() {
   renderParticles();
 }
 
+// ── Lazy Entity Loading ──
+let entitiesLoaded = false;
+
+const loadEntities = () => {
+  const script = document.createElement('script');
+  script.src = 'js/npsp-entities.js?v=4';
+  script.onload = () => {
+    entitiesLoaded = true;
+    mergeEntities();
+    rebuildSearchIndex();
+    buildStats();
+    refreshCurrentViewIfNeeded();
+  };
+  script.onerror = () => {
+    console.warn('Failed to load entity data');
+  };
+  document.head.appendChild(script);
+};
+
+// If user is viewing a component/planet when entities finish loading, refresh it
+const refreshCurrentViewIfNeeded = () => {
+  if (currentLevel === 'planet' && currentPlanet) {
+    renderPlanetView(currentPlanet);
+  } else if (currentLevel === 'core' && currentPlanet && currentComponent) {
+    renderCoreView(currentPlanet, currentComponent);
+  }
+};
+
 // ── Init ──
 function init() {
   // Restore saved theme
@@ -491,6 +540,7 @@ function init() {
     document.body.classList.add('theme-light');
     document.getElementById('theme-toggle').textContent = '\u2600';
   }
+  // mergeEntities() is a no-op here since NPSP_ENTITIES isn't loaded yet
   mergeEntities();
   rebuildSearchIndex();
   createTooltip();
@@ -507,6 +557,9 @@ function init() {
   window.addEventListener('resize', onResize);
   requestAnimationFrame(graphTick);
   requestAnimationFrame(particleTick);
+
+  // Lazy-load entity data (780KB) after the galaxy is interactive
+  requestAnimationFrame(() => loadEntities());
 }
 
 document.addEventListener('DOMContentLoaded', init);
