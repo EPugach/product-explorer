@@ -239,6 +239,8 @@ function enterPlanet(id) {
   updateBreadcrumb();
   setHash(`#/${id}`);
   updateDocumentTitle('planet', id);
+  // Pause starfield — hidden behind opaque content on non-galaxy views
+  if (typeof pauseStarfield === 'function') pauseStarfield();
 }
 
 function enterCore(pid, cid) {
@@ -283,6 +285,8 @@ function navigateToCore(pid, cid) {
   updateBreadcrumb();
   setHash(`#/${pid}/${cid}`);
   updateDocumentTitle('core', pid, cid);
+  // Pause starfield — hidden behind opaque content on non-galaxy views
+  if (typeof pauseStarfield === 'function') pauseStarfield();
 }
 
 function navigateTo(level) {
@@ -302,6 +306,8 @@ function navigateTo(level) {
     }
     setHash('#/');
     updateDocumentTitle('galaxy');
+    // Resume starfield when returning to galaxy view
+    if (typeof resumeStarfield === 'function') resumeStarfield();
   } else if (level === 'planet') {
     currentLevel = 'planet';
     currentComponent = null;
@@ -510,6 +516,10 @@ function renderCoreView(pid, cid) {
           t.label + (t.count !== null ? ' <span class="tab-count">' + t.count + '</span>' : '') +
           '</button>';
       }).join('') + '</div>';
+  } else if (typeof entitiesLoaded !== 'undefined' && !entitiesLoaded) {
+    // Entities haven't loaded yet — show subtle loading indicator
+    tabBar = '<div class="entity-loading-hint" style="padding:8px 0;font-size:12px;color:var(--text-dim,#64748b);opacity:0.7">' +
+      'Loading entity data\u2026</div>';
   }
 
   // Header + breadcrumb + tab bar + content
