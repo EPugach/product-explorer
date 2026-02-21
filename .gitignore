@@ -9,7 +9,3 @@
 # Allow the npsp explorer app
 !npsp/
 !npsp/**
-
-# Allow the build scripts
-!build/
-!build/**
