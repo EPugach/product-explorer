@@ -601,6 +601,7 @@ const loadEntities = async () => {
     _entityData = module.default;
     setEntitiesLoaded(true);
     mergeEntities();
+    _entityData = null; // Free ~2MB after merge into NPSP object
     rebuildSearchIndex();
     buildStats();
     refreshCurrentView();
