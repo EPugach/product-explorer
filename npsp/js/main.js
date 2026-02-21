@@ -57,9 +57,8 @@ function toggleTheme() {
   track('theme_change', { theme: light ? 'light' : 'dark' });
 }
 
-// Expose on window for index.html inline onclick
-window.toggleTheme = toggleTheme;
-window.navigateTo = navigateTo;
+// Note: window.toggleTheme and window.navigateTo no longer needed
+// since inline onclick handlers were replaced with addEventListener
 
 // ── Merge generated entities into NPSP data ──
 function mergeEntities() {

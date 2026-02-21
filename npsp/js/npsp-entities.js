@@ -3,7 +3,8 @@
 //  DO NOT EDIT — regenerate with: python3 build/generate-data.py
 // ══════════════════════════════════════════════════════════════
 
-const NPSP_ENTITIES = {
+// eslint-disable-next-line no-unused-vars -- read by main.js via window.NPSP_ENTITIES after lazy load
+window.NPSP_ENTITIES = {
   "contacts": {
     "classes": [
       {

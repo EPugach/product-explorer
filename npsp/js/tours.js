@@ -91,8 +91,8 @@ export function toggleTourPicker() {
   }
 }
 
-// Expose on window for index.html inline onclick
-window.toggleTourPicker = toggleTourPicker;
+// Note: window.toggleTourPicker no longer needed
+// since inline onclick was replaced with addEventListener in main.js
 
 function startTour(tourId) {
   const tour = TOURS.find((t) => t.id === tourId);
