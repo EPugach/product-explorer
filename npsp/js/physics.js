@@ -4,6 +4,7 @@
 // ══════════════════════════════════════════════════════════════
 
 import { NPSP } from './npsp-data.js';
+import { prefersReducedMotion } from './state.js';
 
 // ── Exported mutable state ──
 // These are read by renderer.js, particles.js, and main.js.
@@ -344,7 +345,7 @@ const RESTITUTION = 0.1;            // near-inelastic, gentle nudge
 const WALL_BOUNCE = 0.1;            // soft wall reflection
 
 export function applyOrbitalDrift() {
-  if (!graphSettled || dragNode) return;
+  if (!graphSettled || dragNode || prefersReducedMotion) return;
   const cx = canvasW / 2, cy = (200 + canvasH - 80) / 2;
   const cosA = Math.cos(ORBIT_SPEED), sinA = Math.sin(ORBIT_SPEED);
 

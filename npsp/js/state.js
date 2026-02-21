@@ -34,3 +34,8 @@ export const setPageHidden = (val) => { pageHidden = val; };
 // ── Entity loading state (written by main.js, read by navigation.js) ──
 export let entitiesLoaded = false;
 export const setEntitiesLoaded = (val) => { entitiesLoaded = val; };
+
+// ── Reduced motion preference (reactive, read by all canvas modules) ──
+const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+export let prefersReducedMotion = motionQuery.matches;
+motionQuery.addEventListener('change', (e) => { prefersReducedMotion = e.matches; });

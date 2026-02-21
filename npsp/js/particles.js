@@ -4,6 +4,7 @@
 
 import { hexToRgba } from './utils.js';
 import { edges, nodeMap, zoom, panX, panY, hoveredNode } from './physics.js';
+import { prefersReducedMotion } from './state.js';
 
 let particleCanvas, particleCtx;
 let connectionParticles = [];
@@ -147,7 +148,7 @@ function renderNebulaBlobs() {
 
 // ── Combined update + render ──
 export function updateParticles() {
-  if (!particlesVisible) return;
+  if (!particlesVisible || prefersReducedMotion) return;
   updateConnectionParticles();
   updateNebulaBlobs();
 }
@@ -159,11 +160,13 @@ export function renderParticles() {
 
   if (!particlesVisible) { particleCtx.restore(); return; }
 
-  // Nebula behind everything
+  // Nebula behind everything (static blobs still render for ambiance)
   renderNebulaBlobs();
 
-  // Connection particles on top
-  renderConnectionParticles();
+  // Connection particles skipped in reduced motion
+  if (!prefersReducedMotion) {
+    renderConnectionParticles();
+  }
 
   particleCtx.restore();
 }

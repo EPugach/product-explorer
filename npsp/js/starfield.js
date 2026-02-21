@@ -2,6 +2,8 @@
 //  STARFIELD — Twinkling stars + mouse repulsion + bright flares
 // ══════════════════════════════════════════════════════════════
 
+import { prefersReducedMotion } from './state.js';
+
 let starfieldCanvas, starfieldCtx;
 const stars = [];
 const STAR_COUNT = 350;
@@ -65,13 +67,42 @@ export function initStarfield() {
     mouseY = -9999;
   });
 
-  // Start animation loop
-  starfieldAnimId = requestAnimationFrame(starfieldAnimate);
+  // Start animation loop (or render static frame for reduced motion)
+  if (prefersReducedMotion) {
+    renderStaticStarfield();
+  } else {
+    starfieldAnimId = requestAnimationFrame(starfieldAnimate);
+  }
+}
+
+// Render a single static frame (no animation) for prefers-reduced-motion
+function renderStaticStarfield() {
+  starfieldCtx.clearRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
+  for (const star of stars) {
+    starfieldCtx.beginPath();
+    starfieldCtx.arc(star.baseX, star.baseY, star.sz, 0, Math.PI * 2);
+    starfieldCtx.fillStyle = `hsla(${star.hue}, ${star.sat}%, ${star.light}%, ${star.op * 0.7})`;
+    starfieldCtx.fill();
+  }
+  for (const bs of brightStars) {
+    starfieldCtx.beginPath();
+    starfieldCtx.arc(bs.x, bs.y, bs.size * 0.6, 0, Math.PI * 2);
+    starfieldCtx.fillStyle = `rgba(200, 220, 255, 0.5)`;
+    starfieldCtx.fill();
+    starfieldCtx.strokeStyle = `rgba(200, 220, 255, 0.15)`;
+    starfieldCtx.lineWidth = 0.5;
+    starfieldCtx.beginPath();
+    starfieldCtx.moveTo(bs.x - bs.flareLength * 0.5, bs.y);
+    starfieldCtx.lineTo(bs.x + bs.flareLength * 0.5, bs.y);
+    starfieldCtx.moveTo(bs.x, bs.y - bs.flareLength * 0.5);
+    starfieldCtx.lineTo(bs.x, bs.y + bs.flareLength * 0.5);
+    starfieldCtx.stroke();
+  }
 }
 
 // Animation loop — hoisted to module scope so pause/resume can access it
 function starfieldAnimate() {
-  if (starfieldPaused) { starfieldAnimId = null; return; }
+  if (starfieldPaused || prefersReducedMotion) { starfieldAnimId = null; return; }
   starfieldCtx.clearRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
   starfieldFrame++;
 
@@ -134,6 +165,7 @@ export function pauseStarfield() {
 export function resumeStarfield() {
   if (!starfieldPaused) return;
   starfieldPaused = false;
+  if (prefersReducedMotion) { renderStaticStarfield(); return; }
   if (!starfieldAnimId) {
     starfieldAnimId = requestAnimationFrame(starfieldAnimate);
   }
@@ -156,4 +188,5 @@ export function resizeStarfield() {
     if (bs.x > innerWidth) bs.x = Math.random() * innerWidth;
     if (bs.y > innerHeight) bs.y = Math.random() * innerHeight;
   }
+  if (prefersReducedMotion) renderStaticStarfield();
 }

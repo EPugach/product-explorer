@@ -10,7 +10,7 @@ import {
 } from './physics.js';
 import {
   tourFocusNode, tourHighlightedEdges, tourStopPlanets,
-  focusedPlanetIndex
+  focusedPlanetIndex, prefersReducedMotion
 } from './state.js';
 
 const _light = () => document.body.classList.contains('theme-light');
@@ -136,8 +136,8 @@ export function renderGraph() {
     const sc = (isH ? 1.1 : 1) * entranceScale;
     const r = n.radius * sc;
 
-    // Pulse glow
-    const pulse = Math.sin(renderFrame * 0.015 + n.pulsePhase) * 0.25 + 0.75;
+    // Pulse glow (static when reduced motion preferred)
+    const pulse = prefersReducedMotion ? 0.85 : Math.sin(renderFrame * 0.015 + n.pulsePhase) * 0.25 + 0.75;
 
     // Glow shadow
     ctx.shadowColor = n.color;
@@ -202,7 +202,7 @@ export function renderGraph() {
     const focusedNode = sorted[focusedPlanetIndex];
     if (focusedNode) {
       const fr = focusedNode.radius + 8;
-      const pulseAlpha = 0.6 + Math.sin(renderFrame * 0.04) * 0.2;
+      const pulseAlpha = prefersReducedMotion ? 0.7 : 0.6 + Math.sin(renderFrame * 0.04) * 0.2;
       ctx.save();
       ctx.strokeStyle = focusedNode.color || '#4d8bff';
       ctx.lineWidth = 3;
