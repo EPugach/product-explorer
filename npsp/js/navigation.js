@@ -5,7 +5,7 @@
 // ══════════════════════════════════════════════════════════════
 
 import { NPSP } from './npsp-data.js';
-import { track, announce } from './utils.js';
+import { track, announce, safeLSGet, safeLSSet } from './utils.js';
 import { resetZoomPan, setGraphSettled, nodeMap } from './physics.js';
 import { pauseStarfield, resumeStarfield } from './starfield.js';
 import { setFocusedPlanetIndex, entitiesLoaded } from './state.js';
@@ -13,6 +13,33 @@ import { setFocusedPlanetIndex, entitiesLoaded } from './state.js';
 const PLANET_META = {};
 for (const [k, v] of Object.entries(NPSP)) {
   PLANET_META[k] = { icon: v.icon, color: v.color };
+}
+
+// ── Exploration Progress Tracking ──
+const TOTAL_DOMAINS = Object.keys(NPSP).length;
+
+function getVisitedDomains() {
+  try {
+    const raw = safeLSGet('npsp-visited-domains');
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function recordDomainVisit(domainId) {
+  const visited = getVisitedDomains();
+  if (!visited.includes(domainId)) {
+    visited.push(domainId);
+    safeLSSet('npsp-visited-domains', JSON.stringify(visited));
+  }
+  updateProgressDisplay();
+}
+
+function updateProgressDisplay() {
+  const el = document.getElementById('exploration-progress');
+  if (!el) return;
+  const count = getVisitedDomains().length;
+  el.textContent = `Explored: ${count}/${TOTAL_DOMAINS}`;
+  el.title = `${count} of ${TOTAL_DOMAINS} domains explored`;
 }
 
 export let currentLevel = 'galaxy';
@@ -83,7 +110,7 @@ export const handleHashNavigation = () => {
     navHistory = [];
     currentLevel = 'planet'; currentPlanet = domainId; currentComponent = null; currentEntity = null;
     renderPlanetView(domainId); setGalaxyCanvasVisible(false); showViewDirect('planet-view');
-    updateBreadcrumb(); updateDocumentTitle('planet', domainId);
+    updateBreadcrumb(); updateDocumentTitle('planet', domainId); recordDomainVisit(domainId);
   } else if (segments.length === 2) {
     const [domainId, componentId] = segments;
     if (!NPSP[domainId]) { setHash('#/'); handleHashNavigation(); return; }
@@ -167,6 +194,7 @@ export function enterPlanet(id) {
   currentLevel = 'planet'; currentPlanet = id; currentComponent = null;
   renderPlanetView(id); setGalaxyCanvasVisible(false); showView('planet-view', 'in');
   updateBreadcrumb(); setHash(`#/${id}`); updateDocumentTitle('planet', id);
+  recordDomainVisit(id);
   pauseStarfield();
   const p = NPSP[id];
   if (p) announce(`Viewing ${p.name} domain, ${p.components.length} components`);
@@ -271,6 +299,9 @@ export function refreshCurrentView() {
 
 // Update breadcrumb zoom indicators (exported for init)
 export { updateBreadcrumb };
+
+// Update exploration progress display (exported for init)
+export { updateProgressDisplay };
 
 // Render helpers use innerHTML with trusted app-owned data (NPSP object).
 // No user input is rendered. This is safe and documented.
