@@ -260,7 +260,9 @@ export function goBack() {
 
 // Refresh current view after entities load (called by main.js)
 export function refreshCurrentView() {
-  if (currentLevel === 'planet' && currentPlanet) {
+  if (currentLevel === 'entity' && currentPlanet && currentComponent && currentEntity) {
+    renderEntityView(currentPlanet, currentComponent, currentEntity.type, currentEntity.name);
+  } else if (currentLevel === 'planet' && currentPlanet) {
     renderPlanetView(currentPlanet);
   } else if (currentLevel === 'core' && currentPlanet && currentComponent) {
     renderCoreView(currentPlanet, currentComponent);
