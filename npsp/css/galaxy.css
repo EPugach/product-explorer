@@ -927,6 +927,26 @@ body {
   outline-offset: -2px;
 }
 
+/* ── Skip-to-Content Link (Accessibility) ── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  z-index: 10000;
+  padding: 8px 16px;
+  background: var(--glow-primary);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-decoration: none;
+  border-radius: 0 0 8px 0;
+  box-shadow: 0 2px 8px rgba(77,139,255,0.3);
+}
+.skip-link:focus {
+  left: 0;
+  top: 0;
+}
+
 /* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
