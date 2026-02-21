@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/galaxy.css?v=7">
+<link rel="stylesheet" href="css/galaxy.css?v=14">
 </head>
 <body>
 
@@ -28,6 +28,8 @@
 <!-- Navbar -->
 <nav id="navbar" aria-label="Navigation">
   <div class="nav-brand" onclick="navigateTo('galaxy')" style="cursor:pointer" role="button" tabindex="0">NPSP EXPLORER</div>
+  <button id="tour-btn" class="tour-btn" onclick="toggleTourPicker()" aria-label="Tour">Tour <span class="tour-btn-icon">&#x1F68C;</span></button>
+  <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">&#x263D;</button>
   <div class="search-box" id="searchBox">
     <div class="search-shell" id="searchShell">
       <span class="s-icon" aria-hidden="true">&#x1F50D;</span>
@@ -61,8 +63,7 @@
   <div id="galaxy-view" class="view-layer active">
     <div class="galaxy-title">
       <h1>NONPROFIT SUCCESS PACK</h1>
-      <p>The most widely adopted nonprofit technology on Salesforce. 843 Apex classes, 26 triggers, 65 custom objects. NPSP transforms Salesforce into a purpose-built nonprofit CRM for donations, constituent management, recurring giving, and fundraising analytics.</p>
-      <div class="galaxy-subtitle">CLICK A PLANET TO EXPLORE &middot; PRESS / TO SEARCH &middot; DRAG TO REARRANGE</div>
+      <p>The most widely adopted nonprofit technology on Salesforce</p>
     </div>
     <div class="galaxy-stats">
       <div class="stat-item"><div class="stat-value" id="statClasses">843</div><div class="stat-label">Apex Classes</div></div>
@@ -89,20 +90,29 @@
   </div>
 </div>
 
-<!-- Help hint -->
-<div class="help-hint" aria-hidden="true">
-  <kbd>/</kbd> search &middot; <kbd>ESC</kbd> back &middot; <kbd>&larr;&rarr;</kbd> tabs &middot; <kbd>T</kbd> transitions &middot; Drag planets
+<!-- Help button -->
+<button class="help-btn" id="helpBtn" aria-label="Keyboard shortcuts">?</button>
+<div class="help-stack" id="helpStack" role="tooltip">
+  <div class="help-row"><kbd>L</kbd><span>Theme</span></div>
+  <div class="help-row"><kbd>/</kbd><span>Search</span></div>
+  <div class="help-row"><kbd>ESC</kbd><span>Back</span></div>
+  <div class="help-row"><kbd>&larr;&rarr;</kbd><span>Tabs</span></div>
+  <div class="help-row"><kbd>T</kbd><span>Transitions</span></div>
+  <div class="help-row"><kbd>&#x1F68C;</kbd><span>Tour Bus</span></div>
+  <div class="help-row"><span class="drag-icon">&#x1F91A;</span><span>Drag planets</span></div>
 </div>
 
 <!-- Scripts: data first, then systems, then integration -->
-<script src="js/npsp-data.js?v=7"></script>
-<script src="js/npsp-entities.js?v=3"></script>
-<script src="js/starfield.js?v=7"></script>
-<script src="js/physics.js?v=7"></script>
-<script src="js/renderer.js?v=7"></script>
-<script src="js/particles.js?v=7"></script>
-<script src="js/navigation.js?v=7"></script>
-<script src="js/search.js?v=7"></script>
-<script src="js/main.js?v=7"></script>
+<script src="js/npsp-data.js?v=8"></script>
+<script src="js/npsp-entities.js?v=4"></script>
+<script src="js/tour-data.js?v=2"></script>
+<script src="js/starfield.js?v=8"></script>
+<script src="js/physics.js?v=14"></script>
+<script src="js/renderer.js?v=10"></script>
+<script src="js/particles.js?v=9"></script>
+<script src="js/navigation.js?v=9"></script>
+<script src="js/search.js?v=9"></script>
+<script src="js/tours.js?v=3"></script>
+<script src="js/main.js?v=11"></script>
 </body>
 </html>

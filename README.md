@@ -1,35 +1,76 @@
 # NPSP Architecture Explorer
 
-**An interactive deep-dive into the Salesforce Nonprofit Success Pack.**
+> **[Launch the Explorer](https://epugach.github.io/product-explorer/npsp/)**
 
-> [**Launch the Explorer**](https://epugach.github.io/npsp-explorer/npsp/)
+An interactive visualization of the Salesforce Nonprofit Success Pack architecture. Explore 18 domains, 843 Apex classes, 65 custom objects, 26 triggers, Lightning Web Components, and custom metadata types in one navigable interface.
 
-## What is this?
+## What You Can Explore
 
-NPSP powers thousands of nonprofit organizations on Salesforce. But understanding how it actually works, how 843 Apex classes, 26 triggers, and 65 custom objects connect and interact, is a different challenge entirely.
+- **18 feature domains** mapped as an interactive galaxy: Donations, Recurring Giving, TDTM Framework, Rollups, Batch Data Import, and more
+- **55 component groups** with execution flows, code samples, and trigger chains
+- **753 individual entities** including classes, objects, triggers, LWCs, and metadata types with AI-generated descriptions
+- **Cross-domain connections** showing how systems depend on and interact with each other
+- **Deep search** across every entity name, field, method, referenced object, and trigger event
 
-This explorer lets you see NPSP from the inside out. Not the marketing docs. Not the admin guides. The actual architecture: how triggers fire, how data flows between domains, how the code connects at every level.
+## Navigation
 
-## What you'll find
+| Action | How |
+|--------|-----|
+| Explore a domain | Click any planet on the galaxy view |
+| View a component | Click a component card within a domain |
+| Browse entities | Switch tabs (Classes, Objects, Triggers, LWCs, Metadata) |
+| View entity detail | Click any entity card |
+| Search | Press `/` or click the search bar |
+| Go back | Press `ESC` or click breadcrumbs |
+| Switch tabs | `Left` / `Right` arrow keys (on component view) |
+| Change transitions | Press `T` to cycle Gentle / Cinematic / Snappy |
+| Rearrange planets | Drag any planet on the galaxy view |
+| Zoom | Scroll wheel or pinch on touch devices |
 
-- **16 feature domains** mapped as an interactive galaxy: Donations, Recurring Giving, TDTM, Rollups, BDI, and more
-- **42 components** with real Apex code samples, execution flows, and trigger chains
-- **Connection mapping** showing how domains depend on and interact with each other
-- **Fuzzy search** across every trigger, class, object, and concept (press `/`)
+## Architecture
 
-## How to explore
+```
+Galaxy View (18 domains)
+  -> Domain View (component groups)
+    -> Component View (overview, code, entity tabs)
+      -> Entity Detail (class methods, object fields, trigger handlers)
+```
 
-1. Click any planet to drill into that domain
-2. Click a component card to see the code, execution flow, and trigger tags
-3. Use breadcrumbs or ESC to navigate back
-4. Press `/` to search across the entire architecture
+### File Structure
 
-## Built with
+```
+npsp/
+  index.html          # HTML skeleton, planet positions, script loading
+  favicon.svg         # App icon
+  css/
+    galaxy.css        # Dark space theme, all layout and styling
+  js/
+    npsp-data.js      # NPSP domain data (18 domains, 55 components)
+    npsp-entities.js  # Entity data (753 classes, objects, triggers, LWCs, metadata)
+    starfield.js      # Twinkling stars canvas animation
+    physics.js        # Force-directed graph layout
+    renderer.js       # Canvas rendering for planets and connections
+    particles.js      # Particle effects along connection lines
+    navigation.js     # View transitions, breadcrumbs, entity renderers
+    search.js         # Fuzzy search engine
+    main.js           # Init, events, keyboard shortcuts
+```
 
-Pure HTML, CSS, and JavaScript. No frameworks, no build step, no dependencies. Just open and explore.
+## Running Locally
 
-## Why this exists
+```bash
+git clone https://github.com/EPugach/product-explorer.git
+cd product-explorer
+python3 -m http.server 8000
+# Open http://localhost:8000/npsp/
+```
 
-NPSP is a complex product with deep interdependencies and interconnections across its many domains. Understanding how it all fits together requires seeing the connections that documentation doesn't always show.
+No build step, no dependencies, no frameworks.
 
-This explorer was built to make that complexity a bit more navigable.
+## Data Generation
+
+Entity data (classes, objects, triggers, LWCs, metadata types) was extracted from the [Cumulus repository](https://github.com/SalesforceFoundation/NPSP) and enriched with AI-generated descriptions using a build script. The 753 entity descriptions cover purpose, behavior, and architectural role within the NPSP codebase.
+
+## Why This Exists
+
+NPSP powers thousands of nonprofit organizations on Salesforce, but understanding how 843 Apex classes, 26 triggers, and 65 custom objects connect and interact is a challenge that documentation alone doesn't solve. This explorer makes that complexity navigable by visualizing the architecture as an interactive system.

@@ -47,14 +47,45 @@ function buildSearchIndex() {
           for (var ai = 0; ai < arr.length; ai++) {
             (function(entType, entItem, planetId, compId, planetName, compName) {
               var entTags = [];
-              if (entType === 'class' && entItem.keyMethods) {
-                entTags = entTags.concat(entItem.keyMethods);
+              // Classes: methods + referenced objects + extends + implements
+              if (entType === 'class') {
+                if (entItem.keyMethods) entTags = entTags.concat(entItem.keyMethods);
+                if (entItem.referencedObjects) entTags = entTags.concat(entItem.referencedObjects);
+                if (entItem.extends) entTags.push(entItem.extends);
+                if (entItem.implements) entTags.push(entItem.implements);
               }
-              if (entType === 'trigger' && entItem.object) {
-                entTags.push(entItem.object);
+              // Objects: field names and labels
+              if (entType === 'object' && entItem.keyFields) {
+                for (var fi = 0; fi < entItem.keyFields.length; fi++) {
+                  entTags.push(entItem.keyFields[fi].name);
+                  if (entItem.keyFields[fi].label) entTags.push(entItem.keyFields[fi].label);
+                }
               }
+              // Triggers: object + events
+              if (entType === 'trigger') {
+                if (entItem.object) entTags.push(entItem.object);
+                if (entItem.events) entTags = entTags.concat(entItem.events);
+              }
+              // LWCs: imports
               if (entType === 'lwc' && entItem.imports) {
                 entTags = entTags.concat(entItem.imports);
+              }
+              // Metadata: field names
+              if (entType === 'metadata' && entItem.keyFields) {
+                for (var mi = 0; mi < entItem.keyFields.length; mi++) {
+                  entTags.push(entItem.keyFields[mi].name);
+                }
+              }
+              // Build docText for fuzzy matching
+              var docParts = [entItem.description || ''];
+              if (entItem.extends) docParts.push('extends ' + entItem.extends);
+              if (entItem.implements) docParts.push('implements ' + entItem.implements);
+              if (entItem.keyMethods) docParts.push(entItem.keyMethods.join(' '));
+              if (entItem.referencedObjects) docParts.push(entItem.referencedObjects.join(' '));
+              if (entItem.keyFields) {
+                docParts.push(entItem.keyFields.map(function(f) {
+                  return f.name + ' ' + (f.label || '') + ' ' + (f.type || '');
+                }).join(' '));
               }
               idx.push({
                 type: entType,
@@ -66,6 +97,7 @@ function buildSearchIndex() {
                 icon: et.icon,
                 color: et.color,
                 tags: entTags,
+                docText: docParts.join(' '),
                 level: planetName + ' > ' + compName,
                 action: function() {
                   navigateToCore(planetId, compId);
@@ -171,6 +203,7 @@ function highlightActive() {
 function activateResult(idx) {
   const r = searchResults[idx];
   if (r) {
+    if (typeof track === 'function') track('search_result_click', { name: r.name, type: r.type });
     closeSearch();
     setTimeout(function() { r.action(); }, 100);
   }
@@ -202,6 +235,7 @@ function closeSearch() {
   document.getElementById('searchResults').textContent = '';
 }
 
+var _searchTrackTimer = null;
 function expandSearch(query) {
   var shell = document.getElementById('searchShell');
   var drop = document.getElementById('searchDrop');
@@ -213,6 +247,12 @@ function expandSearch(query) {
   searchResults = searchNPSP(query);
   searchIndex = searchResults.length > 0 ? 0 : -1;
   renderSearchResults(searchResults, query);
+  clearTimeout(_searchTrackTimer);
+  if (query.length >= 2 && typeof track === 'function') {
+    _searchTrackTimer = setTimeout(function() {
+      track('search_used', { query: query, result_count: searchResults.length });
+    }, 800);
+  }
 }
 
 function collapseSearch() {

@@ -92,7 +92,9 @@ function renderConnectionParticles() {
 // Large, soft, slow-moving colored washes creating depth
 function initNebulaBlobs() {
   nebulaBlobs = [];
-  const colors = ['#1e3a8a', '#312e81', '#0c4a6e', '#1e1b4b', '#0f172a'];
+  const colors = document.body.classList.contains('theme-light')
+    ? ['#d8edff', '#cce4ff', '#b0d5f7', '#e0e0e0', '#d4e3f5']
+    : ['#1e3a8a', '#312e81', '#0c4a6e', '#1e1b4b', '#0f172a'];
   for (let i = 0; i < NEBULA_BLOB_COUNT; i++) {
     nebulaBlobs.push({
       x: Math.random() * innerWidth,
