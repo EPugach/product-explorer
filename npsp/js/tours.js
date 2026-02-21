@@ -40,6 +40,8 @@ export function initTours() {
   const picker = document.createElement('div');
   picker.id = 'tour-picker';
   picker.className = 'tour-picker';
+  picker.setAttribute('role', 'dialog');
+  picker.setAttribute('aria-label', 'Choose a tour');
   // NOTE: innerHTML usage is safe here. All content is from trusted TOURS
   // data object (app-owned tour-data.js), not user input.
   picker.innerHTML = renderTourPicker();
@@ -53,18 +55,45 @@ export function initTours() {
     });
   });
 
+  // Focus trap: Tab cycles within picker, Escape closes it
+  picker.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      picker.classList.remove('open');
+      const btn = document.getElementById('tour-btn');
+      if (btn) btn.focus();
+      return;
+    }
+    if (e.key === 'Tab') {
+      const items = picker.querySelectorAll('[data-tour-id]');
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  });
+
   // Create narration card container
   const card = document.createElement('div');
   card.id = 'tour-card';
   card.className = 'tour-card';
   document.body.appendChild(card);
 
-  // Close picker when clicking outside
+  // Close picker when clicking outside, return focus to tour button
   document.addEventListener('click', (e) => {
     const pickerEl = document.getElementById('tour-picker');
     const btn = document.getElementById('tour-btn');
     if (pickerEl && btn && !pickerEl.contains(e.target) && !btn.contains(e.target)) {
-      pickerEl.classList.remove('open');
+      if (pickerEl.classList.contains('open')) {
+        pickerEl.classList.remove('open');
+        btn.focus();
+      }
     }
   });
 }
@@ -83,11 +112,19 @@ function renderTourPicker() {
 
 export function toggleTourPicker() {
   const picker = document.getElementById('tour-picker');
-  if (picker) {
-    picker.classList.toggle('open');
-    if (picker.classList.contains('open')) {
-      track('tour_picker_open', {});
-    }
+  if (!picker) return;
+  const wasOpen = picker.classList.contains('open');
+  picker.classList.toggle('open');
+
+  if (!wasOpen) {
+    // Opening: focus first tour item
+    track('tour_picker_open', {});
+    const first = picker.querySelector('[data-tour-id]');
+    if (first) requestAnimationFrame(() => first.focus());
+  } else {
+    // Closing: return focus to tour button
+    const btn = document.getElementById('tour-btn');
+    if (btn) btn.focus();
   }
 }
 
