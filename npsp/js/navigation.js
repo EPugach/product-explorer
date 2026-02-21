@@ -371,7 +371,16 @@ function findEntityAcrossDomains(entityName, entityType) {
 
 function renderEntityView(pid, cid, entityType, entityName) {
   const p = NPSP[pid]; const c = p.components.find(x=>x.id===cid);
-  if (!c||!c.entities) return;
+  if (!c||!c.entities) {
+    // Entities not loaded yet: show loading indicator
+    if (!entitiesLoaded) {
+      const el = document.getElementById('entity-content');
+      el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">NPSP</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p ? p.name : pid}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entityName}</span></div><div class="entity-loading"><div class="entity-loading-spinner"></div><div class="entity-loading-text">Loading entity data\u2026</div></div>`;
+      el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
+      el.querySelectorAll('[data-nav="planet"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('planet'));});
+    }
+    return;
+  }
   const entity = (c.entities[entityType]||[]).find(e=>e.name===entityName);
   if (!entity) return;
   const el = document.getElementById('entity-content');
