@@ -7,6 +7,16 @@ function track(event, params) {
   if (typeof gtag === 'function') gtag('event', event, params || {});
 }
 
+// ── Screen Reader Announcements ──
+const announce = (text) => {
+  const el = document.getElementById('sr-announcer');
+  if (el) {
+    el.textContent = '';
+    void el.offsetHeight; // Force reflow so screen reader registers the change
+    el.textContent = text;
+  }
+};
+
 // ── Theme Toggle ──
 function isLightMode() { return document.body.classList.contains('theme-light'); }
 
@@ -65,6 +75,13 @@ function matchesByPrefix(className, tags) {
   }
   return false;
 }
+
+// ── Keyboard Planet Focus (B7) ──
+let focusedPlanetIndex = -1; // -1 means no planet focused
+
+const getSortedPlanets = () => {
+  return [...nodes].sort((a, b) => a.x - b.x);
+};
 
 // ── Tooltip ──
 let tooltipEl = null;
@@ -291,6 +308,56 @@ function setupCanvasEvents() {
     }
     touchStartNode = null;
     lastTouchDist = 0;
+  });
+
+  // ── B7: Keyboard planet selection ──
+  graphCanvas.addEventListener('keydown', (e) => {
+    if (currentLevel !== 'galaxy') return;
+    if (tourState && tourState.active) return;
+
+    const sorted = getSortedPlanets();
+    if (!sorted.length) return;
+
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        e.preventDefault();
+        focusedPlanetIndex = (focusedPlanetIndex + 1) % sorted.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        e.preventDefault();
+        focusedPlanetIndex = (focusedPlanetIndex - 1 + sorted.length) % sorted.length;
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        if (focusedPlanetIndex >= 0) {
+          const planet = sorted[focusedPlanetIndex];
+          focusedPlanetIndex = -1;
+          enterPlanet(planet.id);
+          track('planet_click', { planet: planet.id, method: 'keyboard' });
+        }
+        return;
+      case 'Escape':
+        e.preventDefault();
+        focusedPlanetIndex = -1;
+        graphCanvas.blur();
+        renderGraph();
+        return;
+      default:
+        return;
+    }
+
+    // Announce the focused planet
+    if (focusedPlanetIndex >= 0) {
+      const planet = sorted[focusedPlanetIndex];
+      const desc = NPSP[planet.id] ? NPSP[planet.id].description.substring(0, 80) : '';
+      announce(`${planet.label}: ${desc}`);
+      // Re-render to show focus ring
+      graphSettled = false;
+      requestAnimationFrame(graphTick);
+    }
   });
 }
 

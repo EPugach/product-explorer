@@ -16,13 +16,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/galaxy.css?v=14">
+<link rel="stylesheet" href="css/galaxy.css?v=15">
 </head>
 <body>
 
 <!-- Canvas layers: starfield (z0) > force graph (z1) > particles (z2) -->
 <canvas id="starfield"></canvas>
-<canvas id="graph-canvas"></canvas>
+<canvas id="graph-canvas" tabindex="0" role="img" aria-label="Interactive galaxy map of 18 NPSP architecture domains. Use arrow keys to navigate planets, Enter to select, or press / to search."></canvas>
 <canvas id="particle-canvas"></canvas>
 
 <!-- Navbar -->
@@ -102,17 +102,20 @@
   <div class="help-row"><span class="drag-icon">&#x1F91A;</span><span>Drag planets</span></div>
 </div>
 
+<!-- Screen reader announcements -->
+<div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
 <!-- Scripts: data first, then systems, then integration -->
 <script src="js/npsp-data.js?v=8"></script>
 <script src="js/npsp-entities.js?v=4"></script>
 <script src="js/tour-data.js?v=2"></script>
 <script src="js/starfield.js?v=8"></script>
 <script src="js/physics.js?v=14"></script>
-<script src="js/renderer.js?v=10"></script>
+<script src="js/renderer.js?v=11"></script>
 <script src="js/particles.js?v=9"></script>
-<script src="js/navigation.js?v=9"></script>
-<script src="js/search.js?v=9"></script>
-<script src="js/tours.js?v=3"></script>
-<script src="js/main.js?v=11"></script>
+<script src="js/navigation.js?v=10"></script>
+<script src="js/search.js?v=10"></script>
+<script src="js/tours.js?v=4"></script>
+<script src="js/main.js?v=12"></script>
 </body>
 </html>
