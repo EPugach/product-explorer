@@ -268,7 +268,7 @@ body {
 .search-drop .search-hint {
   padding: 5px 14px; border-top: 1px solid var(--border-glow);
   font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);
-  display: flex; gap: 12px; background: rgba(5,5,16,0.3); border-radius: 0 0 10px 10px;
+  display: flex; gap: 12px; background: rgba(8,10,24,0.97); border-radius: 0 0 10px 10px;
   position: sticky; bottom: 0;
 }
 .search-drop .search-hint kbd {
@@ -1783,8 +1783,7 @@ body.theme-light .tour-picker-item:hover {
 .tour-mode-btn {
   font-family: var(--font-mono);
   font-size: 11px;
-  padding: 8px 14px;
-  min-height: 44px;
+  padding: 4px 12px;
   border: none;
   border-radius: 4px;
   background: transparent;
