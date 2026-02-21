@@ -20,7 +20,7 @@ const NPSP_ENTITIES = {
           "npe01__SYSTEM_AccountType__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ACCT_AccountMerge_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that fires after Account merge operations to clean up and reconcile NPSP-specific data. It checks the Account type via npe01__SYSTEM_AccountType__c to determine appropriate post-merge processing for household vs. organizational accounts. This ensures that merged accounts maintain correct NPSP metadata and relationships."
       },
       {
         "name": "ACCT_CascadeDeleteLookups_TDTM",
@@ -38,7 +38,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ACCT_CascadeDeleteLookups_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that extends the cascade delete framework for Account records, cleaning up dependent NPSP objects when an Account is deleted. It loads relationships to child objects including Recurring Donations (npe03__Recurring_Donation__c) to ensure proper cleanup. This prevents orphaned child records from persisting after Account deletion."
       },
       {
         "name": "ACCT_ViewOverride_CTRL",
@@ -55,7 +55,7 @@ const NPSP_ENTITIES = {
           "npe01__one2oneContact__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ACCT_ViewOverride_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller that overrides the standard Account view page to redirect users appropriately based on Account type. For one-to-one accounts (identified via npe01__SYSTEM_AccountType__c), it redirects to the associated Contact record instead. This ensures users always land on the most relevant page for NPSP's account model."
       },
       {
         "name": "CON_AddToCampaign",
@@ -67,7 +67,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CON_AddToCampaign.cls",
-        "description": ""
+        "description": "Utility class that handles the logic for adding Contacts to Campaigns in the NPSP context. It manages Campaign Member creation while respecting NPSP's account model and household structure. This class is used by various components that need to create Campaign Member records programmatically."
       },
       {
         "name": "CON_CascadeDeleteLookups_TDTM",
@@ -81,7 +81,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CON_CascadeDeleteLookups_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that extends the cascade delete framework for Contact records. It loads the relationship map for Contact-dependent objects so that child records are properly cleaned up when a Contact is deleted. This ensures referential integrity across NPSP's Contact-related data model."
       },
       {
         "name": "CON_ContactMergeTDTM_TEST2",
@@ -98,7 +98,7 @@ const NPSP_ENTITIES = {
           "npo02__NumberOfClosedOpps__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CON_ContactMergeTDTM_TEST2.cls",
-        "description": ""
+        "description": "Test class that validates Contact merge behavior within the NPSP TDTM framework. It tests scenarios involving payment records, household naming fields (Formal/Informal Greeting), and rollup counts after merge operations. This ensures the merge handler correctly consolidates data across all NPSP custom fields."
       },
       {
         "name": "CON_ContactMerge_CTRL",
@@ -156,7 +156,7 @@ const NPSP_ENTITIES = {
           "npsp__foo__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CON_ContactMerge_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the NPSP Contact Merge page, providing search, selection, and merge execution for duplicate Contacts. At 1,465 lines, it handles duplicate record set display, field-by-field winner selection, and the merge operation itself including rollup field recalculation. It works with both individual and household account models to ensure proper post-merge data consolidation."
       },
       {
         "name": "CON_ContactMerge_TDTM",
@@ -173,7 +173,7 @@ const NPSP_ENTITIES = {
           "npe01__SYSTEM_AccountType__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CON_ContactMerge_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that fires after Contact merge events to reconcile NPSP-specific data across the surviving and losing records. It implements Queueable to handle asynchronous post-merge cleanup, including account type reassignment and household recalculation. This handler ensures that merging Contacts does not break NPSP's account model relationships."
       },
       {
         "name": "CON_ContactMerge_TEST2",
@@ -200,7 +200,7 @@ const NPSP_ENTITIES = {
           "npo02__household__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CON_ContactMerge_TEST2.cls",
-        "description": ""
+        "description": "Test class that provides comprehensive test coverage for Contact merge scenarios across different NPSP account models. It validates merge behavior for one-to-one, household, and individual bucket account configurations, checking naming conventions, rollup fields, and household membership. The tests ensure that merge operations correctly handle NPSP's custom settings and household structures."
       },
       {
         "name": "CON_DeleteContactOverridePermissions",
@@ -214,7 +214,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CON_DeleteContactOverridePermissions.cls",
-        "description": ""
+        "description": "Utility class that checks whether the current user has permission to delete a Contact record in the NPSP context. It evaluates object-level delete permissions, ensuring the delete override page only proceeds for authorized users. This class is called by the delete override controller before processing any deletion."
       },
       {
         "name": "CON_DeleteContactOverrideSelector",
@@ -240,7 +240,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CON_DeleteContactOverrideSelector.cls",
-        "description": ""
+        "description": "Data access class that queries all the information needed to evaluate whether a Contact can be safely deleted. It checks for related records including Cases, Opportunities, Recurring Donations, and whether the Contact is the sole member of a one-to-one Account. This selector provides the data foundation for the delete override decision logic."
       },
       {
         "name": "CON_DeleteContactOverride_CTRL",
@@ -265,7 +265,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CON_DeleteContactOverride_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller that overrides the standard Contact delete action to handle NPSP-specific cleanup requirements. It validates the deletion, handles cascade deletion of the associated one-to-one Account when appropriate, and manages related Opportunities and Recurring Donations. The controller provides user-facing confirmation and error handling for the delete workflow."
       },
       {
         "name": "CON_DoNotContact_TDTM",
@@ -286,7 +286,7 @@ const NPSP_ENTITIES = {
           "npo02__TotalOppAmount__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CON_DoNotContact_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that enforces Do Not Contact and Deceased flag behavior on Contact records. When a Contact is marked as deceased, it excludes them from household naming; when marked as Do Not Contact, it clears communication preferences. This handler ensures privacy and compliance preferences cascade correctly through NPSP's data model."
       },
       {
         "name": "HH_AutoCompleteDataProvider_LCTRL",
@@ -300,7 +300,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_AutoCompleteDataProvider_LCTRL.cls",
-        "description": ""
+        "description": "Lightning controller that provides autocomplete search results for the Household management UI. It queries Contact and Account records matching user input and returns formatted results for the type-ahead component. This enables quick lookup when adding members to a Household."
       },
       {
         "name": "HH_CampaignDedupeBTN_CTRL",
@@ -321,7 +321,7 @@ const NPSP_ENTITIES = {
           "npo02__household__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_CampaignDedupeBTN_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the Campaign Household Dedupe button that identifies and marks duplicate Campaign Members from the same Household. It queries Campaign Members, groups them by Household, and marks lower-priority duplicates using the Household_Mailing_List_ID__c field. This ensures campaign mailings go to one recipient per Household."
       },
       {
         "name": "HH_CampaignDedupe_BATCH",
@@ -336,7 +336,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_CampaignDedupe_BATCH.cls",
-        "description": ""
+        "description": "Batch Apex class that processes Campaign Member deduplication across large Campaigns at the Household level. It iterates over Campaign Members and identifies duplicates within the same Household, marking them appropriately. This is the asynchronous counterpart to the button-driven dedupe for campaigns exceeding synchronous processing limits."
       },
       {
         "name": "HH_Container_LCTRL",
@@ -373,7 +373,7 @@ const NPSP_ENTITIES = {
           "npo02__SYSTEM_CUSTOM_NAMING__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_Container_LCTRL.cls",
-        "description": ""
+        "description": "Lightning controller for the Manage Household page, providing CRUD operations for Household Accounts and their member Contacts. At 950 lines, it handles household naming, greeting generation, address management, and Contact membership changes. It reads and writes to both the Account (Household) and Contact records, coordinating the complex household data model."
       },
       {
         "name": "HH_HHObject_TDTM",
@@ -387,7 +387,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_HHObject_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler for the legacy npo02__Household__c object that processes changes to Household custom object records. It fires on insert, update, and delete events to maintain data consistency for organizations still using the legacy Household object model. This handler bridges legacy Household behavior with the modern NPSP framework."
       },
       {
         "name": "HH_HouseholdNamingSettingValidator",
@@ -405,7 +405,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_HouseholdNamingSettingValidator.cls",
-        "description": ""
+        "description": "Validator class that checks Household Naming Settings for correctness before they are saved. It validates the implementing class reference, format strings, and field references to prevent runtime errors in household name generation. The validator returns structured error messages that the settings UI can display to administrators."
       },
       {
         "name": "HH_HouseholdNaming_BATCH",
@@ -425,7 +425,7 @@ const NPSP_ENTITIES = {
           "npo02__SYSTEM_CUSTOM_NAMING__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_HouseholdNaming_BATCH.cls",
-        "description": ""
+        "description": "Batch Apex class that regenerates Household names, formal greetings, and informal greetings across all Household records. It queries Households and their member Contacts, then applies the configured naming format from HH_NameSpec. This is used when naming settings change and all existing Household names need to be refreshed."
       },
       {
         "name": "HH_Households",
@@ -437,7 +437,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_Households.cls",
-        "description": ""
+        "description": "Lightweight utility class in the Household domain that provides shared constants and helper methods for Household processing. It serves as a common reference point for other Household classes. The class is intentionally small at 42 lines, acting as a coordination point rather than containing substantial logic."
       },
       {
         "name": "HH_Households_TDTM",
@@ -451,7 +451,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_Households_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that fires on Contact changes to manage automatic Household Account creation and membership updates. When a Contact is inserted without a Household Account, this handler creates one; when Contacts are moved between Households, it updates membership accordingly. This is a foundational handler for NPSP's Household Account model."
       },
       {
         "name": "HH_INaming",
@@ -465,7 +465,7 @@ const NPSP_ENTITIES = {
           "npo02__Naming_Exclusions__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_INaming.cls",
-        "description": ""
+        "description": "Interface that defines the contract for Household naming implementations in NPSP. Classes implementing this interface must provide methods for generating household names, formal greetings, and informal greetings. It references npo02__Naming_Exclusions__c to support per-Contact naming exclusion logic."
       },
       {
         "name": "HH_ManageHH_CTRL",
@@ -483,7 +483,7 @@ const NPSP_ENTITIES = {
           "npo02__Household__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_ManageHH_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the Manage Household page that handles Household creation and save operations. It provides logic for creating new Households with proper Account type configuration and saving member Contact associations. The controller works with the legacy npo02__Household__c object as well as modern Household Accounts."
       },
       {
         "name": "HH_ManageHousehold_EXT",
@@ -501,7 +501,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_ManageHousehold_EXT.cls",
-        "description": ""
+        "description": "Visualforce extension class that provides remote action methods for the Manage Household page. It supports finding Contacts, adding/removing Household members, and configuring naming overrides via JavaScript remoting calls. This extension powers the interactive, AJAX-driven portions of the Household management UI."
       },
       {
         "name": "HH_NameSpec",
@@ -522,7 +522,7 @@ const NPSP_ENTITIES = {
           "npo02__Naming_Exclusions__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_NameSpec.cls",
-        "description": ""
+        "description": "Core implementation of the HH_INaming interface that generates Household names, formal greetings, and informal greetings from configurable format strings. It parses name specification templates and applies them to Contact data, respecting naming exclusion flags. The class handles complex scenarios like multi-member Households with different last names and custom field references."
       },
       {
         "name": "HH_OppContactRoles_TDTM",
@@ -549,7 +549,7 @@ const NPSP_ENTITIES = {
           "npo02__household__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/HH_OppContactRoles_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that creates Opportunity Contact Roles for all Household members when a donation is made by any member. It assigns soft credit roles based on Household settings, record type exclusions, and the configured Household_Member_Contact_Role__c. This ensures all Household members receive appropriate soft credit on donations made by any single member."
       }
     ],
     "objects": [
@@ -656,7 +656,7 @@ const NPSP_ENTITIES = {
             "field": "Batch__c"
           }
         ],
-        "description": "",
+        "description": "The standard Salesforce Account object extended by NPSP with 21 custom fields for nonprofit-specific functionality. Key additions include matching gift configuration fields, the Grantmaker flag, deceased household tracking, and rollup mode controls. NPSP uses the Account object to represent both organizational donors and Household Accounts that group related Contacts.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Account"
       },
       {
@@ -772,7 +772,7 @@ const NPSP_ENTITIES = {
             "field": "Primary_Affiliation__c"
           }
         ],
-        "description": "",
+        "description": "The standard Salesforce Contact object extended by NPSP with 27 custom fields for donor management and household membership. Key additions include the Current_Address__c lookup, Deceased and Do_Not_Contact flags, soft credit rollup fields, and household naming exclusion checkboxes. The Contact is the primary person record in NPSP, linked to a Household Account and optionally to Address records.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Contact"
       },
       {
@@ -788,7 +788,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Legacy custom object that represented Households before NPSP migrated to the Household Account model. It contains a Number_of_Household_Members__c field and was used to group Contacts for naming and communication purposes. Organizations on newer NPSP versions use Household Accounts instead, but this object remains for backward compatibility.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npo02__Household__c"
       }
     ],
@@ -806,7 +806,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Account.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Account.trigger",
+        "description": "Master trigger on the Account object that delegates all DML events to the TDTM framework for handler dispatch. It covers before/after insert, update, delete, and undelete events, routing to handlers like ACCT_AccountMerge_TDTM and ACCT_CascadeDeleteLookups_TDTM. This single-trigger pattern ensures consistent execution order for all Account-related automation."
       },
       {
         "name": "TDTM_Contact",
@@ -821,7 +822,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Contact.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Contact.trigger",
+        "description": "Master trigger on the Contact object that routes all DML events through the TDTM framework. It delegates to registered handlers including CON_ContactMerge_TDTM, CON_DoNotContact_TDTM, and HH_Households_TDTM for before/after processing. This is the primary entry point for all Contact-related NPSP automation."
       },
       {
         "name": "TDTM_HouseholdObject",
@@ -836,14 +838,15 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_HouseholdObject.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_HouseholdObject.trigger",
+        "description": "Master trigger on the legacy npo02__Household__c object that routes DML events through the TDTM framework. It covers all before/after insert, update, delete, and undelete events, delegating to HH_HHObject_TDTM and related handlers. This trigger maintains automation support for organizations still using the legacy Household object."
       }
     ],
     "lwcs": [
       {
         "name": "potentialDuplicates",
         "imports": [],
-        "description": "",
+        "description": "Lightning Web Component that displays potential duplicate Contact or Account records identified by Salesforce duplicate rules. It presents matching records to users so they can review and merge duplicates directly from the record page. This component integrates with NPSP's Contact merge functionality for streamlined deduplication.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/potentialDuplicates"
       }
     ],
@@ -867,7 +870,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_Cicero_Validator.cls",
-        "description": ""
+        "description": "Address verification implementation that integrates with the Cicero API service for address validation and geocoding. It implements the ADDR_IValidator interface, providing methods for single and batch verification of Address__c records. The validator returns standardized address data and legislative district information from the Cicero service."
       },
       {
         "name": "ADDR_CopyAddrHHObjBTN_CTRL",
@@ -890,7 +893,7 @@ const NPSP_ENTITIES = {
           "npo02__MailingStreet__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_CopyAddrHHObjBTN_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the Copy Address button on legacy Household object records. It copies mailing address fields (Street, City, State, Postal Code, Country) from the npo02__Household__c record to its member Contacts. This provides a manual way to synchronize addresses in the legacy Household model."
       },
       {
         "name": "ADDR_GoogleGeoAPI_Validator",
@@ -913,7 +916,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_GoogleGeoAPI_Validator.cls",
-        "description": ""
+        "description": "Address verification implementation that integrates with the Google Geocoding API for address validation. It implements ADDR_IValidator and parses Google's structured address components into NPSP's Address__c fields. The validator supports configurable endpoints and handles address normalization, geocoding, and ambiguity detection."
       },
       {
         "name": "ADDR_IValidator",
@@ -925,7 +928,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_IValidator.cls",
-        "description": ""
+        "description": "Interface that defines the contract for address verification service implementations in NPSP. It requires methods for returning the service name, default URL, batch support status, and the core verifyRecords method. NPSP ships with SmartyStreets, Cicero, and Google implementations, and organizations can create custom validators by implementing this interface."
       },
       {
         "name": "ADDR_Seasonal_SCHED",
@@ -942,7 +945,7 @@ const NPSP_ENTITIES = {
           "npo02__Households_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_Seasonal_SCHED.cls",
-        "description": ""
+        "description": "Schedulable batch class that switches Contacts to their seasonal addresses when the configured date range begins or ends. It queries Address__c records with seasonal date ranges and updates the default address designation accordingly. This enables organizations to automatically route mail to alternate addresses during specific times of year."
       },
       {
         "name": "ADDR_SmartyStreets_Gateway",
@@ -960,7 +963,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_SmartyStreets_Gateway.cls",
-        "description": ""
+        "description": "Gateway class that handles HTTP communication with the SmartyStreets address verification API. It constructs API requests for single and batch address verification, as well as ZIP code lookups, and parses the JSON responses. This class is used by ADDR_SmartyStreets_Validator as the transport layer for the SmartyStreets integration."
       },
       {
         "name": "ADDR_SmartyStreets_Validator",
@@ -979,7 +982,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_SmartyStreets_Validator.cls",
-        "description": ""
+        "description": "Address verification implementation that integrates with the SmartyStreets API for US address validation and standardization. It implements ADDR_IValidator and supports both single-record and batch verification modes. The validator uses ADDR_SmartyStreets_Gateway for API communication and handles address correction, ZIP+4 completion, and deliverability checking."
       },
       {
         "name": "ADDR_Validator",
@@ -998,7 +1001,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_Validator.cls",
-        "description": ""
+        "description": "Orchestrator class that coordinates address verification by routing Address__c records to the configured ADDR_IValidator implementation. It provides both synchronous and @future verification methods, handles querying and updating Address records in bulk, and manages the verification button action. This class is the primary entry point for all address verification operations in NPSP."
       },
       {
         "name": "ADDR_Validator_Batch",
@@ -1016,7 +1019,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_Validator_Batch.cls",
-        "description": ""
+        "description": "Batch Apex class that processes large volumes of Address__c records for verification against the configured external service. It extends UTIL_AbstractChunkingLDV_BATCH to handle large data volumes in manageable chunks. This enables organizations to verify their entire address database asynchronously."
       },
       {
         "name": "ADDR_Validator_REST",
@@ -1028,7 +1031,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_Validator_REST.cls",
-        "description": ""
+        "description": "Lightweight REST resource class that exposes an endpoint for triggering address verification from external systems or UI components. It provides a simple API surface for invoking the ADDR_Validator logic via HTTP callouts. This class bridges REST requests to the core address verification infrastructure."
       },
       {
         "name": "ADDR_Validator_TDTM",
@@ -1042,7 +1045,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_Validator_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that automatically triggers address verification when Address__c records are inserted or updated. It checks whether automatic verification is enabled in settings and routes qualifying records to the ADDR_Validator class. This provides real-time address validation as part of the normal data entry workflow."
       },
       {
         "name": "ADDR_Validator_UTIL",
@@ -1059,7 +1062,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADDR_Validator_UTIL.cls",
-        "description": ""
+        "description": "Utility class that provides helper methods for address verification processing. It includes logic for trimming API response bodies to fit Salesforce field limits, detecting US addresses, identifying country codes, and determining street number formatting conventions. These utilities are shared across all ADDR_IValidator implementations."
       }
     ],
     "objects": [
@@ -1130,7 +1133,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom Settings object that stores the active configuration for address verification services in NPSP. It holds the verification endpoint URL, authentication credentials, the implementing class name, and behavioral flags like automatic verification and ambiguous address rejection. This is the runtime settings object that ADDR_Validator reads during verification.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Addr_Verification_Settings__c"
       },
       {
@@ -1206,7 +1209,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Deprecated Custom Settings object that previously stored address verification configuration before being superseded by Addr_Verification_Settings__c. It contains the same field structure including endpoint URLs, auth credentials, and verification flags, all marked as deprecated. This object remains in the codebase for backward compatibility with older NPSP installations.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Address_Verification_Settings__c"
       },
       {
@@ -1312,7 +1315,7 @@ const NPSP_ENTITIES = {
             "field": "Household_Account__c"
           }
         ],
-        "description": "",
+        "description": "Custom object that stores physical mailing addresses associated with Household Accounts via a Master-Detail relationship. It tracks 33 fields including street, city, state, ZIP, geolocation coordinates, verification status, congressional district, and seasonal date ranges. NPSP uses this object to maintain a full address history and support features like default address management and seasonal address switching.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Address__c"
       }
     ],
@@ -1330,7 +1333,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Address.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Address.trigger",
+        "description": "Master trigger on the Address__c custom object that routes all DML events through the TDTM framework. It covers before/after insert, update, delete, and undelete events, delegating to handlers like ADDR_Validator_TDTM for address verification. This single-trigger pattern ensures all address-related automation follows NPSP's consistent execution model."
       }
     ],
     "lwcs": [],
@@ -1356,7 +1360,7 @@ const NPSP_ENTITIES = {
           "npe01__SYSTEM_AccountType__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADV_Adapter.cls",
-        "description": ""
+        "description": "Provides an adapter layer for Advanced features integration, handling account configuration for contacts in different account models. It bridges NPSP's account processing logic with the one-to-one and household account models, offering methods to roll up accounts, move opportunities between contact accounts, and configure TDTM triggers for account operations. References system individual and account type fields to determine the correct account model behavior."
       },
       {
         "name": "ADV_PackageInfo_SVC",
@@ -1373,7 +1377,7 @@ const NPSP_ENTITIES = {
           "npe01__Contacts_And_Orgs_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ADV_PackageInfo_SVC.cls",
-        "description": ""
+        "description": "Service class that detects whether the Advancement package (ADV) is installed and provides API version information for NPSP. It queries Contacts and Orgs Settings to determine if advanced features should be used, enabling conditional logic throughout NPSP based on package availability. Serves as the central checkpoint for Advancement package integration decisions."
       },
       {
         "name": "AFFL_Affiliations_TDTM",
@@ -1392,7 +1396,7 @@ const NPSP_ENTITIES = {
           "npe01__SYSTEMIsIndividual__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AFFL_Affiliations_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that manages Affiliation records linking Contacts to Organizations. Extends TDTM_Runnable and fires on Contact and Account changes to automatically create, update, and clean up npe5__Affiliation__c records. Key behaviors include preventing duplicate affiliations, handling primary affiliation assignments, and synchronizing affiliation status when contacts move between accounts."
       },
       {
         "name": "AdditionalObjectJSON",
@@ -1409,7 +1413,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AdditionalObjectJSON.cls",
-        "description": ""
+        "description": "Handles JSON serialization and deserialization for additional object configurations used in Batch Data Import (BDI) field mappings. It manages dynamic source groups for soft credits and other supplemental data import relationships. Provides methods to add mapping entries, clear soft credit configurations, and convert mapping data to structured soft credit representations."
       },
       {
         "name": "AdvancedMappingEnablementService",
@@ -1424,7 +1428,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AdvancedMappingEnablementService.cls",
-        "description": ""
+        "description": "Service that manages the enablement state of Advanced Mapping for Batch Data Import (BDI). Provides simple enable/isEnabled methods to toggle and check whether the org uses advanced field mapping instead of legacy help text-based mappings. Acts as a feature gate that other Gift Entry and BDI components query before processing field mappings."
       },
       {
         "name": "AdvancedMappingEnablementServiceMock",
@@ -1439,7 +1443,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AdvancedMappingEnablementServiceMock.cls",
-        "description": ""
+        "description": "Test mock class that implements StubProvider to simulate AdvancedMappingEnablementService behavior in unit tests. Allows test methods to control the enabled/disabled state of Advanced Mapping without modifying actual custom settings. Used by Gift Entry and BDI test classes to isolate feature enablement from the system under test."
       },
       {
         "name": "AggregateResultProxy",
@@ -1454,7 +1458,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AggregateResultProxy.cls",
-        "description": ""
+        "description": "Wrapper class that provides a testable proxy around Salesforce's AggregateResult type, which cannot be directly constructed in Apex tests. Offers methods to create instances with aggregate result data and retrieve values by alias. Used throughout NPSP rollup and reporting logic where aggregate SOQL queries need to be unit-testable."
       },
       {
         "name": "AllocationParent",
@@ -1481,7 +1485,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AllocationParent.cls",
-        "description": ""
+        "description": "Domain class representing the parent record (Opportunity or Payment) that owns GAU (General Accounting Unit) Allocations. Provides polymorphic behavior to handle both Opportunity-based and Payment-based allocations, exposing methods for currency code, object type detection, and lookup field resolution. References Payment and Recurring Donation objects to support allocation distribution across different donation contexts."
       },
       {
         "name": "AllocationSelector",
@@ -1495,7 +1499,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AllocationSelector.cls",
-        "description": ""
+        "description": "Selector class responsible for querying GAU Allocation records associated with Opportunities. Follows the selector pattern from NPSP's layered architecture, encapsulating SOQL queries for allocation data retrieval. Used by allocation processing logic to fetch existing allocations when recalculating or validating distribution percentages."
       },
       {
         "name": "AsyncApexJobId",
@@ -1509,7 +1513,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AsyncApexJobId.cls",
-        "description": ""
+        "description": "Value object that wraps a Salesforce AsyncApexJob ID with validation logic, extending Exception for error handling. Provides a value() accessor that returns the validated job identifier. Used across NPSP's batch processing infrastructure to pass and validate references to queued, scheduled, or batch apex jobs."
       },
       {
         "name": "AsyncApexJobSelector",
@@ -1523,7 +1527,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AsyncApexJobSelector.cls",
-        "description": ""
+        "description": "Selector class that queries the AsyncApexJob system object to retrieve information about running or completed asynchronous Apex jobs. Provides the selectAsyncJobBy method to look up job status, progress, and error details. Supports NPSP's batch processing monitoring in the Health Check and settings pages."
       },
       {
         "name": "BDE_BatchDataEntry",
@@ -1546,7 +1550,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDE_BatchDataEntry.cls",
-        "description": ""
+        "description": "Core configuration class for NPSP's legacy Batch Data Entry feature, managing field sets, query construction, and object metadata for batch entry forms. Provides methods to retrieve entry field lists, list field configurations, and batch lookup field names for supported objects. Serves as the data layer between the Batch Data Entry UI and Salesforce field metadata."
       },
       {
         "name": "BDE_BatchEntry_CTRL",
@@ -1568,7 +1572,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDE_BatchEntry_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the legacy Batch Data Entry page, handling batch initialization, record editing, and save operations. Manages the user workflow of loading a batch, entering records, and processing entries through the BDE_BatchDataEntry configuration class. Includes a retirement alert upsert method as this feature has been superseded by the newer Gift Entry system."
       },
       {
         "name": "CAM_CascadeDeleteLookups_TDTM",
@@ -1582,7 +1586,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CAM_CascadeDeleteLookups_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler for cascade delete operations on Campaign-related records. Extends CDL_CascadeDeleteLookups_TDTM and overrides the load method to define which child records should be automatically deleted or undeleted when a Campaign is removed or restored. Participates in NPSP's cascade delete framework to maintain referential integrity for Campaign hierarchies."
       },
       {
         "name": "CAO_Constants",
@@ -1604,7 +1608,7 @@ const NPSP_ENTITIES = {
           "npe01__SYSTEM_AccountType__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CAO_Constants.cls",
-        "description": ""
+        "description": "Central constants class for Contact and Organization (CAO) account model detection in NPSP. Provides static methods like isOneToOne, isBucketModel, and isHHAccountModel to determine the active account model from org settings. References the Account Processor setting and system fields to identify whether contacts use one-to-one accounts, the individual bucket account, or household accounts."
       },
       {
         "name": "CAO_Constants_API",
@@ -1616,7 +1620,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CAO_Constants_API.cls",
-        "description": ""
+        "description": "Public API wrapper that exposes CAO_Constants account model detection methods to external packages and managed code. Provides a stable, versioned interface for determining the active NPSP account model (one-to-one, bucket, or household). Ensures external integrations can query account model configuration without depending on internal implementation details."
       },
       {
         "name": "CDL_CascadeDeleteLookups",
@@ -1639,7 +1643,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CDL_CascadeDeleteLookups.cls",
-        "description": ""
+        "description": "Core engine class for NPSP's Cascade Delete Lookups framework, orchestrating the loading, validation, deletion, and undeletion of child records when a parent is deleted. Provides a fluent API with setLoader, setValidator, setDeletedRecords, and setUndeletedRecords methods to configure cascade behavior. Called by object-specific CDL TDTM handlers to enforce referential integrity across NPSP's data model."
       },
       {
         "name": "CDL_CascadeDeleteLookups_TDTM",
@@ -1654,7 +1658,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CDL_CascadeDeleteLookups_TDTM.cls",
-        "description": ""
+        "description": "Base TDTM trigger handler for cascade delete operations, extending TDTM_Runnable. Provides the run method that coordinates with CDL_CascadeDeleteLookups to execute cascade deletes and undeletes when parent records change. Object-specific cascade delete handlers (like CAM_CascadeDeleteLookups_TDTM) extend this class and override getCascadeDeleteLoader to define their child record relationships."
       },
       {
         "name": "CMT_FilterRule",
@@ -1670,7 +1674,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CMT_FilterRule.cls",
-        "description": ""
+        "description": "Represents a single filter rule within a Custom Metadata Type-based filter group, used by Customizable Rollups (CRLP). Implements ICompare to evaluate whether a given record meets the rule's criteria based on field, operator, and value. Provides methods to determine the target object type and cache key prefix, enabling efficient rule evaluation during rollup calculations."
       },
       {
         "name": "CMT_FilterRuleEvaluation_SVC",
@@ -1686,7 +1690,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CMT_FilterRuleEvaluation_SVC.cls",
-        "description": ""
+        "description": "Service class that evaluates filter groups composed of multiple CMT_FilterRule instances against records during Customizable Rollup processing. Manages an evaluation cache for performance optimization and provides specialized comparison logic for date types and constants. Acts as the runtime engine that determines whether an Opportunity or Payment record should be included in a rollup calculation."
       },
       {
         "name": "CMT_FilterRuleUI_SVC",
@@ -1701,7 +1705,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CMT_FilterRuleUI_SVC.cls",
-        "description": ""
+        "description": "Service class that provides UI-facing data for the filter rule configuration interface in NPSP Settings. Exposes methods to retrieve available filter operations (equals, not equals, greater than, etc.) and available fields for a given object. Powers the Customizable Rollups filter rule builder in the NPSP Settings page."
       },
       {
         "name": "CMT_FilterRule_SEL",
@@ -1721,7 +1725,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CMT_FilterRule_SEL.cls",
-        "description": ""
+        "description": "Selector class that queries and caches Custom Metadata Type records for filter groups and filter rules used in Customizable Rollups. Provides lookups by ID, developer name, and object type, plus methods to extract referenced fields per object for SOQL query construction. Central to CRLP's initialization, ensuring all filter definitions are loaded efficiently from custom metadata."
       },
       {
         "name": "CMT_MetadataAPI",
@@ -1739,7 +1743,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CMT_MetadataAPI.cls",
-        "description": ""
+        "description": "Provides Metadata API deployment capabilities for creating, updating, and deleting Custom Metadata Type records in NPSP. Wraps the Salesforce Metadata.DeployContainer to handle asynchronous CMT deployments with unique job tracking. Used by CRLP and other settings components that store configuration in custom metadata rather than custom settings."
       },
       {
         "name": "CONV_Account_Conversion_BATCH",
@@ -1801,7 +1805,7 @@ const NPSP_ENTITIES = {
           "npo02__TotalOppAmount__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CONV_Account_Conversion_BATCH.cls",
-        "description": ""
+        "description": "Batch Apex class that performs bulk conversion of Contact accounts from one account model to another (e.g., one-to-one to household). Processes contacts in batch scope, migrating household fields, opportunity associations, rollup data, and address information to the target account structure. References extensive household and donation rollup fields across the npe01 and npo02 namespaces to ensure complete data migration."
       },
       {
         "name": "CONV_Account_Conversion_CTRL",
@@ -1874,7 +1878,7 @@ const NPSP_ENTITIES = {
           "npo02__TotalOppAmount__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CONV_Account_Conversion_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the Account Conversion wizard that guides administrators through migrating between NPSP account models. Handles pre-conversion validation checks, field type verification, batch query construction, and conversion job execution. References a comprehensive set of household, donation, and membership fields to validate data compatibility before launching CONV_Account_Conversion_BATCH."
       },
       {
         "name": "CallableApiApexDelegationService",
@@ -1888,7 +1892,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CallableApiApexDelegationService.cls",
-        "description": ""
+        "description": "Service class that handles delegated Apex scheduling operations through NPSP's Callable API. Provides the handleApexScheduleJob method to programmatically schedule or reschedule Apex jobs via the System.Callable interface. Enables external packages and LWC components to trigger scheduled job management without direct Apex class references."
       },
       {
         "name": "CallableApiParameters",
@@ -1911,7 +1915,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CallableApiParameters.cls",
-        "description": ""
+        "description": "Parameter extraction and validation utility for NPSP's Callable API interface. Provides typed accessors (getString, getBoolean, getDate, getListString, etc.) with configurable required-parameter and empty-string validation. Used by Callable_API and its dispatch chain to safely extract and validate parameters from the generic Map<String, Object> passed through the System.Callable interface."
       },
       {
         "name": "CallableDispatchService_ERR",
@@ -1926,7 +1930,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CallableDispatchService_ERR.cls",
-        "description": ""
+        "description": "Error handling dispatch service that routes Callable API exceptions to appropriate error handlers in NPSP. Provides factory-style getInstanceOf and dispatch methods to create and execute error-specific processing. Integrates with NPSP's error logging framework (ERR_ classes) to capture and record failures that occur during Callable API operations."
       },
       {
         "name": "Callable_API",
@@ -1942,7 +1946,7 @@ const NPSP_ENTITIES = {
           "npe01__OppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/Callable_API.cls",
-        "description": ""
+        "description": "Primary implementation of Salesforce's System.Callable interface for NPSP, serving as the main entry point for external API calls into the package. Routes incoming calls via the call method to appropriate internal services based on action name and parameters. Supports operations across payments, Gift Entry, recurring donations, and other NPSP features through a single, loosely-coupled integration point."
       },
       {
         "name": "ContactMergeService",
@@ -1959,7 +1963,7 @@ const NPSP_ENTITIES = {
           "npe01__SYSTEM_AccountType__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ContactMergeService.cls",
-        "description": ""
+        "description": "Service class that handles Contact merge operations within NPSP's account model framework. Executes mergeContacts to combine duplicate Contact records while respecting private contact flags and system account types. Ensures that merged contacts maintain proper account associations and that NPSP-specific fields are preserved according to the active account model."
       },
       {
         "name": "CustomNotificationTypeSelector",
@@ -1973,7 +1977,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CustomNotificationTypeSelector.cls",
-        "description": ""
+        "description": "Selector class that queries CustomNotificationType metadata to retrieve notification type configurations by name. Used by NPSP's notification framework to look up the correct notification type IDs for sending custom platform notifications. Supports the installation notification system and other in-app notification features."
       },
       {
         "name": "DeceasedBatch",
@@ -1991,7 +1995,7 @@ const NPSP_ENTITIES = {
           "npe01__SYSTEM_AccountType__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/DeceasedBatch.cls",
-        "description": ""
+        "description": "Batch Apex class that processes deceased Contact records to update their associated accounts and suppress future communications. Queries contacts marked as deceased and updates organization type and system account type fields accordingly. Ensures data hygiene by systematically handling deceased donor records across the NPSP data model."
       },
       {
         "name": "Donation",
@@ -2011,7 +2015,7 @@ const NPSP_ENTITIES = {
           "npe01__Written_Off__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/Donation.cls",
-        "description": ""
+        "description": "Domain class representing a single donation (Opportunity with its related Payments and Soft Credits) in NPSP's Gift Entry architecture. Provides accessors for the underlying opportunity, unpaid payments filtered by paid/written-off status, and associated soft credit records. Serves as a rich domain object that encapsulates the full donation context for processing and display."
       },
       {
         "name": "DonationDTO",
@@ -2023,7 +2027,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/DonationDTO.cls",
-        "description": ""
+        "description": "Data Transfer Object for passing donation information between layers in NPSP's Gift Entry and donation management features. Provides a lightweight, serializable representation of donation data without the overhead of full SObject records. Used in API responses and LWC component communication for donation-related operations."
       },
       {
         "name": "DonationHistoryController",
@@ -2039,7 +2043,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/DonationHistoryController.cls",
-        "description": ""
+        "description": "LWC controller that provides donation history data for the donor experience portal. Exposes methods to retrieve donation records by contact, get years with donation activity, and resolve contact IDs from community user IDs. Powers the self-service donation history view available to donors through Experience Cloud sites."
       },
       {
         "name": "DonationSelector",
@@ -2064,7 +2068,7 @@ const NPSP_ENTITIES = {
           "npe01__Written_Off__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/DonationSelector.cls",
-        "description": ""
+        "description": "Selector class that queries Opportunity and Payment records for the donation management subsystem. Provides methods to fetch open donations (unpaid), single donations by ID, and multiple donations with their payment details. References payment fields including amount, date, scheduled date, and paid/written-off status to build complete donation views."
       },
       {
         "name": "DonationService",
@@ -2078,7 +2082,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/DonationService.cls",
-        "description": ""
+        "description": "Service layer class that orchestrates donation retrieval and view model construction for Gift Entry's donation matching feature. Provides getDonationsView to assemble a list of donation view models from queried data. Acts as the intermediary between the DonationSelector data access layer and the LWC presentation layer."
       },
       {
         "name": "DonationView",
@@ -2090,7 +2094,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/DonationView.cls",
-        "description": ""
+        "description": "View model class that represents a donation record formatted for display in Gift Entry LWC components. Contains pre-formatted properties suitable for direct binding in Lightning Web Components. Works with DonationService to present donation matching candidates during gift entry processing."
       },
       {
         "name": "Donations",
@@ -2105,7 +2109,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/Donations.cls",
-        "description": ""
+        "description": "Collection domain class that manages a set of Donation objects for batch processing in Gift Entry. Provides methods to retrieve all donations and find a specific donation for a given record. Used by the Gift Entry matching and processing pipeline to work with multiple donation candidates simultaneously."
       },
       {
         "name": "DonationsDTO",
@@ -2117,7 +2121,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/DonationsDTO.cls",
-        "description": ""
+        "description": "Data Transfer Object for transferring a collection of donation records between service layers. Provides a serializable container for multiple donation entries used in API responses and inter-component communication. Pairs with DonationDTO to support bulk donation data operations in the Gift Entry subsystem."
       },
       {
         "name": "DonationsView",
@@ -2129,7 +2133,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/DonationsView.cls",
-        "description": ""
+        "description": "View model class representing a collection of donation views for display in Gift Entry LWC components. Serves as the container returned by DonationService.getDonationsView for rendering donation matching results. Provides the structured data format expected by the Gift Entry front-end for displaying multiple donation options."
       },
       {
         "name": "ElevateAdNotificationContent",
@@ -2144,7 +2148,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateAdNotificationContent.cls",
-        "description": ""
+        "description": "Implements IInstallationNotification to provide promotional notification content for the Elevate payment processing platform. Supplies title and body text for in-app notifications encouraging admins to explore Elevate integration. Delivered through NPSP's installation notification framework during package upgrades or initial setup."
       },
       {
         "name": "ElevateBatch",
@@ -2161,7 +2165,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateBatch.cls",
-        "description": ""
+        "description": "Domain class representing a batch of payment authorizations sent to the Elevate payment gateway for processing. Provides methods to create a new batch, add or remove items, and retrieve the Elevate batch ID. Coordinates with ElevateBatchService to manage the lifecycle of grouped payment authorizations before capture."
       },
       {
         "name": "ElevateBatchCapturer",
@@ -2179,7 +2183,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateBatchCapturer.cls",
-        "description": ""
+        "description": "Handles the partitioned capture of authorized payments within an Elevate batch, processing them in groups to stay within API limits. Tracks partition size and current index, executing capture requests incrementally via hasGroupsToCapture and execute methods. Ensures large gift batches with Elevate payments are captured reliably without exceeding callout or governor limits."
       },
       {
         "name": "ElevateBatchItem",
@@ -2202,7 +2206,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateBatchItem.cls",
-        "description": ""
+        "description": "Domain class representing a single item within an Elevate payment batch, containing gateway transaction details and card information. Provides accessors for gateway ID, transaction ID, authorization timestamp, card last four digits, network, and expiration details. Used during Elevate batch processing to track individual payment authorization states."
       },
       {
         "name": "ElevateBatchItemCreateResponse",
@@ -2225,7 +2229,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateBatchItemCreateResponse.cls",
-        "description": ""
+        "description": "Response parser for the Elevate API's batch item creation endpoint, deserializing JSON responses into structured Apex objects. Extracts fields including batch item type, next payment date, frequency, gateway details, and version information. Supports both one-time and recurring payment item responses from the Elevate payment platform."
       },
       {
         "name": "ElevateBatchItemType",
@@ -2237,7 +2241,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateBatchItemType.cls",
-        "description": ""
+        "description": "Enum-style constants class that defines the types of items that can exist within an Elevate payment batch. Distinguishes between one-time payments and recurring commitment items. Referenced by ElevateBatchItem and related classes to determine processing logic based on item type."
       },
       {
         "name": "ElevateBatchResponse",
@@ -2256,7 +2260,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateBatchResponse.cls",
-        "description": ""
+        "description": "Response parser for Elevate batch-level API operations, providing status, error, and validation information. Includes methods to check if a capture response is valid, extract the first error message, and parse raw JSON responses. Used by ElevateBatchService to interpret API results after batch creation and capture operations."
       },
       {
         "name": "ElevateBatchService",
@@ -2274,7 +2278,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateBatchService.cls",
-        "description": ""
+        "description": "Core service class that manages communication with the Elevate payment gateway for batch operations. Provides methods to build batch item requests, send add requests, retrieve batches, and enqueue payment capture jobs. Coordinates between Gift Entry's batch processing pipeline and the Elevate API to handle payment authorization and capture workflows."
       },
       {
         "name": "ElevateBatchServiceInvalidRequest",
@@ -2291,7 +2295,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateBatchServiceInvalidRequest.cls",
-        "description": ""
+        "description": "Extends ElevateBatchService to handle cases where Elevate batch requests are invalid or the integration is not properly configured. Overrides key methods to return appropriate error responses instead of making actual API calls. Acts as a null-object pattern implementation that prevents runtime errors when Elevate is not available."
       },
       {
         "name": "ElevateBatchServiceValidRequest",
@@ -2306,7 +2310,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateBatchServiceValidRequest.cls",
-        "description": ""
+        "description": "Extends ElevateBatchService to handle valid Elevate batch requests with full API integration. Implements addToElevateBatch and createElevateBatch with actual HTTP callouts to the Elevate payment platform. Works in tandem with ElevateBatchServiceInvalidRequest to provide a strategy pattern based on request validity."
       },
       {
         "name": "ElevateCreateBatchItemRequest",
@@ -2323,7 +2327,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateCreateBatchItemRequest.cls",
-        "description": ""
+        "description": "Builds the HTTP request payload for creating a new batch item in the Elevate payment gateway. Constructs typed schedule information for recurring donations using installment period and recurring donation references. Handles the translation of NPSP donation data into the Elevate API's expected request format."
       },
       {
         "name": "ElevateCreateBatchItemRequestDTO",
@@ -2335,7 +2339,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateCreateBatchItemRequestDTO.cls",
-        "description": ""
+        "description": "Data Transfer Object for the Elevate batch item creation request payload. Provides a serializable structure matching the Elevate API's expected JSON schema for new batch items. Used by ElevateCreateBatchItemRequest to assemble the request body before API submission."
       },
       {
         "name": "ElevatePaymentMethod",
@@ -2347,7 +2351,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevatePaymentMethod.cls",
-        "description": ""
+        "description": "Enum-style constants class defining supported payment methods in the Elevate payment platform (e.g., credit card, ACH). Provides a consistent set of payment method identifiers used throughout the Elevate integration layer. Referenced by Gift Entry and recurring donation components when specifying payment type."
       },
       {
         "name": "ElevateTransactionStatus",
@@ -2359,7 +2363,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ElevateTransactionStatus.cls",
-        "description": ""
+        "description": "Enum-style constants class defining the possible statuses of an Elevate payment transaction (e.g., authorized, captured, declined). Provides consistent status values used across Elevate integration classes for status tracking and display. Referenced by Gift Entry processing to determine appropriate actions based on payment state."
       },
       {
         "name": "ErrorRecord",
@@ -2378,7 +2382,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ErrorRecord.cls",
-        "description": ""
+        "description": "Utility class that wraps an SObject record with error tracking capabilities, supporting multiple error messages per record. Provides methods to add errors, check for errors, and retrieve error details for a given record. Used throughout NPSP's processing pipelines to collect and report record-level errors without immediately throwing exceptions."
       },
       {
         "name": "GAU_TDTM",
@@ -2392,7 +2396,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GAU_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler for General Accounting Unit (GAU) records, extending TDTM_Runnable. Executes validation and processing logic when GAU records are created, updated, or deleted. Ensures GAU data integrity within NPSP's allocation framework, such as preventing deactivation of GAUs with active allocations."
       },
       {
         "name": "GS_ApplicationStatusController",
@@ -2407,7 +2411,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GS_ApplicationStatusController.cls",
-        "description": ""
+        "description": "LWC controller for the Getting Started (GS) application status card in the NPSP Settings hub. Provides methods to check if the org is active and retrieve the current application status for nonprofit trial orgs. Works with GS_NonprofitTrialOrgService to display relevant setup guidance based on org licensing state."
       },
       {
         "name": "GS_ChecklistSetup",
@@ -2424,7 +2428,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GS_ChecklistSetup.cls",
-        "description": ""
+        "description": "Manages the Getting Started checklist items displayed in the NPSP Settings hub to guide administrators through initial configuration. Implements Comparable for sorting checklist items by priority and provides methods to retrieve and update checklist completion states. Stores checklist progress and dynamically adjusts displayed items based on org configuration and namespace."
       },
       {
         "name": "GS_NonprofitTrialOrgService",
@@ -2440,7 +2444,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GS_NonprofitTrialOrgService.cls",
-        "description": ""
+        "description": "Service class that detects and provides information about nonprofit trial org status, including sandbox detection and license expiration dates. Exposes methods for application date, expiration date, and sandbox identification. Used by the Getting Started experience to display appropriate messaging and urgency for trial org administrators."
       },
       {
         "name": "Gift",
@@ -2463,7 +2467,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/Gift.cls",
-        "description": ""
+        "description": "Core domain class in the Gift Entry subsystem representing a single gift (Data Import record) with its associated donation and soft credits. Provides a rich interface including status tracking, batch association, Elevate reauthorization checks, BDI dry-run processing, and record save/delete operations. Central to the Gift Entry processing pipeline, coordinating between the UI layer and BDI processing engine."
       },
       {
         "name": "GiftBatch",
@@ -2486,7 +2490,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatch.cls",
-        "description": ""
+        "description": "Domain class representing a batch of gifts in the Gift Entry system, implementing IGiftBatch. Manages batch-level operations including Elevate payment capture, gift failure handling, processing enqueue eligibility, and batch updates. Coordinates between standard gift processing and Elevate-authorized gifts, handling the complete lifecycle from gift addition through final resolution."
       },
       {
         "name": "GiftBatchAggregateGroupName",
@@ -2498,7 +2502,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatchAggregateGroupName.cls",
-        "description": ""
+        "description": "Enum-style constants class that defines the grouping categories used when aggregating gift batch totals by status. Provides consistent group names (e.g., processing, failed, imported) for batch summary calculations. Referenced by GiftBatchGroupedTotals and GiftBatchTotals for categorizing gifts during batch status reporting."
       },
       {
         "name": "GiftBatchDTO",
@@ -2510,7 +2514,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatchDTO.cls",
-        "description": ""
+        "description": "Data Transfer Object that provides a serializable representation of a Gift Batch for API communication and LWC component data binding. Contains batch-level properties including configuration settings and processing parameters. Used to transfer gift batch data between the Apex service layer and Lightning Web Components."
       },
       {
         "name": "GiftBatchForQueueable",
@@ -2531,7 +2535,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatchForQueueable.cls",
-        "description": ""
+        "description": "Specialized gift batch class designed for processing within Salesforce's Queueable Apex framework. Manages chunked processing of gifts with methods for chunk preparation, recurring gift preprocessing, Elevate batch capture, and incremental processing. Enables large gift batches to be processed asynchronously while respecting governor limits through controlled chunk sizes."
       },
       {
         "name": "GiftBatchGroupedTotals",
@@ -2545,7 +2549,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatchGroupedTotals.cls",
-        "description": ""
+        "description": "Provides grouped total calculations for a gift batch, organizing totals by status category (processing, failed, imported, etc.). Exposes the totalsFor method to retrieve GiftBatchTotals for a specific aggregate group name. Used by GiftBatchService to provide batch summary statistics for the Gift Entry UI."
       },
       {
         "name": "GiftBatchId",
@@ -2559,7 +2563,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatchId.cls",
-        "description": ""
+        "description": "Value object that wraps and validates a Gift Batch record ID, extending Exception for validation error handling. Provides a value() accessor that returns the validated Salesforce ID. Used throughout the Gift Entry subsystem to ensure type-safe passing of batch identifiers between components."
       },
       {
         "name": "GiftBatchSelector",
@@ -2577,7 +2581,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatchSelector.cls",
-        "description": ""
+        "description": "Selector class that queries DataImportBatch__c records and their associated gift aggregates for the Gift Entry system. Provides methods to select batches by ID, retrieve grouped status summaries, and calculate total batch amounts. Supports the Gift Entry UI with efficient batch-level queries including status breakdowns."
       },
       {
         "name": "GiftBatchService",
@@ -2600,7 +2604,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatchService.cls",
-        "description": ""
+        "description": "Primary service class for Gift Entry batch operations, orchestrating gift processing, Elevate integration, and batch management. Provides methods for access checks, batch totals retrieval, gift processing initiation, RD2 async process management, and view model construction. Serves as the main coordination point between Gift Entry LWC controllers and the underlying domain/selector layers."
       },
       {
         "name": "GiftBatchStatusGroup",
@@ -2620,7 +2624,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatchStatusGroup.cls",
-        "description": ""
+        "description": "Represents a status-based grouping of gifts within a batch, providing record counts and status classification methods. Exposes boolean checkers for imported, processing, failed, payment-failed, payment-authorized, and authorization-expired states. Used by GiftBatchGroupedTotals to categorize and count gifts by their current processing status."
       },
       {
         "name": "GiftBatchTotals",
@@ -2636,7 +2640,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatchTotals.cls",
-        "description": ""
+        "description": "Calculates and holds running totals for a gift batch including total gift count, total amount, and per-status breakdowns. Provides toMap serialization for LWC component consumption and accessor methods for key metrics. Powers the batch summary cards displayed in the Gift Entry batch processing interface."
       },
       {
         "name": "GiftBatchView",
@@ -2648,7 +2652,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatchView.cls",
-        "description": ""
+        "description": "View model class that represents a gift batch formatted for display in Gift Entry LWC components. Contains pre-formatted batch properties suitable for direct Lightning Web Component data binding. Returned by GiftBatchService.viewModelFrom to provide the presentation layer with batch display data."
       },
       {
         "name": "GiftBatches",
@@ -2662,7 +2666,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftBatches.cls",
-        "description": ""
+        "description": "Collection domain class extending fflib_SObjects2 for working with multiple DataImportBatch__c records as a typed collection. Provides the getGroupedTotals method to calculate aggregate totals across multiple gift batches. Leverages the fflib enterprise patterns for consistent collection behavior and SObject list management."
       },
       {
         "name": "GiftDTO",
@@ -2674,7 +2678,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftDTO.cls",
-        "description": ""
+        "description": "Data Transfer Object for transferring individual gift record data between service layers and LWC components. Provides a lightweight, serializable representation of a single gift entry. Used in Gift Entry API responses and controller method return types for clean data transport."
       },
       {
         "name": "GiftEntryEnablementService",
@@ -2689,7 +2693,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftEntryEnablementService.cls",
-        "description": ""
+        "description": "Service class that manages the feature enablement state of Gift Entry in the NPSP org. Provides enable and isEnabled methods to toggle and query whether the Gift Entry feature is active. Acts as a feature gate checked by Gift Entry controllers and components before rendering or processing gift entry functionality."
       },
       {
         "name": "GiftEntryProcessorQueue",
@@ -2703,7 +2707,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftEntryProcessorQueue.cls",
-        "description": ""
+        "description": "Queueable Apex class that processes gift batches asynchronously, executing the main gift processing pipeline outside of the synchronous request context. Implements the execute method to process a GiftBatchForQueueable in controlled chunks. Chains additional queueable jobs as needed to process remaining chunks, enabling large batch processing within governor limits."
       },
       {
         "name": "GiftEntryProcessorQueueFinalizer",
@@ -2717,7 +2721,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftEntryProcessorQueueFinalizer.cls",
-        "description": ""
+        "description": "Implements the Finalizer interface to handle post-processing cleanup after GiftEntryProcessorQueue queueable execution completes. Executes regardless of whether the queueable succeeded or failed, ensuring batch status is updated appropriately. Provides error recovery and status finalization for the asynchronous gift processing pipeline."
       },
       {
         "name": "GiftId",
@@ -2731,7 +2735,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftId.cls",
-        "description": ""
+        "description": "Value object that wraps and validates a Gift (Data Import) record ID, extending Exception for validation error handling. Provides a value() accessor that returns the validated Salesforce ID. Ensures type-safe identification of individual gift records throughout the Gift Entry processing pipeline."
       },
       {
         "name": "GiftSelector",
@@ -2746,7 +2750,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftSelector.cls",
-        "description": ""
+        "description": "Selector class that queries DataImport__c records (gifts) with their associated fields for the Gift Entry system. Provides getGiftsFor to retrieve gifts belonging to a specific batch and getGiftById for single-record lookups. Encapsulates the SOQL queries needed to load gift records with all required fields for processing and display."
       },
       {
         "name": "GiftService",
@@ -2761,7 +2765,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftService.cls",
-        "description": ""
+        "description": "Service layer class that coordinates gift-level operations in the Gift Entry system. Provides viewModelFrom to construct gift view models for LWC display and saveSingle to persist individual gift records. Acts as the intermediary between Gift Entry LWC controllers and the Gift domain/selector layer."
       },
       {
         "name": "GiftTemplate",
@@ -2776,7 +2780,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftTemplate.cls",
-        "description": ""
+        "description": "Domain class representing a Gift Entry form template that defines which fields appear on the gift entry form. Provides methods to extract the list of gift field API names and detect whether the template includes the Elevate payment widget. Used by Gift Entry components to dynamically render form fields based on administrator-configured templates."
       },
       {
         "name": "GiftView",
@@ -2788,7 +2792,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftView.cls",
-        "description": ""
+        "description": "View model class representing a single gift record formatted for display in Gift Entry LWC components. Contains pre-formatted gift properties suitable for direct Lightning Web Component binding. Returned by GiftService.viewModelFrom to provide the presentation layer with gift display data."
       },
       {
         "name": "Gift_Test",
@@ -2802,7 +2806,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/Gift_Test.cls",
-        "description": ""
+        "description": "Test utility class for the Gift Entry subsystem that implements StubProvider to create mock Gift-related objects. Provides handleMethodCall to intercept and stub method calls on Gift domain objects during unit testing. Enables isolated testing of Gift Entry processing logic without database dependencies."
       },
       {
         "name": "Gifts",
@@ -2825,7 +2829,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/Gifts.cls",
-        "description": ""
+        "description": "Collection domain class that manages a set of Gift objects for batch-level processing in Gift Entry. Provides methods for adding, finding, filtering authorized gifts, converting to Data Import records, preprocessing recurring gifts, and transitioning gifts to processing status. Central to the Gift Entry batch processing pipeline, managing the in-memory collection of gifts through their processing lifecycle."
       },
       {
         "name": "GiftsSelectorForProcessing",
@@ -2839,7 +2843,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GiftsSelectorForProcessing.cls",
-        "description": ""
+        "description": "Specialized selector class that queries gift records (DataImport__c) that are ready to transition to processing status. Provides getGiftsReadyToMoveToProcessing to identify gifts that meet the criteria for batch processing initiation. Used by GiftBatchForQueueable to determine which gifts in a batch should be included in the next processing chunk."
       },
       {
         "name": "IAddress",
@@ -2851,7 +2855,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/IAddress.cls",
-        "description": ""
+        "description": "Interface defining the contract for address objects in NPSP's address management framework. Declares methods for address field access, comparison, and household association that implementing classes must provide. Implemented by NPSP_Address to enable polymorphic address handling across household, contact, and account address operations."
       },
       {
         "name": "IAudience",
@@ -2863,7 +2867,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/IAudience.cls",
-        "description": ""
+        "description": "Interface defining the contract for audience detection in NPSP's notification and feature targeting system. Declares the audience method that implementing classes use to identify the current user's audience segment. Used by the installation notification framework to deliver targeted messages based on user role or permissions."
       },
       {
         "name": "IGiftBatch",
@@ -2875,7 +2879,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/IGiftBatch.cls",
-        "description": ""
+        "description": "Interface defining the contract for gift batch operations in the Gift Entry system. Declares methods that GiftBatch and related implementations must provide for batch-level gift processing. Enables polymorphic handling of gift batches across different processing contexts (synchronous vs. queueable)."
       },
       {
         "name": "IHouseholdMembers",
@@ -2887,7 +2891,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/IHouseholdMembers.cls",
-        "description": ""
+        "description": "Interface defining the contract for accessing household member collections in NPSP's household management framework. Declares methods for retrieving contact members belonging to a household. Used by household naming, greeting, and address processing to work with household membership in a testable, decoupled manner."
       },
       {
         "name": "IIndividualBucketAccountSelector",
@@ -2899,7 +2903,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/IIndividualBucketAccountSelector.cls",
-        "description": ""
+        "description": "Interface defining the contract for querying the Individual Bucket Account used in NPSP's bucket account model. Declares the method signature for retrieving the designated individual account record. Implemented by IndividualBucketAccountSelector and mockable for testing bucket account lookup logic."
       },
       {
         "name": "IInstallationNotification",
@@ -2911,7 +2915,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/IInstallationNotification.cls",
-        "description": ""
+        "description": "Interface defining the contract for installation notification content providers in NPSP. Declares title and body methods that notification content classes must implement. Used by InstallationNotifications to polymorphically render different notification messages (e.g., ElevateAdNotificationContent) during package installation or upgrade."
       },
       {
         "name": "INamingExclusions",
@@ -2923,7 +2927,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/INamingExclusions.cls",
-        "description": ""
+        "description": "Interface (or base class) defining the contract for household naming exclusion logic in NPSP. Provides the framework for determining which contacts should be excluded from automatic household name and greeting generation. Extended by INamingExclusionsString to support different exclusion storage formats."
       },
       {
         "name": "INamingExclusionsString",
@@ -2935,7 +2939,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/INamingExclusionsString.cls",
-        "description": ""
+        "description": "Extends INamingExclusions to implement naming exclusion logic based on string-encoded exclusion data stored on Contact records. Parses the SYSTEM_CUSTOM_NAMING field to determine which naming fields (formal greeting, informal greeting, household name) a contact is excluded from. Used by the household naming engine to respect per-contact naming overrides."
       },
       {
         "name": "InboundGiftBatchDTO",
@@ -2949,7 +2953,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/InboundGiftBatchDTO.cls",
-        "description": ""
+        "description": "Data Transfer Object for inbound gift batch data received from external systems or API calls. Provides a toSObject method to convert the DTO into a DataImportBatch__c record for persistence. Used at the Gift Entry API boundary to deserialize and validate incoming batch creation requests."
       },
       {
         "name": "InboundGiftDTO",
@@ -2963,7 +2967,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/InboundGiftDTO.cls",
-        "description": ""
+        "description": "Data Transfer Object for inbound individual gift data received from external systems or API calls. Provides an asGift method to convert the DTO into a Gift domain object for processing. Used at the Gift Entry API boundary to deserialize incoming gift records before they enter the processing pipeline."
       },
       {
         "name": "IndividualBucketAccount",
@@ -2978,7 +2982,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/IndividualBucketAccount.cls",
-        "description": ""
+        "description": "Singleton-style class that provides access to the NPSP Individual Bucket Account, used when the org is configured for the bucket account model. Exposes getInstance and name methods to retrieve the designated bucket account record. Centralizes bucket account identification logic used by contact creation and account assignment processes."
       },
       {
         "name": "IndividualBucketAccountSelector",
@@ -2995,7 +2999,7 @@ const NPSP_ENTITIES = {
           "npe01__SYSTEM_AccountType__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/IndividualBucketAccountSelector.cls",
-        "description": ""
+        "description": "Implements IIndividualBucketAccountSelector to query the designated Individual Bucket Account from the database. Filters accounts by the SYSTEMIsIndividual and SYSTEM_AccountType system fields to identify the bucket account. Used by IndividualBucketAccount and contact processing logic to locate the org's bucket account record."
       },
       {
         "name": "InputFieldView",
@@ -3007,7 +3011,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/InputFieldView.cls",
-        "description": ""
+        "description": "View model class representing a single input field's configuration for rendering in Gift Entry LWC form components. Contains field metadata properties (API name, label, type, required status) suitable for dynamic form rendering. Used by GiftTemplate and form builder components to define the field layout of gift entry forms."
       },
       {
         "name": "InstallationNotifications",
@@ -3021,7 +3025,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/InstallationNotifications.cls",
-        "description": ""
+        "description": "Manages the publishing of custom platform notifications during NPSP package installation and upgrade events. Coordinates with IInstallationNotification content providers and CustomNotificationTypeSelector to deliver targeted admin notifications. Publishes notifications through the Salesforce Custom Notification framework to inform administrators of important post-install actions."
       },
       {
         "name": "InstallationNotificationsSelector",
@@ -3035,7 +3039,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/InstallationNotificationsSelector.cls",
-        "description": ""
+        "description": "Selector class that queries active custom notification configurations for the NPSP installation notification system. Provides getActiveCustomNotifications to retrieve notification definitions that should be delivered. Works with InstallationNotifications to determine which notifications are currently active and eligible for publishing."
       },
       {
         "name": "LD_LeadConvertOverride_CTRL",
@@ -3065,7 +3069,7 @@ const NPSP_ENTITIES = {
           "npo02__Households_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/LD_LeadConvertOverride_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller that overrides the standard Salesforce Lead conversion process to integrate with NPSP's account model. Handles contact matching, opportunity account selection, and lead conversion execution while respecting household, one-to-one, and bucket account models. References extensive contact, household, and org settings to ensure converted leads are properly associated within the NPSP data architecture."
       },
       {
         "name": "MockAudienceImpl",
@@ -3079,7 +3083,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/MockAudienceImpl.cls",
-        "description": ""
+        "description": "Test mock class implementing IAudience to provide controlled audience detection results in unit tests. Returns a configurable audience value via the audience method for testing notification targeting and feature gating logic. Enables isolated testing of audience-dependent features without relying on actual user permissions or roles."
       },
       {
         "name": "Money",
@@ -3093,7 +3097,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/Money.cls",
-        "description": ""
+        "description": "Value object representing a monetary amount with null-safety and consistent decimal handling in NPSP. Provides an amount accessor that returns the wrapped decimal value, defaulting to zero for null inputs. Used across donation processing, allocation calculations, and rollup operations to ensure consistent money handling."
       },
       {
         "name": "NPSP_Address",
@@ -3124,7 +3128,7 @@ const NPSP_ENTITIES = {
           "npo02__MailingStreet__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/NPSP_Address.cls",
-        "description": ""
+        "description": "Full-featured domain class implementing IAddress for NPSP address record management, supporting seasonal addresses, fuzzy matching, and household association. Provides methods for address key generation, overlap detection between seasonal address ranges, and comparison logic for deduplication. At 570 lines, it is the primary address abstraction used by the address management TDTM handlers and household address synchronization logic."
       },
       {
         "name": "NPSP_Contact",
@@ -3150,7 +3154,7 @@ const NPSP_ENTITIES = {
           "npo02__household__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/NPSP_Contact.cls",
-        "description": ""
+        "description": "Domain class representing a Contact within NPSP's data model, providing address management, account change tracking, and undeliverable status handling. Exposes methods for current address access, address override detection, new contact identification, and mailing address change detection. Central to contact trigger processing, coordinating address synchronization between contacts, households, and address records."
       },
       {
         "name": "NPSP_Household",
@@ -3168,7 +3172,7 @@ const NPSP_ENTITIES = {
           "npo02__Household__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/NPSP_Household.cls",
-        "description": ""
+        "description": "Domain class representing a Household (legacy npo02__Household__c object) within NPSP's data model. Provides accessors for the household's mailing address, member count, and name. Used by household processing logic that still supports the legacy household object alongside the newer household account model."
       },
       {
         "name": "NPSP_HouseholdAccount",
@@ -3190,7 +3194,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/NPSP_HouseholdAccount.cls",
-        "description": ""
+        "description": "Domain class representing a Household Account within NPSP's household account model, managing billing address synchronization and undeliverable status. Provides methods to set and compare billing addresses, track address changes, and manage undeliverable address flags. Used by address TDTM handlers to keep household account billing addresses synchronized with the primary address record."
       },
       {
         "name": "OpportunitySelector",
@@ -3204,7 +3208,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OpportunitySelector.cls",
-        "description": ""
+        "description": "Selector class that queries Opportunity records specifically for refund-related operations. Provides the getRefundOpportunities method to retrieve opportunities eligible for payment refund processing. Supports the payment refund workflow by identifying parent opportunities associated with refundable payments."
       },
       {
         "name": "OrgConfig",
@@ -3222,7 +3226,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OrgConfig.cls",
-        "description": ""
+        "description": "Utility class that detects and caches org-level Salesforce configuration such as Person Accounts enablement and State/Country picklist availability. Provides methods to retrieve valid countries and states by label or code when state/country picklists are enabled. Used by address management and data import components that need to adapt behavior based on org-specific feature availability."
       },
       {
         "name": "OrganizationSelector",
@@ -3236,7 +3240,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OrganizationSelector.cls",
-        "description": ""
+        "description": "Selector class that queries the Organization object to determine geographic and configuration properties of the Salesforce org. Provides the isUSOrganization method to detect whether the org's default locale is US-based. Used by features that need to vary behavior based on the org's geographic context, such as address formatting."
       },
       {
         "name": "PaymentSelector",
@@ -3257,7 +3261,7 @@ const NPSP_ENTITIES = {
           "npe01__Payment_Date__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PaymentSelector.cls",
-        "description": ""
+        "description": "Selector class that queries npe01__OppPayment__c records for payment refund processing operations. Provides methods to retrieve payment records eligible for refund and payments with existing refund children. References payment fields including opportunity, amount, date, and paid status to support the refund workflow."
       },
       {
         "name": "PaymentServicesConfigurationSelector",
@@ -3272,7 +3276,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PaymentServicesConfigurationSelector.cls",
-        "description": ""
+        "description": "Selector class that queries Payment Services (Elevate) configuration custom metadata records. Provides methods to retrieve configuration records by name and find the last modified configuration for connection status checks. Supports the Elevate integration layer by loading payment gateway configuration data from custom metadata."
       },
       {
         "name": "PicklistOptionView",
@@ -3287,7 +3291,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PicklistOptionView.cls",
-        "description": ""
+        "description": "View model class representing a single picklist option with label and value properties for LWC component rendering. Provides a fluent builder pattern with withValue and withLabel methods for easy construction. Used across NPSP's LWC controllers to build picklist option lists for dropdowns and selection components."
       },
       {
         "name": "PotentialDuplicates",
@@ -3301,7 +3305,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PotentialDuplicates.cls",
-        "description": ""
+        "description": "Utility class that identifies potential duplicate records using Salesforce's built-in duplicate detection rules. Provides the getDuplicates method to find matching records for a given input. Used during Gift Entry, data import, and contact processing to surface possible duplicates before creating new records."
       },
       {
         "name": "RP_Constants",
@@ -3313,7 +3317,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RP_Constants.cls",
-        "description": ""
+        "description": "Constants class for the Resource Page (RP) feature in NPSP, defining static values used across the getting started and resource page components. Contains URLs, labels, and configuration constants for the NPSP resource hub. Referenced by RP controllers and LWC components to maintain consistent resource page behavior."
       },
       {
         "name": "RP_GettingStartedController",
@@ -3325,7 +3329,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RP_GettingStartedController.cls",
-        "description": ""
+        "description": "LWC controller for the Getting Started resource page section within NPSP's admin hub. Provides data and configuration for rendering getting started links, documentation references, and onboarding resources. Works with RP_Constants to supply the correct URLs and labels for the getting started experience."
       },
       {
         "name": "RP_GettingStartedTest",
@@ -3339,7 +3343,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RP_GettingStartedTest.cls",
-        "description": ""
+        "description": "Test class that validates the RP_GettingStartedController's behavior, verifying that getting started links and resource data are correctly generated. Provides the testGettingStartedLinks method to assert controller output matches expected values. Ensures the Getting Started resource page renders accurate onboarding information."
       },
       {
         "name": "RP_GitHubController",
@@ -3351,7 +3355,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RP_GitHubController.cls",
-        "description": ""
+        "description": "LWC controller for the GitHub integration section of NPSP's resource page, providing links to the NPSP open-source repository. Supplies GitHub URLs and repository information for display in the NPSP admin hub. Enables administrators to access source code, issues, and community resources directly from the settings interface."
       },
       {
         "name": "RP_GitHubTest",
@@ -3365,7 +3369,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RP_GitHubTest.cls",
-        "description": ""
+        "description": "Test class that validates the RP_GitHubController's behavior, ensuring GitHub resource links and data are correctly provided. Provides the testGitHubController method to assert the controller returns expected GitHub repository information. Maintains quality assurance for the GitHub resource page section."
       },
       {
         "name": "RP_HTTPClient",
@@ -3379,7 +3383,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RP_HTTPClient.cls",
-        "description": ""
+        "description": "HTTP client utility class for the Resource Page feature, handling outbound HTTP requests to external resource endpoints. Provides a send method that wraps HttpRequest execution with NPSP-specific configuration and error handling. Used by RP controllers to fetch dynamic content or validate external resource availability."
       },
       {
         "name": "RP_YoutubeController",
@@ -3391,7 +3395,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RP_YoutubeController.cls",
-        "description": ""
+        "description": "Visualforce controller that serves embedded YouTube video content for the NPSP Resource Page. It provides video URLs and metadata to the settings UI, giving admins access to NPSP tutorial and help videos directly within the package."
       },
       {
         "name": "RP_YoutubeTest",
@@ -3405,7 +3409,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RP_YoutubeTest.cls",
-        "description": ""
+        "description": "Test class that validates the RP_YoutubeController functionality. It ensures the YouTube video embedding controller correctly returns expected video data, covering the resource page video integration within the NPSP settings UI."
       },
       {
         "name": "RecordCurrencyCode",
@@ -3419,7 +3423,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RecordCurrencyCode.cls",
-        "description": ""
+        "description": "Value class extending Exception that encapsulates the ISO currency code for a given record in multi-currency orgs. It provides a value() method to extract the currency code, used by rollup and financial processing logic to handle currency-aware calculations across NPSP."
       },
       {
         "name": "RelationshipSelector",
@@ -3433,7 +3437,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RelationshipSelector.cls",
-        "description": ""
+        "description": "Selector class that queries Contact relationship records using the getContactRelations method. It follows the selector pattern to encapsulate SOQL queries for the Relationships domain, providing a clean data access layer for relationship lookups tied to Contacts."
       },
       {
         "name": "RelationshipsService",
@@ -3452,7 +3456,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RelationshipsService.cls",
-        "description": ""
+        "description": "Service layer class for the Relationships domain, providing a singleton getInstance() pattern for managing relationship operations. It checks user permissions for list views, validates relationship creation capabilities, retrieves contact relations via the selector, and generates VF page URLs. Key integration point between the relationship UI components and the data layer."
       },
       {
         "name": "RelationshipsTreeGridController",
@@ -3467,7 +3471,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RelationshipsTreeGridController.cls",
-        "description": ""
+        "description": "Lightning controller that powers the tree grid view of Contact relationships in the NPSP UI. It exposes getInitialView and getRelationships methods to load hierarchical relationship data, enabling users to visualize and navigate the web of connections between Contacts."
       },
       {
         "name": "STG_DataBoundMultiSelect_CTRL",
@@ -3479,7 +3483,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_DataBoundMultiSelect_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for a reusable multi-select picklist component bound to NPSP settings data. It manages the selection state of multi-value fields across various settings panels, providing a generic UI control for settings that store semicolon-delimited record type or picklist selections."
       },
       {
         "name": "STG_InstallScript",
@@ -3503,7 +3507,7 @@ const NPSP_ENTITIES = {
           "npo02__Households_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_InstallScript.cls",
-        "description": ""
+        "description": "Package install handler (implements InstallHandler) that executes during NPSP installation and upgrades. It runs the onInstall method to initialize org settings, insert TDTM trigger handler defaults, and configure core custom settings like Contacts_And_Orgs, Recurring_Donations, and Households. At 626 lines, it orchestrates the critical first-run setup that bootstraps the entire NPSP configuration."
       },
       {
         "name": "STG_InstallScript_TEST2",
@@ -3515,7 +3519,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_InstallScript_TEST2.cls",
-        "description": ""
+        "description": "Test class providing additional test coverage for the STG_InstallScript package installation handler. It validates install and upgrade scenarios to ensure TDTM defaults, custom settings initialization, and error handling behave correctly during package deployment."
       },
       {
         "name": "STG_Panel",
@@ -3538,7 +3542,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donations_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_Panel.cls",
-        "description": ""
+        "description": "Base class for all NPSP settings panel controllers, providing shared infrastructure at 589 lines. It includes admin permission checks, migration status detection for RD2 and simple enablement, record type name resolution, and picklist label utilities. All STG_Panel* controllers extend this class to inherit common settings UI behavior."
       },
       {
         "name": "STG_PanelADDRVerification_CTRL",
@@ -3561,7 +3565,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelADDRVerification_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for configuring address verification services in NPSP. Extending STG_Panel and implementing IAddressVerifier, it manages validator selection, dynamic field initialization, API testing, and batch verification launches. It provides the full lifecycle for setting up and validating external address verification providers like SmartyStreets."
       },
       {
         "name": "STG_PanelAffiliations_CTRL",
@@ -3575,7 +3579,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelAffiliations_CTRL.cls",
-        "description": ""
+        "description": "Minimal settings panel controller for the Affiliations configuration page. It extends STG_Panel and exposes just the idPanel identifier, relying on the base class infrastructure to render and manage Affiliation-related settings in the NPSP settings UI."
       },
       {
         "name": "STG_PanelAlloBatch_CTRL",
@@ -3590,7 +3594,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelAlloBatch_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller that provides a UI to launch the Allocations rollup batch job. It extends STG_Panel and exposes idPanel and runBatch methods, allowing admins to trigger bulk reprocessing of GAU (General Accounting Unit) allocation records from the NPSP settings page."
       },
       {
         "name": "STG_PanelAllocations_CTRL",
@@ -3608,7 +3612,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelAllocations_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for managing GAU Allocation configuration in NPSP. It extends STG_Panel and handles picklist-to-setting mapping for allocation levels, along with save and cancel operations. This controller lets admins configure default allocations and allocation behavior rules."
       },
       {
         "name": "STG_PanelBDE_CTRL",
@@ -3622,7 +3626,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelBDE_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for the Batch Data Entry configuration page. It extends STG_Panel with a minimal idPanel implementation, providing the settings UI hook for legacy BDE (Batch Data Entry) settings within the NPSP settings framework."
       },
       {
         "name": "STG_PanelContactRoles_CTRL",
@@ -3647,7 +3651,7 @@ const NPSP_ENTITIES = {
           "npo02__Soft_Credit_Roles__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelContactRoles_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for Opportunity Contact Role configuration in NPSP. It extends STG_Panel and references multiple Household and Contact/Org settings objects to manage OCR defaults, soft credit roles, and excluded record types. It includes validation logic to ensure OCR settings are internally consistent before saving."
       },
       {
         "name": "STG_PanelContacts_CTRL",
@@ -3665,7 +3669,7 @@ const NPSP_ENTITIES = {
           "npe01__One_to_One_RecordTypeID__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelContacts_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for Contact and Account model configuration. It extends STG_Panel and manages settings for Household Account and One-to-One record type IDs, allowing admins to configure the core account model that determines how NPSP creates and associates Account records with Contacts."
       },
       {
         "name": "STG_PanelCreatePayments_CTRL",
@@ -3680,7 +3684,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelCreatePayments_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller that provides a batch launcher for creating missing payment records. It extends STG_Panel and exposes a runBatch method, enabling admins to bulk-generate npe01__OppPayment__c records for Opportunities that should have associated payments but do not."
       },
       {
         "name": "STG_PanelCustomizableRollup_CTRL",
@@ -3701,7 +3705,7 @@ const NPSP_ENTITIES = {
           "npe01__Account_Processor__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelCustomizableRollup_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for enabling, disabling, and resetting Customizable Rollups (CRLPs) in NPSP. It extends STG_Panel and manages the CRLP deployment lifecycle, including deployment status polling and navigation to the rollup configuration UI. It references Account_Processor settings to coordinate rollup behavior with the account model."
       },
       {
         "name": "STG_PanelDataImportAdvancedMapping_CTRL",
@@ -3722,7 +3726,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelDataImportAdvancedMapping_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for managing Batch Data Import (BDI) advanced field mapping and Gift Entry enablement. It extends STG_Panel and orchestrates Custom Metadata Type deployments for field mappings, with polling support to track async deployment status. It provides toggle methods for enabling or disabling both advanced mapping and Gift Entry features."
       },
       {
         "name": "STG_PanelERR_CTRL",
@@ -3740,7 +3744,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelERR_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for the Error Handling configuration page in NPSP. It extends STG_Panel and provides save, cancel, and edit operations for error notification settings, along with a verifyErrorSettings method that validates the configuration is correct before persisting changes."
       },
       {
         "name": "STG_PanelErrorLog_CTRL",
@@ -3763,7 +3767,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelErrorLog_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller that displays and manages the NPSP error log. It extends STG_Panel, implements UTIL_iSoqlListViewConsumer for paginated SOQL-based list display, and provides a clearErrorLog method. It configures the list view component with the appropriate SOQL query, fields, and object type for Error__c records."
       },
       {
         "name": "STG_PanelHealthCheck_CTRL",
@@ -3805,7 +3809,7 @@ const NPSP_ENTITIES = {
           "npo02__Membership_Record_Types__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelHealthCheck_CTRL.cls",
-        "description": ""
+        "description": "The largest settings panel controller at 898 lines, providing comprehensive NPSP configuration health checks. It extends STG_Panel and validates Opportunity Contact Role settings, payment configurations, Level definitions, record types, and cross-object reference integrity. It references over 20 custom settings fields to detect misconfigurations and reports results through the runDetector and createDR methods."
       },
       {
         "name": "STG_PanelHouseholds_CTRL",
@@ -3828,7 +3832,7 @@ const NPSP_ENTITIES = {
           "npo02__Household_Rules__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelHouseholds_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for Household Account configuration in NPSP. It extends STG_Panel and manages household creation rules, excluded record types, mailing list report IDs, and the account processor model. It includes settings validation and a household naming specification example generator via strNameSpecExample."
       },
       {
         "name": "STG_PanelLeads_CTRL",
@@ -3842,7 +3846,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelLeads_CTRL.cls",
-        "description": ""
+        "description": "Minimal settings panel controller for Lead conversion configuration. It extends STG_Panel with just an idPanel method, providing the settings page hook for lead-related NPSP settings within the unified settings framework."
       },
       {
         "name": "STG_PanelLvlAssignBatch_CTRL",
@@ -3857,7 +3861,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelLvlAssignBatch_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller that provides a UI to launch the Level Assignment batch job. It extends STG_Panel and exposes a runBatch method, allowing admins to trigger bulk recalculation and reassignment of donor Levels based on current giving data."
       },
       {
         "name": "STG_PanelMakeDefaultAllocations_CTRL",
@@ -3872,7 +3876,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelMakeDefaultAllocations_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller that launches the batch job for creating default GAU Allocations. It extends STG_Panel and provides a runBatch method, enabling admins to bulk-apply the default General Accounting Unit allocation to existing Opportunities that lack allocations."
       },
       {
         "name": "STG_PanelMembership_CTRL",
@@ -3888,7 +3892,7 @@ const NPSP_ENTITIES = {
           "npo02__Membership_Record_Types__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelMembership_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for Membership record type configuration in NPSP. It extends STG_Panel and references npo02__Membership_Record_Types__c to allow admins to specify which Opportunity record types should be treated as memberships for rollup and recognition purposes."
       },
       {
         "name": "STG_PanelOppBatch_CTRL",
@@ -3903,7 +3907,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelOppBatch_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller that launches Opportunity-related batch jobs from the NPSP settings page. It extends STG_Panel and provides a runBatch method for triggering bulk Opportunity rollup recalculations, ensuring rollup totals on Accounts and Contacts stay synchronized with Opportunity data."
       },
       {
         "name": "STG_PanelOppCampaignMembers_CTRL",
@@ -3917,7 +3921,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelOppCampaignMembers_CTRL.cls",
-        "description": ""
+        "description": "Minimal settings panel controller for the Opportunity Campaign Member auto-creation settings page. It extends STG_Panel with an idPanel identifier, providing the configuration UI for controlling how NPSP automatically creates Campaign Members when Opportunities are associated with Campaigns."
       },
       {
         "name": "STG_PanelOppNamingBatch_CTRL",
@@ -3932,7 +3936,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelOppNamingBatch_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller that launches the Opportunity Naming batch job from the settings UI. It extends STG_Panel and provides a runBatch method, allowing admins to bulk-rename existing Opportunities according to the configured Opportunity Naming Settings (ONS) patterns."
       },
       {
         "name": "STG_PanelOppNaming_CTRL",
@@ -3955,7 +3959,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelOppNaming_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for managing Opportunity Naming Settings (ONS) in NPSP. It extends STG_Panel and provides full CRUD operations for naming format records, including creating, editing, deleting, and validating name formats. It supports picklist-driven configuration for individual, organizational, and both-type naming patterns."
       },
       {
         "name": "STG_PanelOppRollups_CTRL",
@@ -3975,7 +3979,7 @@ const NPSP_ENTITIES = {
           "npo02__Use_Fiscal_Year_for_Rollups__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelOppRollups_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for configuring legacy Opportunity rollup settings. It extends STG_Panel and references Household settings fields for excluded record types, excluded contact/account opportunity record types, and fiscal year rollup preferences. It includes fiscal year rollup validation logic."
       },
       {
         "name": "STG_PanelOpps_CTRL",
@@ -3994,7 +3998,7 @@ const NPSP_ENTITIES = {
           "npe01__Contacts_And_Orgs_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelOpps_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for core Opportunity settings in NPSP. It extends STG_Panel and references Contacts_And_Orgs settings, providing methods to retrieve Closed Won stage names and validate that the configured payment auto-close stage is a valid active Closed Won stage. It ensures Opportunity lifecycle settings are correctly configured."
       },
       {
         "name": "STG_PanelPaymentMapping_CTRL",
@@ -4029,7 +4033,7 @@ const NPSP_ENTITIES = {
           "npe01__membership_start_date__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelPaymentMapping_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for managing Payment Field Mappings that sync data from Opportunities to Payments. It extends STG_Panel and provides full CRUD for npe01__Payment_Field_Mapping_Settings__c records, including source/target field picklists, field type validation, and mapping reset. It references multiple Payment object fields to build compatible field pairing options."
       },
       {
         "name": "STG_PanelPrimaryContactRoleMerge_CTRL",
@@ -4044,7 +4048,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelPrimaryContactRoleMerge_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller that launches a batch job to deduplicate and merge Primary Contact Roles on Opportunities. It extends STG_Panel and provides a runBatch method, helping admins clean up Opportunities that have multiple Primary OCR records due to data issues."
       },
       {
         "name": "STG_PanelRDBatch_CTRL",
@@ -4060,7 +4064,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelRDBatch_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for launching Recurring Donation batch processing. It extends STG_Panel and provides runBatch and getPageDescription methods, allowing admins to trigger bulk evaluation of Recurring Donation records to create or update associated Opportunity installments."
       },
       {
         "name": "STG_PanelRDCustomFieldMapping_CTRL",
@@ -4086,7 +4090,7 @@ const NPSP_ENTITIES = {
           "npe03__recurring_donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelRDCustomFieldMapping_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for managing custom field mappings between Recurring Donations and their child Opportunities. It extends STG_Panel and provides CRUD operations for npe03__Custom_Field_Mapping__c records, mapping fields from npe03__Recurring_Donation__c to Opportunity. It includes field validation and reset capabilities."
       },
       {
         "name": "STG_PanelRDCustomInstallment_CTRL",
@@ -4107,7 +4111,7 @@ const NPSP_ENTITIES = {
           "npe03__Custom_Installment_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelRDCustomInstallment_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for managing custom installment period definitions in Recurring Donations. It extends STG_Panel and provides CRUD operations for npe03__Custom_Installment_Settings__c records, letting admins define non-standard installment frequencies (e.g., biweekly, semi-annual) beyond the built-in monthly/quarterly/yearly options."
       },
       {
         "name": "STG_PanelRDHealthCheck",
@@ -4136,7 +4140,7 @@ const NPSP_ENTITIES = {
           "npe03__Schedule_Type__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelRDHealthCheck.cls",
-        "description": ""
+        "description": "Standalone health check class (not a controller) that validates Recurring Donation configuration integrity. It provides separate verification paths for legacy and enhanced (RD2) configurations, checking installment periods, schedule types, record types, and open-ended status values. It reports success and error results to the calling health check panel."
       },
       {
         "name": "STG_PanelRD_CTRL",
@@ -4159,7 +4163,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donations_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelRD_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for the main Recurring Donations configuration page. It extends STG_Panel and manages settings like open-ended status, forecast months, record type, and RD naming conventions. At 367 lines, it handles both legacy and enhanced RD settings with initialization and save logic referencing npe03__Recurring_Donations_Settings__c."
       },
       {
         "name": "STG_PanelRelAuto_CTRL",
@@ -4179,7 +4183,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelRelAuto_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for managing auto-create Relationship rules in NPSP. It extends STG_Panel and provides CRUD operations for Relationship_Auto_Create settings, allowing admins to define which lookup fields automatically trigger reciprocal Relationship record creation. It includes validation of configured auto-create rules."
       },
       {
         "name": "STG_PanelRelReciprocal_CTRL",
@@ -4199,7 +4203,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelRelReciprocal_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for managing reciprocal Relationship lookup mappings in NPSP. It extends STG_Panel and provides CRUD operations for Relationship_Lookup settings that define reciprocal type pairs (e.g., Parent maps to Child). It includes validation and reset capabilities for the lookup configuration."
       },
       {
         "name": "STG_PanelRel_CTRL",
@@ -4214,7 +4218,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelRel_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for general Relationship settings in NPSP. It extends STG_Panel and provides save operations for core relationship configuration, managing settings that control how Relationship records are created, synced, and maintained across the Relationships domain."
       },
       {
         "name": "STG_PanelRenameHouseholds_CTRL",
@@ -4232,7 +4236,7 @@ const NPSP_ENTITIES = {
           "npo02__Advanced_Household_Naming__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelRenameHouseholds_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller that launches batch jobs for renaming Household Accounts and processing deceased members. It extends STG_Panel and provides runRenameHouseholdsBatch and runAllMembersDeceasedBatch methods, referencing npo02__Advanced_Household_Naming__c to bulk-apply naming conventions to existing Household records."
       },
       {
         "name": "STG_PanelSchedule_CTRL",
@@ -4246,7 +4250,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelSchedule_CTRL.cls",
-        "description": ""
+        "description": "Minimal settings panel controller for the Scheduled Jobs configuration page. It extends STG_Panel with an idPanel identifier, providing the UI framework page for viewing and managing NPSP scheduled Apex job configurations."
       },
       {
         "name": "STG_PanelTDTM_CTRL",
@@ -4265,7 +4269,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelTDTM_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for managing Table-Driven Trigger Management (TDTM) trigger handler records. It extends STG_Panel and provides CRUD operations (newTh, createTh, cancelTh, deleteTh) for Trigger_Handler__c records, along with page message display. This is the admin interface for enabling, disabling, and customizing NPSP trigger execution order."
       },
       {
         "name": "STG_PanelUpdatePrimaryContact_CTRL",
@@ -4280,7 +4284,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelUpdatePrimaryContact_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller that launches a batch job to update Primary Contact fields on Opportunities. It extends STG_Panel and provides a runBatch method, enabling admins to bulk-recalculate the primary Contact association on Opportunity records based on current Contact Role data."
       },
       {
         "name": "STG_PanelUserRollup_CTRL",
@@ -4313,7 +4317,7 @@ const NPSP_ENTITIES = {
           "npo02__household__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_PanelUserRollup_CTRL.cls",
-        "description": ""
+        "description": "Settings panel controller for managing User-Defined Rollup fields in NPSP. At 549 lines, it extends STG_Panel and provides a multi-step builder UI for defining custom rollup calculations. It manages target object, source field, operation, and target field selection with cascading field clearing, referencing npo02__User_Rollup_Field_Settings__c for persistence."
       },
       {
         "name": "STG_SettingsManager_CTRL",
@@ -4328,7 +4332,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_SettingsManager_CTRL.cls",
-        "description": ""
+        "description": "Top-level controller for the NPSP Settings Manager page that orchestrates panel navigation. It extends STG_Panel and provides setPanelCurrent to switch between settings sub-panels, plus onNpspSettingsLoad for initialization. It acts as the main routing controller for the multi-panel settings UI."
       },
       {
         "name": "STG_SettingsService",
@@ -4350,7 +4354,7 @@ const NPSP_ENTITIES = {
           "npo02__Households_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_SettingsService.cls",
-        "description": ""
+        "description": "Service class that handles bulk save and reset operations for all NPSP custom settings. It coordinates writes across npe01__Contacts_And_Orgs_Settings__c, npe03__Recurring_Donations_Settings__c, npo02__Households_Settings__c, and related list custom settings (payment mappings, custom field mappings, installment settings). It provides the transactional persistence layer behind the settings UI panels."
       },
       {
         "name": "STG_UninstallScript",
@@ -4364,7 +4368,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/STG_UninstallScript.cls",
-        "description": ""
+        "description": "Package uninstall handler (implements UninstallHandler) that executes cleanup during NPSP package removal. It runs the onUninstall method to remove scheduled jobs, clean up custom settings, and perform any necessary teardown to leave the org in a clean state after the NPSP package is removed."
       },
       {
         "name": "SaveErrorView",
@@ -4376,7 +4380,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/SaveErrorView.cls",
-        "description": ""
+        "description": "View model class that encapsulates error information from DML save operations. It provides a structured representation of save errors for display in UI components, used by Gift Entry and other features that need to present detailed error feedback to users."
       },
       {
         "name": "SaveResultView",
@@ -4390,7 +4394,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/SaveResultView.cls",
-        "description": ""
+        "description": "View model class that wraps DML save results for UI presentation, referencing npe03__Recurring_Donation__c. It provides a structured format for displaying success and failure outcomes of save operations, particularly for Recurring Donation processing results shown in Lightning components."
       },
       {
         "name": "SoftCredit",
@@ -4404,7 +4408,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/SoftCredit.cls",
-        "description": ""
+        "description": "Domain model class representing a single soft credit attribution on an Opportunity. It encapsulates the soft credit data and provides a contactRoleHashCode method for deduplication and comparison. It serves as the foundational unit in the soft credit processing pipeline."
       },
       {
         "name": "SoftCredits",
@@ -4422,7 +4426,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/SoftCredits.cls",
-        "description": ""
+        "description": "Collection class that manages a list of SoftCredit instances with add, addAll, size, and iteration methods. It provides an unprocessed() filter to identify soft credits still pending processing, acting as a domain collection wrapper used by the soft credit rollup and Gift Entry systems."
       },
       {
         "name": "SoftCreditsDTO",
@@ -4436,7 +4440,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/SoftCreditsDTO.cls",
-        "description": ""
+        "description": "Data Transfer Object that converts raw soft credit data into SoftCredits domain objects via the asSoftCredits method. It bridges the gap between external data representations (such as Gift Entry form inputs) and the internal SoftCredit domain model used by NPSP processing logic."
       },
       {
         "name": "SoftCreditsView",
@@ -4448,7 +4452,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/SoftCreditsView.cls",
-        "description": ""
+        "description": "View model class that represents soft credit data formatted for display in Lightning UI components. It provides a read-only presentation layer for soft credit information, used by Gift Entry and donation management interfaces to show soft credit attributions."
       },
       {
         "name": "TEST_ContactBuilder",
@@ -4467,7 +4471,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/TEST_ContactBuilder.cls",
-        "description": ""
+        "description": "Test data builder class that provides a fluent API for constructing Contact test records with NPSP-specific fields. It supports setting preferred phone, email, work contact info, and Recurring Donation associations. It follows the builder pattern to simplify test data setup across NPSP test classes."
       },
       {
         "name": "TEST_OpportunityBuilder",
@@ -4495,7 +4499,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/TEST_OpportunityBuilder.cls",
-        "description": ""
+        "description": "Test data builder class providing a fluent API for constructing Opportunity test records at 339 lines. It supports setting IDs, names, accounts, contacts, campaigns, close dates, amounts, currency codes, and closed-won stages. It references Recurring Donation fields for RD-related test scenarios."
       },
       {
         "name": "TEST_RecurringDonationBuilder",
@@ -4532,7 +4536,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/TEST_RecurringDonationBuilder.cls",
-        "description": ""
+        "description": "Comprehensive test data builder for Recurring Donation records at 773 lines, the largest test builder in NPSP. It provides separate constructLegacyBuilder and constructEnhancedBuilder factory methods for RD1 and RD2 test scenarios, with fluent methods for all RD fields including amount, contact, account, installment period, schedule type, and payment dates."
       },
       {
         "name": "TEST_SObjectGateway",
@@ -4568,7 +4572,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/TEST_SObjectGateway.cls",
-        "description": ""
+        "description": "Test utility class providing gateway methods for querying NPSP records in test contexts at 439 lines. It offers getRecord, getRecords, and getRecordsByCloseDate for Opportunities, Payments, Recurring Donations, and Error records. It serves as a centralized test data retrieval layer to reduce redundant SOQL across test classes."
       },
       {
         "name": "USER_InActiveUser_TDTM",
@@ -4583,7 +4587,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/USER_InActiveUser_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that fires on User record updates to detect when system administrators become inactive. It extends TDTM_Runnable and executes onAfterUpdate to trigger cleanup actions such as reassigning error notification recipients and rescheduling batch jobs owned by the deactivated admin."
       },
       {
         "name": "USER_UserService",
@@ -4606,7 +4610,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/USER_UserService.cls",
-        "description": ""
+        "description": "Service class providing user-related utility methods across NPSP at 309 lines. It includes admin detection (isSysAdmin), user status checks (isActiveUser), deactivated admin handling via future methods, scheduled job reassignment, Contact-to-User resolution, and Lightning/mobile environment detection. It is the central service for user context operations."
       },
       {
         "name": "USNonElevateCustomers",
@@ -4620,7 +4624,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/USNonElevateCustomers.cls",
-        "description": ""
+        "description": "Audience targeting class that implements IAudience to identify US-based non-Elevate customers. It provides an audience() method used by the NPSP feature notification system to conditionally display messages, promotions, or feature announcements to organizations that are not using Salesforce Elevate payment services."
       },
       {
         "name": "UTIL_AbstractChunkingLDV_BATCH",
@@ -4640,7 +4644,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_AbstractChunkingLDV_BATCH.cls",
-        "description": ""
+        "description": "Abstract base class for batch jobs that handle Large Data Volume (LDV) scenarios with automatic chunking. At 488 lines, it provides configurable batch sizes, LDV mode toggling, additional WHERE clause support, query validation, and finish handling. Concrete batch implementations extend this class to process millions of records efficiently by chunking the query into manageable segments."
       },
       {
         "name": "UTIL_AbstractChunkingLDV_MOCK",
@@ -4663,7 +4667,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_AbstractChunkingLDV_MOCK.cls",
-        "description": ""
+        "description": "Mock implementation of UTIL_AbstractChunkingLDV_BATCH used exclusively in test classes. It extends the abstract chunking batch with test-specific methods for setting expected results, LDV mode expectations, test WHERE clauses, and chunk sizes. It enables unit testing of LDV batch behavior without executing actual batch processing."
       },
       {
         "name": "UTIL_AbstractRollup_BATCH",
@@ -4686,7 +4690,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_AbstractRollup_BATCH.cls",
-        "description": ""
+        "description": "Abstract base class for legacy rollup batch jobs at 513 lines. It provides the execute and finish batch lifecycle, field list management, aggregate query building, and rollup execution framework. Concrete rollup batches extend this class to calculate giving totals, membership stats, and other aggregate values on Account and Contact records."
       },
       {
         "name": "UTIL_Address",
@@ -4700,7 +4704,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Address.cls",
-        "description": ""
+        "description": "Small utility class providing address string normalization methods. It offers normalizeLineBreak to standardize line break characters in address fields, ensuring consistent address formatting across NPSP address processing, verification, and display operations."
       },
       {
         "name": "UTIL_AuraEnabledCommon",
@@ -4716,7 +4720,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_AuraEnabledCommon.cls",
-        "description": ""
+        "description": "Utility class providing common infrastructure for @AuraEnabled Lightning controller methods. It includes org domain info retrieval, standardized AuraHandledException throwing, and exception building helpers. It ensures consistent error handling patterns across all NPSP Lightning components."
       },
       {
         "name": "UTIL_BatchJobProgress_CTRL",
@@ -4730,7 +4734,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_BatchJobProgress_CTRL.cls",
-        "description": ""
+        "description": "Visualforce/Lightning controller that retrieves batch job progress information. It exposes a loadBatchJob method to query AsyncApexJob status, providing real-time progress data (batches processed, total batches, status) for the batch job monitoring UI used across NPSP settings panels."
       },
       {
         "name": "UTIL_BatchJobService",
@@ -4753,7 +4757,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_BatchJobService.cls",
-        "description": ""
+        "description": "Service class for managing and monitoring batch Apex job execution at 503 lines. It provides concurrent batch detection, in-progress status checks, completion day calculations, and AsyncApexJob querying. It prevents duplicate batch runs and provides detailed job status information used by settings panel batch launchers throughout NPSP."
       },
       {
         "name": "UTIL_Currency",
@@ -4773,7 +4777,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Currency.cls",
-        "description": ""
+        "description": "Singleton utility class for multi-currency organization support at 304 lines. It detects whether the org uses multi-currency and Advanced Currency Management, retrieves the org default currency code and symbol, and provides per-record currency symbol lookup. It is the foundational currency detection layer referenced by rollup and financial processing classes."
       },
       {
         "name": "UTIL_CurrencyCache",
@@ -4795,7 +4799,7 @@ const NPSP_ENTITIES = {
           "npo02__Households_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_CurrencyCache.cls",
-        "description": ""
+        "description": "Caching utility for currency exchange rates at 324 lines, building on UTIL_Currency. It maintains cached exchange rate maps using Platform Cache when available, provides effective dated exchange rate lookups, decimal place configuration per currency, and cache invalidation. It references Household settings to determine currency handling behavior for rollups."
       },
       {
         "name": "UTIL_CurrencyConversion",
@@ -4812,7 +4816,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_CurrencyConversion.cls",
-        "description": ""
+        "description": "Utility class providing currency conversion calculation methods. It offers getExchangeRate, convertAmount, and standard-rate conversion methods that leverage UTIL_CurrencyCache exchange rates. It handles converting donation amounts between currencies for rollup calculations in multi-currency NPSP organizations."
       },
       {
         "name": "UTIL_CustomSettingsFacade",
@@ -4875,7 +4879,7 @@ const NPSP_ENTITIES = {
           "npo02__SystemHouseholdProcessor__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_CustomSettingsFacade.cls",
-        "description": ""
+        "description": "Central facade for accessing all NPSP hierarchy custom settings at 1,127 lines, the largest utility class in this domain. It provides getter methods for every settings object (Contacts, Households, Recurring Donations, Relationships, Affiliations, Errors, BDE, Address Verification, Household Naming) with lazy initialization and caching. It references over 30 custom setting fields and serves as the single entry point for settings retrieval across the entire NPSP codebase."
       },
       {
         "name": "UTIL_CustomSettings_API",
@@ -4902,7 +4906,7 @@ const NPSP_ENTITIES = {
           "npo02__Households_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_CustomSettings_API.cls",
-        "description": ""
+        "description": "Public API wrapper class that exposes UTIL_CustomSettingsFacade methods for external package consumers. It provides getters for all major NPSP custom settings objects (Contacts, Households, Recurring Donations, Relationships, Affiliations, Errors, BDE, Address Verification, Allocations) while maintaining encapsulation of internal settings implementation details."
       },
       {
         "name": "UTIL_DMLService",
@@ -4918,7 +4922,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_DMLService.cls",
-        "description": ""
+        "description": "Service class that wraps standard DML operations (insert, update, upsert) with consistent error handling at 338 lines. It provides centralized record persistence methods used across NPSP to ensure uniform DML behavior, error logging, and partial success handling throughout the codebase."
       },
       {
         "name": "UTIL_Debug",
@@ -4934,7 +4938,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Debug.cls",
-        "description": ""
+        "description": "Utility class that provides standardized debug logging methods for NPSP. It offers debug() and debugWithInfo() methods with configurable log levels and a disableDebugLogging() toggle. It serves as the centralized logging infrastructure to enable consistent diagnostic output across all NPSP classes."
       },
       {
         "name": "UTIL_Describe",
@@ -4957,7 +4961,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Describe.cls",
-        "description": ""
+        "description": "Comprehensive schema describe utility at 843 lines, providing cached access to SObject and field metadata. It offers methods for object labels, field types, name fields, reference lookups, ID-to-object mapping, and prototype object creation. As a singleton, it is one of the most widely referenced infrastructure classes in NPSP, used whenever metadata introspection is needed."
       },
       {
         "name": "UTIL_DuplicateMgmt",
@@ -4971,7 +4975,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_DuplicateMgmt.cls",
-        "description": ""
+        "description": "Utility class that interfaces with Salesforce Duplicate Management rules to find duplicate records in bulk. It exposes findDuplicatesBulk to identify potential duplicate Contacts, Leads, or Accounts, used by the Batch Data Import process and Gift Entry to detect and handle matching records during import operations."
       },
       {
         "name": "UTIL_FeatureEnablement",
@@ -4986,7 +4990,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_FeatureEnablement.cls",
-        "description": ""
+        "description": "Singleton utility class for checking whether NPSP pilot features are enabled. It provides an isPilotEnabled method that queries feature flags, allowing NPSP code to gate functionality behind feature enablement checks. It supports the gradual rollout of new capabilities through pilot programs."
       },
       {
         "name": "UTIL_FeatureManagement",
@@ -5005,7 +5009,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_FeatureManagement.cls",
-        "description": ""
+        "description": "Utility class that wraps the Salesforce FeatureManagement API for setting and reading package-level feature parameters. It provides methods for boolean, integer, and date feature values, used by NPSP telemetry and feature gating to track feature adoption and control feature availability at the package level."
       },
       {
         "name": "UTIL_Finder",
@@ -5027,7 +5031,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Finder.cls",
-        "description": ""
+        "description": "Fluent query builder utility at 474 lines that supports both SOQL and SOSL search execution. It provides withSelectFields, withWhere, withOrderBy, withLimit, and withSearchQuery chainable methods, along with wildcard support. It serves as a higher-level abstraction for building dynamic queries used in search and lookup components."
       },
       {
         "name": "UTIL_FiscalYearInfo",
@@ -5044,7 +5048,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_FiscalYearInfo.cls",
-        "description": ""
+        "description": "Singleton utility class that provides fiscal year calculation support for NPSP rollups. It determines the fiscal year for a given date based on the org's fiscal year settings, with a withUseFiscalYear toggle. It is used by rollup calculations to correctly bucket donations into fiscal year periods."
       },
       {
         "name": "UTIL_HtmlOutput_CTRL",
@@ -5059,7 +5063,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_HtmlOutput_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller that safely renders HTML content with XSS protection. It provides getSafeHtml and sanitizeInlineJavaScript methods to strip dangerous markup while preserving legitimate formatting. It is used by NPSP settings pages and notification displays that need to render dynamic HTML safely."
       },
       {
         "name": "UTIL_Http",
@@ -5081,7 +5085,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Http.cls",
-        "description": ""
+        "description": "HTTP utility class providing standardized HTTP callout methods at 263 lines. It wraps request sending with error response building, timeout detection, bad request handling, and structured error message extraction. It serves as the HTTP infrastructure layer for NPSP integrations including address verification and Elevate payment services."
       },
       {
         "name": "UTIL_IScheduled",
@@ -5093,7 +5097,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_IScheduled.cls",
-        "description": ""
+        "description": "Interface definition class (39 lines) that defines the contract for NPSP scheduled job implementations. It establishes the method signature that all schedulable NPSP components must implement, used by UTIL_MasterSchedulable to invoke scheduled jobs through a common interface."
       },
       {
         "name": "UTIL_IntegrationConfig",
@@ -5111,7 +5115,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_IntegrationConfig.cls",
-        "description": ""
+        "description": "Utility class for detecting and configuring external package integrations with NPSP. It provides methods to check if integrated packages are installed, prefix their namespace, and retrieve configuration. It uses a self-referencing extends pattern for inner class definitions, enabling NPSP to dynamically interact with optional dependent packages."
       },
       {
         "name": "UTIL_IntegrationGateway",
@@ -5125,7 +5129,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_IntegrationGateway.cls",
-        "description": ""
+        "description": "Utility class that provides a gateway for integration-related record lifecycle events. It exposes a handleBeforeDelete method to intercept deletion of integration-related records, ensuring proper cleanup and validation when records tied to external integrations (such as Elevate payment records) are being removed."
       },
       {
         "name": "UTIL_JobProgress_CTRL",
@@ -5140,7 +5144,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_JobProgress_CTRL.cls",
-        "description": ""
+        "description": "Visualforce and Lightning controller for monitoring batch job progress across NPSP. It exposes getBatchJobs and getBatchJobsStatus methods at 289 lines, providing a paginated view of running and completed AsyncApexJob records. It powers the job progress monitoring component used across multiple NPSP settings panels."
       },
       {
         "name": "UTIL_Jwt",
@@ -5155,7 +5159,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Jwt.cls",
-        "description": ""
+        "description": "Utility class for generating signed JSON Web Tokens (JWTs) at 237 lines. It provides getSignedJWT and getSignedJWTFromString methods for creating authentication tokens used by NPSP to communicate with external services like Salesforce Elevate. It handles JWT header, payload, and cryptographic signature generation."
       },
       {
         "name": "UTIL_LightningComponentSupport",
@@ -5173,7 +5177,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_LightningComponentSupport.cls",
-        "description": ""
+        "description": "Utility class that maps Salesforce field types to Lightning component data types at 179 lines. It provides methods for converting field describe results to lightning-datatable column types, lightning-input types, and column type attributes. It enables dynamic field rendering in NPSP Lightning components like CRLP configuration and Gift Entry."
       },
       {
         "name": "UTIL_ListCustomSettingsFacade",
@@ -5199,7 +5203,7 @@ const NPSP_ENTITIES = {
           "npo02__User_Rollup_Field_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_ListCustomSettingsFacade.cls",
-        "description": ""
+        "description": "Facade class for accessing all NPSP list custom settings (as opposed to hierarchy custom settings). It provides getter methods for maps of Custom Field Mappings, Custom Installment Settings, Opp Naming Settings, Payment Field Mappings, Relationship Auto-Create and Lookup settings, and User Rollup Field Settings. It complements UTIL_CustomSettingsFacade by handling the list-type settings."
       },
       {
         "name": "UTIL_MasterSchedulable",
@@ -5213,7 +5217,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_MasterSchedulable.cls",
-        "description": ""
+        "description": "Master schedulable class implementing the Schedulable interface that serves as the single entry point for all NPSP scheduled jobs. Its execute method dispatches to individual scheduled job implementations via the UTIL_IScheduled interface, consolidating NPSP's scheduled processing into one managed Apex scheduled job."
       },
       {
         "name": "UTIL_MasterSchedulableHelper",
@@ -5229,7 +5233,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_MasterSchedulableHelper.cls",
-        "description": ""
+        "description": "Helper class for UTIL_MasterSchedulable that manages scheduled job lifecycle at 230 lines. It provides methods to abort old scheduled jobs, set up new scheduled job configurations, and check for running jobs. It ensures NPSP scheduled jobs are properly maintained during package upgrades and settings changes."
       },
       {
         "name": "UTIL_Namespace",
@@ -5252,7 +5256,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Namespace.cls",
-        "description": ""
+        "description": "Utility class for handling Salesforce namespace prefix operations across NPSP at 293 lines. It provides methods to get, add, remove, and align namespace prefixes for class names and schema references, with special handling for managed vs. unmanaged contexts and sandbox email transformations. It is critical infrastructure for NPSP's operation as a managed package."
       },
       {
         "name": "UTIL_OrderBy",
@@ -5275,7 +5279,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_OrderBy.cls",
-        "description": ""
+        "description": "Utility class implementing Comparable for dynamic SOQL ORDER BY clause construction and in-memory sorting at 382 lines. It supports adding multiple sort fields, building ORDER BY strings, detecting when post-query sorting is needed (for formula or relationship fields), and performing the actual record sorting via compareTo."
       },
       {
         "name": "UTIL_OrgTelemetry_BATCH",
@@ -5294,7 +5298,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_OrgTelemetry_BATCH.cls",
-        "description": ""
+        "description": "Batch job that collects organization-level telemetry data for NPSP feature usage reporting. It queries Payments and Recurring Donation records in batch to count feature adoption metrics, then passes the aggregated data to UTIL_OrgTelemetry_SVC for reporting via the Feature Management API."
       },
       {
         "name": "UTIL_OrgTelemetry_SObject_BATCH",
@@ -5315,7 +5319,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_OrgTelemetry_SObject_BATCH.cls",
-        "description": ""
+        "description": "Batch job that collects SObject-level telemetry data at 409 lines, complementing UTIL_OrgTelemetry_BATCH. It analyzes Recurring Donation records for RD2 migration status, payment enablement, and open-ended status distribution. It reports granular feature adoption metrics to help Salesforce understand NPSP usage patterns."
       },
       {
         "name": "UTIL_OrgTelemetry_SVC",
@@ -5338,7 +5342,7 @@ const NPSP_ENTITIES = {
           "npo02__NumberOfClosedOpps__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_OrgTelemetry_SVC.cls",
-        "description": ""
+        "description": "Service class that orchestrates NPSP telemetry data collection and reporting at 528 lines. It dispatches telemetry batch jobs, processes Custom Metadata Type changes asynchronously, and handles NPSP settings telemetry. It references Account Processor, Payment, and Recurring Donation settings to report feature configuration metrics via the Feature Management API."
       },
       {
         "name": "UTIL_PageMessages_CTRL",
@@ -5354,7 +5358,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_PageMessages_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the NPSP custom page messages component at 153 lines. It provides getPageMessages to retrieve accumulated messages, getSeverityTheme for SLDS styling, and getSeverityLabel for accessible labels. It replaces the standard apex:pageMessages with a styled, NPSP-branded message display used across settings pages."
       },
       {
         "name": "UTIL_PerfLogger",
@@ -5372,7 +5376,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_PerfLogger.cls",
-        "description": ""
+        "description": "Performance logging utility that tracks execution timing for NPSP operations. It provides start, stop, and save methods to measure and persist performance metrics, along with initPerfLog and getPerfLogSObject for log record management. It helps identify performance bottlenecks in batch processing and trigger execution."
       },
       {
         "name": "UTIL_Permissions",
@@ -5391,7 +5395,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Permissions.cls",
-        "description": ""
+        "description": "Singleton utility for checking CRUD and FLS permissions at 477 lines. It provides canRead, canCreate, canUpdate, canDelete, and canCreateInstanced methods that verify user permissions on SObjects and fields. It is a critical security infrastructure class used throughout NPSP to enforce object and field-level access before DML operations."
       },
       {
         "name": "UTIL_PlatformCache",
@@ -5405,7 +5409,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_PlatformCache.cls",
-        "description": ""
+        "description": "Small utility class that checks Platform Cache availability in the org. It provides an isOrgCacheAvailable method used by UTIL_CurrencyCache and other caching utilities to determine whether the org has Platform Cache provisioned, enabling graceful fallback to non-cached behavior when cache is unavailable."
       },
       {
         "name": "UTIL_Profile",
@@ -5420,7 +5424,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Profile.cls",
-        "description": ""
+        "description": "Singleton utility class for querying and caching user Profile information. It provides getInstance and getProfileIds methods for retrieving profile IDs by name, used by permission checks and feature gating logic throughout NPSP to determine user profile-based access levels."
       },
       {
         "name": "UTIL_Query",
@@ -5443,7 +5447,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Query.cls",
-        "description": ""
+        "description": "Fluent SOQL query builder at 345 lines that provides chainable methods for constructing dynamic queries. It supports SELECT fields, multi-currency fields, FROM, WHERE, ORDER BY, LIMIT, OFFSET, security enforcement, and label conversion. It builds on UTIL_Where and UTIL_OrderBy to provide a complete dynamic query construction framework."
       },
       {
         "name": "UTIL_RecordTypeSettingsUpdate",
@@ -5469,7 +5473,7 @@ const NPSP_ENTITIES = {
           "npo02__Membership_Record_Types__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_RecordTypeSettingsUpdate.cls",
-        "description": ""
+        "description": "Singleton utility that migrates NPSP settings from storing record type Names to storing record type IDs. It references over 10 settings fields across Contacts/Orgs, Recurring Donations, and Households settings objects, updating stored record type references to be ID-based for reliability across org migrations and sandbox refreshes."
       },
       {
         "name": "UTIL_RecordTypes",
@@ -5492,7 +5496,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_RecordTypes.cls",
-        "description": ""
+        "description": "Comprehensive record type utility at 447 lines that provides cached record type lookups by ID and name. It implements RecordTypeInfo and offers methods for record type ID sets, active/default checks, select list generation, and test-specific record type resolution. It is widely used across NPSP for record type-aware processing in Opportunities, Accounts, and Campaigns."
       },
       {
         "name": "UTIL_RecordTypes_API",
@@ -5508,7 +5512,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_RecordTypes_API.cls",
-        "description": ""
+        "description": "Public API wrapper that exposes UTIL_RecordTypes methods for external package consumers. It provides GetRecordTypeId, GetRecordTypeName, and GetRecordTypeIdSet methods, maintaining a stable public interface for record type operations while keeping internal implementation details encapsulated."
       },
       {
         "name": "UTIL_SObject",
@@ -5526,7 +5530,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_SObject.cls",
-        "description": ""
+        "description": "Utility class providing generic SObject field extraction methods at 126 lines. It offers extractIds, extractId, extractString, extractDatetime, and extractDecimal methods for safely pulling typed values from SObject records, including support for relationship field traversal. It reduces boilerplate across NPSP classes that need to read fields dynamically."
       },
       {
         "name": "UTIL_SalesforceID",
@@ -5540,7 +5544,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_SalesforceID.cls",
-        "description": ""
+        "description": "Utility class for Salesforce ID manipulation and analysis. It provides a computeRecordDistance method that calculates the ordinal distance between two record IDs, used in LDV chunking batch operations to determine optimal query boundaries when splitting large record sets into processable segments."
       },
       {
         "name": "UTIL_SoqlListView_CTRL",
@@ -5559,7 +5563,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_SoqlListView_CTRL.cls",
-        "description": ""
+        "description": "Reusable Visualforce controller for paginated, sortable SOQL-based list views at 225 lines. It provides page info, pagination (showMoreRecordsPerPage), alphabetical filtering, delete, edit, and sort actions. It works with the UTIL_iSoqlListViewConsumer interface, powering settings panels that display tabular record data like error logs and trigger handlers."
       },
       {
         "name": "UTIL_String",
@@ -5577,7 +5581,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_String.cls",
-        "description": ""
+        "description": "Utility class providing string manipulation helpers for NPSP. It offers methods to remove non-ASCII alphabetic, non-numeric, and non-alphanumeric characters, extract internal URL paths, and generate GUIDs. It is used across NPSP for data sanitization and unique identifier generation."
       },
       {
         "name": "UTIL_Typeahead",
@@ -5591,7 +5595,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Typeahead.cls",
-        "description": ""
+        "description": "Utility class that provides typeahead search functionality for Lightning lookup components. It exposes a searchRecords method that performs SOSL-based search queries, returning matching records for real-time autocomplete in NPSP UI components like Gift Entry and Batch Data Import lookup fields."
       },
       {
         "name": "UTIL_Version_API",
@@ -5605,7 +5609,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Version_API.cls",
-        "description": ""
+        "description": "Public API utility class that exposes NPSP package version information. It provides a requestVersion method for external consumers and integrations to programmatically determine which version of the NPSP package is installed, supporting version-aware behavior in dependent packages and integrations."
       },
       {
         "name": "UTIL_Where",
@@ -5628,7 +5632,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_Where.cls",
-        "description": ""
+        "description": "Fluent SOQL WHERE clause builder at 765 lines, the most substantial query utility in NPSP. It supports criteria matching, AND/OR grouping, field filterability checks, name field detection, and in-memory record filtering via meetsCriteria. It can both build WHERE clause strings for SOQL queries and evaluate records against criteria in Apex, making it central to both dynamic queries and CRLP filter evaluation."
       },
       {
         "name": "UTIL_iSoqlListViewConsumer",
@@ -5640,7 +5644,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UTIL_iSoqlListViewConsumer.cls",
-        "description": ""
+        "description": "Interface definition class that establishes the contract for SOQL-based list view consumers. It defines methods that consuming controllers must implement (SOQL query, fields, object type, name field) to work with the UTIL_SoqlListView_CTRL component, enabling reusable paginated list views across NPSP settings panels."
       },
       {
         "name": "UnitOfWork",
@@ -5655,7 +5659,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UnitOfWork.cls",
-        "description": ""
+        "description": "Lightweight Unit of Work implementation providing registerNew and registerDirty methods for tracking DML operations. It follows the enterprise Unit of Work pattern to batch and sequence DML operations, ensuring proper record creation order and relationship resolution during complex multi-object transactions in NPSP."
       },
       {
         "name": "UserIds",
@@ -5670,7 +5674,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UserIds.cls",
-        "description": ""
+        "description": "Value object class extending Exception that encapsulates a collection of User IDs. It provides values() for typed ID access and stringValues() for string representations, used by notification and permission logic to manage sets of target users for error notifications and admin operations."
       },
       {
         "name": "UserSelector",
@@ -5684,7 +5688,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/UserSelector.cls",
-        "description": ""
+        "description": "Selector class that queries active standard User records. It provides a getActiveStandardUsers method following the selector pattern, used by NPSP settings and notification infrastructure to retrieve eligible system administrators and standard users for error notification recipient configuration."
       }
     ],
     "objects": [
@@ -5718,7 +5722,7 @@ const NPSP_ENTITIES = {
             "field": "Engagement_Plan__c"
           }
         ],
-        "description": "",
+        "description": "Extends the standard Activity object with lookup fields to Engagement_Plan_Task__c and Engagement_Plan__c, linking tasks and events to the NPSP Engagement Plan framework. It allows activities created from engagement plans to maintain a reference back to the originating plan and specific task definition. These lookups enable reporting on engagement plan completion and tracking task execution against planned timelines.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Activity"
       },
       {
@@ -5770,7 +5774,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Stores auto-numbering configuration for NPSP objects, defining display formats, starting numbers, and target fields for automatic number generation. Each record maps to a specific object and field combination via Object_API_Name__c and Field_API_Name__c, with Max_Used_Number__c tracking the last assigned value to prevent duplicates. The IsActive__c flag allows administrators to enable or disable auto-numbering per object without deleting configuration records.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/AutoNumber__c"
       },
       {
@@ -5798,7 +5802,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A legacy custom settings object that controlled the original Batch Data Entry (BDE) tool behavior, including opportunity naming preferences and blank name handling. This feature has been retired in favor of the newer Gift Entry and NPSP Data Import tools. The Viewed_Retirement_Alert__c field tracks whether administrators have acknowledged the deprecation notice.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Batch_Data_Entry_Settings__c"
       },
       {
@@ -5826,7 +5830,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Defines custom column configurations for NPSP list views, storing the field API name, display position index, and target list name for each column. It allows administrators to customize which fields appear in batch and template list views within the NPSP Settings UI. The List_Name__c field maps each column header to a specific list context such as Batches or Templates.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Custom_Column_Header__c"
       },
       {
@@ -5866,7 +5870,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A custom metadata type that configures NPSP in-app notifications, defining the notification channel, content implementation class, audience targeting logic, and redirect URLs. Each record specifies an Apex class for determining notification content and another for resolving the target audience. The IsActive__c flag allows administrators to enable or disable specific notification types without removing the metadata records.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Custom_Notification__mdt"
       },
       {
@@ -5966,7 +5970,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A hierarchical custom settings object that controls the Customizable Rollups (CRLP) engine, including batch sizes for account, contact, and soft credit rollup jobs, LDV chunk sizes, and incremental processing flags. It serves as the central configuration hub for the CRLP engine, with Customizable_Rollups_Enabled__c as the master toggle. The CMT_API_Status__c field tracks the deployment status of rollup definition metadata, and various batch size fields allow performance tuning for organizations of different scales.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Customizable_Rollup_Settings__c"
       },
       {
@@ -5982,7 +5986,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A custom metadata type that groups Data Import field mappings into a named set, linked to a parent Data_Import_Object_Mapping_Set__mdt record. It acts as a container for organizing individual field-level mapping rules used during NPSP Data Import processing. Only one default set is shipped with NPSP, referenced by the Data_Import_Settings__c configuration.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Field_Mapping_Set__mdt"
       },
       {
@@ -6028,7 +6032,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A custom metadata type that defines individual field-level mappings between the NPSP Data Import object and target Salesforce objects. Each record specifies a source field API name on the Data Import record, a target field API name on the destination object, and whether the field is required for dry run validation. It belongs to a Data_Import_Field_Mapping_Set__mdt and links to a Target_Object_Mapping__c, with 135 shipped records covering the default NPSP import mappings.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Field_Mapping__mdt"
       },
       {
@@ -6037,7 +6041,7 @@ const NPSP_ENTITIES = {
         "fieldCount": 0,
         "keyFields": [],
         "relationships": [],
-        "description": "",
+        "description": "A top-level custom metadata type that serves as the root container for the Advanced Mapping framework in NPSP Data Import. It groups Data_Import_Object_Mapping__mdt records into a named set and is referenced by Data_Import_Settings__c as the active mapping configuration. One default record is shipped with NPSP, providing the standard mapping set for all supported import objects.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Object_Mapping_Set__mdt"
       },
       {
@@ -6107,7 +6111,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A custom metadata type that maps NPSP Data Import records to target Salesforce objects, defining the object API name, import status tracking fields, predecessor relationships, and optional custom mapping logic classes. Each record establishes a processing node in the import dependency graph, with Predecessor__c and Relationship_To_Predecessor__c controlling the order of record creation. NPSP ships 13 records covering objects like Contact, Account, Opportunity, Payment, and more, enabling the Batch Data Import engine to orchestrate multi-object inserts.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Object_Mapping__mdt"
       },
       {
@@ -6207,7 +6211,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A hierarchical custom settings object that governs NPSP Data Import behavior, including matching rules for accounts, contacts, and donations, batch processing size, and field mapping method selection. It connects to the Advanced Mapping framework through Default_Data_Import_Field_Mapping_Set__c and Field_Mapping_Method__c, and supports extensibility via Donation_Matching_Implementing_Class__c and Post_Process_Implementing_Class__c. The CMT_API_Status__c and CMT_Deployment_ID__c fields track metadata deployment state for mapping configuration changes.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Settings__c"
       },
       {
@@ -6235,7 +6239,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A platform event that broadcasts the completion status of metadata deployments within NPSP, carrying the deployment ID, status, and completion timestamp. It enables asynchronous notification to LWC components and Apex subscribers when Custom Metadata Type deployments finish. The NPSP Settings UI listens for these events to refresh rollup and mapping configurations after metadata is deployed.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DeploymentEvent__e"
       },
       {
@@ -6244,7 +6248,7 @@ const NPSP_ENTITIES = {
         "fieldCount": 0,
         "keyFields": [],
         "relationships": [],
-        "description": "",
+        "description": "Extends the standard DuplicateRecordSet object for use within NPSP duplicate management workflows. It groups duplicate records identified by Salesforce Duplicate Rules, allowing administrators to review and merge potential duplicates across contacts, accounts, and other NPSP entities. No custom NPSP fields are added; it relies on the standard platform duplicate detection framework.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DuplicateRecordSet"
       },
       {
@@ -6296,7 +6300,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Defines reusable templates for NPSP Engagement Plans, specifying default task assignment rules, weekend handling preferences, and child task date recalculation behavior. It acts as the blueprint from which Engagement_Plan__c records are created, with rollup summary fields tracking total plans and tasks generated from the template. The Skip_Weekends__c and Reschedule_To__c fields ensure task due dates avoid non-business days.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Engagement_Plan_Template__c"
       },
       {
@@ -6318,7 +6322,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A custom metadata type that groups related filter rules for NPSP Customizable Rollups, providing a named collection of criteria that can be applied to rollup calculations. Each filter group is referenced by Rollup__mdt records to restrict which detail records are included in a rollup aggregation. The Is_Deleted__c flag supports soft deletion through the NPSP Settings UI without removing the underlying metadata record.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Filter_Group__mdt"
       },
       {
@@ -6364,7 +6368,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A custom metadata type that defines individual filter criteria within a Filter_Group__mdt for NPSP Customizable Rollups. Each rule specifies an object, field, comparison operator, and constant value to evaluate against detail records during rollup processing. Rules within the same filter group are combined with AND logic to determine which source records are included in the rollup calculation.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Filter_Rule__mdt"
       },
       {
@@ -6398,7 +6402,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A hierarchical custom settings object that controls the NPSP Gift Entry feature, including the default template reference, Elevate gateway assignment toggle, and recurring donation support within gift entry forms. The Enable_Gift_Entry__c field serves as the master switch, requiring Advanced Mapping to be active. The Enable_Gateway_Assignment__c field integrates with Salesforce.org Elevate to support multiple payment gateways per batch.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Gift_Entry_Settings__c"
       },
       {
@@ -6450,7 +6454,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A hierarchical custom settings object that controls how NPSP generates household names, formal greetings, and informal greetings from member contact data. It defines format strings for each naming output, connector words (e.g., \"and\" or \"&\"), overrun text for large households, and the maximum contact count before truncation. The Implementing_Class__c field allows organizations to provide a custom Apex class implementing HH_INaming for completely custom naming logic.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Household_Naming_Settings__c"
       },
       {
@@ -6502,7 +6506,7 @@ const NPSP_ENTITIES = {
             "field": "Batch__c"
           }
         ],
-        "description": "",
+        "description": "Extends the standard Lead object with NPSP-specific fields for batch processing and company address data. The Batch__c lookup associates leads with NPSP Data Import batches for bulk processing, while CompanyCity__c, CompanyCountry__c, CompanyPostalCode__c, CompanyState__c, and CompanyStreet__c fields capture structured company address information. These fields support lead conversion workflows within the NPSP data model.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Lead"
       },
       {
@@ -6530,7 +6534,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A hierarchical custom settings object that configures the NPSP Levels engine, which assigns donor levels to contacts and accounts based on cumulative giving or other criteria. It tracks the last successful batch run timestamp for both Account and Contact level assignments, enabling incremental processing. The Level_Assignment_Batch_Size__c field controls how many records are evaluated per batch execution.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Levels_Settings__c"
       },
       {
@@ -6546,7 +6550,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A hierarchical custom settings object that stores the active NPSP namespace prefix, enabling the codebase to dynamically reference namespaced fields and objects. It allows NPSP code to function correctly in both managed package (npsp__) and unmanaged environments. This single-field setting is read by utility classes throughout the NPSP framework to construct API names at runtime.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Package_Settings__c"
       },
       {
@@ -6586,7 +6590,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Stores key-value configuration pairs for Salesforce.org Elevate payment services integration. Each record represents a named configuration entry associated with a specific Elevate service, with the Service_Key__c field providing a composite key of service name and configuration key. The Is_Secret__c flag marks sensitive values such as API tokens, enabling the UI to mask them appropriately.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Payment_Services_Configuration__c"
       },
       {
@@ -6608,7 +6612,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A custom metadata type that maps recurring donation status picklist values to their underlying state (Active, Lapsed, or Closed) for the Enhanced Recurring Donations engine. Each record pairs a Status__c text value with a State__c picklist entry, allowing organizations to create custom status values while preserving consistent state-based behavior. This mapping drives lifecycle transitions, installment creation logic, and rollup calculations for recurring donations.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/RecurringDonationStatusMapping__mdt"
       },
       {
@@ -6708,7 +6712,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A custom metadata type that defines individual Customizable Rollup (CRLP) definitions in NPSP, specifying the source detail object and field, the target summary object and field, the aggregation operation, and optional time-bound constraints. Each record references a Filter_Group__mdt for conditional filtering and supports operations like Sum, Count, Average, Largest, Smallest, First, Last, and Best Year. With 16 fields per record, it provides a fully declarative alternative to the legacy rollup helpers, stored as deployable metadata rather than custom object data.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Rollup__mdt"
       },
       {
@@ -6742,7 +6746,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A deprecated custom object that previously stored configuration for NPSP scheduled batch jobs, including the Apex class name, execution frequency, and last run timestamp. It has been superseded by the standard Salesforce scheduled job framework and NPSP's built-in batch scheduling. The Active__c checkbox and Frequency__c picklist controlled whether and how often each job would execute.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Schedulable__c"
       },
       {
@@ -6842,7 +6846,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A hierarchical custom settings object from the npe01 (Contacts & Organizations) package that controls core NPSP contact and organization behaviors. It configures automatic campaign member management, opportunity contact roles for organizational and household accounts, honoree and notification recipient roles, payment auto-creation exclusions, address management toggles, and accounting data consistency enforcement. Key fields like Payments_Auto_Close_Stage_Name__c and Max_Payments__c also govern payment processing behavior across the entire NPSP framework.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe01__Contacts_And_Orgs_Settings__c"
       },
       {
@@ -6942,7 +6946,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A hierarchical custom settings object from the npe03 (Recurring Donations) package that governs all recurring donation processing behavior in NPSP. It controls Enhanced Recurring Donations enablement, installment opportunity creation modes, batch sizes, automatic naming formats, change log tracking, status automation, and data migration state. With 20 fields spanning batch processing tuning, date matching ranges, and enablement state tracking, it is the most comprehensive settings object for the Recurring Donations domain.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe03__Recurring_Donations_Settings__c"
       },
       {
@@ -6958,7 +6962,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A hierarchical custom settings object from the npe4 (Relationships) package that controls relationship-related automation in NPSP. Its single field, Enable_Custom_Field_Sync__c, toggles the synchronization of custom fields between reciprocal relationship records. When enabled, changes to custom fields on one npe4__Relationship__c record are automatically mirrored to its reciprocal partner record.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe4__Relationship_Settings__c"
       },
       {
@@ -6986,7 +6990,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "A hierarchical custom settings object from the npo02 (Households) package that controls household-level behaviors in NPSP. The Matched_Donor_Role__c field specifies the contact role assigned to matched donors in donation matching scenarios, while Seasonal_Addresses_Batch_Size__c tunes performance for the seasonal address rotation batch job. The Use_Dated_Conversion_Rates__c field enables advanced multi-currency support using Salesforce dated exchange rates for donation rollups.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npo02__Households_Settings__c"
       }
     ],
@@ -7004,7 +7008,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Campaign.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Campaign.trigger",
+        "description": "A TDTM trigger on the Campaign object that fires on all seven standard trigger events (before/after insert, update, delete, and after undelete). It delegates processing to handler classes registered in Trigger_Handler__c records, following the NPSP Table-Driven Trigger Management pattern. Handlers on this trigger typically manage campaign-related automation such as campaign member status tracking and engagement plan integrations."
       },
       {
         "name": "TDTM_CampaignMember",
@@ -7019,7 +7024,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_CampaignMember.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_CampaignMember.trigger",
+        "description": "A TDTM trigger on the CampaignMember object that fires on all seven standard trigger events. It routes processing through the TDTM dispatcher to handler classes defined in Trigger_Handler__c, enabling configurable automation for campaign membership changes. Typical handlers manage automatic campaign member status updates tied to opportunity stages and donation processing."
       },
       {
         "name": "TDTM_Lead",
@@ -7034,7 +7040,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Lead.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Lead.trigger",
+        "description": "A TDTM trigger on the Lead object that fires on all seven standard trigger events, routing execution to handler classes configured in Trigger_Handler__c records. It supports NPSP-specific lead processing such as address formatting and data import batch association. Like all TDTM triggers, it contains no business logic itself, relying entirely on the handler framework for extensibility."
       },
       {
         "name": "TDTM_Task",
@@ -7049,7 +7056,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Task.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Task.trigger",
+        "description": "A TDTM trigger on the Task object that fires on all seven standard trigger events, delegating to handler classes registered in Trigger_Handler__c. It supports engagement plan task tracking, where completing a parent task can trigger the creation or rescheduling of dependent child tasks. The trigger's TDTM pattern allows administrators to disable or reorder task-related handlers without modifying code."
       },
       {
         "name": "TDTM_User",
@@ -7064,80 +7072,81 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_User.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_User.trigger",
+        "description": "A TDTM trigger on the User object that fires on all seven standard trigger events, delegating processing to Trigger_Handler__c-configured handler classes. It supports user-related automation in NPSP, such as updating error notification recipients or resetting user-specific settings when profiles change. This trigger follows the standard TDTM pattern, keeping the trigger itself logic-free for maximum configurability."
       }
     ],
     "lwcs": [
       {
         "name": "accordionSection",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a collapsible accordion section within the NPSP Settings UI. It provides a consistent expand/collapse interaction pattern used by various NPSP configuration pages to organize groups of related settings. The component manages its own open/closed state and dispatches events to parent components when toggled.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/accordionSection"
       },
       {
         "name": "batchProgress",
         "imports": [],
-        "description": "",
+        "description": "An LWC component that displays the progress of NPSP batch processing jobs, showing completion percentage and status updates. It is used in the Data Import, Rollup, and other batch-oriented interfaces to provide real-time feedback during long-running operations. The component typically subscribes to platform events or polls for batch job status to update its display.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/batchProgress"
       },
       {
         "name": "bdeRetirementAlert",
         "imports": [],
-        "description": "",
+        "description": "An LWC component that displays a deprecation notice for the legacy Batch Data Entry (BDE) feature, informing administrators that BDE has been retired in favor of Gift Entry. It reads the Viewed_Retirement_Alert__c flag from Batch_Data_Entry_Settings__c to determine whether to show the alert. Once acknowledged, the component updates the setting to suppress future displays.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/bdeRetirementAlert"
       },
       {
         "name": "customDatatable",
         "imports": [],
-        "description": "",
+        "description": "An LWC component that extends the standard lightning-datatable with NPSP-specific custom column types and behaviors. It supports specialized cell rendering such as custom picklists and formatted text within data grids used across the NPSP Settings UI. The component is referenced by Gift Entry, Data Import, and rollup configuration interfaces for tabular data display.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/customDatatable"
       },
       {
         "name": "customPicklistType",
         "imports": [],
-        "description": "",
+        "description": "An LWC component that provides a custom picklist cell type for use within the customDatatable component. It renders an inline-editable picklist within a datatable row, enabling users to select values directly in grid views without opening a separate edit form. This component is used primarily in the Gift Entry batch table and Data Import configuration interfaces.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/customPicklistType"
       },
       {
         "name": "formattedTextWithDate",
         "imports": [],
-        "description": "",
+        "description": "An LWC component that renders text content with an embedded formatted date value, supporting locale-aware date display. It is used within NPSP UI elements where descriptive text needs to include dynamic date references, such as batch processing summaries or last-run timestamps. The component leverages the platform's internationalization services for consistent date formatting.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/formattedTextWithDate"
       },
       {
         "name": "gsAccordionLabel",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started (GS) LWC component that renders styled labels for accordion sections within the NPSP Settings setup flow. It displays section titles with appropriate icons and completion indicators as part of the guided setup experience. The component is a child of gsAccordionSection and coordinates visual state with the parent checklist system.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gsAccordionLabel"
       },
       {
         "name": "gsAccordionSection",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started LWC component that renders expandable/collapsible sections within the NPSP setup checklist interface. It wraps checklist items for a specific setup category, managing expand/collapse state and visual styling for the guided configuration experience. The component works in coordination with gsChecklist and gsChecklistItem to present the full setup workflow.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gsAccordionSection"
       },
       {
         "name": "gsApplicationStatus",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started LWC component that displays the overall application configuration status during the NPSP setup process. It shows whether key NPSP features like Recurring Donations, Customizable Rollups, and Gift Entry are enabled, providing administrators with a high-level view of their configuration state. The component reads from various NPSP custom settings to determine feature activation status.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gsApplicationStatus"
       },
       {
         "name": "gsChecklist",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started LWC component that renders the main setup checklist for new NPSP installations, organizing configuration tasks into categorized sections. It loads checklist data from GetStartedChecklistSection and GetStartedChecklistItem custom metadata records to dynamically build the task list. The component tracks completion state across sessions, guiding administrators through initial NPSP configuration steps.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gsChecklist"
       },
       {
         "name": "gsChecklistIcon",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started LWC component that renders status icons for individual checklist items, showing visual indicators for complete, incomplete, and in-progress states. It is a child component of gsChecklistItem and updates its display based on the parent's completion status. The component uses SLDS icon classes for consistent styling within the setup experience.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gsChecklistIcon"
       },
       {
         "name": "gsChecklistItem",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started LWC component that renders a single actionable item within the NPSP setup checklist, displaying the task description, status icon, and navigation link. Each item corresponds to a GetStartedChecklistItem__mdt record and can link to NPSP Settings pages or external resources. The component communicates completion state changes back to the parent gsChecklist through custom events.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gsChecklistItem"
       },
       {
@@ -7145,163 +7154,163 @@ const NPSP_ENTITIES = {
         "imports": [
           "gsLabelMapper"
         ],
-        "description": "",
+        "description": "An NPSP Getting Started LWC component that serves as the top-level container for the NPSP setup checklist experience, orchestrating the loading and display of all checklist sections and items. It imports gsLabelMapper for label resolution and coordinates the initialization of child components with data from custom metadata. This component is the primary entry point for the guided setup flow accessible from the NPSP Settings home page.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gsChecklistSetup"
       },
       {
         "name": "gsLabelMapper",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started utility LWC module that maps custom metadata developer names to their corresponding custom label values for the setup checklist UI. It provides a centralized label resolution service consumed by gsChecklistSetup and other GS components, decoupling label references from component logic. This module enables the checklist to dynamically render localized text based on metadata-driven configuration.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gsLabelMapper"
       },
       {
         "name": "gsResources",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started LWC component that displays helpful resource links, documentation references, and learning materials within the NPSP setup experience. It provides administrators with quick access to Trailhead modules, NPSP documentation, and community resources relevant to their current configuration step. The component is rendered alongside the setup checklist to offer contextual guidance.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gsResources"
       },
       {
         "name": "gsVideoHeader",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started LWC component that renders a video header section within the NPSP setup experience, typically displaying an introductory or instructional video. It provides visual context and onboarding guidance at the top of the Getting Started page, helping new administrators understand NPSP concepts. The component manages video playback controls and responsive sizing.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gsVideoHeader"
       },
       {
         "name": "gseuHeader",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started End User (GSEU) LWC component that renders the header section of the end-user-facing Getting Started experience. It displays welcome messaging and navigation context for nonprofit staff who are learning to use NPSP for daily operations. The component is distinct from the admin-focused GS components, targeting operational users rather than system administrators.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gseuHeader"
       },
       {
         "name": "gseuTrailhead",
         "imports": [],
-        "description": "",
+        "description": "An NPSP Getting Started End User LWC component that surfaces relevant Trailhead learning modules for end users of NPSP. It provides direct links to Trailhead trails and modules covering topics like donation management, contact tracking, and reporting for nonprofit staff. The component helps drive user adoption by embedding learning resources directly within the NPSP application.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gseuTrailhead"
       },
       {
         "name": "libsMoment",
         "imports": [],
-        "description": "",
+        "description": "A utility LWC module that wraps the Moment.js date/time manipulation library for use across NPSP Lightning Web Components. It provides date parsing, formatting, comparison, and arithmetic functions that are consumed by components needing date calculations beyond what the platform natively offers. This module is imported as a shared dependency by Recurring Donation, Gift Entry, and other date-intensive NPSP components.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/libsMoment"
       },
       {
         "name": "modal",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a standard modal dialog overlay for NPSP user interactions, providing a consistent container for confirmation prompts, forms, and informational displays. It manages focus trapping, backdrop rendering, and close/cancel actions following SLDS modal patterns. The component is used throughout the NPSP UI, including Gift Entry, Recurring Donations, and Settings interfaces.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/modal"
       },
       {
         "name": "progressRing",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a circular progress indicator following the SLDS progress ring pattern. It displays percentage completion with visual fill animation, used in NPSP batch processing interfaces and the Getting Started checklist to show overall progress. The component accepts a percentage value and optional status variant to control color and completion state rendering.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/progressRing"
       },
       {
         "name": "psElevateTokenHandler",
         "imports": [],
-        "description": "",
+        "description": "An LWC component that manages payment tokenization for Salesforce.org Elevate integration within the NPSP Gift Entry and donation processing interfaces. It handles the secure exchange of payment information with the Elevate payment gateway, generating and managing payment tokens without exposing sensitive card data to the Salesforce environment. The component communicates with the Elevate iframe widget and relays tokenized payment references back to the parent Gift Entry form.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/psElevateTokenHandler"
       },
       {
         "name": "pubsubNoPageRef",
         "imports": [],
-        "description": "",
+        "description": "A utility LWC module that implements a lightweight publish-subscribe event bus for cross-component communication without requiring a Lightning page reference. It enables loosely coupled messaging between NPSP LWC components that may not share a direct parent-child relationship. Unlike the standard pubsub module, this variant works in contexts where no pageRef is available, such as utility bars and standalone Aura wrappers.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/pubsubNoPageRef"
       },
       {
         "name": "refundPayment",
         "imports": [],
-        "description": "",
+        "description": "An LWC component that provides the user interface for processing payment refunds within NPSP, supporting both standard Salesforce payments and Elevate-processed transactions. It displays the original payment details, validates refund amounts, and coordinates with backend Apex controllers to execute the refund operation. The component handles Elevate-specific refund flows when the payment was processed through the Elevate payment gateway.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/refundPayment"
       },
       {
         "name": "stopRecurringDonationModal",
         "imports": [],
-        "description": "",
+        "description": "An LWC component that renders a confirmation modal for closing or pausing a recurring donation in the Enhanced Recurring Donations interface. It presents the user with options for the closure reason and effective date, then invokes the backend logic to update the recurring donation status and cancel future installment opportunities. The component enforces validation rules and provides feedback on the outcome of the stop operation.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/stopRecurringDonationModal"
       },
       {
         "name": "util",
         "imports": [],
-        "description": "",
+        "description": "A foundational utility LWC module that provides shared helper functions used across the NPSP Lightning Web Component library. It includes common operations such as string formatting, object cloning, error handling, and platform feature detection. This module is imported as a dependency by numerous NPSP components to avoid duplicating basic utility logic.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/util"
       },
       {
         "name": "utilAlertBanner",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a dismissible alert banner following SLDS alert patterns, used to display informational, warning, or error messages across NPSP Settings and data processing interfaces. It supports multiple severity variants and optional action links within the banner content. The component manages its own dismiss state and can be configured for auto-dismiss behavior.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilAlertBanner"
       },
       {
         "name": "utilCard",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a styled card container following SLDS card patterns, providing consistent layout for content sections throughout the NPSP Settings UI. It supports optional header actions, icons, and footer content slots for flexible composition. The component is used extensively in the NPSP Settings, Gift Entry, and Batch Data Import interfaces to group related information.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilCard"
       },
       {
         "name": "utilCommon",
         "imports": [],
-        "description": "",
+        "description": "A utility LWC module that provides commonly used helper functions shared across NPSP components, including field value extraction, permission checking, URL construction, and Apex method invocation wrappers. It serves as the primary shared utility library alongside the util module, with functions that are more NPSP-domain-specific. Components throughout the Gift Entry, Data Import, and Settings areas import this module for consistent data handling patterns.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilCommon"
       },
       {
         "name": "utilDedicatedListener",
         "imports": [],
-        "description": "",
+        "description": "A utility LWC module that provides a specialized event listener pattern for NPSP components requiring dedicated, single-purpose event channels. It enables components to register for and receive targeted events without interference from the broader pubsub bus. This module is used in scenarios where event isolation is important, such as Gift Entry form field validation and batch processing status updates.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilDedicatedListener"
       },
       {
         "name": "utilDualListbox",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a dual listbox picker following SLDS patterns, allowing users to move items between available and selected lists. It is used in NPSP Settings interfaces for multi-select configurations such as choosing record types, selecting fields for matching rules, and configuring rollup exclusions. The component supports search filtering, reordering of selected items, and accessibility keyboard navigation.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilDualListbox"
       },
       {
         "name": "utilExpandableSection",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a collapsible content section with a clickable header, following SLDS expandable section patterns. It provides a simpler alternative to accordionSection for single-section expand/collapse needs within NPSP Settings and configuration pages. The component manages its own toggle state and supports both default-open and default-closed initial configurations.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilExpandableSection"
       },
       {
         "name": "utilIllustration",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders SLDS illustration graphics for empty states, error conditions, and informational placeholders within the NPSP UI. It displays SVG illustrations with accompanying heading and body text, used in Gift Entry, Data Import, and Settings interfaces when no data is available or an action is needed. The component supports multiple illustration variants for different contextual messaging.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilIllustration"
       },
       {
         "name": "utilInlineText",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders inline text elements with optional styling variants for use within NPSP form layouts and detail views. It supports rendering text as labels, descriptions, or help text with consistent SLDS formatting. The component is used as a building block in NPSP Settings forms and Gift Entry field displays.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilInlineText"
       },
       {
         "name": "utilInput",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that wraps standard Lightning input elements with NPSP-specific validation, error handling, and formatting behaviors. It provides a consistent input experience across Gift Entry forms, Data Import configuration, and NPSP Settings interfaces. The component supports multiple input types and integrates with the NPSP form validation framework to display field-level error messages.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilInput"
       },
       {
         "name": "utilNumberFormatter",
         "imports": [],
-        "description": "",
+        "description": "A utility LWC module that provides number and currency formatting functions for consistent display of financial values across NPSP components. It handles locale-aware number formatting, currency symbol placement, and decimal precision for donation amounts, rollup totals, and payment values. This module is imported by Gift Entry, Recurring Donation, and rollup display components to ensure consistent numeric presentation.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilNumberFormatter"
       },
       {
         "name": "utilPageHeader",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a standardized page header following SLDS page header patterns, used at the top of NPSP Settings pages and feature interfaces. It displays a title, subtitle, icon, and optional action buttons in a consistent layout. The component is paired with utilPageHeaderDetailRow and utilPageHeaderDetailBlock for composing full header layouts with detail fields.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilPageHeader"
       },
       {
         "name": "utilPageHeaderDetailBlock",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a detail block within an NPSP page header, displaying labeled field values in a horizontal layout. It is designed as a child of utilPageHeader and works alongside utilPageHeaderDetailRow to compose rich page header detail sections. The component follows SLDS page header detail patterns for presenting record-level summary information.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilPageHeaderDetailBlock"
       },
       {
         "name": "utilPageHeaderDetailRow",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a horizontal row of detail blocks within an NPSP page header section. It acts as a layout container for utilPageHeaderDetailBlock components, ensuring consistent spacing and alignment of header detail fields. The component is used in Recurring Donation, Gift Entry, and Batch processing page headers to display key record attributes.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilPageHeaderDetailRow"
       },
       {
@@ -7309,43 +7318,43 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "A reusable LWC component that renders page-level informational, warning, or error messages within NPSP interfaces, importing geLabelService for localized message text. It displays prominent banners at the top of a page or section to communicate validation errors, processing status, or important notices. The component supports multiple message severity levels and is used across Gift Entry, Data Import, and Settings pages.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilPageLevelMessage"
       },
       {
         "name": "utilPlatformEventListener",
         "imports": [],
-        "description": "",
+        "description": "A utility LWC component that subscribes to Salesforce platform events and dispatches notifications to parent NPSP components. It provides a reusable subscription mechanism for events like DeploymentEvent__e and batch processing completion events, enabling real-time UI updates without polling. The component manages subscription lifecycle including connect, disconnect, and error recovery.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilPlatformEventListener"
       },
       {
         "name": "utilProgressBar",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a horizontal progress bar following SLDS patterns, displaying percentage completion for batch processing operations within the NPSP UI. It complements the progressRing component by providing a linear progress visualization suitable for wider layout contexts. The component is used in Data Import processing, rollup batch execution, and other long-running NPSP operations.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilProgressBar"
       },
       {
         "name": "utilPrompt",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a confirmation or informational prompt dialog within the NPSP UI, providing accept and cancel actions with customizable button labels and body content. It is used for destructive action confirmations, data validation warnings, and informational acknowledgments across NPSP Settings and Gift Entry. The component follows SLDS modal prompt patterns and manages focus and keyboard interaction.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilPrompt"
       },
       {
         "name": "utilScreenReaderAnnouncer",
         "imports": [],
-        "description": "",
+        "description": "A utility LWC component that provides accessible screen reader announcements for dynamic content changes within NPSP Lightning Web Components. It uses an ARIA live region to announce status updates, error messages, and navigation changes to assistive technology users. The component is embedded in NPSP interfaces to ensure compliance with accessibility standards during batch processing, form validation, and page transitions.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilScreenReaderAnnouncer"
       },
       {
         "name": "utilSearchableCombobox",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders a combobox with integrated search/filter functionality, allowing users to type to narrow options in long picklists. It is used in NPSP Settings and Gift Entry interfaces where selection lists may contain many options, such as object field pickers and record type selectors. The component supports keyboard navigation, custom option rendering, and debounced search input.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilSearchableCombobox"
       },
       {
         "name": "utilStencil",
         "imports": [],
-        "description": "",
+        "description": "A reusable LWC component that renders placeholder skeleton loading animations following SLDS stencil patterns, displayed while NPSP components are loading data. It provides visual feedback during Apex method calls and data fetches, preventing layout shift when content appears. The component supports multiple stencil variants including text lines, cards, and custom shapes to match the layout being loaded.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilStencil"
       },
       {
@@ -7353,7 +7362,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "A reusable LWC component that provides template building and management functionality for the NPSP Gift Entry feature, importing geLabelService for localized labels. It enables administrators to define and customize form layouts for gift entry, specifying which fields appear, their order, and validation rules. The component powers the Gift Entry Template Builder interface where users construct reusable form templates for single and batch gift processing.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/utilTemplateBuilder"
       }
     ],
@@ -7361,43 +7370,43 @@ const NPSP_ENTITIES = {
       {
         "name": "Custom_Notification",
         "recordCount": 1,
-        "description": "",
+        "description": "A custom metadata type with 1 shipped record that configures an NPSP in-app notification definition. It references implementation classes for audience targeting and content generation, controlling how NPSP delivers notifications to users. The metadata record defines the default notification channel and behavior for NPSP system alerts.",
         "keyFields": []
       },
       {
         "name": "Data_Import_Field_Mapping",
         "recordCount": 135,
-        "description": "",
+        "description": "A custom metadata type with 135 shipped records that stores the complete set of default field-level mappings for the NPSP Advanced Mapping Data Import framework. Each record maps a source field on the DataImport__c object to a target field on a destination object such as Contact, Account, Opportunity, or Payment. These records are managed through the NPSP Settings UI and deployed via the Metadata API.",
         "keyFields": []
       },
       {
         "name": "Data_Import_Field_Mapping_Set",
         "recordCount": 1,
-        "description": "",
+        "description": "A custom metadata type with 1 shipped record that defines the default field mapping set for the NPSP Advanced Mapping framework. It serves as the named container referenced by Data_Import_Settings__c to identify which collection of field mappings is active. Additional mapping sets can be created for specialized import configurations.",
         "keyFields": []
       },
       {
         "name": "Data_Import_Object_Mapping",
         "recordCount": 13,
-        "description": "",
+        "description": "A custom metadata type with 13 shipped records that defines the target object configurations for the NPSP Advanced Mapping Data Import process. Each record maps to a Salesforce object (such as Contact, Account, Opportunity, or Payment) and specifies processing order through predecessor relationships. These records control how the Batch Data Import engine creates and links records across multiple objects.",
         "keyFields": []
       },
       {
         "name": "Data_Import_Object_Mapping_Set",
         "recordCount": 1,
-        "description": "",
+        "description": "A custom metadata type with 1 shipped record that serves as the root container for the NPSP Advanced Mapping object mapping hierarchy. It groups all Data_Import_Object_Mapping__mdt records into a named set, referenced by the Data_Import_Settings__c configuration. This top-level record anchors the entire object mapping framework used by the Batch Data Import engine.",
         "keyFields": []
       },
       {
         "name": "GetStartedChecklistItem",
         "recordCount": 34,
-        "description": "",
+        "description": "A custom metadata type with 34 shipped records that defines individual setup tasks within the NPSP Getting Started checklist experience. Each record represents a specific configuration action such as enabling a feature, reviewing settings, or completing a learning module. These records are consumed by the gsChecklist and gsChecklistItem LWC components to dynamically render the guided setup workflow.",
         "keyFields": []
       },
       {
         "name": "GetStartedChecklistSection",
         "recordCount": 8,
-        "description": "",
+        "description": "A custom metadata type with 8 shipped records that defines the major sections of the NPSP Getting Started checklist, grouping related setup tasks into logical categories. Each section record provides a label, description, and ordering for display in the gsChecklist LWC component. The 8 sections organize the 34 checklist items into categories such as People, Donations, Recurring Donations, and Customization.",
         "keyFields": []
       }
     ]
@@ -7422,7 +7431,7 @@ const NPSP_ENTITIES = {
           "npe01__OppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_AllocationsDMLService.cls",
-        "description": ""
+        "description": "Service class that handles the DML operations (insert, update, delete) for Allocation__c records with proper error handling and logging. It processes allocation results and supports alternate record error logging for surfacing errors on parent records. The service works with ALLO_AllocationsWrapper to batch DML operations efficiently."
       },
       {
         "name": "ALLO_AllocationsRecalculateService",
@@ -7445,7 +7454,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_AllocationsRecalculateService.cls",
-        "description": ""
+        "description": "Service class that recalculates allocation amounts when parent Opportunity or Payment amounts change. It handles resizing existing allocations proportionally, copying allocations from Campaigns and Recurring Donations to new Opportunities, and creating default allocations. The service validates allocation totals to ensure they do not exceed the parent record amount."
       },
       {
         "name": "ALLO_AllocationsRetrievalService",
@@ -7473,7 +7482,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_AllocationsRetrievalService.cls",
-        "description": ""
+        "description": "Service class that queries and retrieves Allocation__c records along with their related Opportunity, Payment, Campaign, and Recurring Donation data. It builds optimized SOQL queries based on the context type and populates the ALLO_AllocationsWrapper with the retrieved data. This service provides the data foundation that other allocation services operate on."
       },
       {
         "name": "ALLO_AllocationsReviewService",
@@ -7491,7 +7500,7 @@ const NPSP_ENTITIES = {
           "npe01__Payment_Amount__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_AllocationsReviewService.cls",
-        "description": ""
+        "description": "Service class that evaluates existing allocations against their parent records to determine if recalculation is needed. It checks whether allocation totals match the parent Opportunity or Payment amount and flags records that require adjustment. This review step runs before recalculation to minimize unnecessary DML operations."
       },
       {
         "name": "ALLO_AllocationsService",
@@ -7510,7 +7519,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_AllocationsService.cls",
-        "description": ""
+        "description": "Top-level orchestrator service that coordinates the full allocation processing pipeline for triggered record changes. It chains together the retrieval, review, recalculation, and DML services to process allocations end-to-end. The service supports configurable context types, trigger disabling, and commit control for both synchronous and batch execution."
       },
       {
         "name": "ALLO_AllocationsSettings",
@@ -7528,7 +7537,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_AllocationsSettings.cls",
-        "description": ""
+        "description": "Configuration class that reads and validates Allocations_Settings__c custom settings for the allocation subsystem. It exposes methods to check whether default allocations and payment allocations are enabled, retrieves the default GAU ID, and validates the payment allocation configuration. Other allocation classes rely on this as the single source of truth for allocation feature flags."
       },
       {
         "name": "ALLO_AllocationsUtil",
@@ -7550,7 +7559,7 @@ const NPSP_ENTITIES = {
           "npe01__Payment_Amount__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_AllocationsUtil.cls",
-        "description": ""
+        "description": "Utility class that provides shared helper methods for the allocations subsystem, including trigger enable/disable controls. It offers methods to extract the parent Opportunity ID and amount from either an Opportunity or Payment context, and generates user-friendly labels. The trigger control methods allow other processes to temporarily suppress allocation triggers during bulk operations."
       },
       {
         "name": "ALLO_AllocationsWrapper",
@@ -7576,7 +7585,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_AllocationsWrapper.cls",
-        "description": ""
+        "description": "Data container class that holds allocation records organized by their parent type (Opportunity, Payment, Campaign, Recurring Donation). At 566 lines, it provides methods for adding, removing, replacing, and filtering allocations, as well as retrieving allocations by parent ID. This wrapper is passed between the retrieval, review, recalculation, and DML services as the shared data structure."
       },
       {
         "name": "ALLO_Allocations_TDTM",
@@ -7602,7 +7611,7 @@ const NPSP_ENTITIES = {
           "npo02__Households_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_Allocations_TDTM.cls",
-        "description": ""
+        "description": "Primary TDTM trigger handler for the Allocation__c object at 1,308 lines, making it the largest class in the allocations domain. It processes allocation changes on insert, update, and delete, enforcing validation rules, creating default allocations, and maintaining allocation totals against parent Opportunities and Payments. The handler also manages the relationship between allocations and Recurring Donations."
       },
       {
         "name": "ALLO_MakeDefaultAllocations_BATCH",
@@ -7617,7 +7626,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_MakeDefaultAllocations_BATCH.cls",
-        "description": ""
+        "description": "Batch Apex class that creates default GAU Allocation records for existing Opportunities that lack them. It queries Opportunities without allocations and creates Allocation__c records linked to the configured default General Accounting Unit. This batch job is typically run when enabling the default allocations feature for the first time."
       },
       {
         "name": "ALLO_ManageAllocations_CTRL",
@@ -7643,7 +7652,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_ManageAllocations_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the Manage Allocations page that allows users to add, edit, and delete allocation rows on an Opportunity or Payment. It supports multi-currency environments, validates that allocation totals do not exceed the parent amount, and handles both amount-based and percentage-based allocations. The controller works with Opportunities, Payments, and Recurring Donations as parent contexts."
       },
       {
         "name": "ALLO_Multicurrency_TDTM",
@@ -7660,7 +7669,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_Multicurrency_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that synchronizes the CurrencyIsoCode on Allocation__c records when their parent Opportunity or Payment currency changes. It fires on parent record updates in multi-currency orgs and cascades the currency change to all child allocations. This ensures allocation records always reflect the correct currency of their parent donation."
       },
       {
         "name": "ALLO_PaymentSync_SVC",
@@ -7682,7 +7691,7 @@ const NPSP_ENTITIES = {
           "npe01__Written_Off__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_PaymentSync_SVC.cls",
-        "description": ""
+        "description": "Service class that synchronizes allocations between Opportunity-level and Payment-level records. It can copy Opportunity allocations down to Payments or aggregate Payment allocations up to the Opportunity, converting between percentage-based and amount-based allocations as needed. This bidirectional sync ensures allocation consistency across the donation and payment hierarchy."
       },
       {
         "name": "ALLO_PaymentSync_TDTM",
@@ -7700,7 +7709,7 @@ const NPSP_ENTITIES = {
           "npe01__oppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_PaymentSync_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that fires on Payment (npe01__OppPayment__c) changes to trigger allocation synchronization via ALLO_PaymentSync_SVC. When Payments are created, updated, or written off, it ensures the corresponding allocations are created or adjusted. This handler bridges the Payment trigger context to the allocation sync pipeline."
       },
       {
         "name": "ALLO_Rollup_SCHED",
@@ -7718,7 +7727,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ALLO_Rollup_SCHED.cls",
-        "description": ""
+        "description": "Schedulable batch class that rolls up allocation amounts to their parent General Accounting Unit records. It extends UTIL_AbstractRollup_BATCH and calculates aggregate statistics like total, average, largest, and smallest allocations by year and time period. This nightly job keeps the GAU summary fields current for reporting purposes."
       }
     ],
     "objects": [
@@ -7797,7 +7806,7 @@ const NPSP_ENTITIES = {
             "field": "Recurring_Donation__c"
           }
         ],
-        "description": "",
+        "description": "Custom object that links a donation (Opportunity or Payment) to a General Accounting Unit for fund tracking and reporting. Each record can specify either a fixed Amount or a Percent of the parent, and supports lookups to Campaign and Recurring Donation for template-based allocation. NPSP uses this object to split donations across multiple funds or programs.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Allocation__c"
       },
       {
@@ -7849,7 +7858,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom Settings object that stores the global configuration for the GAU Allocations feature. Key settings include enabling default allocations, specifying the default GAU ID, enabling payment-level allocations, configuring rollup N-day windows, and choosing fiscal vs. calendar year rollups. This settings object drives the behavior of all ALLO_ classes.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Allocations_Settings__c"
       },
       {
@@ -7858,7 +7867,7 @@ const NPSP_ENTITIES = {
         "fieldCount": 0,
         "keyFields": [],
         "relationships": [],
-        "description": "",
+        "description": "Deprecated custom object that was the predecessor to General_Accounting_Unit__c for fund tracking in NPSP. It has zero fields and no active functionality, retained only for backward compatibility with legacy installations. Organizations should use General_Accounting_Unit__c and Allocation__c instead.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Fund__c"
       },
       {
@@ -7958,7 +7967,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom object that represents a fund, program, or accounting category to which donations can be allocated. It contains 17 rollup summary fields that track allocation totals, counts, averages, and date ranges across multiple time periods. NPSP updates these fields via the ALLO_Rollup_SCHED nightly batch job based on Closed/Won Opportunity data.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/General_Accounting_Unit__c"
       },
       {
@@ -8004,7 +8013,7 @@ const NPSP_ENTITIES = {
             "field": "Opportunity__c"
           }
         ],
-        "description": "",
+        "description": "Custom object (labeled Deliverable) that tracks grant deliverables and deadlines as child records of an Opportunity via a Master-Detail relationship. Each record captures a due date, close date, requirements description, and deliverable type. This object supports grant management workflows by linking specific obligations to their parent grant Opportunity.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Grant_Deadline__c"
       }
     ],
@@ -8022,7 +8031,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Allocation.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Allocation.trigger",
+        "description": "Master trigger on the Allocation__c object that routes all DML events through the TDTM framework. It covers before/after insert, update, delete, and undelete events, delegating to ALLO_Allocations_TDTM and ALLO_Multicurrency_TDTM. This single-trigger pattern ensures consistent allocation processing and currency synchronization."
       },
       {
         "name": "TDTM_GeneralAccountingUnit",
@@ -8037,7 +8047,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_GeneralAccountingUnit.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_GeneralAccountingUnit.trigger",
+        "description": "Master trigger on the General_Accounting_Unit__c object that routes DML events through the TDTM framework. It covers all before/after insert, update, delete, and undelete events for GAU records. This trigger enables NPSP to enforce validation and automation rules on accounting unit changes."
       },
       {
         "name": "TDTM_GrantDeadline",
@@ -8052,7 +8063,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_GrantDeadline.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_GrantDeadline.trigger",
+        "description": "Master trigger on the Grant_Deadline__c (Deliverable) object that routes DML events through the TDTM framework. It covers all standard trigger events, enabling NPSP to apply automation to grant deliverable records. This supports future extensibility for grant management workflows."
       }
     ],
     "lwcs": [],
@@ -8081,7 +8093,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AN_AutoNumberService.cls",
-        "description": ""
+        "description": "Manages auto-numbering for NPSP records by generating, formatting, and applying sequential numbers. It provides activate/deactivate lifecycle controls and persists numbering state, ensuring each record receives a unique formatted identifier. The service tracks the maximum used number to prevent collisions across concurrent transactions."
       },
       {
         "name": "AN_AutoNumber_TDTM",
@@ -8095,7 +8107,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/AN_AutoNumber_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that invokes the AN_AutoNumberService when records are inserted or updated. It extends TDTM_Runnable and delegates to the auto-number service to apply formatted sequential identifiers during DML operations. This handler is the trigger-level entry point for the auto-numbering feature."
       },
       {
         "name": "MTCH_FindGifts_CTRL",
@@ -8113,7 +8125,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/MTCH_FindGifts_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller that powers the Find Matching Gifts page, enabling users to search for Opportunities eligible for employer matching. It provides search, pagination, and save functionality, along with multi-currency support via getCurrencySymbol. Users can locate unmatched donations and associate them with a matching gift record."
       },
       {
         "name": "MTCH_Opportunity_TDTM",
@@ -8127,7 +8139,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/MTCH_Opportunity_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that fires on Opportunity changes to evaluate and process matching gift relationships. It extends TDTM_Runnable and checks whether an Opportunity qualifies for matching based on the employer account configuration. This handler ensures matching gift records stay synchronized when donation details change."
       },
       {
         "name": "OPP_AccountSoftCredit_TDTM",
@@ -8141,7 +8153,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_AccountSoftCredit_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that manages Account Soft Credit records when Opportunities are created, updated, or deleted. It evaluates Opportunity Contact Roles to determine which organizational accounts should receive soft credit. This ensures that Account-level giving summaries accurately reflect indirect contributions."
       },
       {
         "name": "OPP_AutomatedSoftCreditsService",
@@ -8157,7 +8169,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_AutomatedSoftCreditsService.cls",
-        "description": ""
+        "description": "Service class that automatically creates Opportunity Contact Roles (OCRs) for soft credits based on Relationships and Affiliations. It identifies organizational accounts and builds OCRs from related Contacts, ensuring household members and affiliated individuals receive appropriate credit. The service handles both relationship-based and affiliation-based soft credit creation."
       },
       {
         "name": "OPP_CampaignMember_TDTM",
@@ -8171,7 +8183,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_CampaignMember_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that synchronizes Campaign Member status when Opportunities linked to a Campaign are inserted or updated. It ensures the primary Contact on a donation is reflected as a Campaign Member with the correct status. This bridges the gap between fundraising activity and campaign engagement tracking."
       },
       {
         "name": "OPP_CascadeDeleteLookups_TDTM",
@@ -8188,7 +8200,7 @@ const NPSP_ENTITIES = {
           "npe01__Opportunity__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_CascadeDeleteLookups_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that extends the cascade delete framework to clean up child records when an Opportunity is deleted. It loads the relationship map between Opportunities and their dependent objects, including npe01__OppPayment__c records. This prevents orphaned Payment and other child records from persisting after donation deletion."
       },
       {
         "name": "OPP_INaming",
@@ -8200,7 +8212,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_INaming.cls",
-        "description": ""
+        "description": "Interface that defines the contract for Opportunity naming implementations in NPSP. Classes that implement this interface provide custom logic for generating Opportunity Name field values. It enables organizations to plug in their own naming conventions by creating a class that fulfills this contract."
       },
       {
         "name": "OPP_MatchingDonationsBTN_CTRL",
@@ -8214,7 +8226,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_MatchingDonationsBTN_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller behind the Matching Donations button on Opportunity records. It navigates the user to the matching donations page where they can find and associate employer matching gifts. The controller handles page routing and context passing for the matching gift workflow."
       },
       {
         "name": "OPP_OpportunityContactRoles_TDTM",
@@ -8236,7 +8248,7 @@ const NPSP_ENTITIES = {
           "npe01__SYSTEM_AccountType__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_OpportunityContactRoles_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that automatically creates and manages Opportunity Contact Roles when donations are inserted or updated. At 898 lines, it is one of the largest handlers in the domain, covering primary contact role assignment, individual vs. organizational attribution, and role defaults from npe01__Contacts_And_Orgs_Settings__c. It ensures every Opportunity has properly configured Contact Roles for accurate donor attribution."
       },
       {
         "name": "OPP_OpportunityNaming",
@@ -8262,7 +8274,7 @@ const NPSP_ENTITIES = {
           "npe01__systemisindividual__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_OpportunityNaming.cls",
-        "description": ""
+        "description": "Core implementation of the OPP_INaming interface that generates Opportunity names based on configurable naming settings. It constructs names using donor attribution, date formatting, and record type rules, querying both Opportunity and Contact fields. The class also validates naming settings and refreshes names in bulk when configuration changes."
       },
       {
         "name": "OPP_OpportunityNamingBTN_CTRL",
@@ -8276,7 +8288,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_OpportunityNamingBTN_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the Refresh Opportunity Names button that triggers a bulk rename of Opportunities. When clicked, it invokes the OPP_OpportunityNaming logic to regenerate names based on current naming settings. This provides administrators with a manual way to apply naming convention changes to existing records."
       },
       {
         "name": "OPP_OpportunityNaming_BATCH",
@@ -8294,7 +8306,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_OpportunityNaming_BATCH.cls",
-        "description": ""
+        "description": "Batch Apex class that processes large volumes of Opportunities to apply naming conventions in bulk. It extends UTIL_AbstractChunkingLDV_BATCH to handle large data volumes efficiently, querying Opportunities and delegating to OPP_OpportunityNaming for name generation. This is the asynchronous counterpart to the real-time naming logic, useful for initial setup or settings changes."
       },
       {
         "name": "OPP_PrimaryContactRoleMerge",
@@ -8316,7 +8328,7 @@ const NPSP_ENTITIES = {
           "npe01__SYSTEMIsIndividual__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_PrimaryContactRoleMerge.cls",
-        "description": ""
+        "description": "Handles the cleanup of duplicate Opportunity Contact Roles after a Contact merge operation. It identifies Opportunities where the merged Contact appears in multiple roles and consolidates them, ensuring only one primary Contact Role remains. The class checks role defaults from npe01__Contacts_And_Orgs_Settings__c to determine which role takes precedence."
       },
       {
         "name": "OPP_PrimaryContactRoleMerge_BATCH",
@@ -8331,7 +8343,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_PrimaryContactRoleMerge_BATCH.cls",
-        "description": ""
+        "description": "Batch Apex class that processes Opportunity Contact Role deduplication across large datasets after Contact merges. It iterates over affected Opportunities and delegates to OPP_PrimaryContactRoleMerge for the actual role consolidation logic. This ensures data integrity at scale when merging Contacts with overlapping donation histories."
       },
       {
         "name": "OPP_PrimaryContact_BATCH",
@@ -8346,7 +8358,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_PrimaryContact_BATCH.cls",
-        "description": ""
+        "description": "Batch Apex class that populates or corrects the Primary Contact lookup field on Opportunities in bulk. It queries Opportunities and their Contact Roles to ensure the Primary_Contact__c field accurately reflects the primary donor. This is typically run as a data repair job or during migration."
       },
       {
         "name": "OPP_SendAcknowledgmentBTN_CTRL",
@@ -8361,7 +8373,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_SendAcknowledgmentBTN_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the Send Acknowledgment button on Opportunity records. It manages the workflow of generating and sending donation acknowledgment communications to donors, updating the Acknowledgment_Status__c and Acknowledgment_Date__c fields upon completion. The controller handles error messaging and confirmation for the user."
       },
       {
         "name": "OPP_StageMappingCMT",
@@ -8381,7 +8393,7 @@ const NPSP_ENTITIES = {
           "npe01__Contacts_And_Orgs_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_StageMappingCMT.cls",
-        "description": ""
+        "description": "Manages the deployment of Custom Metadata Type records that map Opportunity Stages to abstract states (Pledged, Finalized, etc.). It creates and deploys Opportunity_Stage_To_State_Mapping__mdt records via the Metadata API, with success and error callback handlers. This class enables administrators to customize how NPSP interprets stage transitions."
       },
       {
         "name": "OPP_StageMappingUtil",
@@ -8395,7 +8407,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/OPP_StageMappingUtil.cls",
-        "description": ""
+        "description": "Utility class that resolves the current state of an Opportunity (such as Pledged, Finalized, or Closed) from its Stage value. It reads from the Opportunity_Stage_To_State_Mapping__mdt custom metadata to perform the translation. Other NPSP components use this to make decisions based on donation lifecycle state rather than raw stage names."
       },
       {
         "name": "PMT_CascadeDeleteLookups_TDTM",
@@ -8409,7 +8421,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PMT_CascadeDeleteLookups_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that extends the cascade delete framework for Payment (npe01__OppPayment__c) records. It loads the relationship map so that child records of a Payment are properly cleaned up when the Payment is deleted. This prevents orphaned data and maintains referential integrity in the Payments subsystem."
       },
       {
         "name": "PMT_PaymentCreator",
@@ -8451,7 +8463,7 @@ const NPSP_ENTITIES = {
           "npe01__scheduled_date__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PMT_PaymentCreator.cls",
-        "description": ""
+        "description": "Core class responsible for automatically creating Payment records (npe01__OppPayment__c) when Opportunities are inserted or updated. It calculates the outstanding amount, constructs payment records with proper dates and amounts, and respects field mappings from npe01__Payment_Field_Mapping_Settings__c. The class also handles payment schedules and tracks total payments made against an Opportunity."
       },
       {
         "name": "PMT_PaymentCreator_BATCH",
@@ -8472,7 +8484,7 @@ const NPSP_ENTITIES = {
           "npe01__Payments_Made__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PMT_PaymentCreator_BATCH.cls",
-        "description": ""
+        "description": "Batch Apex class that retroactively creates Payment records for existing Opportunities that lack them. It queries Opportunities without auto-created payments and delegates to PMT_PaymentCreator for record generation. This is used during initial NPSP setup or when enabling payments on an existing dataset."
       },
       {
         "name": "PMT_PaymentWizard_CTRL",
@@ -8517,7 +8529,7 @@ const NPSP_ENTITIES = {
           "npe01__payments_made__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PMT_PaymentWizard_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the Payment Wizard, which allows users to create payment schedules, write off balances, and manage individual payments on an Opportunity. It provides calculation, interval configuration, and multi-currency support across 824 lines of logic. The wizard reads from and writes to npe01__OppPayment__c records based on user input."
       },
       {
         "name": "PMT_Payment_TDTM",
@@ -8542,7 +8554,7 @@ const NPSP_ENTITIES = {
           "npo02__Households_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PMT_Payment_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that fires on both Payment and Opportunity changes to keep payment totals synchronized. When a Payment is marked as paid or written off, it updates the parent Opportunity; when an Opportunity amount changes, it recalculates outstanding balances. This bidirectional sync ensures financial accuracy between donations and their payment schedules."
       },
       {
         "name": "PMT_RefundController",
@@ -8563,7 +8575,7 @@ const NPSP_ENTITIES = {
           "npe01__oppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PMT_RefundController.cls",
-        "description": ""
+        "description": "Controller class that provides the initial view and processing logic for payment refunds. It retrieves the original payment details and delegates to PMT_RefundService to create the refund record. This class serves as the entry point for the refund user interface in both Visualforce and Lightning contexts."
       },
       {
         "name": "PMT_RefundService",
@@ -8593,7 +8605,7 @@ const NPSP_ENTITIES = {
           "npe01__oppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PMT_RefundService.cls",
-        "description": ""
+        "description": "Service class that handles the full lifecycle of payment refunds, including building refund records, adjusting allocations, and updating parent Opportunities. It supports Elevate-connected payments and validates refund eligibility before processing. The service coordinates across Payments, Allocations, and Opportunities to ensure financial consistency after a refund."
       },
       {
         "name": "PMT_ValidationService",
@@ -8616,7 +8628,7 @@ const NPSP_ENTITIES = {
           "npe01__Written_Off__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PMT_ValidationService.cls",
-        "description": ""
+        "description": "Service class that validates Payment records before insert and update operations to enforce business rules. It checks for required fields like Payment_Amount__c and Payment_Date__c, validates date logic, and prevents invalid state transitions such as marking an already-written-off payment as paid. The service also validates refund-specific rules."
       }
     ],
     "objects": [
@@ -8753,7 +8765,7 @@ const NPSP_ENTITIES = {
             "field": "Primary_Contact__c"
           }
         ],
-        "description": "",
+        "description": "The standard Salesforce Opportunity object extended by NPSP with 44 custom fields for donation management. Key additions include acknowledgment tracking, matching gift lookups, grant management fields, and the Primary_Contact__c lookup that drives donor attribution. It serves as the central record for all donation, pledge, and grant activity in NPSP.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Opportunity"
       },
       {
@@ -8787,7 +8799,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom Settings object that stores configurable naming formats for Opportunity records. Each record specifies a name format template, date format, attribution type (individual or organizational), and applicable record types. NPSP reads these settings to auto-generate Opportunity Name values via the OPP_OpportunityNaming class.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Opportunity_Naming_Settings__c"
       },
       {
@@ -8809,7 +8821,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom Metadata Type that maps Opportunity Stage picklist values to abstract NPSP states (Pledged, Finalized, etc.). Each record pairs an Opportunity_Stage__c text value with an Opportunity_State__c picklist value. NPSP uses these mappings throughout the codebase to make decisions based on donation lifecycle state.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Opportunity_Stage_To_State_Mapping__mdt"
       },
       {
@@ -8915,7 +8927,7 @@ const NPSP_ENTITIES = {
             "field": "OriginalPayment__c"
           }
         ],
-        "description": "",
+        "description": "The Payment custom object that tracks individual payment installments against an Opportunity, with 29 fields covering payment amounts, dates, methods, and statuses. It includes Elevate payment gateway integration fields for card details, ACH transactions, and API status tracking. The OriginalPayment__c self-lookup supports refund chains by linking refund records back to their original payment.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe01__OppPayment__c"
       }
     ],
@@ -8933,7 +8945,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Opportunity.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Opportunity.trigger",
+        "description": "Master trigger on the Opportunity object that delegates to the TDTM framework for all before/after insert, update, delete, and undelete events. It does not contain business logic itself but routes execution to registered TDTM handler classes like OPP_OpportunityContactRoles_TDTM and PMT_Payment_TDTM. This single-trigger pattern is central to NPSP's architecture."
       },
       {
         "name": "TDTM_OpportunityContactRole",
@@ -8948,7 +8961,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_OpportunityContactRole.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_OpportunityContactRole.trigger",
+        "description": "Master trigger on OpportunityContactRole that routes all DML events through the TDTM framework. It enables handler classes like OPP_AccountSoftCredit_TDTM to react when Contact Roles are created, modified, or removed. This ensures soft credit and attribution logic fires consistently for all Contact Role changes."
       },
       {
         "name": "TDTM_Payment",
@@ -8963,38 +8977,39 @@ const NPSP_ENTITIES = {
           "after undelete"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Payment.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Payment.trigger",
+        "description": "Master trigger on the npe01__OppPayment__c object that routes Payment DML events through the TDTM framework. It covers all before/after insert, update, delete, and undelete events, delegating to handlers like PMT_Payment_TDTM and ALLO_PaymentSync_TDTM. This enables payment-level automation including allocation sync and opportunity total updates."
       }
     ],
     "lwcs": [
       {
         "name": "donationHistory",
         "imports": [],
-        "description": "",
+        "description": "Lightning Web Component that displays a donor's complete donation history on Contact or Account record pages. It serves as the top-level container component, coordinating with donationHistoryFilter and donationHistoryTable for filtering and display. This provides fundraisers with an at-a-glance view of a donor's giving timeline.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/donationHistory"
       },
       {
         "name": "donationHistoryFilter",
         "imports": [],
-        "description": "",
+        "description": "Lightning Web Component that provides filtering controls for the donation history view. It allows users to narrow donation records by date range, amount, or other criteria within the donationHistory component. This sub-component communicates filter selections to the parent for dynamic table updates.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/donationHistoryFilter"
       },
       {
         "name": "donationHistoryTable",
         "imports": [],
-        "description": "",
+        "description": "Lightning Web Component that renders the tabular display of donation records within the donation history view. It receives filtered data from the parent donationHistory component and presents columns for amount, date, stage, and other Opportunity fields. This component handles sorting and row-level interactions.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/donationHistoryTable"
       },
       {
         "name": "givingSummary",
         "imports": [],
-        "description": "",
+        "description": "Lightning Web Component that displays aggregate giving statistics such as total lifetime giving, largest gift, and giving streaks. It provides a high-level summary of a donor's financial relationship with the organization. This component is designed for embedding on Contact or Account record pages.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/givingSummary"
       },
       {
         "name": "givingSummaryForDetailPage",
         "imports": [],
-        "description": "",
+        "description": "Lightning Web Component wrapper that adapts the givingSummary component for use on specific record detail pages. It handles record context resolution and passes the appropriate Contact or Account ID to the underlying givingSummary logic. This enables the giving summary to appear on both Contact and Account layouts.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/givingSummaryForDetailPage"
       }
     ],
@@ -9017,7 +9032,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_AdditionalObjectService.cls",
-        "description": ""
+        "description": "Service class that handles importing additional (non-standard) objects during BDI processing, such as GAU Allocations and Recurring Donations. It generates ordered tiers of object mappings to ensure parent records are created before their children. This service extends the core BDI pipeline to support custom object mappings beyond the standard Contact, Account, and Opportunity imports."
       },
       {
         "name": "BDI_BatchNumberSettingsController",
@@ -9036,7 +9051,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_BatchNumberSettingsController.cls",
-        "description": ""
+        "description": "Controller class that manages auto-numbering configuration for DataImportBatch__c records. It provides methods to activate, deactivate, and save batch number settings, restricted to system administrators. The controller reads field describes to present configurable auto-number fields in the BDI settings UI."
       },
       {
         "name": "BDI_BatchOverride_CTRL",
@@ -9050,7 +9065,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_BatchOverride_CTRL.cls",
-        "description": ""
+        "description": "Controller for the batch override Visualforce page that allows users to modify processing settings before running a data import batch. It provides a save method that persists the override values to the DataImportBatch__c record. This controller enables per-batch customization of matching rules and processing options that differ from the org-wide BDI defaults."
       },
       {
         "name": "BDI_ContactService",
@@ -9078,7 +9093,7 @@ const NPSP_ENTITIES = {
           "npsp__Home_Zip_Postal_Code__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_ContactService.cls",
-        "description": ""
+        "description": "Service class responsible for matching and importing Contact and Household Account records during BDI processing. At 1,437 lines, it handles the complex logic of mapping DataImport__c fields to Contact sObject fields, matching against existing Contacts using configurable rules, and creating Household Accounts. It processes both Contact1 and Contact2 field sets to support primary and secondary donor relationships."
       },
       {
         "name": "BDI_CustObjMappingGAUAllocation",
@@ -9090,7 +9105,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_CustObjMappingGAUAllocation.cls",
-        "description": ""
+        "description": "Specialized object mapping class that extends BDI_ObjectMappingLogic to handle GAU Allocation record creation during BDI processing. It implements custom mapping logic specific to Allocation__c records, linking them to their parent Opportunity or Payment. This class is invoked by BDI_AdditionalObjectService when the import includes GAU allocation data."
       },
       {
         "name": "BDI_DataImportBatchStatus_TDTM",
@@ -9102,7 +9117,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImportBatchStatus_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that manages batch status transitions on DataImportBatch__c records. It extends TDTM_Runnable and recalculates the Batch_Status__c field based on the aggregate import status of child DataImport__c records. The handler fires when batch records are modified to keep the batch status in sync with its constituent imports."
       },
       {
         "name": "BDI_DataImportBatch_SCHED",
@@ -9116,7 +9131,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImportBatch_SCHED.cls",
-        "description": ""
+        "description": "Schedulable class that enables automated, scheduled execution of BDI batch processing. It implements the Schedulable interface and its execute method queries for batches configured for scheduled processing, then launches BDI_DataImport_BATCH for each. Admins configure this class through Salesforce Scheduled Jobs to run imports on a recurring cadence."
       },
       {
         "name": "BDI_DataImportBatch_SEL",
@@ -9132,7 +9147,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImportBatch_SEL.cls",
-        "description": ""
+        "description": "Selector class that encapsulates SOQL queries for DataImportBatch__c records. It provides methods to select batches by ID, by multiple IDs, or by scheduled processing eligibility. This class follows the separation-of-concerns pattern, keeping query logic isolated from the business logic in BDI service classes."
       },
       {
         "name": "BDI_DataImportBatch_TDTM",
@@ -9146,7 +9161,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImportBatch_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that validates DataImportBatch__c records on insert and update. It extends TDTM_Runnable and enforces business rules such as preventing modification of batches that are currently being processed. This handler fires through the NPSP trigger dispatcher via the TDTM_DataImportBatch trigger."
       },
       {
         "name": "BDI_DataImportDeleteBTN_CTRL",
@@ -9164,7 +9179,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImportDeleteBTN_CTRL.cls",
-        "description": ""
+        "description": "Controller for the bulk delete button on DataImport__c list views. It provides methods to verify delete and read permissions, execute bulk deletion of selected DataImport__c records, and redirect the user back to the list view. This controller powers the custom button that lets users clean up imported or failed records."
       },
       {
         "name": "BDI_DataImportFLSService",
@@ -9180,7 +9195,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImportFLSService.cls",
-        "description": ""
+        "description": "Service class that enforces field-level security during BDI processing. It validates that the running user has access to all mapped target fields before allowing data to be written, separating records into valid and invalid sets. Invalid records are flagged with the specific field names that failed the FLS check."
       },
       {
         "name": "BDI_DataImportService",
@@ -9206,7 +9221,7 @@ const NPSP_ENTITIES = {
           "npe01__WorkEmail__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImportService.cls",
-        "description": ""
+        "description": "The central service class for BDI processing at 2,297 lines, the largest class in the domain. It builds SOQL queries for import processing, loads and validates BDI settings, synchronizes configuration between DataImportBatch__c and custom settings, and updates batch statistics. This service is the backbone that coordinates the entire data import pipeline from configuration through execution."
       },
       {
         "name": "BDI_DataImport_API",
@@ -9222,7 +9237,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImport_API.cls",
-        "description": ""
+        "description": "Public API class that exposes BDI processing as callable methods for external consumers and other NPSP code. It provides importData, processDataImportBatches, and processDataImportRecords entry points that delegate to internal BDI services. This class serves as the stable interface for programmatically triggering data import operations."
       },
       {
         "name": "BDI_DataImport_BATCH",
@@ -9237,7 +9252,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImport_BATCH.cls",
-        "description": ""
+        "description": "Batch Apex class that processes DataImport__c records in bulk, implementing the Batchable interface. Its execute method processes chunks of import records through the full BDI pipeline (matching, mapping, and creating target records), and its finish method updates batch statistics and sends completion notifications. This is the primary asynchronous engine that runs the data import workload."
       },
       {
         "name": "BDI_DataImport_CTRL",
@@ -9257,7 +9272,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImport_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the BDI settings and execution page. It provides methods to preload configuration, edit and save BDI settings, initiate full imports, and start dry-run matching previews. At 474 lines, this controller manages the user-facing workflow for configuring and launching batch data import operations."
       },
       {
         "name": "BDI_DataImport_TEST2",
@@ -9279,7 +9294,7 @@ const NPSP_ENTITIES = {
           "npe01__WorkPhone__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DataImport_TEST2.cls",
-        "description": ""
+        "description": "Test class containing comprehensive unit tests for the BDI data import pipeline. It covers Contact and Account matching scenarios, field mapping, and import status tracking across 1,681 lines of test code. The tests reference multiple NPSP objects including Contacts and Orgs settings to validate behavior across different org configurations."
       },
       {
         "name": "BDI_Donations",
@@ -9311,7 +9326,7 @@ const NPSP_ENTITIES = {
           "npsp__DonationCampaignImported__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_Donations.cls",
-        "description": ""
+        "description": "Core class that handles Opportunity and Payment creation and updating during BDI processing. It imports donations by mapping DataImport__c fields to Opportunity and Payment records, marks payments as paid, and tracks payment updates. At 946 lines, it manages the complex relationship between imported donations, matched Opportunities, and their associated Payments."
       },
       {
         "name": "BDI_Donations_TEST2",
@@ -9333,7 +9348,7 @@ const NPSP_ENTITIES = {
           "npe01__Payment_Field__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_Donations_TEST2.cls",
-        "description": ""
+        "description": "Test class that validates donation import scenarios including payment field mapping and check reference matching. It covers BDI_Donations behavior with Payment_Field_Mapping_Settings and verifies that OppPayment__c records are created with correct amounts, dates, and reference numbers. These tests ensure the payment-level import logic works correctly."
       },
       {
         "name": "BDI_Donations_TEST3",
@@ -9357,7 +9372,7 @@ const NPSP_ENTITIES = {
           "npe01__Written_Off__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_Donations_TEST3.cls",
-        "description": ""
+        "description": "Extended test class at 1,133 lines that covers advanced donation matching and payment scenarios. It tests partial payment matching, written-off payments, payment method mapping, and amount outstanding calculations. These tests validate edge cases in the donation import pipeline that are not covered by the other test classes."
       },
       {
         "name": "BDI_DynamicSource",
@@ -9369,7 +9384,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DynamicSource.cls",
-        "description": ""
+        "description": "Data model class that represents a single dynamic data source within the BDI mapping framework. It holds the source field information needed to read values from a DataImport__c record at runtime. This class supports the advanced mapping feature where field sources can be configured dynamically rather than hardcoded."
       },
       {
         "name": "BDI_DynamicSourceGroup",
@@ -9383,7 +9398,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_DynamicSourceGroup.cls",
-        "description": ""
+        "description": "Data model class that groups related BDI_DynamicSource instances into a logical set with a deserialize method for JSON parsing. It represents a collection of source fields that map to a single target object during import processing. The BDI mapping engine uses these groups to organize field mappings by their target object relationship."
       },
       {
         "name": "BDI_FieldMapping",
@@ -9398,7 +9413,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_FieldMapping.cls",
-        "description": ""
+        "description": "Data model class that represents a single field-level mapping between a DataImport__c source field and a target object field. It provides builder methods like withBaseFieldMappingFields and withFieldDescribeInfo to populate mapping metadata. This class is the atomic unit of the BDI mapping framework, consumed by BDI_ObjectMappingLogic during record creation."
       },
       {
         "name": "BDI_FieldMappingSet",
@@ -9410,7 +9425,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_FieldMappingSet.cls",
-        "description": ""
+        "description": "Container class that groups related BDI_FieldMapping instances into a named set. It represents the complete collection of field mappings associated with an object mapping, organizing them for efficient lookup during import processing. Field mapping sets are loaded from custom metadata by the BDI_MappingServiceAdvanced class."
       },
       {
         "name": "BDI_GAUAllocationsUtil",
@@ -9431,7 +9446,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_GAUAllocationsUtil.cls",
-        "description": ""
+        "description": "Utility class that processes GAU (General Accounting Unit) allocation records during BDI import. It identifies DataImport__c records with GAU data, validates allocation percentages sum correctly, checks for existing allocations to avoid duplicates, and creates or updates Allocation__c records. This class connects to Opportunities, Payments, and Recurring Donations as allocation parents."
       },
       {
         "name": "BDI_IMatchDonations",
@@ -9445,7 +9460,7 @@ const NPSP_ENTITIES = {
           "npe01__OppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_IMatchDonations.cls",
-        "description": ""
+        "description": "Interface class that defines the contract for donation matching implementations in the BDI framework. It declares methods for matching DataImport__c records against existing Opportunities and Payments (npe01__OppPayment__c). Orgs can provide custom implementations of this interface via the Donation_Matching_Implementing_Class__c setting to override the default matching logic."
       },
       {
         "name": "BDI_IPostProcess",
@@ -9457,7 +9472,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_IPostProcess.cls",
-        "description": ""
+        "description": "Interface class that defines a contract for post-processing steps after BDI import completes. Classes implementing this interface can perform cleanup, notification, or additional data operations after the main import pipeline finishes. This extension point allows custom logic to hook into the BDI lifecycle without modifying core import code."
       },
       {
         "name": "BDI_ManageAdvancedMappingCtrl",
@@ -9480,7 +9495,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_ManageAdvancedMappingCtrl.cls",
-        "description": ""
+        "description": "Controller class for the advanced mapping management UI, extending BDI_FieldMapping and implementing Comparable for sorting. At 894 lines, it provides methods to retrieve object and field mapping data, create new mappings, and enqueue custom metadata deployments. This controller powers the admin interface where users configure how DataImport__c fields map to target objects."
       },
       {
         "name": "BDI_MappingService",
@@ -9492,7 +9507,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_MappingService.cls",
-        "description": ""
+        "description": "Abstract service interface that defines the contract for field mapping resolution in the BDI framework. It declares methods that concrete implementations must provide for retrieving field maps and target field lookups. The two implementations, BDI_MappingServiceAdvanced and BDI_MappingServiceHelpText, offer different mapping storage strategies."
       },
       {
         "name": "BDI_MappingServiceAdvanced",
@@ -9509,7 +9524,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_MappingServiceAdvanced.cls",
-        "description": ""
+        "description": "Implementation of BDI_MappingService that reads field and object mappings from custom metadata records. It provides singleton access, caches mapping data, and resolves source-to-target field relationships using Data_Import_Field_Mapping__mdt and Data_Import_Object_Mapping__mdt. This is the modern mapping approach that replaced the legacy help-text based mapping system."
       },
       {
         "name": "BDI_MappingServiceHelpText",
@@ -9528,7 +9543,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_MappingServiceHelpText.cls",
-        "description": ""
+        "description": "Legacy implementation of BDI_MappingService that reads field mappings from the help text property of DataImport__c fields. It parses the help text to determine which target object and field each source field maps to, and handles multi-currency code mappings. This service is maintained for backward compatibility with orgs that have not migrated to advanced custom metadata mappings."
       },
       {
         "name": "BDI_MatchDonations",
@@ -9552,7 +9567,7 @@ const NPSP_ENTITIES = {
           "npe01__Written_Off__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_MatchDonations.cls",
-        "description": ""
+        "description": "Default implementation of the BDI_IMatchDonations interface that provides the standard donation matching algorithm. Its match method compares DataImport__c records against existing Opportunities and Payments using configurable criteria including amount, date range, and donor. This class handles the core matching logic that determines whether an import should update an existing donation or create a new one."
       },
       {
         "name": "BDI_MigrationMappingHelper",
@@ -9573,7 +9588,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_MigrationMappingHelper.cls",
-        "description": ""
+        "description": "Helper class that assists with migrating BDI configurations from one mapping approach to another. It provides methods to retrieve object and field mapping sets, read legacy help-text mappings, and compare them against custom metadata definitions. This class supports the transition tooling that moves orgs from help-text mappings to the advanced custom metadata mapping system."
       },
       {
         "name": "BDI_MigrationMappingUtility",
@@ -9598,7 +9613,7 @@ const NPSP_ENTITIES = {
           "npe01__OppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_MigrationMappingUtility.cls",
-        "description": ""
+        "description": "Utility class at 1,050 lines that performs the actual migration of BDI mappings from help-text to custom metadata. It clones object mappings, converts help-text field mappings to custom metadata records, updates custom settings, and handles deployment results. This class orchestrates the one-time migration process that modernizes an org's BDI mapping configuration."
       },
       {
         "name": "BDI_ObjectMapping",
@@ -9610,7 +9625,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_ObjectMapping.cls",
-        "description": ""
+        "description": "Data model class that represents a mapping between a DataImport__c record and a target Salesforce object (such as Contact, Account, or Opportunity). It holds the target object API name, relationship fields, predecessor mappings, and the collection of field mappings. This class is the object-level unit in the BDI mapping hierarchy, consumed by BDI_ObjectMappingLogic during record creation."
       },
       {
         "name": "BDI_ObjectMappingLogic",
@@ -9625,7 +9640,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_ObjectMappingLogic.cls",
-        "description": ""
+        "description": "Base class that contains the core logic for creating and updating target records from DataImport__c data using object mappings. It provides methods to set parent-child relationships between predecessor records and copy field values with proper type casting. BDI_CustObjMappingGAUAllocation and other custom mapping classes extend this base to add object-specific behavior."
       },
       {
         "name": "BDI_ObjectWrapper",
@@ -9645,7 +9660,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_ObjectWrapper.cls",
-        "description": ""
+        "description": "Wrapper class that encapsulates a single DataImport__c record along with its processing state during BDI execution. It provides methods to get and set import status, failure information, and imported record IDs for each target object. This wrapper tracks the lifecycle of an individual import record as it moves through matching, mapping, and creation stages."
       },
       {
         "name": "BDI_PerfLogger",
@@ -9659,7 +9674,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_PerfLogger.cls",
-        "description": ""
+        "description": "Performance logging class that extends UTIL_PerfLogger to capture timing metrics during BDI processing. It provides a newPerfLog factory method to create scoped log entries for individual processing steps. These performance logs help diagnose bottlenecks in large-volume data import operations."
       },
       {
         "name": "BDI_ProcessSelectedDIs_CTRL",
@@ -9674,7 +9689,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_ProcessSelectedDIs_CTRL.cls",
-        "description": ""
+        "description": "Controller for processing a user-selected subset of DataImport__c records from a list view. It provides directToDataImportPage to route users to the BDI processing page with the selected records and returnToListView to navigate back. This controller powers the custom list view button that lets users selectively process specific import records."
       },
       {
         "name": "BDI_RecurringDonations",
@@ -9693,7 +9708,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_RecurringDonations.cls",
-        "description": ""
+        "description": "Class that handles Recurring Donation (npe03__Recurring_Donation__c) creation and matching during BDI processing. It checks whether recurring donation fields are populated on DataImport__c records and imports them by mapping to the appropriate Contact or Organization. This class extends the BDI pipeline to support bulk import of recurring giving commitments."
       },
       {
         "name": "BDI_SettingsUI_CTRL",
@@ -9712,7 +9727,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_SettingsUI_CTRL.cls",
-        "description": ""
+        "description": "Controller for the BDI matching settings Visualforce page that exposes donation matching behavior options. It provides getter methods for each matching mode: Do Not Match, Require No Match, Require Exact Match, Exact Match Or Create, Require Best Match, and Best Match Or Create. These options control how the BDI engine resolves imported donations against existing Opportunity records."
       },
       {
         "name": "BDI_TargetFields",
@@ -9726,7 +9741,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BDI_TargetFields.cls",
-        "description": ""
+        "description": "Data model class that collects target field references for a single object mapping. It provides an addTargetField method to build up the set of fields that will be populated on a target record during import. This lightweight class is used by the mapping framework to track which fields on the destination object receive values from DataImport__c."
       }
     ],
     "objects": [
@@ -9833,7 +9848,7 @@ const NPSP_ENTITIES = {
             "field": "Form_Template__c"
           }
         ],
-        "description": "",
+        "description": "Custom object that represents a batch container for grouping DataImport__c records. It stores batch-level configuration including matching rules, processing size, donation matching behavior, contact matching rules, and active field definitions. The object has a lookup to Form_Template__c for Gift Entry integration and tracks batch status as records are processed through the BDI pipeline.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DataImportBatch__c"
       },
       {
@@ -10009,7 +10024,7 @@ const NPSP_ENTITIES = {
             "field": "RecurringDonationImported__c"
           }
         ],
-        "description": "",
+        "description": "Core custom object with 175 fields that serves as the staging record for all data import operations in NPSP. Each record holds field values for up to two Contacts, two Accounts, a donation, payment, GAU allocations, home address, and recurring donation, plus lookup fields to their matched or created counterparts. This object is the central data structure consumed by both the BDI batch processor and the Gift Entry UI.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DataImport__c"
       }
     ],
@@ -10027,7 +10042,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_DataImport.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_DataImport.trigger",
+        "description": "TDTM-framework trigger on DataImport__c that delegates to registered trigger handlers for all DML events. It routes execution through the NPSP trigger dispatcher, enabling configurable, ordered handler execution. This single trigger entry point ensures that all DataImport__c automation, including status updates and validation, runs through the TDTM framework."
       },
       {
         "name": "TDTM_DataImportBatch",
@@ -10042,38 +10058,39 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_DataImportBatch.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_DataImportBatch.trigger",
+        "description": "TDTM-framework trigger on DataImportBatch__c that delegates to registered trigger handlers including BDI_DataImportBatch_TDTM and BDI_DataImportBatchStatus_TDTM. It fires on all DML events and routes through the NPSP trigger dispatcher for configurable handler execution. This trigger ensures batch record changes are validated and batch status is kept in sync."
       }
     ],
     "lwcs": [
       {
         "name": "bdiBatchNumberSettings",
         "imports": [],
-        "description": "",
+        "description": "LWC component that provides the admin UI for configuring auto-numbering on DataImportBatch__c records. It connects to BDI_BatchNumberSettingsController to activate, deactivate, and customize the batch number format. This component is accessed from the NPSP Settings page under the BDI configuration section.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/bdiBatchNumberSettings"
       },
       {
         "name": "bdiFieldMappingModal",
         "imports": [],
-        "description": "",
+        "description": "LWC component that renders a modal dialog for creating or editing a single field mapping in the advanced mapping UI. It collects the source DataImport__c field, target object field, and mapping configuration. The modal is invoked from the bdiFieldMappings component when an admin adds or modifies a field-level mapping.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/bdiFieldMappingModal"
       },
       {
         "name": "bdiFieldMappings",
         "imports": [],
-        "description": "",
+        "description": "LWC component that displays and manages the list of field mappings for a selected object mapping in the advanced mapping UI. It renders a table of source-to-target field relationships and provides buttons to add, edit, or delete individual mappings via bdiFieldMappingModal. This component works with BDI_ManageAdvancedMappingCtrl to persist mapping changes as custom metadata.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/bdiFieldMappings"
       },
       {
         "name": "bdiObjectMappingModal",
         "imports": [],
-        "description": "",
+        "description": "LWC component that renders a modal dialog for creating or editing an object mapping in the advanced mapping UI. It collects the target object, relationship field, and predecessor mapping configuration. The modal is invoked from the bdiObjectMappings component when an admin adds or modifies an object-level mapping.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/bdiObjectMappingModal"
       },
       {
         "name": "bdiObjectMappings",
         "imports": [],
-        "description": "",
+        "description": "LWC component that displays and manages the list of object mappings in the BDI advanced mapping UI. It renders a hierarchical view of target objects showing their field mappings, predecessor relationships, and mapping status. This component serves as the main navigation for the advanced mapping configuration, with drill-down into bdiFieldMappings for each object.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/bdiObjectMappings"
       }
     ],
@@ -10098,7 +10115,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BGE_BatchGiftEntryTab_CTRL.cls",
-        "description": ""
+        "description": "Apex controller for the Batch Gift Entry tab that retrieves and displays a list of existing gift batches. It builds a sortable data table model with column definitions and enforces field-level security before exposing batch records. This controller serves as the landing page entry point where users select or create batches before entering gifts."
       },
       {
         "name": "BGE_BatchGiftEntry_UTIL",
@@ -10120,7 +10137,7 @@ const NPSP_ENTITIES = {
           "npe01__OppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BGE_BatchGiftEntry_UTIL.cls",
-        "description": ""
+        "description": "Utility class that provides shared helper methods for the Batch Gift Entry feature, including field permission checks and field name resolution. It reads active field configurations from DataImportBatch__c records and validates that the current user has create/update access to required fields like OppPayment__c. Multiple BGE controllers depend on this class for consistent permission enforcement and field introspection."
       },
       {
         "name": "BGE_ConfigurationWizard_CTRL",
@@ -10142,7 +10159,7 @@ const NPSP_ENTITIES = {
           "npe01__OppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BGE_ConfigurationWizard_CTRL.cls",
-        "description": ""
+        "description": "Controller for the batch configuration wizard that lets admins define which fields appear on the gift entry form. It retrieves available DataImport__c fields, builds default field sets for new batches, and persists batch configuration records. The wizard also validates field permissions on target objects including OppPayment__c to ensure users can write to the selected fields."
       },
       {
         "name": "BGE_DataImportBatchEntry_CTRL",
@@ -10172,7 +10189,7 @@ const NPSP_ENTITIES = {
           "npe01__Written_Off__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BGE_DataImportBatchEntry_CTRL.cls",
-        "description": ""
+        "description": "Primary controller for the batch gift entry data grid, extending UTIL_LightningComponentSupport for Lightning-compatible error handling. It manages CRUD operations on DataImport__c rows within a batch, runs dry-run matching to preview import results, and calculates running batch totals. This is the heaviest BGE controller at 913 lines, handling the core data entry workflow including payment and opportunity lookups."
       },
       {
         "name": "BGE_FormTemplate_TDTM",
@@ -10186,7 +10203,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/BGE_FormTemplate_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that fires on Form_Template__c record changes to enforce validation rules and referential integrity. It extends TDTM_Runnable and executes via the NPSP trigger dispatcher framework. This handler ensures that form templates used by Gift Entry remain in a valid state when created, updated, or deleted."
       },
       {
         "name": "GE_GiftEntryController",
@@ -10218,7 +10235,7 @@ const NPSP_ENTITIES = {
           "npe01__Written_Off__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GE_GiftEntryController.cls",
-        "description": ""
+        "description": "The main Apex controller for the modern Gift Entry experience, at 1,452 lines the largest class in the domain. It provides methods to save single gifts, manage gift batch views with pagination, check for active processing jobs, and update batch records. The controller bridges the LWC front end with DataImport__c persistence and references payment objects for Elevate integration."
       },
       {
         "name": "GE_LookupController",
@@ -10232,7 +10249,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GE_LookupController.cls",
-        "description": ""
+        "description": "Lightweight Apex controller that powers lookup field searches within Gift Entry forms. It provides a single doSearchRecordType method that performs SOSL queries filtered by record type. Gift Entry LWC components call this controller when users type into lookup fields to find matching Contacts, Accounts, or other related records."
       },
       {
         "name": "GE_PaymentServices",
@@ -10255,7 +10272,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GE_PaymentServices.cls",
-        "description": ""
+        "description": "Service class that integrates Gift Entry with the Elevate payment processing platform. It provides singleton access to Elevate configuration, including SDK URLs, client IDs, gateway and merchant identifiers, and JWT tokens for card tokenization. The class checks whether the org is an active Elevate customer and supplies origin URLs for iframe-based payment capture."
       },
       {
         "name": "GE_PaymentServicesMock",
@@ -10271,7 +10288,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GE_PaymentServicesMock.cls",
-        "description": ""
+        "description": "Test stub that implements StubProvider to mock GE_PaymentServices behavior in unit tests. It allows test methods to control the return value of isElevateCustomer and intercept method calls via handleMethodCall. This mock enables isolated testing of Gift Entry components without requiring a live Elevate connection."
       },
       {
         "name": "GE_SettingsService",
@@ -10287,7 +10304,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GE_SettingsService.cls",
-        "description": ""
+        "description": "Service class that exposes Gift Entry feature settings as a singleton instance. It determines whether recurring gifts are enabled and whether the current user has permission to make gifts recurring. Other Gift Entry classes and LWC components query this service to conditionally show or hide recurring donation UI elements."
       },
       {
         "name": "GE_Template",
@@ -10307,7 +10324,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/GE_Template.cls",
-        "description": ""
+        "description": "Core class responsible for managing Gift Entry form templates stored in Form_Template__c records. It creates default templates when none exist, validates template structure, strips elements referencing deleted field mappings, and checks object and field permissions. At 680 lines, it is central to the template-driven architecture that defines which fields appear on the gift entry form."
       }
     ],
     "objects": [
@@ -10336,7 +10353,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom object that stores Gift Entry form template definitions. Each record holds a Template_JSON__c field containing the serialized layout of sections, fields, ordering, requirements, and default values. The Format_Version__c field tracks which version of Gift Entry created the template, supporting forward compatibility as the feature evolves.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Form_Template__c"
       },
       {
@@ -10436,7 +10453,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom metadata type that defines individual checklist items on the NPSP Get Started page. Each record specifies a title, description, image, position, and up to two action buttons with configurable types (external link, Salesforce navigation, or disabled). Items belong to a parent GetStartedChecklistSection__mdt and reference labels from the gsLabelMapper LWC for localization.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/GetStartedChecklistItem__mdt"
       },
       {
@@ -10470,7 +10487,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom metadata type that defines top-level sections on the NPSP Get Started onboarding page. Each record has a title label, description label, position, and a Page_Type__c picklist to target either Admin or End User audiences. Sections serve as containers for GetStartedChecklistItem__mdt records that guide users through NPSP setup tasks.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/GetStartedChecklistSection__mdt"
       },
       {
@@ -10498,7 +10515,7 @@ const NPSP_ENTITIES = {
             "field": "User__c"
           }
         ],
-        "description": "",
+        "description": "Custom object that tracks per-user completion state of Get Started checklist items. Each record links a User__c lookup to an Item_Id__c text field identifying which checklist step was completed. This allows NPSP to persist onboarding progress so users see which setup steps they have already finished.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/GetStartedCompletionChecklistState__c"
       }
     ],
@@ -10516,14 +10533,15 @@ const NPSP_ENTITIES = {
           "after undelete"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_FormTemplate.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_FormTemplate.trigger",
+        "description": "TDTM-framework trigger on Form_Template__c that delegates to registered trigger handlers for all DML events (before/after insert, update, delete, and undelete). It routes execution through the NPSP trigger dispatcher, which calls BGE_FormTemplate_TDTM and any other handlers registered for this object. This pattern provides a single trigger entry point with configurable, order-controlled handler execution."
       }
     ],
     "lwcs": [
       {
         "name": "geBatchGiftEntryHeader",
         "imports": [],
-        "description": "",
+        "description": "LWC component that renders the header section of the batch gift entry page. It displays batch metadata such as name, status, and totals above the gift entry table. This component provides contextual information while users work within a specific gift batch.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geBatchGiftEntryHeader"
       },
       {
@@ -10532,7 +10550,7 @@ const NPSP_ENTITIES = {
           "geFormService",
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that renders the interactive data table of gifts within a batch. It imports geFormService for field metadata and geLabelService for localized labels to build table columns dynamically. Users can view, edit, and manage individual DataImport__c rows through this table interface.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geBatchGiftEntryTable"
       },
       {
@@ -10542,13 +10560,13 @@ const NPSP_ENTITIES = {
           "geLabelService",
           "geSettings"
         ],
-        "description": "",
+        "description": "LWC component that guides users through creating or editing a gift batch configuration. It imports geFormService, geLabelService, and geSettings to load available fields, labels, and feature toggles. The wizard produces a configured DataImportBatch__c record that controls which fields and defaults appear during gift entry.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geBatchWizard"
       },
       {
         "name": "geConstants",
         "imports": [],
-        "description": "",
+        "description": "Shared LWC module that exports constant values used across Gift Entry components. It centralizes string literals, field API names, status values, and other magic values to prevent duplication and typos. Other GE components import from this module rather than hardcoding constant strings.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geConstants"
       },
       {
@@ -10556,7 +10574,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that provides the donation matching UI within Gift Entry. It imports geLabelService for localized text and displays potential Opportunity and Payment matches found during dry-run processing. Users can review matches and select the correct existing donation to update rather than creating a duplicate.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geDonationMatching"
       },
       {
@@ -10564,7 +10582,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that renders a single Opportunity as a selectable card in the donation matching interface. It imports geLabelService for field labels and displays key Opportunity details like amount, date, and stage. Users click a card to select that Opportunity as the match target for the current gift.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geDonationMatchingOpportunityCard"
       },
       {
@@ -10572,13 +10590,13 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that renders a single Payment (npe01__OppPayment__c) as a selectable card during donation matching. It imports geLabelService for localized labels and shows payment details such as amount, scheduled date, and paid status. This card works alongside geDonationMatchingOpportunityCard to let users match at either the Opportunity or Payment level.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geDonationMatchingPaymentCard"
       },
       {
         "name": "geElevateBatch",
         "imports": [],
-        "description": "",
+        "description": "LWC module that manages Elevate payment batch operations within Gift Entry. It coordinates the creation and submission of payment batches to the Elevate platform when processing gifts with credit card or ACH payments. Other components like geFormRenderer and geGiftEntryFormApp import this module to integrate Elevate batch processing into the gift save workflow.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geElevateBatch"
       },
       {
@@ -10587,7 +10605,7 @@ const NPSP_ENTITIES = {
           "geFormService",
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that renders a single form field within the Gift Entry form. It imports geFormService for field metadata and geLabelService for labels, dynamically choosing the appropriate input type (text, number, lookup, picklist, etc.) based on the field descriptor. This component is the atomic building block composed by geFormSection to construct the full gift entry form.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geFormField"
       },
       {
@@ -10600,25 +10618,25 @@ const NPSP_ENTITIES = {
           "geElevateBatch",
           "geGift"
         ],
-        "description": "",
+        "description": "Central LWC component that orchestrates the entire Gift Entry form rendering. It imports geFormService, geSettings, geLabelService, geGatewaySettings, geElevateBatch, and geGift to assemble sections, fields, and widgets into a complete form. This is the main form container that handles field population, validation, Elevate payment integration, and gift submission.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geFormRenderer"
       },
       {
         "name": "geFormSection",
         "imports": [],
-        "description": "",
+        "description": "LWC component that groups related form fields into a collapsible section within the Gift Entry form. It receives a section definition from the form template and renders child geFormField and geFormWidget components. Sections provide visual organization of the gift entry form layout as defined in the Form_Template__c configuration.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geFormSection"
       },
       {
         "name": "geFormService",
         "imports": [],
-        "description": "",
+        "description": "Shared LWC service module that provides centralized access to Gift Entry form metadata, field mappings, and data transformation logic. It is imported by many GE components including geFormRenderer, geFormField, geBatchGiftEntryTable, and geTemplateBuilderFormFields. This service acts as the client-side data layer, caching describe information and template definitions to reduce server calls.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geFormService"
       },
       {
         "name": "geFormWidget",
         "imports": [],
-        "description": "",
+        "description": "Base LWC component that serves as a container for specialized widget components within the Gift Entry form. It provides a standard interface for rendering non-standard form elements like allocation grids, soft credit rows, and payment tokenization widgets. Specific widget implementations extend this pattern to add domain-specific functionality.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geFormWidget"
       },
       {
@@ -10627,7 +10645,7 @@ const NPSP_ENTITIES = {
           "geFormService",
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC widget component that manages GAU (General Accounting Unit) allocation entry within the Gift Entry form. It imports geFormService and geLabelService to render an allocation grid where users can split a gift across multiple GAUs by amount or percentage. Each row in the grid is rendered by a child geFormWidgetRowAllocation component.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geFormWidgetAllocation"
       },
       {
@@ -10635,7 +10653,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that renders a single GAU allocation row within the geFormWidgetAllocation widget. It imports geLabelService for labels and provides inputs for selecting a GAU, entering an amount or percentage, and removing the row. Multiple instances compose the full allocation grid for distributing a gift across accounting units.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geFormWidgetRowAllocation"
       },
       {
@@ -10643,7 +10661,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC widget component that manages soft credit assignment within the Gift Entry form. It imports geLabelService and renders a list of soft credit rows where users can designate additional contacts who should receive credit for the gift. Each row is rendered by a child geFormWidgetSoftCreditRow component.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geFormWidgetSoftCredit"
       },
       {
@@ -10651,7 +10669,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that renders a single soft credit row within the geFormWidgetSoftCredit widget. It imports geLabelService for labels and provides a contact lookup, role picklist, and amount field for defining one soft credit recipient. Users can add multiple rows to assign partial credit to several contacts.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geFormWidgetSoftCreditRow"
       },
       {
@@ -10663,7 +10681,7 @@ const NPSP_ENTITIES = {
           "geSettings",
           "geGatewaySettings"
         ],
-        "description": "",
+        "description": "LWC widget component that embeds the Elevate payment card tokenization iframe within the Gift Entry form. It imports geLabelService, psElevateTokenHandler, geFormService, geSettings, and geGatewaySettings to configure and communicate with the Elevate SDK. This widget captures credit card details securely without the card number ever reaching Salesforce servers.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geFormWidgetTokenizeCard"
       },
       {
@@ -10671,19 +10689,19 @@ const NPSP_ENTITIES = {
         "imports": [
           "geGatewaySettings"
         ],
-        "description": "",
+        "description": "LWC component that provides a dropdown for selecting which Elevate payment gateway to use for a gift. It imports geGatewaySettings to retrieve the list of available gateways configured for the org. This widget appears in the Gift Entry form when multiple payment gateways are available.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geGatewaySelectWidget"
       },
       {
         "name": "geGatewaySettings",
         "imports": [],
-        "description": "",
+        "description": "Shared LWC module that manages Elevate payment gateway configuration on the client side. It stores and exposes gateway IDs, merchant IDs, and gateway-specific settings retrieved from GE_PaymentServices. Other components like geFormRenderer, geFormWidgetTokenizeCard, and geTemplateBuilder import this module to access gateway configuration.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geGatewaySettings"
       },
       {
         "name": "geGift",
         "imports": [],
-        "description": "",
+        "description": "LWC module that represents a single gift as a client-side data model within Gift Entry. It encapsulates the DataImport__c field values, validation state, Elevate payment status, and matching results for one gift record. Components like geFormRenderer and geGiftEntryFormApp import this module to manage gift state throughout the entry and save lifecycle.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geGift"
       },
       {
@@ -10691,7 +10709,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geGift"
         ],
-        "description": "",
+        "description": "LWC module that represents a gift batch as a client-side data model, importing geGift to manage its collection of individual gifts. It tracks batch-level state including totals, processing status, and the list of DataImport__c records. The geGiftEntryFormApp component imports this module to coordinate operations across all gifts in a batch.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geGiftBatch"
       },
       {
@@ -10703,7 +10721,7 @@ const NPSP_ENTITIES = {
           "geGift",
           "geElevateBatch"
         ],
-        "description": "",
+        "description": "Top-level LWC application component that composes the complete Gift Entry page. It imports geLabelService, geSettings, geGiftBatch, geGift, and geElevateBatch to orchestrate the full gift entry workflow, from form rendering through batch processing. This component manages page-level routing, batch context, and the transition between single-gift and batch-gift modes.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geGiftEntryFormApp"
       },
       {
@@ -10713,13 +10731,13 @@ const NPSP_ENTITIES = {
           "geLabelService",
           "geSettings"
         ],
-        "description": "",
+        "description": "LWC component that serves as the Gift Entry landing page and navigation hub. It imports geTemplateBuilderService, geLabelService, and geSettings to display available templates, recent batches, and quick-action buttons. Users navigate from this home screen to create new batches, open the template builder, or enter single gifts.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geHome"
       },
       {
         "name": "geLabelService",
         "imports": [],
-        "description": "",
+        "description": "Shared LWC module that centralizes access to custom labels and translated strings for the Gift Entry UI. Nearly every GE component imports this service to display user-facing text. It loads labels once and caches them, providing a consistent localization layer across the entire Gift Entry component hierarchy.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geLabelService"
       },
       {
@@ -10729,31 +10747,31 @@ const NPSP_ENTITIES = {
           "geLabelService",
           "geTemplateBuilderService"
         ],
-        "description": "",
+        "description": "LWC component that renders a configurable list view for Gift Entry records such as batches or templates. It imports libsMoment for date formatting, geLabelService for labels, and geTemplateBuilderService for template metadata. This component provides sorting, pagination, and column configuration for tabular data display.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geListView"
       },
       {
         "name": "geModalPrompt",
         "imports": [],
-        "description": "",
+        "description": "LWC component that renders a modal dialog for confirmations and user prompts within Gift Entry. It provides a standard pattern for warning messages, delete confirmations, and informational alerts. Other GE components invoke this modal when they need to interrupt the workflow for user acknowledgment.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geModalPrompt"
       },
       {
         "name": "geModalRecurringDonation",
         "imports": [],
-        "description": "",
+        "description": "LWC component that renders a modal dialog for creating or editing recurring donation details during gift entry. It appears when a user designates a gift as recurring, collecting schedule information like frequency, installment period, and start date. The modal writes recurring donation fields back to the DataImport__c record for processing by the BDI engine.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geModalRecurringDonation"
       },
       {
         "name": "gePaymentGatewayManagement",
         "imports": [],
-        "description": "",
+        "description": "LWC component that provides an admin interface for managing Elevate payment gateway configurations. It allows administrators to view, add, and configure payment gateways that will be available during gift entry. This component is typically accessed from NPSP settings rather than the gift entry form itself.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/gePaymentGatewayManagement"
       },
       {
         "name": "geRecurringGiftInfo",
         "imports": [],
-        "description": "",
+        "description": "LWC component that displays a read-only summary of recurring gift details within the Gift Entry form. It shows the schedule, amount, and status of a recurring donation associated with the current gift. This informational panel helps users confirm recurring gift parameters before submitting.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geRecurringGiftInfo"
       },
       {
@@ -10761,13 +10779,13 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that provides a review and confirmation screen before processing gifts in a batch. It imports geLabelService for labels and displays a summary of all gifts, their matching status, and any validation errors. Users can review the batch contents and approve processing or return to fix issues.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geReviewDonations"
       },
       {
         "name": "geSettings",
         "imports": [],
-        "description": "",
+        "description": "Shared LWC module that exposes Gift Entry feature settings and org-level configuration to client-side components. It caches settings from GE_SettingsService including recurring gifts enablement, Elevate connectivity, and template defaults. Components like geFormRenderer, geGiftEntryFormApp, and geTemplateBuilder import this module to conditionally render UI based on feature flags.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geSettings"
       },
       {
@@ -10778,7 +10796,7 @@ const NPSP_ENTITIES = {
           "geSettings",
           "geGatewaySettings"
         ],
-        "description": "",
+        "description": "LWC component that provides the visual editor for creating and modifying Gift Entry form templates. It imports geTemplateBuilderService, geLabelService, geSettings, and geGatewaySettings to offer a drag-and-drop interface for arranging sections, fields, and widgets. Changes are serialized to JSON and saved to Form_Template__c records.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geTemplateBuilder"
       },
       {
@@ -10786,7 +10804,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that renders the batch header configuration section within the template builder. It imports geLabelService for labels and lets admins define which batch-level fields (like expected count and amount) appear in the batch header. This configuration is stored as part of the Form_Template__c JSON definition.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geTemplateBuilderBatchHeader"
       },
       {
@@ -10795,7 +10813,7 @@ const NPSP_ENTITIES = {
           "geTemplateBuilderService",
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that represents a single draggable field element within the template builder. It imports geTemplateBuilderService and geLabelService to display field metadata and configuration options like required, default value, and field mapping. Admins interact with these field elements to add, remove, or reorder fields on a template section.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geTemplateBuilderFormField"
       },
       {
@@ -10804,7 +10822,7 @@ const NPSP_ENTITIES = {
           "geTemplateBuilderService",
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that renders the available fields palette in the template builder. It imports geTemplateBuilderService and geLabelService to list all DataImport__c fields that can be added to the form template. Admins drag fields from this palette into template sections to compose their gift entry form layout.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geTemplateBuilderFormFields"
       },
       {
@@ -10812,7 +10830,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that represents a section container within the template builder. It imports geLabelService for labels and allows admins to name the section, reorder it among other sections, and manage the fields within it. Sections defined here correspond to geFormSection instances at runtime.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geTemplateBuilderFormSection"
       },
       {
@@ -10820,7 +10838,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that renders the modal dialog body for creating or editing a template section. It imports geLabelService for labels and provides inputs for section name, description, and display settings. This modal appears when an admin adds a new section or edits an existing one in the template builder.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geTemplateBuilderSectionModalBody"
       },
       {
@@ -10828,7 +10846,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geWidgetService"
         ],
-        "description": "",
+        "description": "Shared LWC service module that provides template-building logic and state management for the template builder UI. It imports geWidgetService to register available widgets and exposes methods for manipulating template structure, validating configurations, and serializing templates to JSON. Components like geTemplateBuilder, geListView, and geHome import this service.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geTemplateBuilderService"
       },
       {
@@ -10836,7 +10854,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that renders the template name, description, and metadata fields at the top of the template builder. It imports geLabelService for labels and provides inputs for the template's identifying information. This component corresponds to the Form_Template__c record-level fields that describe the template itself.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geTemplateBuilderTemplateInfo"
       },
       {
@@ -10844,7 +10862,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that represents a widget placeholder within the template builder. It imports geLabelService for labels and displays configurable widget options like allocations, soft credits, and payment tokenization. Admins can add or remove widget slots in the template, which render as geFormWidget instances at runtime.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geTemplateBuilderWidget"
       },
       {
@@ -10852,7 +10870,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "LWC component that displays a list of available Gift Entry form templates. It imports geLabelService for labels and renders template cards showing name, description, and last modified date. Users and admins can select a template to use for gift entry or navigate to the template builder to edit one.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geTemplates"
       },
       {
@@ -10860,7 +10878,7 @@ const NPSP_ENTITIES = {
         "imports": [
           "geLabelService"
         ],
-        "description": "",
+        "description": "Shared LWC service module that manages the registry of available widget types for Gift Entry forms. It imports geLabelService for labels and provides metadata about each widget type (allocations, soft credits, payment tokenization). The geTemplateBuilderService imports this module to populate the widget palette in the template builder.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/geWidgetService"
       }
     ],
@@ -10880,7 +10898,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_AccountSkew_AccSoftCredit_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates Account Soft Credit rollups for Accounts with a high number of related Opportunities, using the skew-mode processing strategy. It extends CRLP_Batch_Base_Skew to handle records that exceed the non-skew Opportunity count threshold. This batch is part of the CRLP skew-mode family that prevents governor limit issues on data-heavy Accounts."
       },
       {
         "name": "CRLP_AccountSkew_BATCH",
@@ -10894,7 +10912,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_AccountSkew_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates standard hard credit rollups for Accounts with a high volume of related Opportunities, using skew-mode processing. It extends CRLP_Batch_Base_Skew to iterate through detail records in chunks rather than loading all Opportunities at once. This batch handles the largest Account rollup scenarios where non-skew mode would hit governor limits."
       },
       {
         "name": "CRLP_AccountSkew_SoftCredit_BATCH",
@@ -10908,7 +10926,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_AccountSkew_SoftCredit_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates Contact Soft Credit rollups at the Account level for Accounts with a high number of related Opportunities. It extends CRLP_Batch_Base_Skew to use the skew-mode processing pattern for data-heavy records. This batch complements CRLP_AccountSkew_BATCH by handling the soft credit rollup variant for skewed Accounts."
       },
       {
         "name": "CRLP_Account_AccSoftCredit_BATCH",
@@ -10922,7 +10940,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Account_AccSoftCredit_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates Account Soft Credit rollups for Accounts with a normal volume of related Opportunities, using non-skew processing. It extends CRLP_Batch_Base_NonSkew which loads all detail records for each Account in a single query. This batch handles the standard-volume Account soft credit rollup scenario."
       },
       {
         "name": "CRLP_Account_BATCH",
@@ -10936,7 +10954,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Account_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates standard hard credit rollups for Accounts with a normal volume of related Opportunities. It extends CRLP_Batch_Base_NonSkew to process Account records by loading their related Opportunities in one pass. This is the primary Account rollup batch job in the Customizable Rollups framework."
       },
       {
         "name": "CRLP_Account_SoftCredit_BATCH",
@@ -10950,7 +10968,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Account_SoftCredit_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates Contact Soft Credit rollups at the Account level for Accounts with normal Opportunity volumes. It extends CRLP_Batch_Base_NonSkew for standard processing of soft credit attribution to Accounts. This batch pairs with CRLP_Account_AccSoftCredit_BATCH to cover both soft credit types at the Account level."
       },
       {
         "name": "CRLP_ApiExecuteRollups",
@@ -10971,7 +10989,7 @@ const NPSP_ENTITIES = {
           "npe01__OppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_ApiExecuteRollups.cls",
-        "description": ""
+        "description": "Provides a programmatic API for executing rollup calculations on demand, outside of the standard batch or trigger processing flow. It accepts rollup type, parent record ID, rollup definitions, and detail data through a fluent builder pattern, then executes the calculations. External integrations and custom Apex code use this class to trigger ad-hoc rollup recalculation."
       },
       {
         "name": "CRLP_ApiService",
@@ -10993,7 +11011,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_ApiService.cls",
-        "description": ""
+        "description": "The primary API service for the Customizable Rollups framework, exposing methods to query rollup definitions, check enablement state, execute rollups, and manage rollup state staleness. It handles change events for rollup configuration updates and determines whether CRLP is enabled versus legacy rollups. This service is the main entry point for external code interacting with the CRLP subsystem."
       },
       {
         "name": "CRLP_Batch_Base",
@@ -11007,7 +11025,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Batch_Base.cls",
-        "description": ""
+        "description": "The abstract base class for all Customizable Rollups batch jobs at 691 lines, providing shared infrastructure for rollup processing including query construction, error handling, and Payment rollup detection. It is extended by both CRLP_Batch_Base_NonSkew and CRLP_Batch_Base_Skew to support different data volume strategies. All CRLP batch jobs ultimately inherit from this class."
       },
       {
         "name": "CRLP_Batch_Base_NonSkew",
@@ -11025,7 +11043,7 @@ const NPSP_ENTITIES = {
           "npo02__NumberOfMembershipOpps__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Batch_Base_NonSkew.cls",
-        "description": ""
+        "description": "The base class for non-skew mode Customizable Rollups batch jobs, which process summary records (Accounts, Contacts, RDs) by loading all related detail records in a single query per parent. It extends CRLP_Batch_Base and provides execute and finish methods that aggregate rollup results and update parent records. This class is used when the number of related Opportunities per parent is below the skew threshold."
       },
       {
         "name": "CRLP_Batch_Base_Skew",
@@ -11046,7 +11064,7 @@ const NPSP_ENTITIES = {
           "npo02__Households_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Batch_Base_Skew.cls",
-        "description": ""
+        "description": "The base class for skew-mode Customizable Rollups batch jobs, designed to handle parent records with very high numbers of related Opportunities or Payments. It extends CRLP_Batch_Base and processes detail records in chunks, accumulating rollup state across multiple execute calls. This class references Household settings and Individual Account flags to correctly route rollup results."
       },
       {
         "name": "CRLP_ConfigBuilder_SVC",
@@ -11062,7 +11080,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_ConfigBuilder_SVC.cls",
-        "description": ""
+        "description": "Manages the deployment of Customizable Rollup configuration changes as Custom Metadata Type records through the Salesforce Metadata API. It queues rollup definitions for deployment, clears the queue, and triggers the actual metadata deploy operation. This service is called by the rollup UI when administrators save new or modified rollup definitions."
       },
       {
         "name": "CRLP_ContactSkew_BATCH",
@@ -11076,7 +11094,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_ContactSkew_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates standard hard credit rollups for Contacts with a high number of related Opportunities, using skew-mode processing. It extends CRLP_Batch_Base_Skew to handle data-heavy Contact records that would exceed governor limits in non-skew mode. This batch ensures accurate rollup calculations for Contacts with extensive giving histories."
       },
       {
         "name": "CRLP_ContactSkew_SoftCredit_BATCH",
@@ -11090,7 +11108,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_ContactSkew_SoftCredit_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates Soft Credit rollups for Contacts with a high number of related soft credit records, using skew-mode processing. It extends CRLP_Batch_Base_Skew to process large volumes of Partial Soft Credit and OpportunityContactRole records. This batch handles the skew scenario for Contact soft credit rollup calculations."
       },
       {
         "name": "CRLP_Contact_BATCH",
@@ -11104,7 +11122,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Contact_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates standard hard credit rollups for Contacts with a normal volume of related Opportunities. It extends CRLP_Batch_Base_NonSkew to process Contact records by querying their related Opportunities in one pass. This is the primary Contact rollup batch job in the Customizable Rollups framework."
       },
       {
         "name": "CRLP_Contact_SoftCredit_BATCH",
@@ -11118,7 +11136,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Contact_SoftCredit_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates Soft Credit rollups for Contacts with normal volumes of related soft credit records. It extends CRLP_Batch_Base_NonSkew for standard processing of soft credit attribution to Contacts. This batch handles the common case where Contacts have a manageable number of soft credit relationships."
       },
       {
         "name": "CRLP_Debug_UTIL",
@@ -11136,7 +11154,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Debug_UTIL.cls",
-        "description": ""
+        "description": "A utility class for tracking and logging the state of rollup calculations during processing, used for debugging and troubleshooting CRLP operations. It maintains a running log of rollup state transitions that can be retrieved for diagnostic purposes. Developers and admins use this class to understand how individual rollup values are computed during batch or trigger execution."
       },
       {
         "name": "CRLP_DefaultConfigBuilder",
@@ -11195,7 +11213,7 @@ const NPSP_ENTITIES = {
           "npo02__User_Rollup_Field_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_DefaultConfigBuilder.cls",
-        "description": ""
+        "description": "Defines the default set of Customizable Rollup definitions that map to the standard NPSP rollup fields on Account, Contact, Household, and Recurring Donation objects. It contains the complete list of out-of-the-box rollup configurations including donation totals, averages, membership fields, and soft credit amounts. This class provides the seed data used when CRLP is first enabled or reset to defaults."
       },
       {
         "name": "CRLP_DefaultConfigBuilder_SVC",
@@ -11230,7 +11248,7 @@ const NPSP_ENTITIES = {
           "npo02__User_Rollup_Field_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_DefaultConfigBuilder_SVC.cls",
-        "description": ""
+        "description": "Converts legacy rollup helper configurations (RLLP) and User Rollup Field Settings into Customizable Rollup (CRLP) metadata definitions at 1,007 lines. It reads exclusion settings for record types and Opportunity types, maps fiscal year preferences, and generates the equivalent CRLP filter groups and rollup definitions. This service is called during the one-time migration from legacy to customizable rollups."
       },
       {
         "name": "CRLP_EnablementService",
@@ -11248,7 +11266,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_EnablementService.cls",
-        "description": ""
+        "description": "Manages the enablement lifecycle of the Customizable Rollups feature, providing methods to enable, disable, and reset the CRLP subsystem. It handles success and error callbacks from the metadata deployment process that installs CRLP configurations. This service coordinates with CRLP_ConfigBuilder_SVC to ensure rollup definitions are properly deployed before activation."
       },
       {
         "name": "CRLP_FiscalYears",
@@ -11263,7 +11281,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_FiscalYears.cls",
-        "description": ""
+        "description": "Handles fiscal year calculations for the Customizable Rollups framework, converting calendar dates to fiscal year values based on the Salesforce org's fiscal year configuration. It provides methods to get the fiscal year for a given date and format year values as strings. All time-bound rollup operations (this year, last year, two years ago) use this class for consistent year boundary calculations."
       },
       {
         "name": "CRLP_GAU_BATCH",
@@ -11277,7 +11295,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_GAU_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates rollups for General Accounting Unit (GAU) records by summarizing their allocated Opportunity and Payment amounts. It extends CRLP_Batch_Base_Skew because GAU Allocations can have very high volumes similar to skew-mode Account processing. This batch aggregates donation data across GAU Allocation records to populate summary fields on each GAU."
       },
       {
         "name": "CRLP_Operation",
@@ -11294,7 +11312,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Operation.cls",
-        "description": ""
+        "description": "Defines the available rollup operation types (Sum, Count, Average, Largest, Smallest, First, Last, Best Year, Years Donated, Donor Streak) and their supported field type combinations. It maps operation types to array positions used during rollup calculation and determines which operations are valid for time-bound rollups. This class provides the operation metadata consumed by CRLP_Operation_SVC during calculation."
       },
       {
         "name": "CRLP_Operation_SVC",
@@ -11308,7 +11326,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Operation_SVC.cls",
-        "description": ""
+        "description": "Executes the actual rollup calculation logic for a single operation type against a detail record value, updating the running rollup state accordingly. It implements the mathematical logic for Sum, Count, Average, Min, Max, First, Last, Best Year, and other operation types. This service is called by the rollup handler classes (CRLP_VRollupHandler subclasses) for each detail record processed."
       },
       {
         "name": "CRLP_Query_SEL",
@@ -11329,7 +11347,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Query_SEL.cls",
-        "description": ""
+        "description": "Builds dynamic SOQL queries for Customizable Rollup processing, constructing both summary object and detail object queries with appropriate field lists, filters, and relationships. It generates queries that include Payment sub-queries when payment rollups are active and applies common Opportunity filters. This query builder is used by both batch jobs and real-time trigger rollup processing."
       },
       {
         "name": "CRLP_RDSkew_BATCH",
@@ -11343,7 +11361,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RDSkew_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates rollups for Recurring Donation records with a high number of related Opportunities, using skew-mode processing. It extends CRLP_Batch_Base_Skew to process RD records that exceed the standard Opportunity count threshold. This batch ensures accurate rollup calculations for long-running or high-frequency Recurring Donations."
       },
       {
         "name": "CRLP_RD_BATCH",
@@ -11357,7 +11375,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RD_BATCH.cls",
-        "description": ""
+        "description": "A batch job that calculates rollups for Recurring Donation records with a normal volume of related Opportunities, using non-skew processing. It extends CRLP_Batch_Base_NonSkew to query and process each RD with its related Opportunities in a single pass. This is the primary Recurring Donation rollup batch job in the CRLP framework."
       },
       {
         "name": "CRLP_RecalculateBTN_CTRL",
@@ -11373,7 +11391,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RecalculateBTN_CTRL.cls",
-        "description": ""
+        "description": "Controller for the Recalculate Rollups button on Account, Contact, and Recurring Donation record pages that triggers on-demand rollup recalculation for a single record. It determines the record type, builds the appropriate rollup context, and executes the rollup calculation. This controller provides users with a way to refresh rollup values without waiting for the next scheduled batch run."
       },
       {
         "name": "CRLP_ResetRollupFieldsQueueable",
@@ -11387,7 +11405,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_ResetRollupFieldsQueueable.cls",
-        "description": ""
+        "description": "A Queueable class that resets all rollup target fields on summary records (Accounts, Contacts, Households, RDs) to null or zero as part of a rollup recalculation or CRLP reset process. It runs asynchronously to avoid governor limits when clearing fields across many records. This class is invoked during CRLP enablement reset or when rollup definitions change significantly."
       },
       {
         "name": "CRLP_Rollup",
@@ -11407,7 +11425,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Rollup.cls",
-        "description": ""
+        "description": "The core rollup state container class that holds the accumulated calculation values for a single rollup definition during batch or trigger processing. It manages MDT record references, currency conversion, group-based rollup logic, and final value computation across 576 lines. Each instance tracks one rollup definition's running state (sum, count, min, max, etc.) as detail records are processed."
       },
       {
         "name": "CRLP_RollupAccSoftCredit_SVC",
@@ -11422,7 +11440,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupAccSoftCredit_SVC.cls",
-        "description": ""
+        "description": "A rollup handler service that processes Account Soft Credit rollups by extending CRLP_VRollupHandler. It initializes rollup definitions filtered to Account Soft Credit types and processes detail records through the standard CRLP rollup pipeline. This service is invoked by the Account Soft Credit batch jobs to calculate soft credit totals at the Account level."
       },
       {
         "name": "CRLP_RollupAccount_SVC",
@@ -11439,7 +11457,7 @@ const NPSP_ENTITIES = {
           "npe01__OppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupAccount_SVC.cls",
-        "description": ""
+        "description": "A rollup handler service that processes standard hard credit rollups for Account records by extending CRLP_VRollupHandler. It initializes rollup definitions filtered to Account types and processes Opportunity and Payment detail records. This service is the primary Account rollup processor, invoked by both CRLP_Account_BATCH and real-time trigger processing."
       },
       {
         "name": "CRLP_RollupBatch_SVC",
@@ -11458,7 +11476,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupBatch_SVC.cls",
-        "description": ""
+        "description": "Orchestrates the execution of Customizable Rollup batch jobs by determining whether skew-mode processing is needed and launching the appropriate batch class. It calculates batch sizes, builds skew WHERE clauses for high-volume records, and manages the batch job queue. This service is the entry point for scheduling and executing CRLP batch rollup processing."
       },
       {
         "name": "CRLP_RollupCMT",
@@ -11481,7 +11499,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupCMT.cls",
-        "description": ""
+        "description": "Manages the creation, validation, and deployment of Customizable Rollup Custom Metadata Type records including rollup definitions and filter rules. It generates unique record names, detects duplicates, checks for differences between existing and new definitions, and builds metadata records for deployment. This class works with CRLP_ConfigBuilder_SVC to persist rollup configuration changes."
       },
       {
         "name": "CRLP_RollupContact_SVC",
@@ -11498,7 +11516,7 @@ const NPSP_ENTITIES = {
           "npe01__OppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupContact_SVC.cls",
-        "description": ""
+        "description": "A rollup handler service that processes standard hard credit rollups for Contact records by extending CRLP_VRollupHandler. It initializes rollup definitions filtered to Contact types and processes Opportunity and Payment detail records. This service is the primary Contact rollup processor, invoked by both CRLP_Contact_BATCH and real-time trigger processing."
       },
       {
         "name": "CRLP_RollupGAU_SVC",
@@ -11513,7 +11531,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupGAU_SVC.cls",
-        "description": ""
+        "description": "A rollup handler service that processes rollups for General Accounting Unit records by extending CRLP_VRollupHandler. It initializes rollup definitions filtered to GAU types and processes GAU Allocation detail records. This service is invoked by CRLP_GAU_BATCH to calculate donation totals and other aggregate values for each GAU."
       },
       {
         "name": "CRLP_RollupProcessingOptions",
@@ -11525,7 +11543,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupProcessingOptions.cls",
-        "description": ""
+        "description": "A configuration class that defines processing options and filters applied during rollup calculation, including rollup type, batch job mode, and detail record type filters. It controls which rollup definitions are included in a processing run and how results should be handled. Batch jobs and trigger handlers set these options before invoking the rollup processor."
       },
       {
         "name": "CRLP_RollupProcessor",
@@ -11551,7 +11569,7 @@ const NPSP_ENTITIES = {
           "npo02__NumberOfMembershipOpps__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupProcessor.cls",
-        "description": ""
+        "description": "The main rollup processing engine at 696 lines that coordinates the execution of rollup calculations across summary and detail records. It accepts summary records, detail records, payment records, rollup definitions, and processing options through a fluent builder interface, then delegates to the appropriate rollup handler. This class is the central processing hub called by both batch and trigger-based rollup execution."
       },
       {
         "name": "CRLP_RollupProcessor_SVC",
@@ -11567,7 +11585,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupProcessor_SVC.cls",
-        "description": ""
+        "description": "Orchestrates the final steps of rollup processing by determining the correct handler class type, logging updates, and writing changed records back to the database. It routes processing to the appropriate SVC class (Account, Contact, GAU, RD, SoftCredit) and performs deep cloning of record lists for safe comparison. This service sits between the batch/trigger layer and the individual rollup handlers."
       },
       {
         "name": "CRLP_RollupQueryBuilder",
@@ -11596,7 +11614,7 @@ const NPSP_ENTITIES = {
           "npo02__Households_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupQueryBuilder.cls",
-        "description": ""
+        "description": "Constructs the SOQL queries needed by the CRLP rollup engine, building detail record queries with support for Payment sub-queries, parent ID filters, and sort orders. It uses a fluent builder pattern to configure query parameters based on rollup type, batch mode, and summary/detail record scoping. This query builder is consumed by both batch job start methods and real-time rollup processing."
       },
       {
         "name": "CRLP_RollupQueueable",
@@ -11614,7 +11632,7 @@ const NPSP_ENTITIES = {
           "npo02__NumberOfClosedOpps__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupQueueable.cls",
-        "description": ""
+        "description": "A Queueable class that executes Customizable Rollup calculations asynchronously for a set of parent record IDs. It provides the runRollupsForIds method that triggers and real-time processing use to defer rollup calculations to a separate transaction. This class prevents rollup processing from consuming governor limits in the triggering transaction."
       },
       {
         "name": "CRLP_RollupRD_SVC",
@@ -11629,7 +11647,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupRD_SVC.cls",
-        "description": ""
+        "description": "A rollup handler service that processes rollups for Recurring Donation records by extending CRLP_VRollupHandler. It initializes rollup definitions filtered to RD types and processes related Opportunity detail records to calculate paid amounts, installment counts, and payment dates. This service is invoked by both CRLP_RD_BATCH and CRLP_RDSkew_BATCH to aggregate Opportunity data onto RD records."
       },
       {
         "name": "CRLP_RollupSetup_CTRL",
@@ -11643,7 +11661,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupSetup_CTRL.cls",
-        "description": ""
+        "description": "A lightweight controller for the Customizable Rollups setup page that provides the namespace prefix for correct component reference resolution. It serves as the entry point for the CRLP administration UI. This controller delegates the heavy lifting to CRLP_RollupUI_SVC for actual rollup configuration management."
       },
       {
         "name": "CRLP_RollupSoftCredit_SVC",
@@ -11658,7 +11676,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupSoftCredit_SVC.cls",
-        "description": ""
+        "description": "A rollup handler service that processes Contact Soft Credit rollups by extending CRLP_VRollupHandler. It initializes rollup definitions filtered to Soft Credit types and processes Partial Soft Credit and OpportunityContactRole detail records. This service is invoked by the Contact Soft Credit batch jobs to calculate soft credit totals on Contact records."
       },
       {
         "name": "CRLP_RollupUI_SVC",
@@ -11702,7 +11720,7 @@ const NPSP_ENTITIES = {
           "npo02__systemhouseholdprocessor__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_RollupUI_SVC.cls",
-        "description": ""
+        "description": "The comprehensive UI service for the Customizable Rollups administration interface at 1,011 lines, powering the grid views, detail forms, and save operations for rollup and filter group definitions. It retrieves rollup definitions, filter group configurations, field metadata, and application labels, and handles rollup and filter group persistence through the Metadata API. This service is the backend for the NPSP Settings rollup configuration pages."
       },
       {
         "name": "CRLP_Rollup_SEL",
@@ -11727,7 +11745,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Rollup_SEL.cls",
-        "description": ""
+        "description": "A selector class that queries and caches Customizable Rollup Custom Metadata Type records, providing methods to retrieve rollup definitions by ID, developer name, or referenced object. It validates that referenced fields exist and maintains an in-memory cache for efficient access during batch processing. This selector is the primary data access layer for CRLP rollup definition metadata."
       },
       {
         "name": "CRLP_Rollup_SVC",
@@ -11753,7 +11771,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Rollup_SVC.cls",
-        "description": ""
+        "description": "Provides utility methods for the Customizable Rollups framework including empty result object creation, change detection, active rollup checks, and object type resolution. It determines whether rollup results need database updates, identifies the summary and detail object types for a rollup type, and checks for active Payment, Soft Credit, and Account Soft Credit rollups. This service class is referenced throughout the CRLP codebase for common operations."
       },
       {
         "name": "CRLP_Rollup_TDTM",
@@ -11771,7 +11789,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_Rollup_TDTM.cls",
-        "description": ""
+        "description": "The TDTM trigger handler that initiates real-time Customizable Rollup calculations when Opportunity, Payment, or GAU Allocation records are inserted, updated, or deleted. It extends TDTM_Runnable and determines which parent records need rollup recalculation based on the changed detail records. This handler provides immediate rollup updates without waiting for the next scheduled batch run."
       },
       {
         "name": "CRLP_SkewDispatcher_BATCH",
@@ -11786,7 +11804,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_SkewDispatcher_BATCH.cls",
-        "description": ""
+        "description": "A batch dispatcher that identifies parent records (Accounts, Contacts) requiring skew-mode rollup processing and launches the appropriate skew batch jobs. It queries for records exceeding the Opportunity count threshold and routes them to the correct skew batch class. This dispatcher runs before the standard non-skew batch jobs to separate high-volume records into their own processing stream."
       },
       {
         "name": "CRLP_VRollupHandler",
@@ -11810,7 +11828,7 @@ const NPSP_ENTITIES = {
           "npe01__OppPayment__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/CRLP_VRollupHandler.cls",
-        "description": ""
+        "description": "The abstract virtual base class for all object-specific rollup handler services (Account, Contact, GAU, RD, SoftCredit), providing shared rollup processing infrastructure. It manages rollup list initialization, currency code handling, grouped rollup construction, record population, and Opportunity ID tracking across 220 lines. All concrete rollup handler services (CRLP_RollupAccount_SVC, etc.) extend this class to inherit common rollup mechanics."
       },
       {
         "name": "RLLP_OppAccRollup_BATCH",
@@ -11825,7 +11843,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RLLP_OppAccRollup_BATCH.cls",
-        "description": ""
+        "description": "A Legacy rollup batch job that calculates Opportunity rollup summaries for Account records using the pre-CRLP rollup engine. It processes Accounts in batch scope and delegates to RLLP_OppRollup for the actual calculation logic. This batch is superseded by CRLP_Account_BATCH when Customizable Rollups are enabled."
       },
       {
         "name": "RLLP_OppContactRollup_BATCH",
@@ -11840,7 +11858,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RLLP_OppContactRollup_BATCH.cls",
-        "description": ""
+        "description": "A Legacy rollup batch job that calculates Opportunity rollup summaries for Contact records using the pre-CRLP rollup engine. It processes Contacts in batch scope and delegates to RLLP_OppRollup for the actual calculation logic. This batch is superseded by CRLP_Contact_BATCH when Customizable Rollups are enabled."
       },
       {
         "name": "RLLP_OppHouseholdRollup_BATCH",
@@ -11857,7 +11875,7 @@ const NPSP_ENTITIES = {
           "npo02__Household__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RLLP_OppHouseholdRollup_BATCH.cls",
-        "description": ""
+        "description": "A Legacy rollup batch job that calculates Opportunity rollup summaries for Household (npo02__Household__c) records using the pre-CRLP rollup engine. It processes Household records in batch scope and delegates to RLLP_OppRollup for the actual calculation logic. This batch is relevant only for organizations using the Legacy Household object instead of Household Accounts."
       },
       {
         "name": "RLLP_OppPartialSoftCreditRollup",
@@ -11879,7 +11897,7 @@ const NPSP_ENTITIES = {
           "npo02__Soft_Credit_Two_Years_Ago__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RLLP_OppPartialSoftCreditRollup.cls",
-        "description": ""
+        "description": "Calculates Partial Soft Credit rollup values for Contact and Account records using the Legacy rollup engine. It processes Partial_Soft_Credit__c records to compute soft credit totals for this year, last year, two years ago, and all time. This class is used in both Legacy and CRLP modes, as partial soft credit rollup logic predates the full CRLP framework."
       },
       {
         "name": "RLLP_OppRollup",
@@ -11939,7 +11957,7 @@ const NPSP_ENTITIES = {
           "npo02__User_Rollup_Field_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RLLP_OppRollup.cls",
-        "description": ""
+        "description": "The original Legacy rollup calculation engine at 1,119 lines that computes donation totals, averages, membership stats, best gift year, and soft credit amounts on Account, Contact, and Household records. It contains both synchronous and @future methods for trigger-based and batch-based rollup execution, plus User Rollup Field support. This class is the predecessor to the entire CRLP framework and is bypassed when Customizable Rollups are enabled."
       },
       {
         "name": "RLLP_OppRollup_TDTM",
@@ -11953,7 +11971,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RLLP_OppRollup_TDTM.cls",
-        "description": ""
+        "description": "A Legacy TDTM trigger handler that initiates rollup recalculation when Opportunity records are inserted, updated, or deleted. It extends TDTM_Runnable and delegates to RLLP_OppRollup for the actual rollup logic. This handler is superseded by CRLP_Rollup_TDTM when Customizable Rollups are enabled."
       },
       {
         "name": "RLLP_OppRollup_TEST2",
@@ -12017,7 +12035,7 @@ const NPSP_ENTITIES = {
           "npo02__rollup_N_Day_Value__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RLLP_OppRollup_TEST2.cls",
-        "description": ""
+        "description": "A comprehensive test class for the Legacy rollup engine covering Account, Contact, and Household rollup calculations, soft credit processing, User Rollup Field Settings, and multi-currency scenarios. It sets up test data with specific Household and Contact configurations and verifies that rollup fields are correctly populated. This test class validates the behavior of RLLP_OppRollup and RLLP_OppRollup_UTIL."
       },
       {
         "name": "RLLP_OppRollup_UTIL",
@@ -12098,7 +12116,7 @@ const NPSP_ENTITIES = {
           "npo02__household__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RLLP_OppRollup_UTIL.cls",
-        "description": ""
+        "description": "A large utility class at 959 lines that provides shared helper functions for the Legacy rollup engine, including rollup variable setup, record type detection, multi-currency handling, and individual Account identification. It determines which Contacts and Accounts need rollup processing and prepares Opportunity data for rollup calculation. This utility is consumed by RLLP_OppRollup and the Legacy rollup batch jobs."
       },
       {
         "name": "RLLP_OppSoftCreditRollup_BATCH",
@@ -12113,7 +12131,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RLLP_OppSoftCreditRollup_BATCH.cls",
-        "description": ""
+        "description": "A Legacy batch job that calculates Soft Credit rollup values for Contact records using the pre-CRLP rollup engine. It processes Contacts in batch scope and delegates to the Legacy soft credit rollup logic for calculation. This batch is superseded by CRLP_Contact_SoftCredit_BATCH when Customizable Rollups are enabled."
       }
     ],
     "objects": [],
@@ -12135,7 +12153,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/EP_EngagementPlanTaskValidation_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that validates Engagement_Plan_Task__c records before they are saved. It enforces business rules such as ensuring task dependencies form valid hierarchies and that required fields like Days_After__c are properly set. Runs via the TDTM framework on the Engagement_Plan_Task__c object to prevent invalid task configurations."
       },
       {
         "name": "EP_EngagementPlans_TDTM",
@@ -12149,7 +12167,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/EP_EngagementPlans_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that fires on Engagement_Plan__c record events to create the associated standard Salesforce Task records from the plan template. It reads the linked Engagement_Plan_Template__c and generates tasks for the target Contact, Account, Opportunity, or other object. Coordinates with EP_Task_UTIL for task creation and assignment logic."
       },
       {
         "name": "EP_EngagementPlans_UTIL",
@@ -12164,7 +12182,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/EP_EngagementPlans_UTIL.cls",
-        "description": ""
+        "description": "Utility class that provides helper methods for resolving engagement plan target objects and owner assignment paths. Its getTargetObjectField method maps the plan to the correct lookup field (Contact__c, Account__c, etc.), while getOwnerIdPath determines the ownership chain. Used by EP_EngagementPlans_TDTM and other EP classes to handle polymorphic target resolution."
       },
       {
         "name": "EP_ManageEPTemplate_CTRL",
@@ -12183,7 +12201,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/EP_ManageEPTemplate_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller (628 lines) for the Engagement Plan Template management UI, enabling admins to build hierarchical task templates. It provides methods to initialize the task wrapper hierarchy, add tasks, add dependent tasks, and delete tasks, all within a tree structure. Handles the save and close workflow that persists the complete Engagement_Plan_Template__c and its child Engagement_Plan_Task__c records."
       },
       {
         "name": "EP_TaskDependency_TDTM",
@@ -12197,7 +12215,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/EP_TaskDependency_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that manages parent-child task dependencies when Engagement Plan Tasks are updated. When a parent task is completed, it activates dependent child tasks by updating their status and due dates. Ensures the sequential task workflow defined in the engagement plan template is honored at runtime."
       },
       {
         "name": "EP_TaskRollup_TDTM",
@@ -12211,7 +12229,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/EP_TaskRollup_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that maintains rollup summary counts on Engagement_Plan__c when its child tasks change. It recalculates fields like Completed_Tasks__c and Total_EP_Tasks__c after task inserts, updates, or deletes. Keeps the plan record's progress metrics accurate without requiring formula fields or declarative rollups."
       },
       {
         "name": "EP_Task_UTIL",
@@ -12230,7 +12248,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/EP_Task_UTIL.cls",
-        "description": ""
+        "description": "Utility class (370 lines) that handles the core logic for creating, assigning, activating, and deactivating standard Salesforce Tasks from Engagement Plan Task templates. It calculates activity dates using Days_After__c, resolves task assignment based on the plan's default assignee settings, and manages task status transitions. Serves as the shared workhorse called by multiple EP TDTM handlers."
       }
     ],
     "objects": [
@@ -12323,7 +12341,7 @@ const NPSP_ENTITIES = {
             "field": "Parent_Task__c"
           }
         ],
-        "description": "",
+        "description": "Custom object representing an individual task template within an Engagement Plan Template, defining what action should be taken and when. It supports parent-child dependencies via the Parent_Task__c self-lookup, with Days_After__c controlling relative scheduling. Has a master-detail relationship to Engagement_Plan_Template__c and includes fields for priority, status, type, reminder settings, and assignee.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Engagement_Plan_Task__c"
       },
       {
@@ -12435,7 +12453,7 @@ const NPSP_ENTITIES = {
             "field": "Recurring_Donation__c"
           }
         ],
-        "description": "",
+        "description": "Custom object representing an active instance of an engagement plan applied to a specific record such as a Contact, Account, Opportunity, Campaign, Case, or Recurring Donation. It has a master-detail relationship to Engagement_Plan_Template__c and lookup relationships to each supported target object. Tracks progress through Completed_Tasks__c, Total_EP_Tasks__c, and Status__c fields.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Engagement_Plan__c"
       }
     ],
@@ -12453,7 +12471,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_EngagementPlan.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_EngagementPlan.trigger",
+        "description": "TDTM trigger on the Engagement_Plan__c object that fires on all standard DML events (before/after insert, update, delete, and undelete). It delegates processing to registered TDTM handlers like EP_EngagementPlans_TDTM based on the Trigger_Handler__c configuration. Serves as the single trigger entry point for all engagement plan record lifecycle events."
       },
       {
         "name": "TDTM_EngagementPlanTask",
@@ -12468,7 +12487,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_EngagementPlanTask.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_EngagementPlanTask.trigger",
+        "description": "TDTM trigger on the Engagement_Plan_Task__c object that fires on all standard DML events (before/after insert, update, delete, and undelete). It routes processing to handlers like EP_EngagementPlanTaskValidation_TDTM, EP_TaskDependency_TDTM, and EP_TaskRollup_TDTM. Provides the single trigger entry point for all engagement plan task lifecycle events."
       }
     ],
     "lwcs": [],
@@ -12488,7 +12508,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ERR_AsyncErrors.cls",
-        "description": ""
+        "description": "Queueable class that processes errors generated by asynchronous operations such as batch jobs and future methods. It runs in an async context to capture and persist errors that occur outside the standard synchronous trigger execution. Works with ERR_Handler to route async errors into the Error__c logging pipeline."
       },
       {
         "name": "ERR_AsyncErrors_SCHED",
@@ -12502,7 +12522,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ERR_AsyncErrors_SCHED.cls",
-        "description": ""
+        "description": "Schedulable class that periodically invokes ERR_AsyncErrors to check for and process unhandled asynchronous errors. It runs on a configurable schedule defined in NPSP settings, using the Async_Error_Check_Last_Run__c timestamp to track its last execution. Serves as the cron entry point that keeps the async error pipeline running on a regular cadence."
       },
       {
         "name": "ERR_ExceptionData",
@@ -12516,7 +12536,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ERR_ExceptionData.cls",
-        "description": ""
+        "description": "Data wrapper class that serializes exception information into a structured JSON string via its createExceptionWrapperJSONString method. It captures key exception attributes such as message, type, and stack trace into a transportable format. Used by the error framework to package exception details before logging or notification."
       },
       {
         "name": "ERR_ExceptionHandler",
@@ -12531,7 +12551,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ERR_ExceptionHandler.cls",
-        "description": ""
+        "description": "Utility class that normalizes and formats exception messages for display to users. Its beautifyExceptionMessage method cleans up raw Apex exception text, and isHandledException determines whether an exception has already been processed by the framework. Acts as a filter layer between raw exceptions and the user-facing error output."
       },
       {
         "name": "ERR_Handler",
@@ -12554,7 +12574,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ERR_Handler.cls",
-        "description": ""
+        "description": "Core error processing engine for NPSP at 611 lines, responsible for capturing, categorizing, and routing errors from DML operations, triggers, and batch jobs. It provides methods like processError, processErrors, and getDmlResultErrors to handle both single and bulk error scenarios. Coordinates with ERR_Notifier for email alerts and ERR_LogService for persistence to Error__c records."
       },
       {
         "name": "ERR_Handler_API",
@@ -12568,7 +12588,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ERR_Handler_API.cls",
-        "description": ""
+        "description": "Public API facade that exposes a simplified processError method for external code and managed package consumers. It delegates to ERR_Handler internally, providing a stable interface that shields callers from internal framework changes. Intended for use by customizations or integrations that need to log errors through the NPSP error framework."
       },
       {
         "name": "ERR_LogService",
@@ -12586,7 +12606,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ERR_LogService.cls",
-        "description": ""
+        "description": "Service class that manages the persistence layer for error records, providing methods to add, retrieve, and process errors against the Error__c object. It maintains an in-memory collection of errors and flushes them to the database in bulk. Serves as the bridge between the in-memory error processing in ERR_Handler and the permanent Error__c storage."
       },
       {
         "name": "ERR_Log_CTRL",
@@ -12600,7 +12620,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ERR_Log_CTRL.cls",
-        "description": ""
+        "description": "Visualforce or Lightning controller that exposes error log data for display in the NPSP Error Log UI. Its getData method retrieves Error__c records for rendering in the admin interface. Provides the server-side backing for administrators reviewing and managing logged errors."
       },
       {
         "name": "ERR_Notifier",
@@ -12614,7 +12634,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ERR_Notifier.cls",
-        "description": ""
+        "description": "Handles email notification delivery for NPSP errors, sending digest-style error summaries to configured recipients. It reads Error_Notifications_On__c and Error_Notifications_To__c from Error_Settings__c to determine whether and where to send alerts. Typically invoked by ERR_Handler after errors are processed, checking the Email_Sent__c flag to avoid duplicate notifications."
       },
       {
         "name": "ERR_RecordError",
@@ -12635,7 +12655,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/ERR_RecordError.cls",
-        "description": ""
+        "description": "Exception subclass (598 lines) that associates errors with specific SObject records, tracking which records failed and why. It maintains collections of existing and new errors per record, with methods to add, clear, and process record-level errors. Used during bulk DML operations to map failures back to individual records for targeted error reporting."
       }
     ],
     "objects": [
@@ -12706,7 +12726,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom Settings object (hierarchy type) that stores org-wide configuration for the NPSP error handling framework. Key fields include Disable_Error_Handling__c, Store_Errors_On__c, Error_Notifications_On__c, and Error_Notifications_To__c, which control whether errors are captured, stored, and who receives notifications. Also manages flags for debug mode, duplicate rule behavior, and the scheduling of default NPSP jobs.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Error_Settings__c"
       },
       {
@@ -12782,7 +12802,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom object that serves as the persistent error log for all NPSP errors, storing one record per error occurrence. Each record captures Context_Type__c, Error_Type__c, Full_Message__c, Stack_Trace__c, and a link to the Related_Record_ID__c that caused the error. Includes tracking fields like Email_Sent__c and Retry_Pending__c to coordinate notification delivery and automatic retry of failed operations.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Error__c"
       }
     ],
@@ -12791,7 +12811,7 @@ const NPSP_ENTITIES = {
       {
         "name": "errRecordLog",
         "imports": [],
-        "description": "",
+        "description": "Lightning Web Component that provides a user interface for viewing and managing Error__c records. It works with ERR_Log_CTRL to display error details including timestamps, error types, messages, and related record links. Gives administrators a dedicated LWC-based experience for monitoring NPSP error activity.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/errRecordLog"
       }
     ],
@@ -12818,7 +12838,7 @@ const NPSP_ENTITIES = {
           "npsp__Contact__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/LVL_LevelAssign_BATCH.cls",
-        "description": ""
+        "description": "Batch Apex class (459 lines, extends Exception) that evaluates Contacts and Accounts against defined Level__c thresholds and assigns the appropriate level. It queries Level__c records to build ladders of thresholds, then processes records in batches to update level fields on the target objects. Invoked on a schedule by LVL_LevelAssign_SCHED and can also be run manually from NPSP settings."
       },
       {
         "name": "LVL_LevelAssign_SCHED",
@@ -12833,7 +12853,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/LVL_LevelAssign_SCHED.cls",
-        "description": ""
+        "description": "Schedulable class that serves as the cron entry point for running the level assignment batch job on a recurring schedule. Its execute method instantiates and launches LVL_LevelAssign_BATCH with the configured batch size. Registered as one of NPSP's default scheduled jobs, running periodically to keep donor levels current."
       },
       {
         "name": "LVL_LevelEdit_CTRL",
@@ -12849,7 +12869,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/LVL_LevelEdit_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller for the Level__c record editing interface, providing save, save-and-new, and target-changed functionality. Its targetChanged method dynamically updates available source fields and level fields when the administrator switches the target object. Enables administrators to define level thresholds, source fields, and engagement plan associations through a guided UI."
       },
       {
         "name": "LVL_Level_TDTM",
@@ -12863,7 +12883,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/LVL_Level_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that validates Level__c records on before insert and before update events. It enforces rules such as ensuring minimum amount is less than maximum amount, verifying the target object and source field are valid, and checking for overlapping level ranges. Prevents invalid level configurations from being saved to the database."
       }
     ],
     "objects": [
@@ -12934,7 +12954,7 @@ const NPSP_ENTITIES = {
             "field": "Engagement_Plan_Template__c"
           }
         ],
-        "description": "",
+        "description": "Custom object that defines a donor level tier with minimum and maximum amount thresholds based on a configurable source field on the target object (Contact or Account). It includes fields for the Target__c object, Source_Field__c, Level_Field__c, Previous_Level_Field__c, and an optional lookup to Engagement_Plan_Template__c for automated plan assignment. Processed by LVL_LevelAssign_BATCH to assign and update levels based on giving history.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Level__c"
       }
     ],
@@ -12947,7 +12967,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Level.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Level.trigger",
+        "description": "TDTM trigger on the Level__c object that fires on before insert and before update events. It dispatches processing to LVL_Level_TDTM for validation of level configurations including threshold ranges and target object compatibility. Serves as the single trigger entry point for level record creation and modification."
       }
     ],
     "lwcs": [],
@@ -12978,7 +12999,7 @@ const NPSP_ENTITIES = {
           "npo02__Soft_Credit_Roles__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PSC_ManageSoftCredits_CTRL.cls",
-        "description": ""
+        "description": "Visualforce controller (637 lines) for the Manage Soft Credits page, enabling users to add, edit, and remove Partial_Soft_Credit__c records for an Opportunity. It provides methods to check full and partial credit totals, add new soft credit rows, delete rows, and save changes. Reads Opportunity Contact Role configuration from npe01 and npo02 settings to enforce soft credit role rules."
       },
       {
         "name": "PSC_Opportunity_TDTM",
@@ -12993,7 +13014,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PSC_Opportunity_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that fires on Opportunity record changes to synchronize currency and field values on related Partial_Soft_Credit__c and Account_Soft_Credit__c records. Its updateSoftCreditCurrencyFromParent method ensures soft credit amounts reflect the correct currency when an Opportunity's currency changes in multi-currency orgs. Keeps soft credit records consistent with their parent Opportunity."
       },
       {
         "name": "PSC_PartialSoftCredit_TDTM",
@@ -13007,7 +13028,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PSC_PartialSoftCredit_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler for the Partial_Soft_Credit__c object that manages the lifecycle of partial soft credit records. It enforces validation rules, synchronizes Contact_Name__c and Role_Name__c from the related Opportunity Contact Role, and maintains data integrity on insert and update. Ensures partial soft credits stay aligned with their parent Opportunity and Contact relationships."
       }
     ],
     "objects": [
@@ -13053,7 +13074,7 @@ const NPSP_ENTITIES = {
             "field": "Opportunity__c"
           }
         ],
-        "description": "",
+        "description": "Custom object that tracks soft credit allocations at the Account level for a given Opportunity. It stores the credited Account via a lookup, the soft credit Amount__c, the parent Opportunity via a master-detail relationship, and the Role__c describing the Account's involvement. Used by rollup calculations to include organizational soft credit amounts in Account giving totals.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Account_Soft_Credit__c"
       },
       {
@@ -13110,7 +13131,7 @@ const NPSP_ENTITIES = {
             "field": "Opportunity__c"
           }
         ],
-        "description": "",
+        "description": "Custom object that tracks partial soft credit allocations at the Contact level, allowing a portion of an Opportunity's amount to be credited to additional Contacts. It has master-detail relationships to both Contact and Opportunity, with fields for Amount__c, Contact_Role_ID__c, and Role_Name__c. Managed through the PSC_ManageSoftCredits_CTRL interface and kept in sync by PSC_PartialSoftCredit_TDTM.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Partial_Soft_Credit__c"
       }
     ],
@@ -13128,7 +13149,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_AccountSoftCredit.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_AccountSoftCredit.trigger",
+        "description": "TDTM trigger on the Account_Soft_Credit__c object that fires on all standard DML events (before/after insert, update, delete, and undelete). It dispatches processing to registered TDTM handlers for validation, rollup recalculation, and data synchronization. Provides the single trigger entry point for all Account-level soft credit record operations."
       },
       {
         "name": "TDTM_PartialSoftCredit",
@@ -13143,7 +13165,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_PartialSoftCredit.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_PartialSoftCredit.trigger",
+        "description": "TDTM trigger on the Partial_Soft_Credit__c object that fires on all standard DML events (before/after insert, update, delete, and undelete). It routes processing to PSC_PartialSoftCredit_TDTM and other registered handlers for validation and field synchronization. Serves as the single trigger entry point for all Contact-level partial soft credit record operations."
       }
     ],
     "lwcs": [],
@@ -13179,7 +13202,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PS_CommitmentRequest.cls",
-        "description": ""
+        "description": "Builder class (880 lines) that constructs HTTP request payloads for creating, updating, and pausing Elevate commitment (recurring donation) records. It maps NPSP Recurring Donation fields like npe03__Amount__c, npe03__Installment_Period__c, and npe03__Contact__c to the Elevate API schema. Provides fluent methods like withStartTimestamp and withReason to configure commitment lifecycle operations."
       },
       {
         "name": "PS_GatewayManagement",
@@ -13196,7 +13219,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PS_GatewayManagement.cls",
-        "description": ""
+        "description": "Configuration management class for Elevate payment gateway settings, handling gateway ID storage and retrieval. It provides methods to set and get the active gateway ID and to check whether gateway assignment is enabled. Used by the Elevate integration layer to determine which payment gateway should process transactions."
       },
       {
         "name": "PS_GatewayService",
@@ -13211,7 +13234,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PS_GatewayService.cls",
-        "description": ""
+        "description": "Service class that communicates with the Elevate API to retrieve available payment gateways for a given merchant. Its getGatewaysByMerchant method builds and sends the API request, returning the list of configured gateways. Works with PS_IntegrationServiceConfig for endpoint resolution and authentication."
       },
       {
         "name": "PS_IntegrationService",
@@ -13225,7 +13248,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PS_IntegrationService.cls",
-        "description": ""
+        "description": "Core service class (extends Exception) that manages the connection configuration between NPSP and the Salesforce Elevate platform. Its setConfiguration method establishes the integration parameters including API keys, endpoints, and merchant credentials. Serves as the foundational integration layer that other PS_ classes depend on for authenticated API communication."
       },
       {
         "name": "PS_IntegrationServiceConfig",
@@ -13248,7 +13271,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PS_IntegrationServiceConfig.cls",
-        "description": ""
+        "description": "Configuration reader class (330 lines) that provides access to all Elevate integration settings such as API keys, endpoint URLs, client IDs, merchant IDs, and gateway IDs. It includes permission checks via hasIntegrationPermissions and status checks via isIntegrationEnabled and getIsActiveFlag. Acts as the single source of truth for Elevate configuration consumed by PS_Request, PS_CommitmentRequest, and PS_GatewayService."
       },
       {
         "name": "PS_ProductMetadata",
@@ -13265,7 +13288,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PS_ProductMetadata.cls",
-        "description": ""
+        "description": "Data class that builds and manages product metadata payloads sent to the Elevate platform alongside payment requests. It supports fluent construction with withOrigin and withCampaign methods and can merge with existing metadata via mergeWithExistingMetadata. Used to attach NPSP-specific context such as campaign attribution and origin tracking to Elevate transactions."
       },
       {
         "name": "PS_Request",
@@ -13288,7 +13311,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/PS_Request.cls",
-        "description": ""
+        "description": "HTTP request builder class (487 lines) that constructs authenticated API calls to the Salesforce Elevate platform. It provides a fluent interface with methods like withMethod, withEndpoint, withCommitmentId, withBody, and build to assemble requests with proper headers and timeouts. Serves as the transport layer used by PS_CommitmentRequest, PS_GatewayService, and other Elevate service classes."
       }
     ],
     "objects": [],
@@ -13317,7 +13340,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ApiService.cls",
-        "description": ""
+        "description": "Provides the external API layer for Enhanced Recurring Donations, enabling programmatic queries against schedules and installments, as well as pause operations. It validates pause data and populates default field values, serving as the primary integration point for external systems interacting with the RD2 domain. Extends Exception to surface structured error messages through the addError method."
       },
       {
         "name": "RD2_AppView",
@@ -13335,7 +13358,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_AppView.cls",
-        "description": ""
+        "description": "Wraps a Recurring Donation record into a lightweight view model used by the entry form LWC components. It provides builder-style methods to associate a parent record and set creation defaults. This class acts as the data transfer object between the RD2_EntryFormController and the front-end Lightning Web Components."
       },
       {
         "name": "RD2_CancelCommitmentService",
@@ -13352,7 +13375,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_CancelCommitmentService.cls",
-        "description": ""
+        "description": "Handles cancellation of Elevate payment commitments linked to Enhanced Recurring Donations. It retrieves the associated Recurring Donation record and sends cancellation requests to the Elevate payment processing platform. This service is invoked when a donor or admin closes an RD that has an active Elevate commitment."
       },
       {
         "name": "RD2_ChangeLog",
@@ -13371,7 +13394,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ChangeLog.cls",
-        "description": ""
+        "description": "Builds a structured view of field-level changes on a Recurring Donation record by comparing old and new values for key fields like Amount, Installments, Campaign, and Installment Period. It produces a change view that feeds the change log audit trail stored in RecurringDonationChangeLog__c. This class works in coordination with RD2_ChangeLogService to detect and record modifications."
       },
       {
         "name": "RD2_ChangeLogController",
@@ -13385,7 +13408,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ChangeLogController.cls",
-        "description": ""
+        "description": "Serves as the Apex controller for the rd2ChangeLog Lightning Web Component, exposing the getChangeLog method via @AuraEnabled. It delegates to the change log service layer to retrieve formatted change history entries. This is a thin controller that bridges the LWC UI with the server-side change log data."
       },
       {
         "name": "RD2_ChangeLogSelector",
@@ -13401,7 +13424,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ChangeLogSelector.cls",
-        "description": ""
+        "description": "Queries RecurringDonationChangeLog__c records with support for filtering by change type and limiting the number of returned entries. It provides a fluent interface via withRecordLimit and withChangeTypeFilter for building targeted queries. This selector is used by the change log service and controller layers to retrieve audit records."
       },
       {
         "name": "RD2_ChangeLogService",
@@ -13426,7 +13449,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ChangeLogService.cls",
-        "description": ""
+        "description": "Orchestrates the creation and persistence of change log records when Recurring Donation fields are modified. It detects field-level changes, initializes new change log entries, and performs bulk inserts into RecurringDonationChangeLog__c. This service tracks changes to Amount, Installment Period, Installments, Campaign, and other key fields for audit compliance."
       },
       {
         "name": "RD2_ChangeLogView",
@@ -13438,7 +13461,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ChangeLogView.cls",
-        "description": ""
+        "description": "A simple data transfer object that represents the UI-ready view of a single change log entry. It holds formatted field values for display in the rd2ChangeLog Lightning Web Component. This class contains no business logic, serving purely as a container for presentation data."
       },
       {
         "name": "RD2_ChangeView",
@@ -13452,7 +13475,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ChangeView.cls",
-        "description": ""
+        "description": "A lightweight view model that represents the summary of changes made to a single Recurring Donation record. It is produced by RD2_ChangeLog.getChangeView and consumed by the change log UI components. The class references npe03__Recurring_Donation__c to carry the record context alongside the change data."
       },
       {
         "name": "RD2_Commitment",
@@ -13466,7 +13489,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_Commitment.cls",
-        "description": ""
+        "description": "Represents a payment commitment in the Elevate payment processing system, linked to an Enhanced Recurring Donation. It serves as the data model for Elevate-specific commitment details associated with npe03__Recurring_Donation__c records. This class is used by RD2_CommitmentService and RD2_CancelCommitmentService when syncing with the external payment platform."
       },
       {
         "name": "RD2_CommitmentService",
@@ -13486,7 +13509,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_CommitmentService.cls",
-        "description": ""
+        "description": "Manages the lifecycle of Elevate payment commitments, including validation, adjustment, and error logging for commitment operations. It verifies that the Recurring Donation has valid Contact or Organization donor references before sending data to Elevate. This service coordinates with RD2_ElevateIntegrationService to ensure commitment state stays synchronized between NPSP and the Elevate platform."
       },
       {
         "name": "RD2_Constants",
@@ -13498,7 +13521,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_Constants.cls",
-        "description": ""
+        "description": "Defines constant values, picklist options, and enumerated types used throughout the Enhanced Recurring Donations domain. It provides a centralized location for status values, installment period names, and other domain-specific literals. All RD2 classes reference these constants to ensure consistent behavior and avoid hardcoded strings."
       },
       {
         "name": "RD2_CustomFieldMapper",
@@ -13521,7 +13544,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_CustomFieldMapper.cls",
-        "description": ""
+        "description": "Maps custom fields between Recurring Donation records and their associated Opportunity records using the npe03__Custom_Field_Mapping__c configuration. It reads admin-defined mappings to determine which RD fields should propagate to Opportunities and detects when key mapped fields have changed. This mapper is called during Opportunity creation and updates by RD2_OpportunityService to keep custom field values in sync."
       },
       {
         "name": "RD2_DataMigrationBase_BATCH",
@@ -13558,7 +13581,7 @@ const NPSP_ENTITIES = {
           "npe03__Total__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_DataMigrationBase_BATCH.cls",
-        "description": ""
+        "description": "Provides the shared batch processing framework for migrating Legacy Recurring Donation records to the Enhanced (RD2) format. It handles error aggregation, batch execution flow, and field mapping across the many Legacy RD fields like Open_Ended_Status, Schedule_Type, and Installment_Amount. Both the dry-run and actual migration batch classes extend this base to reuse its core logic."
       },
       {
         "name": "RD2_DataMigrationDryRun_BATCH",
@@ -13572,7 +13595,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_DataMigrationDryRun_BATCH.cls",
-        "description": ""
+        "description": "Executes a simulated migration of Legacy Recurring Donations to the Enhanced format without committing any DML changes. It extends RD2_DataMigrationBase_BATCH to validate that records can be successfully converted and surfaces any errors that would occur during actual migration. Admins use this batch to preview migration results before enabling Enhanced Recurring Donations."
       },
       {
         "name": "RD2_DataMigrationEnablement",
@@ -13590,7 +13613,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donations_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_DataMigrationEnablement.cls",
-        "description": ""
+        "description": "Tracks and persists the state of the data migration process through summary records stored in the Recurring Donations settings. It reads and writes migration summary types to npe03__Recurring_Donations_Settings__c so that the enablement UI can display progress. This class supports the multi-step migration workflow managed by RD2_EnablementDelegate_CTRL."
       },
       {
         "name": "RD2_DataMigrationMapper",
@@ -13619,7 +13642,7 @@ const NPSP_ENTITIES = {
           "npe03__Value__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_DataMigrationMapper.cls",
-        "description": ""
+        "description": "Converts individual Legacy Recurring Donation records into the Enhanced RD2 data format, mapping fields like Amount, Schedule_Type, Installment_Period, and Open_Ended_Status to their new equivalents. It uses related Opportunity data to determine the correct conversion path and handles custom installment settings. This mapper is the core transformation engine called by both the dry-run and actual migration batch jobs."
       },
       {
         "name": "RD2_DataMigration_BATCH",
@@ -13633,7 +13656,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_DataMigration_BATCH.cls",
-        "description": ""
+        "description": "Performs the actual DML migration of Legacy Recurring Donations to Enhanced format by extending RD2_DataMigrationBase_BATCH. Unlike the dry-run batch, this class commits the converted records to the database. It is executed after a successful dry run confirms that records are ready for migration."
       },
       {
         "name": "RD2_DataRegulationService",
@@ -13654,7 +13677,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_DataRegulationService.cls",
-        "description": ""
+        "description": "Enforces data integrity rules on Recurring Donation records, particularly around Elevate integration markers and installment period validation. It adjusts record values to comply with business rules and can mark or unmark RDs as Elevate-managed based on their CommitmentId. This service is invoked during trigger processing via the TDTM framework to regulate data before persistence."
       },
       {
         "name": "RD2_DatabaseService",
@@ -13675,7 +13698,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_DatabaseService.cls",
-        "description": ""
+        "description": "Provides a wrapper around standard Salesforce DML operations (insert, update, delete) with built-in error handling and result tracking for Recurring Donation processing. It captures which records failed and which were successfully created, enabling the calling services to respond appropriately. This service is injected into RD2_OpportunityEvaluationService and other processing classes to centralize database operations."
       },
       {
         "name": "RD2_Donor",
@@ -13693,7 +13716,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_Donor.cls",
-        "description": ""
+        "description": "Resolves the donor (Contact or Account) associated with a Recurring Donation record by implementing the IGateway interface. It queries donor records using the Contact and Organization lookup fields on npe03__Recurring_Donation__c. The RD2_NamingService and other components use this class to retrieve donor details for name generation and validation."
       },
       {
         "name": "RD2_ERecurringDonationsSelector",
@@ -13717,7 +13740,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ERecurringDonationsSelector.cls",
-        "description": ""
+        "description": "Queries Enhanced Recurring Donation records with their related schedule and payment summary fields for use in the Elevate table view. It selects fields like Amount, Contact, Installment Period, Last Payment Date, and Total Paid Installments. This selector supports the RD2_ETableController by providing the dataset needed for the Elevate recurring donations management UI."
       },
       {
         "name": "RD2_ETableController",
@@ -13742,7 +13765,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ETableController.cls",
-        "description": ""
+        "description": "Serves as the Apex controller for the Elevate-specific Recurring Donations table view, providing methods to retrieve table data and upsert donation records. It queries RD records with payment summary fields and supports inline editing of Elevate-managed donations. This controller bridges the Elevate management LWC with the RD2 data layer."
       },
       {
         "name": "RD2_ElevateInformation_CTRL",
@@ -13760,7 +13783,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ElevateInformation_CTRL.cls",
-        "description": ""
+        "description": "Exposes Apex methods for the rd2ElevateInformation Lightning Web Component, providing Elevate configuration data, the latest error message, and the most recent paid Opportunity for a Recurring Donation. It enables the UI to display payment processing status and card information from the Elevate platform. This controller reads from npe03__Recurring_Donation__c and related records to surface integration details."
       },
       {
         "name": "RD2_ElevateIntegrationService",
@@ -13785,7 +13808,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ElevateIntegrationService.cls",
-        "description": ""
+        "description": "Acts as the central integration layer between Enhanced Recurring Donations and the Salesforce Elevate payment processing platform. It determines whether Elevate integration is enabled, checks permissions for updates, detects reactivation of Elevate records, and matches Recurring Donations to Opportunities bidirectionally. This service is invoked during trigger processing and batch operations to coordinate data flow between NPSP and Elevate."
       },
       {
         "name": "RD2_EnablementDelegate_CTRL",
@@ -13811,7 +13834,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_EnablementDelegate_CTRL.cls",
-        "description": ""
+        "description": "Controls the multi-step enablement wizard for upgrading from Legacy to Enhanced Recurring Donations, extending STG_Panel and implementing Queueable. It manages the enablement state machine, launches MetaDeploy packages, confirms deployment results, and triggers the data migration process. This is the primary controller behind the NPSP Settings UI page for enabling Enhanced Recurring Donations."
       },
       {
         "name": "RD2_EnablementService",
@@ -13831,7 +13854,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_EnablementService.cls",
-        "description": ""
+        "description": "Provides singleton-pattern access to the enablement state of Enhanced Recurring Donations, determining whether RD2 is ready, enabled, or in fixed-length mode. It reads configuration from the Recurring Donations settings to answer feature-flag queries used throughout the domain. Other RD2 classes call getInstance() to check whether Enhanced RD logic should execute."
       },
       {
         "name": "RD2_EntryFormController",
@@ -13860,7 +13883,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_EntryFormController.cls",
-        "description": ""
+        "description": "Serves as the Apex backend for the rd2EntryForm Lightning Web Component, handling record creation, updates, and Elevate commitment coordination. It provides the initial view with default values, saves Recurring Donation records, and delegates payment commitment handling to the commitment service. This controller manages the full lifecycle of the RD entry form from initialization through save."
       },
       {
         "name": "RD2_FieldChangeView",
@@ -13874,7 +13897,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_FieldChangeView.cls",
-        "description": ""
+        "description": "A data transfer object that represents a single field-level change within a Recurring Donation change log entry, including old value, new value, and display type. It is consumed by the rd2ChangeEntryItem LWC to render individual field changes. The setDisplayType method configures how the value should be formatted in the UI."
       },
       {
         "name": "RD2_NamingService",
@@ -13899,7 +13922,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_NamingService.cls",
-        "description": ""
+        "description": "Automatically generates and updates the Name field on Recurring Donation records based on donor name, amount, and installment period. It supports bulk name generation triggered by field changes and uses donor data resolved through the RD2_Donor class. This service is invoked by the RD2_RecurringDonations_TDTM trigger handler to keep record names in sync with donation details."
       },
       {
         "name": "RD2_OpportunityEvaluationService",
@@ -13930,7 +13953,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_OpportunityEvaluationService.cls",
-        "description": ""
+        "description": "Evaluates which Opportunities need to be created, updated, or voided based on changes to Enhanced Recurring Donation schedules. It processes RD records in both trigger and batch contexts, detecting key field changes and delegating to RD2_OpportunityService for the actual DML. At 713 lines, this is one of the largest classes in the domain and serves as the primary orchestrator of Opportunity lifecycle management for RD2."
       },
       {
         "name": "RD2_OpportunityEvaluation_BATCH",
@@ -13947,7 +13970,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_OpportunityEvaluation_BATCH.cls",
-        "description": ""
+        "description": "Runs as a scheduled batch job to evaluate all active Enhanced Recurring Donations and create or update their installment Opportunities. It queries Recurring Donation records in batch scope and delegates processing to RD2_OpportunityEvaluationService. The finish method logs batch results including success and failure counts to the Recurring Donations settings."
       },
       {
         "name": "RD2_OpportunityMatcher",
@@ -13970,7 +13993,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_OpportunityMatcher.cls",
-        "description": ""
+        "description": "Matches existing Opportunity records to Recurring Donation installment schedules by comparing close dates, amounts, and open status. It supports filtering by year, current period, or all open Opportunities to determine which existing Opps correspond to which scheduled installments. RD2_OpportunityEvaluationService uses this matcher to decide whether to create new Opportunities or update existing ones."
       },
       {
         "name": "RD2_OpportunityService",
@@ -13997,7 +14020,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_OpportunityService.cls",
-        "description": ""
+        "description": "Performs the actual DML operations to create, update, and void Opportunities linked to Enhanced Recurring Donations. It populates Opportunity fields from RD and schedule data, sets Payment fields, and handles Campaign association. This service is called by RD2_OpportunityEvaluationService after the evaluation logic determines what changes are needed."
       },
       {
         "name": "RD2_PauseForm_CTRL",
@@ -14021,7 +14044,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_PauseForm_CTRL.cls",
-        "description": ""
+        "description": "Serves as the Apex controller for the rd2PauseForm Lightning Web Component, enabling donors and admins to pause and resume Recurring Donations. It retrieves pause data and installment schedules, then saves pause date ranges as schedule records via the RD2_ScheduleService. The controller validates the pause request against the current RD state before applying changes."
       },
       {
         "name": "RD2_QueryService",
@@ -14055,7 +14078,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_QueryService.cls",
-        "description": ""
+        "description": "Provides centralized SOQL query construction for Recurring Donation records with their related schedules, Opportunities, and payment data. It builds sub-queries for schedule and Opportunity child relationships and supports filtering by active, lapsed, and closed statuses. This service is consumed by batch jobs, trigger handlers, and UI controllers throughout the RD2 domain."
       },
       {
         "name": "RD2_QueueableService",
@@ -14077,7 +14100,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_QueueableService.cls",
-        "description": ""
+        "description": "Implements the Queueable interface to execute asynchronous operations for Enhanced Recurring Donations, including Opportunity evaluation, commitment cancellation, and name refreshes. It provides static entry points like enqueueOppEvalService that other trigger handlers and services call to defer heavy processing. This service prevents governor limit issues by moving Opportunity creation and naming operations to a separate transaction."
       },
       {
         "name": "RD2_RecordView",
@@ -14101,7 +14124,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_RecordView.cls",
-        "description": ""
+        "description": "A comprehensive data transfer object representing the full state of a Recurring Donation record for display in Lightning Web Components. It includes fields for Amount, Contact, Organization, Installment Period, Next Payment Date, Paid Amount, and Campaign. UI controllers like RD2_EntryFormController use this view to pass structured record data to the front-end."
       },
       {
         "name": "RD2_RecurringDonation",
@@ -14133,7 +14156,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_RecurringDonation.cls",
-        "description": ""
+        "description": "The core domain model class for Enhanced Recurring Donations, encapsulating business logic for a single RD record at 648 lines. It manages next donation date calculations, status revisions, annual value computation, year value tracking, and planned/paid installment counts. This class is instantiated throughout the domain whenever business rules need to be applied to an individual Recurring Donation."
       },
       {
         "name": "RD2_RecurringDonationsOpp_TDTM",
@@ -14156,7 +14179,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_RecurringDonationsOpp_TDTM.cls",
-        "description": ""
+        "description": "A TDTM trigger handler that fires on Opportunity DML events to re-evaluate Recurring Donation state when linked Opportunities change. It validates currency consistency between RDs and their Opportunities and determines which RD records need re-processing. This handler extends TDTM_Runnable and coordinates with RD2_OpportunityEvaluationService to keep RD summaries in sync."
       },
       {
         "name": "RD2_RecurringDonations_TDTM",
@@ -14177,7 +14200,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_RecurringDonations_TDTM.cls",
-        "description": ""
+        "description": "The primary TDTM trigger handler for Enhanced Recurring Donation record DML events, executing on insert, update, and delete operations. It orchestrates name auto-generation, data adjustment and validation, and Opportunity evaluation through the RD2 service layer. At 552 lines, this handler is the main entry point for all trigger-driven logic in the Enhanced RD domain."
       },
       {
         "name": "RD2_SaveRequest",
@@ -14202,7 +14225,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_SaveRequest.cls",
-        "description": ""
+        "description": "Converts user input from the rd2EntryForm LWC into a Recurring Donation SObject record ready for database persistence. It handles field mapping for Amount, Contact, Organization, Campaign, Installment Period, and Date Established, plus custom field permission checks. This class ensures that only createable fields are included in the save operation."
       },
       {
         "name": "RD2_SaveRequestHelper",
@@ -14218,7 +14241,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_SaveRequestHelper.cls",
-        "description": ""
+        "description": "A small utility class that provides a single helper method for setting individual field values on a Recurring Donation SObject record. It supports the RD2_SaveRequest class by handling dynamic field assignment. This helper exists to encapsulate the field-setting logic separately from the main save request transformation."
       },
       {
         "name": "RD2_ScheduleService",
@@ -14247,7 +14270,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ScheduleService.cls",
-        "description": ""
+        "description": "The largest class in the Recurring Donations domain at 1,295 lines, managing all aspects of installment schedule creation, visualization, and date calculation for Enhanced RDs. It builds new schedule records, calculates next donation dates, evaluates schedule end dates, and generates visualized installment projections. This service is the backbone of the RD2 scheduling engine, consumed by trigger handlers, batch jobs, and UI controllers."
       },
       {
         "name": "RD2_Settings",
@@ -14279,7 +14302,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donations_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_Settings.cls",
-        "description": ""
+        "description": "Provides singleton access to the Enhanced Recurring Donations configuration stored in npe03__Recurring_Donations_Settings__c. It exposes feature flags for change log enablement, close action behavior (deletion vs. Closed Lost vs. no action), status automation, and custom field set membership. All RD2 classes call RD2_Settings.getInstance() to read configuration that governs domain behavior."
       },
       {
         "name": "RD2_StatusAutomationService",
@@ -14302,7 +14325,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donations_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_StatusAutomationService.cls",
-        "description": ""
+        "description": "Manages the automatic transition of Recurring Donation status values based on configurable rules for lapsed and closed states. It validates automation settings, determines whether an RD should be marked as Lapsed or Closed based on days since last payment, and persists the settings. This service powers the rd2StatusAutomationSettings LWC configuration page."
       },
       {
         "name": "RD2_StatusAutomationSettings_CTRL",
@@ -14320,7 +14343,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donations_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_StatusAutomationSettings_CTRL.cls",
-        "description": ""
+        "description": "Serves as the Apex controller for the rd2StatusAutomationSettings Lightning Web Component, exposing methods to load and save status automation configuration. It reads from and writes to npe03__Recurring_Donations_Settings__c through the RD2_StatusAutomationService. This controller handles namespace resolution for the settings UI."
       },
       {
         "name": "RD2_StatusAutomationView",
@@ -14332,7 +14355,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_StatusAutomationView.cls",
-        "description": ""
+        "description": "A data transfer object representing the current state of Recurring Donation status automation settings for display in the configuration UI. It holds fields for lapsed and closed day thresholds and enabled flags. The rd2StatusAutomationSettings LWC consumes this view to render the settings form."
       },
       {
         "name": "RD2_StatusMapper",
@@ -14356,7 +14379,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_StatusMapper.cls",
-        "description": ""
+        "description": "Maps Recurring Donation status picklist values to their underlying state (Active, Lapsed, or Closed) using Custom Metadata Type records. It implements the Gateway interface to query status mapping records and provides methods to retrieve all status values grouped by state. This mapper is used throughout the RD2 domain to interpret status field values in business logic decisions."
       },
       {
         "name": "RD2_StatusMappingSettings_CTRL",
@@ -14381,7 +14404,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_StatusMappingSettings_CTRL.cls",
-        "description": ""
+        "description": "Controls the status mapping configuration page, extending STG_Panel and implementing MetadataDeploymentHandler to deploy status mapping Custom Metadata records. It loads current mappings, saves new mappings via the Metadata API, and tracks deployment status including success and error states. This controller supports the rd2StatusMappingSettings LWC used in NPSP Settings."
       },
       {
         "name": "RD2_SustainerEvaluationService",
@@ -14405,7 +14428,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_SustainerEvaluationService.cls",
-        "description": ""
+        "description": "Evaluates and updates the Sustainer field on Contact and Account records based on their association with active Enhanced Recurring Donations. It compares current sustainer status against the actual RD state and returns lists of Contacts and Accounts that need updates. This service runs in both trigger and batch contexts to keep donor sustainer designations accurate."
       },
       {
         "name": "RD2_UpdateCommitmentBulkService",
@@ -14422,7 +14445,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_UpdateCommitmentBulkService.cls",
-        "description": ""
+        "description": "Processes bulk updates to Elevate payment commitments when multiple Recurring Donations are modified simultaneously. It accepts a collection of commitments and sends batch update requests to the Elevate platform. This service handles the high-volume scenarios that the single-record RD2_CommitmentService cannot efficiently process."
       },
       {
         "name": "RD2_ValidationService",
@@ -14447,7 +14470,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_ValidationService.cls",
-        "description": ""
+        "description": "Enforces all business validation rules for Enhanced Recurring Donations during insert and update operations at 736 lines. It validates required fields, donor relationships, amount values, installment periods, campaign assignments, and date constraints. This service is called by the TDTM trigger handler and entry form controller to prevent invalid data from being saved."
       },
       {
         "name": "RD2_VisualizeScheduleController",
@@ -14477,7 +14500,7 @@ const NPSP_ENTITIES = {
           "npe03__Total_Paid_Installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_VisualizeScheduleController.cls",
-        "description": ""
+        "description": "Powers the rdScheduleVisualizer Lightning Web Component by generating projected installment data and active schedule views for a Recurring Donation. It builds column definitions, formats currency codes, checks field-level security, and assembles records for display in a data table. This controller provides both future installment projections and current schedule details to the UI."
       },
       {
         "name": "RD2_YearValueProcessor",
@@ -14494,7 +14517,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD2_YearValueProcessor.cls",
-        "description": ""
+        "description": "Calculates the current year and next year donation values for an Enhanced Recurring Donation based on its schedule and paid installments. It determines the start date for value calculation and projects future installment amounts across calendar or fiscal year boundaries. RD2_RecurringDonation uses this processor to populate the CurrentYearValue and NextYearValue fields."
       },
       {
         "name": "RD_AddDonationsBTN_CTRL",
@@ -14512,7 +14535,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD_AddDonationsBTN_CTRL.cls",
-        "description": ""
+        "description": "Controller for the Legacy Recurring Donations \"Add Donations\" Visualforce button that creates new Opportunity records from an existing RD. It validates that the Recurring Donation is in a valid state before redirecting to the donation creation flow. This controller is part of the Legacy RD (pre-RD2) feature set and is not used when Enhanced Recurring Donations are enabled."
       },
       {
         "name": "RD_CascadeDeleteLookups_TDTM",
@@ -14529,7 +14552,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD_CascadeDeleteLookups_TDTM.cls",
-        "description": ""
+        "description": "A TDTM trigger handler that manages cascade delete behavior when a Legacy Recurring Donation record is deleted. It extends CDL_CascadeDeleteLookups_TDTM to load related records and validate that deletion is permitted based on business rules. This handler ensures that child records like Opportunities maintain referential integrity when their parent RD is removed."
       },
       {
         "name": "RD_Constants",
@@ -14541,7 +14564,7 @@ const NPSP_ENTITIES = {
         "keyMethods": [],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD_Constants.cls",
-        "description": ""
+        "description": "Defines constant values and picklist options specific to Legacy Recurring Donations, separate from the RD2_Constants used by Enhanced RD. It contains status values, period names, and other literals referenced by Legacy RD classes. This class is smaller than its RD2 counterpart since Legacy RD has a simpler feature set."
       },
       {
         "name": "RD_InstallScript_BATCH",
@@ -14558,7 +14581,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD_InstallScript_BATCH.cls",
-        "description": ""
+        "description": "A batch job that runs during NPSP package installation to initialize or repair Recurring Donation data. It processes existing npe03__Recurring_Donation__c records to ensure they conform to the expected data model after package upgrades. The finish method handles any post-processing cleanup required by the installation."
       },
       {
         "name": "RD_RecurringDonations",
@@ -14626,7 +14649,7 @@ const NPSP_ENTITIES = {
           "npe03__total_paid_installments__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD_RecurringDonations.cls",
-        "description": ""
+        "description": "The original monolithic Legacy Recurring Donations class at 1,311 lines, handling Opportunity creation, contact role assignment, field synchronization, and record updates. It contains both synchronous and @future methods for inserting Opportunities on RD insert, updating existing Opportunities, and managing contact roles. This class predates the Enhanced RD2 architecture and is bypassed when Enhanced Recurring Donations are enabled."
       },
       {
         "name": "RD_RecurringDonations_BATCH",
@@ -14647,7 +14670,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donations_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD_RecurringDonations_BATCH.cls",
-        "description": ""
+        "description": "The Legacy Recurring Donations batch job that processes open-ended RD records to create new installment Opportunities on a scheduled basis. It reads the Open_Ended_Status field to filter active records and logs batch run statistics to npe03__Recurring_Donations_Settings__c. This batch is replaced by RD2_OpportunityEvaluation_BATCH when Enhanced Recurring Donations are enabled."
       },
       {
         "name": "RD_RecurringDonations_Opp_TDTM",
@@ -14664,7 +14687,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donation__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD_RecurringDonations_Opp_TDTM.cls",
-        "description": ""
+        "description": "A Legacy TDTM trigger handler that fires on Opportunity events to update the parent Recurring Donation record when linked Opportunities change. It checks the Open_Ended_Status of the parent RD to determine whether rollup recalculation is needed. This handler extends TDTM_Runnable and is superseded by RD2_RecurringDonationsOpp_TDTM in Enhanced mode."
       },
       {
         "name": "RD_RecurringDonations_TDTM",
@@ -14688,7 +14711,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donations_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD_RecurringDonations_TDTM.cls",
-        "description": ""
+        "description": "The Legacy TDTM trigger handler for Recurring Donation record DML events, validating installment periods, donor references, and maximum donation limits. It checks against Custom_Installment_Settings and enforces that the Contact or Organization lookup is populated. This handler extends TDTM_Runnable and is replaced by RD2_RecurringDonations_TDTM when Enhanced Recurring Donations are enabled."
       },
       {
         "name": "RD_RecurringDonations_TEST2",
@@ -14724,7 +14747,7 @@ const NPSP_ENTITIES = {
           "npe03__Recurring_Donations_Settings__c"
         ],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/RD_RecurringDonations_TEST2.cls",
-        "description": ""
+        "description": "A comprehensive test class covering Legacy Recurring Donations batch processing and concurrency scenarios. It verifies that the batch job creates Opportunities correctly and tests the guard against running multiple batch instances simultaneously. This test class validates the behavior of RD_RecurringDonations_BATCH and related Legacy RD functionality."
       }
     ],
     "objects": [
@@ -14841,7 +14864,7 @@ const NPSP_ENTITIES = {
             "field": "RecurringDonation__c"
           }
         ],
-        "description": "",
+        "description": "A custom object that stores an audit trail of field-level changes made to Enhanced Recurring Donation records, with 25 fields tracking old and new values for Amount, Campaign, Installment Frequency, Period, Payment Method, Status, and more. It has a Master-Detail relationship to npe03__Recurring_Donation__c and Lookup relationships to Campaign for both new and previous values. The RD2_ChangeLogService creates these records whenever tracked fields change on a Recurring Donation.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/RecurringDonationChangeLog__c"
       },
       {
@@ -14940,7 +14963,7 @@ const NPSP_ENTITIES = {
             "field": "RecurringDonation__c"
           }
         ],
-        "description": "",
+        "description": "A custom object that stores the installment schedule definitions for Enhanced Recurring Donations, including amount, frequency, period, day of month, start date, and end date across 13 fields. It supports pause functionality through the IsPause checkbox and tracks payment method and campaign at the schedule level. This object has a Master-Detail relationship to npe03__Recurring_Donation__c and is managed by RD2_ScheduleService.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/RecurringDonationSchedule__c"
       },
       {
@@ -15040,7 +15063,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "The core Recurring Donation custom object from the npe03 managed package, storing donor commitments for periodic giving with 20+ custom fields for Enhanced RD features. It includes Elevate integration fields (CommitmentId, CardLast4, ACH_Last_4, LastElevateEventPlayed), scheduling fields (InstallmentFrequency, Day_of_Month, EndDate), and computed fields (CurrentYearValue, ChangeType). This object serves as the central record for both Legacy and Enhanced Recurring Donations across the entire domain.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe03__Recurring_Donation__c"
       }
     ],
@@ -15058,38 +15081,39 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_RecurringDonation.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_RecurringDonation.trigger",
+        "description": "The Apex trigger on npe03__Recurring_Donation__c that delegates all event processing to the NPSP Table-Driven Trigger Management (TDTM) framework. It fires on all seven DML events (before/after insert, update, delete, and after undelete) and routes execution to registered TDTM handler classes like RD2_RecurringDonations_TDTM. This trigger contains no business logic itself, following the NPSP pattern of centralizing trigger routing through TDTM."
       }
     ],
     "lwcs": [
       {
         "name": "rd2ChangeEntry",
         "imports": [],
-        "description": "",
+        "description": "A Lightning Web Component that renders a single change log entry for an Enhanced Recurring Donation, displaying the change type, effective date, and individual field changes. It works within the rd2ChangeLog parent component to display the audit history. This component consumes data provided by RD2_ChangeLogController.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2ChangeEntry"
       },
       {
         "name": "rd2ChangeEntryItem",
         "imports": [],
-        "description": "",
+        "description": "A child Lightning Web Component that displays a single field-level change within a change log entry, showing the field label alongside old and new values. It is nested inside rd2ChangeEntry and uses rd2ChangeEntryValue for value formatting. This component provides the granular field-change display within the change log UI.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2ChangeEntryItem"
       },
       {
         "name": "rd2ChangeEntryValue",
         "imports": [],
-        "description": "",
+        "description": "A specialized Lightning Web Component that formats and renders a single old or new value within a change log field-change display. It handles different data types (currency, date, text) for consistent presentation. This component is used exclusively by rd2ChangeEntryItem to ensure proper value rendering.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2ChangeEntryValue"
       },
       {
         "name": "rd2ChangeLog",
         "imports": [],
-        "description": "",
+        "description": "The top-level Lightning Web Component that displays the complete change history for an Enhanced Recurring Donation record. It calls RD2_ChangeLogController.getChangeLog to retrieve change log entries and renders them using rd2ChangeEntry child components. This component is placed on the Recurring Donation Lightning record page.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2ChangeLog"
       },
       {
         "name": "rd2EditPaymentInformationModal",
         "imports": [],
-        "description": "",
+        "description": "A modal Lightning Web Component that allows editing of payment method details (credit card, ACH) for Elevate-connected Recurring Donations. It presents form fields for updating payment information and communicates changes back to the Elevate platform. This component is invoked from the rd2ElevateInformation component on the RD record page.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2EditPaymentInformationModal"
       },
       {
@@ -15097,79 +15121,79 @@ const NPSP_ENTITIES = {
         "imports": [
           "psElevateTokenHandler"
         ],
-        "description": "",
+        "description": "A Lightning Web Component that embeds the Elevate credit card tokenization form, importing the psElevateTokenHandler for secure card data capture. It handles the tokenization flow so that sensitive card details never pass through Salesforce servers. This component is used within the RD entry form and payment edit modal for Elevate-connected donations.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2ElevateCreditCardForm"
       },
       {
         "name": "rd2ElevateInformation",
         "imports": [],
-        "description": "",
+        "description": "A Lightning Web Component that displays Elevate payment integration details on the Recurring Donation record page, including card information, payment status, and error messages. It calls RD2_ElevateInformation_CTRL to retrieve Elevate configuration and the latest processing status. This component provides visibility into the payment processing state for Elevate-managed RDs.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2ElevateInformation"
       },
       {
         "name": "rd2EntryForm",
         "imports": [],
-        "description": "",
+        "description": "The primary Lightning Web Component for creating and editing Enhanced Recurring Donation records, orchestrating the full entry form experience. It coordinates donor selection, schedule configuration, custom fields, and Elevate payment processing through its child section components. This form calls RD2_EntryFormController for initialization, validation, and save operations.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2EntryForm"
       },
       {
         "name": "rd2EntryFormCustomFieldsSection",
         "imports": [],
-        "description": "",
+        "description": "A section component within the rd2EntryForm that renders admin-configured custom fields on the Recurring Donation entry form. It reads the custom field set defined in RD2_Settings to dynamically display additional fields beyond the standard RD fields. This component enables organizations to capture custom data during RD creation and editing.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2EntryFormCustomFieldsSection"
       },
       {
         "name": "rd2EntryFormDonorSection",
         "imports": [],
-        "description": "",
+        "description": "A section component within the rd2EntryForm that handles Contact and Account donor selection for a Recurring Donation. It provides lookup fields for choosing the donor and validates that a valid donor reference is provided. This component manages the donor portion of the RD entry form workflow.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2EntryFormDonorSection"
       },
       {
         "name": "rd2EntryFormScheduleSection",
         "imports": [],
-        "description": "",
+        "description": "A section component within the rd2EntryForm that captures schedule details including Amount, Installment Period, Installment Frequency, Day of Month, and Effective Date. It provides the schedule configuration portion of the Recurring Donation entry experience. This component feeds schedule data to the parent rd2EntryForm for inclusion in the save request.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2EntryFormScheduleSection"
       },
       {
         "name": "rd2PauseForm",
         "imports": [],
-        "description": "",
+        "description": "A Lightning Web Component that provides the UI for pausing and resuming Enhanced Recurring Donations by selecting date ranges during which no installments should be created. It calls RD2_PauseForm_CTRL to retrieve current pause state, display upcoming installments, and save the pause schedule. This component creates RecurringDonationSchedule__c records with IsPause set to true.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2PauseForm"
       },
       {
         "name": "rd2RecurringDonation",
         "imports": [],
-        "description": "",
+        "description": "A utility Lightning Web Component that provides shared Recurring Donation data access and helper functions to other RD2 LWC components. It centralizes common operations needed across the Recurring Donation UI layer. This component works in conjunction with rd2Service to provide a consistent data access pattern.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2RecurringDonation"
       },
       {
         "name": "rd2Service",
         "imports": [],
-        "description": "",
+        "description": "A shared service Lightning Web Component that provides common utility functions, constants, and wire adapters used across all RD2 Lightning Web Components. It centralizes API calls and data transformation logic so that individual components do not duplicate service-layer code. This component acts as the client-side service layer for the Enhanced Recurring Donations UI.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2Service"
       },
       {
         "name": "rd2StatusAutomationSettings",
         "imports": [],
-        "description": "",
+        "description": "A Lightning Web Component that provides the admin configuration UI for Recurring Donation status automation rules, including lapsed and closed thresholds. It calls RD2_StatusAutomationSettings_CTRL to load and save automation settings. This component is embedded in the NPSP Settings page for managing automatic status transitions.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2StatusAutomationSettings"
       },
       {
         "name": "rd2StatusMappingSettings",
         "imports": [],
-        "description": "",
+        "description": "A Lightning Web Component that provides the admin configuration UI for mapping Recurring Donation status picklist values to their underlying states (Active, Lapsed, Closed). It calls RD2_StatusMappingSettings_CTRL to load current mappings and deploy updated Custom Metadata records. This component is part of the NPSP Settings page for Enhanced Recurring Donations.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rd2StatusMappingSettings"
       },
       {
         "name": "rdActiveSchedule",
         "imports": [],
-        "description": "",
+        "description": "A Lightning Web Component that displays the currently active installment schedule for an Enhanced Recurring Donation, showing amount, frequency, and date range. It provides a read-only view of the schedule configuration on the Recurring Donation record page. This component works alongside rdScheduleVisualizer to give users a complete picture of the RD schedule.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rdActiveSchedule"
       },
       {
         "name": "rdScheduleVisualizer",
         "imports": [],
-        "description": "",
+        "description": "A Lightning Web Component that projects and displays future installment dates and amounts for an Enhanced Recurring Donation in a data table format. It calls RD2_VisualizeScheduleController to generate the installment projections and renders them for the user. This component helps donors and admins understand the upcoming payment schedule at a glance.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/rdScheduleVisualizer"
       }
     ],
@@ -15191,7 +15215,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/REL_RelationshipsViewer_CTRL.cls",
-        "description": ""
+        "description": "Controller class that powers the Relationships Viewer UI, retrieving relationship data for a given Contact. Its getRelationships method queries npe4__Relationship__c records and returns them in a structure suitable for visual display, while getNamespace handles managed package prefixing. Supports both the legacy Visualforce relationship viewer and the newer LWC-based navigator."
       },
       {
         "name": "REL_Relationships_Cm_TDTM",
@@ -15205,7 +15229,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/REL_Relationships_Cm_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that manages relationship auto-creation from Campaign Member records. When a Contact is added to a Campaign, it evaluates the auto-create relationship settings to determine if new npe4__Relationship__c records should be generated. Works in tandem with REL_Utils to read the configured auto-create mappings."
       },
       {
         "name": "REL_Relationships_Con_TDTM",
@@ -15221,7 +15245,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/REL_Relationships_Con_TDTM.cls",
-        "description": ""
+        "description": "TDTM trigger handler that manages relationship records when Contact records change, particularly around merges and deletions. It creates new relationships from Contact field changes and cleans up orphaned relationship records via deleteEmptyRelationships. Ensures the npe4__Relationship__c records remain consistent when their parent Contacts are modified."
       },
       {
         "name": "REL_Relationships_TDTM",
@@ -15241,7 +15265,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/REL_Relationships_TDTM.cls",
-        "description": ""
+        "description": "Primary TDTM trigger handler (555 lines) for the npe4__Relationship__c object, managing the full lifecycle of reciprocal relationships. It creates mirror reciprocal records on insert, synchronizes field changes on update, and cascades deletes to reciprocals. Core methods include reciprocate, createRelationship, addType, and syncRelationshipFields, making it the central engine for relationship management."
       },
       {
         "name": "REL_Utils",
@@ -15255,7 +15279,7 @@ const NPSP_ENTITIES = {
         ],
         "referencedObjects": [],
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/main/default/classes/REL_Utils.cls",
-        "description": ""
+        "description": "Utility class that provides shared helper methods for the relationships domain, primarily the getAutoCreateMap method. It reads Relationship_Auto_Create__c custom metadata to build a map of fields and objects that trigger automatic relationship creation. Used by REL_Relationships_Con_TDTM and REL_Relationships_Cm_TDTM to determine when to auto-generate relationships."
       }
     ],
     "objects": [
@@ -15265,7 +15289,7 @@ const NPSP_ENTITIES = {
         "fieldCount": 0,
         "keyFields": [],
         "relationships": [],
-        "description": "",
+        "description": "Custom Settings object that allows administrators to specify which fields on npe4__Relationship__c should be excluded from reciprocal synchronization. When REL_Relationships_TDTM syncs field values between a relationship and its reciprocal, it skips any fields listed in this setting. Provides flexibility for orgs that need asymmetric field values on related relationship pairs.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Relationship_Sync_Excluded_Fields__c"
       },
       {
@@ -15281,7 +15305,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Core custom object from the Relationships package (npe4) that stores relationship connections between two Contacts, such as \"Spouse,\" \"Employer,\" or \"Friend.\" NPSP extends it with the Related_Opportunity_Contact_Role__c field, which automatically assigns an OCR role when Opportunities are created for related Contacts. Each relationship record has a reciprocal counterpart managed by REL_Relationships_TDTM.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe4__Relationship__c"
       }
     ],
@@ -15299,20 +15323,21 @@ const NPSP_ENTITIES = {
           "after undelete"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Relationship.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Relationship.trigger",
+        "description": "TDTM trigger on the npe4__Relationship__c object that fires on all standard DML events (before/after insert, update, delete, and undelete). It dispatches processing to REL_Relationships_TDTM, which handles reciprocal relationship creation, synchronization, and cleanup. Acts as the single trigger entry point for all relationship record operations."
       }
     ],
     "lwcs": [
       {
         "name": "relationshipsNavigator",
         "imports": [],
-        "description": "",
+        "description": "Lightning Web Component that provides a modern navigation interface for viewing a Contact's relationships. It presents npe4__Relationship__c data in an interactive format, allowing users to browse and explore relationship connections. Works alongside REL_RelationshipsViewer_CTRL on the server side to fetch and display relationship records.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/relationshipsNavigator"
       },
       {
         "name": "relationshipsTreeGrid",
         "imports": [],
-        "description": "",
+        "description": "Lightning Web Component that renders a Contact's relationships in a hierarchical tree-grid format. It displays relationship type, related Contact name, and other details in a structured expandable/collapsible layout. Complements the relationshipsNavigator component by offering an alternative grid-based view of the same relationship data.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/lwc/relationshipsTreeGrid"
       }
     ],
@@ -15352,7 +15377,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Custom object that represents a batch processing container used for grouping records during bulk data operations. It tracks the batch's status via Batch_Status__c, a description, the number of items via Number_of_Items__c, and the target object API name via Object_Name__c. Used in NPSP's legacy batch processing workflows to monitor and manage the progress of bulk record operations.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Batch__c"
       }
     ],
@@ -15376,7 +15401,7 @@ const NPSP_ENTITIES = {
           }
         ],
         "relationships": [],
-        "description": "",
+        "description": "Core custom object from the Affiliations package (npe5) that links a Contact to an Organization (Account), representing formal or informal organizational affiliations. NPSP extends it with the Related_Opportunity_Contact_Role__c field, which automatically assigns an OCR role when Opportunities are created for the affiliated Organization. Managed through TDTM trigger handlers that maintain primary affiliation status and handle record lifecycle events.",
         "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe5__Affiliation__c"
       }
     ],
@@ -15394,7 +15419,8 @@ const NPSP_ENTITIES = {
           "before update"
         ],
         "handlers": [],
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Affiliation.trigger"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/blob/main/force-app/tdtm/triggers/TDTM_Affiliation.trigger",
+        "description": "TDTM trigger on the npe5__Affiliation__c object that fires on all standard DML events (before/after insert, update, delete, and undelete). It dispatches processing to registered TDTM handlers that manage primary affiliation designation, Contact-Account field synchronization, and cascading updates. Provides the single trigger entry point for all affiliation record operations."
       }
     ],
     "lwcs": [],
