@@ -25,14 +25,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/galaxy.css?v=14">
+<link rel="stylesheet" href="css/galaxy.css?v=15">
 </head>
 <body>
 <a href="#stage" class="skip-link">Skip to content</a>
 
 <!-- Canvas layers: starfield (z0) > force graph (z1) > particles (z2) -->
 <canvas id="starfield" role="presentation" aria-hidden="true"></canvas>
-<canvas id="graph-canvas" role="img" aria-label="Interactive galaxy map of 18 NPSP architecture domains. Use the search shortcut (/) to explore domains, components, and entities by keyboard."></canvas>
+<canvas id="graph-canvas" tabindex="0" role="img" aria-label="Interactive galaxy map of 18 NPSP architecture domains. Use arrow keys to navigate planets, Enter to select, or press / to search."></canvas>
 <canvas id="particle-canvas" role="presentation" aria-hidden="true"></canvas>
 
 <noscript>
@@ -120,13 +120,16 @@
   <div class="help-row"><span class="drag-icon">&#x1F91A;</span><span>Drag planets</span></div>
 </div>
 
+<!-- Screen reader announcements -->
+<div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
 <!-- Scripts: data first, then systems, then integration (defer preserves order) -->
 <!-- npsp-entities.js (780KB) is lazy-loaded after galaxy is interactive — see main.js -->
 <script defer src="js/npsp-data.js?v=8"></script>
 <script defer src="js/tour-data.js?v=2"></script>
 <script defer src="js/starfield.js?v=9"></script>
 <script defer src="js/physics.js?v=14"></script>
-<script defer src="js/renderer.js?v=10"></script>
+<script defer src="js/renderer.js?v=11"></script>
 <script defer src="js/particles.js?v=9"></script>
 <script defer src="js/navigation.js?v=10"></script>
 <script defer src="js/search.js?v=10"></script>

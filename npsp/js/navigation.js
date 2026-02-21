@@ -229,6 +229,8 @@ function updateBreadcrumb() {
 
 // ── Navigation Actions ──
 function enterPlanet(id) {
+  // B7: Reset keyboard focus when entering a planet
+  if (typeof focusedPlanetIndex !== 'undefined') focusedPlanetIndex = -1;
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
   currentLevel = 'planet';
   currentPlanet = id;
@@ -241,6 +243,19 @@ function enterPlanet(id) {
   updateDocumentTitle('planet', id);
   // Pause starfield — hidden behind opaque content on non-galaxy views
   if (typeof pauseStarfield === 'function') pauseStarfield();
+  // B5: Screen reader announcement
+  const p = NPSP[id];
+  if (p && typeof announce === 'function') {
+    announce(`Viewing ${p.name} domain, ${p.components.length} components`);
+  }
+  // B4: Focus management — move focus to heading after transition
+  setTimeout(() => {
+    const heading = document.querySelector('#planet-content h2');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  }, getTransitionMs() + 50);
 }
 
 function enterCore(pid, cid) {
@@ -252,6 +267,20 @@ function enterCore(pid, cid) {
   updateBreadcrumb();
   setHash(`#/${pid}/${cid}`);
   updateDocumentTitle('core', pid, cid);
+  // B5: Screen reader announcement
+  const pData = NPSP[pid];
+  const cData = pData ? pData.components.find(x => x.id === cid) : null;
+  if (cData && typeof announce === 'function') {
+    announce(`Viewing ${cData.name} in ${pData.name}`);
+  }
+  // B4: Focus management — move focus to heading after transition
+  setTimeout(() => {
+    const heading = document.querySelector('#core-content h2');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  }, getTransitionMs() + 50);
 }
 
 function enterEntity(pid, cid, entityType, entityName) {
@@ -271,6 +300,18 @@ function enterEntity(pid, cid, entityType, entityName) {
   setHash(`#/${pid}/${cid}/${entityType}/${encodeURIComponent(entityName)}`);
   updateDocumentTitle('entity', pid, cid, entityName);
   if (typeof track === 'function') track('entity_view', { type: entityType, name: entityName });
+  // B5: Screen reader announcement
+  if (typeof announce === 'function') {
+    announce(`Viewing ${entityType}: ${entityName}`);
+  }
+  // B4: Focus management — move focus to entity heading after transition
+  setTimeout(() => {
+    const heading = document.querySelector('#entity-content h2');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  }, getTransitionMs() + 50);
 }
 
 function navigateToCore(pid, cid) {
@@ -308,18 +349,43 @@ function navigateTo(level) {
     updateDocumentTitle('galaxy');
     // Resume starfield when returning to galaxy view
     if (typeof resumeStarfield === 'function') resumeStarfield();
+    // B5 + B4: Announce and focus canvas
+    if (typeof announce === 'function') announce('Returned to galaxy overview');
+    setTimeout(() => {
+      const canvas = document.getElementById('graph-canvas');
+      if (canvas) canvas.focus({ preventScroll: true });
+    }, getTransitionMs() + 50);
   } else if (level === 'planet') {
     currentLevel = 'planet';
     currentComponent = null;
     showView('planet-view', 'out');
     setHash(`#/${currentPlanet}`);
     updateDocumentTitle('planet', currentPlanet);
+    // B5 + B4: Announce and focus heading
+    const pName = currentPlanet && NPSP[currentPlanet] ? NPSP[currentPlanet].name : 'domain';
+    if (typeof announce === 'function') announce(`Returned to ${pName} domain`);
+    setTimeout(() => {
+      const heading = document.querySelector('#planet-content h2');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      }
+    }, getTransitionMs() + 50);
   } else if (level === 'core') {
     currentLevel = 'core';
     currentEntity = null;
     showView('core-view', 'out');
     setHash(`#/${currentPlanet}/${currentComponent}`);
     updateDocumentTitle('core', currentPlanet, currentComponent);
+    // B5 + B4: Announce and focus heading
+    if (typeof announce === 'function') announce('Returned to component view');
+    setTimeout(() => {
+      const heading = document.querySelector('#core-content h2');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      }
+    }, getTransitionMs() + 50);
   }
   updateBreadcrumb();
 }
