@@ -26,8 +26,7 @@ import {
   currentLevel, currentPlanet, currentComponent,
   hashUpdateInProgress, handleHashNavigation,
   enterPlanet, enterEntity, navigateToCore, navigateTo, goBack,
-  setAnimationCallbacks, refreshCurrentView, updateBreadcrumb,
-  updateProgressDisplay
+  setAnimationCallbacks, refreshCurrentView, updateBreadcrumb
 } from './navigation.js';
 import {
   setNavigationCallbacks, rebuildSearchIndex,
@@ -657,7 +656,6 @@ function init() {
   setupHelpButton();
   updateBreadcrumb();
   buildStats();
-  updateProgressDisplay();
   initTours();
 
   // Navbar event listeners (replaced inline onclick from index.html)
