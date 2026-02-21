@@ -102,9 +102,9 @@ export function renderGraph() {
       ctx.lineWidth = isHL ? 2 : 1;
       ctx.setLineDash([6, 5]);
     } else {
-      ctx.globalAlpha = 0.25 * edgeAlpha;
-      ctx.strokeStyle = _light() ? 'rgba(1,118,211,0.35)' : 'rgba(100,140,255,0.3)';
-      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.45 * edgeAlpha;
+      ctx.strokeStyle = _light() ? 'rgba(1,118,211,0.4)' : 'rgba(100,140,255,0.35)';
+      ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 5]);
     }
     ctx.stroke();
