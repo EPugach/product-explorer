@@ -14,6 +14,155 @@ let currentEntity = null;        // {type, name}
 let currentEntityTab = null;     // which tab was active
 let navHistory = [];
 
+// ── Hash Routing ──
+// Flag to prevent popstate handler from re-navigating when we push state
+let hashUpdateInProgress = false;
+
+const setHash = (hash) => {
+  hashUpdateInProgress = true;
+  history.pushState(null, '', hash);
+  hashUpdateInProgress = false;
+};
+
+// Update document.title based on current navigation state
+const updateDocumentTitle = (level, domainId, componentId, entityName) => {
+  const base = 'NPSP Architecture Explorer';
+  if (level === 'galaxy' || !domainId) {
+    document.title = base;
+    return;
+  }
+  const domain = NPSP[domainId];
+  const domainName = domain ? domain.name : domainId;
+  if (level === 'planet') {
+    document.title = `${domainName} \u2014 ${base}`;
+    return;
+  }
+  if (level === 'core' && componentId) {
+    const comp = domain ? domain.components.find(c => c.id === componentId) : null;
+    const compName = comp ? comp.name : componentId;
+    document.title = `${compName} \u2014 ${domainName} \u2014 NPSP Explorer`;
+    return;
+  }
+  if (level === 'entity' && entityName) {
+    document.title = `${entityName} \u2014 NPSP Explorer`;
+    return;
+  }
+  document.title = base;
+};
+
+// Parse the current hash and navigate to the corresponding view
+const handleHashNavigation = () => {
+  const hash = window.location.hash || '#/';
+  const path = hash.replace(/^#\/?/, '');
+  if (!path) {
+    // Galaxy view
+    if (currentLevel !== 'galaxy') {
+      navHistory = [];
+      currentLevel = 'galaxy';
+      currentPlanet = null;
+      currentComponent = null;
+      currentEntity = null;
+      resetZoomPan();
+      setGalaxyCanvasVisible(true);
+      showViewDirect('galaxy-view');
+      if (typeof graphSettled !== 'undefined') {
+        graphSettled = false;
+        requestAnimationFrame(graphTick);
+        requestAnimationFrame(particleTick);
+      }
+      updateBreadcrumb();
+      updateDocumentTitle('galaxy');
+    }
+    return;
+  }
+
+  const segments = path.split('/');
+
+  if (segments.length === 1) {
+    // Domain view: #/domainId
+    const domainId = segments[0];
+    if (!NPSP[domainId]) {
+      // Invalid domain, fall back to galaxy
+      setHash('#/');
+      handleHashNavigation();
+      return;
+    }
+    navHistory = [];
+    currentLevel = 'planet';
+    currentPlanet = domainId;
+    currentComponent = null;
+    currentEntity = null;
+    renderPlanetView(domainId);
+    setGalaxyCanvasVisible(false);
+    showViewDirect('planet-view');
+    updateBreadcrumb();
+    updateDocumentTitle('planet', domainId);
+
+  } else if (segments.length === 2) {
+    // Component view: #/domainId/componentId
+    const [domainId, componentId] = segments;
+    if (!NPSP[domainId]) {
+      setHash('#/');
+      handleHashNavigation();
+      return;
+    }
+    const comp = NPSP[domainId].components.find(c => c.id === componentId);
+    if (!comp) {
+      setHash(`#/${domainId}`);
+      handleHashNavigation();
+      return;
+    }
+    navHistory = [{ level: 'galaxy', planet: null, component: null }];
+    currentLevel = 'core';
+    currentPlanet = domainId;
+    currentComponent = componentId;
+    currentEntity = null;
+    renderPlanetView(domainId);
+    renderCoreView(domainId, componentId);
+    setGalaxyCanvasVisible(false);
+    showViewDirect('core-view');
+    updateBreadcrumb();
+    updateDocumentTitle('core', domainId, componentId);
+
+  } else if (segments.length >= 4) {
+    // Entity view: #/domainId/componentId/entityType/entityName
+    const [domainId, componentId, entityType, ...entityNameParts] = segments;
+    const entityName = decodeURIComponent(entityNameParts.join('/'));
+    if (!NPSP[domainId]) {
+      setHash('#/');
+      handleHashNavigation();
+      return;
+    }
+    const comp = NPSP[domainId].components.find(c => c.id === componentId);
+    if (!comp) {
+      setHash(`#/${domainId}`);
+      handleHashNavigation();
+      return;
+    }
+    navHistory = [
+      { level: 'galaxy', planet: null, component: null },
+      { level: 'planet', planet: domainId, component: null }
+    ];
+    currentLevel = 'entity';
+    currentPlanet = domainId;
+    currentComponent = componentId;
+    currentEntity = { type: entityType, name: entityName };
+    currentEntityTab = entityType;
+    renderPlanetView(domainId);
+    renderCoreView(domainId, componentId);
+    renderEntityView(domainId, componentId, entityType, entityName);
+    setGalaxyCanvasVisible(false);
+    showViewDirect('entity-view');
+    updateBreadcrumb();
+    updateDocumentTitle('entity', domainId, componentId, entityName);
+
+  } else {
+    // Unknown format (3 segments), fall back to galaxy
+    setHash('#/');
+    handleHashNavigation();
+  }
+};
+
 // Read transition duration from CSS custom property
 function getTransitionMs() {
   var val = getComputedStyle(document.documentElement)
@@ -88,6 +237,8 @@ function enterPlanet(id) {
   setGalaxyCanvasVisible(false);
   showView('planet-view', 'in');
   updateBreadcrumb();
+  setHash(`#/${id}`);
+  updateDocumentTitle('planet', id);
 }
 
 function enterCore(pid, cid) {
@@ -97,6 +248,8 @@ function enterCore(pid, cid) {
   renderCoreView(pid, cid);
   showView('core-view', 'in');
   updateBreadcrumb();
+  setHash(`#/${pid}/${cid}`);
+  updateDocumentTitle('core', pid, cid);
 }
 
 function enterEntity(pid, cid, entityType, entityName) {
@@ -113,6 +266,8 @@ function enterEntity(pid, cid, entityType, entityName) {
   renderEntityView(pid, cid, entityType, entityName);
   showView('entity-view', 'in');
   updateBreadcrumb();
+  setHash(`#/${pid}/${cid}/${entityType}/${encodeURIComponent(entityName)}`);
+  updateDocumentTitle('entity', pid, cid, entityName);
   if (typeof track === 'function') track('entity_view', { type: entityType, name: entityName });
 }
 
@@ -126,6 +281,8 @@ function navigateToCore(pid, cid) {
   setGalaxyCanvasVisible(false);
   showViewDirect('core-view');
   updateBreadcrumb();
+  setHash(`#/${pid}/${cid}`);
+  updateDocumentTitle('core', pid, cid);
 }
 
 function navigateTo(level) {
@@ -143,14 +300,20 @@ function navigateTo(level) {
       requestAnimationFrame(graphTick);
       requestAnimationFrame(particleTick);
     }
+    setHash('#/');
+    updateDocumentTitle('galaxy');
   } else if (level === 'planet') {
     currentLevel = 'planet';
     currentComponent = null;
     showView('planet-view', 'out');
+    setHash(`#/${currentPlanet}`);
+    updateDocumentTitle('planet', currentPlanet);
   } else if (level === 'core') {
     currentLevel = 'core';
     currentEntity = null;
     showView('core-view', 'out');
+    setHash(`#/${currentPlanet}/${currentComponent}`);
+    updateDocumentTitle('core', currentPlanet, currentComponent);
   }
   updateBreadcrumb();
 }
@@ -171,6 +334,8 @@ function goBack() {
       currentEntity = null;
       showView('core-view', 'out');
       updateBreadcrumb();
+      setHash(`#/${prev.planet}/${prev.component}`);
+      updateDocumentTitle('core', prev.planet, prev.component);
     }
   } else {
     if (currentLevel === 'entity') navigateTo('core');

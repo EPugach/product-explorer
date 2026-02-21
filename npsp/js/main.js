@@ -484,6 +484,13 @@ function onResize() {
   renderParticles();
 }
 
+// ── Popstate handler (browser back/forward buttons) ──
+window.addEventListener('popstate', () => {
+  if (!hashUpdateInProgress) {
+    handleHashNavigation();
+  }
+});
+
 // ── Init ──
 function init() {
   // Restore saved theme
@@ -507,6 +514,11 @@ function init() {
   window.addEventListener('resize', onResize);
   requestAnimationFrame(graphTick);
   requestAnimationFrame(particleTick);
+
+  // Deep link: if URL has a hash, navigate to it after init
+  if (window.location.hash && window.location.hash !== '#/' && window.location.hash !== '#') {
+    handleHashNavigation();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
