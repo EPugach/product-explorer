@@ -204,6 +204,7 @@ body {
   border-radius: 8px;
   padding: 0 12px 0 0;
   position: relative;
+  overflow: hidden;
   transition: border-color var(--duration-fast), background var(--duration-fast),
               border-radius var(--duration-fast), box-shadow var(--duration-fast);
 }
@@ -224,9 +225,10 @@ body {
   font-size: 16px; color: var(--text-dim); pointer-events: none;
 }
 .search-shell input {
-  flex: 1; height: 100%; background: transparent; border: none;
+  flex: 1; min-width: 0; height: 100%; background: transparent; border: none;
   padding: 0 8px 0 32px;
   font-family: var(--font-body); font-size: var(--text-sm); color: var(--text-primary); outline: none;
+  text-overflow: ellipsis; overflow: hidden;
 }
 .search-shell input::placeholder { color: var(--text-dim); font-size: 14px; }
 .search-shell .s-kbd {
@@ -974,7 +976,7 @@ body {
 
   #navbar { padding: 0 var(--space-3); gap: var(--space-2); }
   .nav-brand { font-size: 11px; letter-spacing: 1px; }
-  .search-box { max-width: 200px; }
+  .search-box { max-width: 200px; min-width: 0; }
   .search-shell.expanded {
     border-radius: 8px;
     border-bottom-color: rgba(77,139,255,0.35);
@@ -1023,7 +1025,7 @@ body {
   /* Navbar compaction */
   #navbar { gap: var(--space-1); padding: 0 var(--space-2); }
   .nav-brand { font-size: 10px; }
-  .search-box { max-width: none; }
+  .search-box { max-width: none; flex: 1; min-width: 0; }
   .search-shell { height: 30px; }
   .search-shell input { padding: 0 6px 0 28px; font-size: 13px; }
   .search-shell .s-icon { font-size: 14px; left: 8px; }
@@ -1081,16 +1083,6 @@ body {
   .galaxy-stats { gap: var(--space-1); padding: var(--space-1) var(--space-2); }
   .stat-value { font-size: 11px; }
   .stat-label { font-size: 9px; }
-}
-
-/* ── Exploration Progress Tracking ── */
-.exploration-progress-item { border-left: 1px solid var(--border-glow); padding-left: var(--space-3); }
-.exploration-progress {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--glow-accent);
-  letter-spacing: 0.5px;
-  white-space: nowrap;
 }
 
 /* ── First-Visit Onboarding Hint ── */
@@ -1584,8 +1576,8 @@ body.theme-light .var { color: #fe9339; }
   border: 1px solid rgba(100,140,255,0.15);
   color: var(--text-dim);
   font-size: 16px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1620,7 +1612,7 @@ body.theme-light .theme-toggle:hover {
   font-size: var(--text-xs);
   font-family: var(--font-mono);
   padding: 4px 12px;
-  min-height: 44px;
+  height: 32px;
   border-radius: 6px;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background 0.2s;
@@ -1957,7 +1949,7 @@ body.tour-active .galaxy-stats {
 #version-indicator {
   position: fixed;
   bottom: 12px;
-  right: 16px;
+  left: 16px;
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-dim);
