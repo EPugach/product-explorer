@@ -1083,6 +1083,16 @@ body {
   .stat-label { font-size: 9px; }
 }
 
+/* ── Exploration Progress Tracking ── */
+.exploration-progress-item { border-left: 1px solid var(--border-glow); padding-left: var(--space-3); }
+.exploration-progress {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--glow-accent);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
 /* ── First-Visit Onboarding Hint ── */
 .onboarding-hint {
   position: fixed;
