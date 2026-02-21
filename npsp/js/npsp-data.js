@@ -3,7 +3,7 @@
 //  Auto-extracted from index.html
 // ══════════════════════════════════════════════════════════════
 
-const NPSP = {
+export const NPSP = {
 
 donations: {
   name: "Donations & Payments",

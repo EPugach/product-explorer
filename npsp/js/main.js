@@ -1,32 +1,53 @@
 // ══════════════════════════════════════════════════════════════
-//  MAIN — Init, animation loop, canvas events, touch, tooltip
+//  MAIN — Entry point module. Imports everything, wires callbacks,
+//  handles canvas events, keyboard, tooltip, theme, init.
 // ══════════════════════════════════════════════════════════════
 
-// ── Analytics helper ──
-function track(event, params) {
-  if (typeof gtag === 'function') gtag('event', event, params || {});
-}
+import { NPSP } from './npsp-data.js';
+import { track, safeLSGet, safeLSSet, announce } from './utils.js';
+import {
+  tourState, focusedPlanetIndex, setFocusedPlanetIndex,
+  pageHidden, setPageHidden,
+  entitiesLoaded, setEntitiesLoaded
+} from './state.js';
+import { initStarfield, pauseStarfield, resumeStarfield, resizeStarfield } from './starfield.js';
+import {
+  nodes, edges, nodeMap, graphCanvas, zoom, panX, panY,
+  hoveredNode, dragNode, isDragging, isPanning, lastMouse, alpha, graphSettled,
+  setZoom, setPanX, setPanY, setDragNode, setHoveredNode,
+  setIsDragging, setIsPanning, setLastMouse, setAlpha, setGraphSettled,
+  setRenderCallbacks,
+  initGraph, simulate, screenToGraph, hitTest, onGraphResize, applyOrbitalDrift
+} from './physics.js';
+import { initRenderer, renderGraph } from './renderer.js';
+import { initParticles, resizeParticleCanvas, updateParticles, renderParticles, initNebulaBlobs } from './particles.js';
+import {
+  currentLevel, currentPlanet, currentComponent,
+  hashUpdateInProgress, handleHashNavigation,
+  enterPlanet, enterEntity, navigateToCore, navigateTo, goBack,
+  setAnimationCallbacks, refreshCurrentView, updateBreadcrumb
+} from './navigation.js';
+import {
+  setNavigationCallbacks, rebuildSearchIndex,
+  searchResults, searchIndex,
+  openSearch, closeSearch, expandSearch, collapseSearch,
+  cycleResult, activateResult
+} from './search.js';
+import { initTours, advanceStop, exitTour, setTourAnimationCallbacks, toggleTourPicker } from './tours.js';
 
-// ── Safe localStorage wrapper (Safari private browsing throws) ──
-function safeLSGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
-function safeLSSet(key, val) { try { localStorage.setItem(key, val); } catch (e) { /* silent */ } }
+// ── Wire cross-module callbacks ──
+// physics.js needs render functions from renderer.js and particles.js
+setRenderCallbacks(renderGraph, renderParticles);
 
-// ── Screen Reader Announcements ──
-const announce = (text) => {
-  const el = document.getElementById('sr-announcer');
-  if (el) {
-    el.textContent = '';
-    void el.offsetHeight; // Force reflow so screen reader registers the change
-    el.textContent = text;
-  }
-};
+// search.js needs navigation functions
+setNavigationCallbacks(enterPlanet, navigateToCore, enterEntity);
 
 // ── Theme Toggle ──
-function isLightMode() { return document.body.classList.contains('theme-light'); }
+const isLightMode = () => document.body.classList.contains('theme-light');
 
 function toggleTheme() {
   document.body.classList.toggle('theme-light');
-  var light = isLightMode();
+  const light = isLightMode();
   safeLSSet('npsp-theme', light ? 'light' : 'dark');
   document.getElementById('theme-toggle').textContent = light ? '\u2600' : '\u263D';
   initNebulaBlobs();
@@ -36,36 +57,38 @@ function toggleTheme() {
   track('theme_change', { theme: light ? 'light' : 'dark' });
 }
 
+// Expose on window for index.html inline onclick
+window.toggleTheme = toggleTheme;
+window.navigateTo = navigateTo;
+
 // ── Merge generated entities into NPSP data ──
 function mergeEntities() {
-  if (typeof NPSP_ENTITIES === 'undefined') return;
-  for (var domainKey in NPSP_ENTITIES) {
+  if (typeof window.NPSP_ENTITIES === 'undefined') return;
+  const NPSP_ENTITIES = window.NPSP_ENTITIES;
+  for (const domainKey in NPSP_ENTITIES) {
     if (!NPSP[domainKey]) continue;
-    var entities = NPSP_ENTITIES[domainKey];
+    const entities = NPSP_ENTITIES[domainKey];
     // Attach domain-level entity counts
     NPSP[domainKey]._entities = entities;
     // Map entities to individual component groups by tag matching
-    for (var ci = 0; ci < NPSP[domainKey].components.length; ci++) {
-      var comp = NPSP[domainKey].components[ci];
-      var tags = (comp.tags || []).map(function(t) { return t.toLowerCase(); });
-      var tagSet = {};
-      for (var ti = 0; ti < tags.length; ti++) tagSet[tags[ti]] = true;
+    for (const comp of NPSP[domainKey].components) {
+      const tagSet = new Set((comp.tags || []).map((t) => t.toLowerCase()));
       comp.entities = {
-        classes: (entities.classes || []).filter(function(c) {
-          return tagSet[c.name.toLowerCase()] || matchesByPrefix(c.name, comp.tags);
-        }),
-        objects: (entities.objects || []).filter(function(o) {
-          return tagSet[o.name.toLowerCase()];
-        }),
-        triggers: (entities.triggers || []).filter(function(t) {
-          return tagSet[t.object.toLowerCase()] || tagSet[t.name.toLowerCase()];
-        }),
-        lwcs: (entities.lwcs || []).filter(function(l) {
-          return tagSet[l.name.toLowerCase()];
-        }),
-        metadata: (entities.metadata || []).filter(function(m) {
-          return tagSet[m.name.toLowerCase()];
-        })
+        classes: (entities.classes || []).filter((c) =>
+          tagSet.has(c.name.toLowerCase()) || matchesByPrefix(c.name, comp.tags)
+        ),
+        objects: (entities.objects || []).filter((o) =>
+          tagSet.has(o.name.toLowerCase())
+        ),
+        triggers: (entities.triggers || []).filter((t) =>
+          tagSet.has(t.object.toLowerCase()) || tagSet.has(t.name.toLowerCase())
+        ),
+        lwcs: (entities.lwcs || []).filter((l) =>
+          tagSet.has(l.name.toLowerCase())
+        ),
+        metadata: (entities.metadata || []).filter((m) =>
+          tagSet.has(m.name.toLowerCase())
+        )
       };
     }
   }
@@ -73,19 +96,9 @@ function mergeEntities() {
 
 function matchesByPrefix(className, tags) {
   if (!tags) return false;
-  var classPrefix = className.split('_')[0] + '_';
-  for (var i = 0; i < tags.length; i++) {
-    if (tags[i].startsWith(classPrefix)) return true;
-  }
-  return false;
+  const classPrefix = className.split('_')[0] + '_';
+  return tags.some((t) => t.startsWith(classPrefix));
 }
-
-// ── Keyboard Planet Focus (B7) ──
-let focusedPlanetIndex = -1; // -1 means no planet focused
-
-const getSortedPlanets = () => {
-  return [...nodes].sort((a, b) => a.x - b.x);
-};
 
 // ── Tooltip ──
 let tooltipEl = null;
@@ -97,21 +110,23 @@ function createTooltip() {
   document.body.appendChild(tooltipEl);
 }
 
+// NOTE: innerHTML usage is safe here. All tooltip data comes from the trusted
+// NPSP data object and physics node properties (app-owned, not user input).
 function showTooltip(node, sx, sy) {
   if (!tooltipEl) return;
-  tooltipEl.innerHTML = '<div class="tt-name" style="color:' + node.color + '">' + node.icon + ' ' + node.label + '</div>' +
-    '<div class="tt-desc">' + node.desc.substring(0, 120) + (node.desc.length > 120 ? '...' : '') + '</div>' +
-    '<div class="tt-stats">' +
-    '<span><span class="tt-stat-val">' + node.classCount + '</span> classes</span>' +
-    '<span><span class="tt-stat-val">' + node.componentCount + '</span> components</span>' +
-    '<span><span class="tt-stat-val">' + node.connectionCount + '</span> connections</span>' +
-    '</div>';
+  tooltipEl.innerHTML =
+    `<div class="tt-name" style="color:${node.color}">${node.icon} ${node.label}</div>` +
+    `<div class="tt-desc">${node.desc.substring(0, 120)}${node.desc.length > 120 ? '...' : ''}</div>` +
+    `<div class="tt-stats">` +
+      `<span><span class="tt-stat-val">${node.classCount}</span> classes</span>` +
+      `<span><span class="tt-stat-val">${node.componentCount}</span> components</span>` +
+      `<span><span class="tt-stat-val">${node.connectionCount}</span> connections</span>` +
+    `</div>`;
   tooltipEl.classList.add('visible');
-  // Position below and to the right of cursor
   const tx = Math.min(sx + 16, innerWidth - 300);
   const ty = Math.min(sy + 16, innerHeight - 120);
-  tooltipEl.style.left = tx + 'px';
-  tooltipEl.style.top = ty + 'px';
+  tooltipEl.style.left = `${tx}px`;
+  tooltipEl.style.top = `${ty}px`;
 }
 
 function hideTooltip() {
@@ -119,20 +134,18 @@ function hideTooltip() {
 }
 
 // ── Page Visibility — pause all animation when tab is hidden ──
-let pageHidden = false;
-
 document.addEventListener('visibilitychange', () => {
-  pageHidden = document.hidden;
+  setPageHidden(document.hidden);
   if (document.hidden) {
-    if (typeof pauseStarfield === 'function') pauseStarfield();
+    pauseStarfield();
   } else {
     // Resume starfield only if on galaxy view
-    if (currentLevel === 'galaxy' && typeof resumeStarfield === 'function') {
+    if (currentLevel === 'galaxy') {
       resumeStarfield();
     }
     // Restart graph + particle loops if on galaxy view
     if (currentLevel === 'galaxy') {
-      graphSettled = false;
+      setGraphSettled(false);
       requestAnimationFrame(graphTick);
       requestAnimationFrame(particleTick);
     }
@@ -140,7 +153,6 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // ── Animation Loops ──
-// Graph physics loop (stops when settled)
 function graphTick() {
   if (pageHidden || currentLevel !== 'galaxy') return;
   simulate();
@@ -149,7 +161,6 @@ function graphTick() {
   requestAnimationFrame(graphTick);
 }
 
-// Particle loop (runs indefinitely on galaxy view)
 function particleTick() {
   if (pageHidden || currentLevel !== 'galaxy') return;
   updateParticles();
@@ -157,162 +168,167 @@ function particleTick() {
   requestAnimationFrame(particleTick);
 }
 
+// Wire animation callbacks to navigation.js and tours.js
+setAnimationCallbacks(graphTick, particleTick);
+setTourAnimationCallbacks(graphTick, particleTick);
+
+// ── Keyboard Planet Focus helpers ──
+const getSortedPlanets = () => [...nodes].sort((a, b) => a.x - b.x);
+
 // ── Canvas Events (mouse) ──
 function setupCanvasEvents() {
-  graphCanvas.addEventListener('mousedown', function(e) {
-    var rect = graphCanvas.getBoundingClientRect();
-    var sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-    var node = hitTest(sx, sy);
+  const canvas = graphCanvas;
+
+  canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const node = hitTest(sx, sy);
     if (node && e.button === 0) {
-      dragNode = node;
+      setDragNode(node);
       node.fx = node.x; node.fy = node.y;
-      isDragging = false;
-      alpha = Math.max(alpha, 0.3);
-      graphSettled = false;
-      graphCanvas.classList.add('dragging');
+      setIsDragging(false);
+      setAlpha(Math.max(alpha, 0.3));
+      setGraphSettled(false);
+      canvas.classList.add('dragging');
       requestAnimationFrame(graphTick);
     } else if (e.button === 0) {
-      isPanning = true;
-      graphCanvas.classList.add('dragging');
+      setIsPanning(true);
+      canvas.classList.add('dragging');
     }
-    lastMouse = { x: e.clientX, y: e.clientY };
+    setLastMouse({ x: e.clientX, y: e.clientY });
   });
 
-  graphCanvas.addEventListener('mousemove', function(e) {
-    var rect = graphCanvas.getBoundingClientRect();
-    var sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
     if (dragNode) {
-      var dx = e.clientX - lastMouse.x, dy = e.clientY - lastMouse.y;
-      if (Math.abs(dx) + Math.abs(dy) > 3) isDragging = true;
-      var pt = screenToGraph(sx, sy);
+      const dx = e.clientX - lastMouse.x, dy = e.clientY - lastMouse.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) setIsDragging(true);
+      const pt = screenToGraph(sx, sy);
       dragNode.fx = pt.x; dragNode.fy = pt.y;
       dragNode.x = pt.x; dragNode.y = pt.y;
       hideTooltip();
     } else if (isPanning) {
-      panX += e.clientX - lastMouse.x;
-      panY += e.clientY - lastMouse.y;
+      setPanX(panX + e.clientX - lastMouse.x);
+      setPanY(panY + e.clientY - lastMouse.y);
       renderGraph();
       hideTooltip();
     } else {
-      var node = hitTest(sx, sy);
+      const node = hitTest(sx, sy);
       if (node !== hoveredNode) {
-        hoveredNode = node;
-        graphCanvas.style.cursor = node ? 'pointer' : 'grab';
+        setHoveredNode(node);
+        canvas.style.cursor = node ? 'pointer' : 'grab';
         if (node) {
           showTooltip(node, e.clientX, e.clientY);
         } else {
           hideTooltip();
         }
         if (!graphSettled || hoveredNode) {
-          graphSettled = false;
+          setGraphSettled(false);
           requestAnimationFrame(graphTick);
         }
       } else if (node) {
-        // Update tooltip position while moving over same node
         showTooltip(node, e.clientX, e.clientY);
       }
     }
-    lastMouse = { x: e.clientX, y: e.clientY };
+    setLastMouse({ x: e.clientX, y: e.clientY });
   });
 
-  graphCanvas.addEventListener('mouseup', function() {
-    graphCanvas.classList.remove('dragging');
+  canvas.addEventListener('mouseup', () => {
+    canvas.classList.remove('dragging');
     if (dragNode && !isDragging) {
-      var node = dragNode;
+      const node = dragNode;
       dragNode.fx = null; dragNode.fy = null;
-      dragNode = null; isPanning = false;
+      setDragNode(null); setIsPanning(false);
       hideTooltip();
-      if (tourState && tourState.active) return; // Prevent click-through during tour
+      if (tourState.active) return;
       enterPlanet(node.id);
       track('planet_click', { planet: node.id });
       return;
     } else if (dragNode) {
       track('planet_drag', { planet: dragNode.id });
       dragNode.fx = null; dragNode.fy = null;
-      alpha = Math.max(alpha, 0.1);
-      graphSettled = false;
+      setAlpha(Math.max(alpha, 0.1));
+      setGraphSettled(false);
       requestAnimationFrame(graphTick);
     }
-    dragNode = null; isPanning = false;
+    setDragNode(null); setIsPanning(false);
   });
 
-  graphCanvas.addEventListener('mouseleave', function() {
-    if (hoveredNode) { hoveredNode = null; renderGraph(); }
+  canvas.addEventListener('mouseleave', () => {
+    if (hoveredNode) { setHoveredNode(null); renderGraph(); }
     hideTooltip();
-    isPanning = false;
-    graphCanvas.classList.remove('dragging');
-    if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; }
+    setIsPanning(false);
+    canvas.classList.remove('dragging');
+    if (dragNode) { dragNode.fx = null; dragNode.fy = null; setDragNode(null); }
   });
 
   // Scroll to zoom
-  graphCanvas.addEventListener('wheel', function(e) {
+  canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
-    var rect = graphCanvas.getBoundingClientRect();
-    var sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-    var oldZoom = zoom;
-    zoom *= e.deltaY < 0 ? 1.1 : 0.9;
-    zoom = Math.max(0.3, Math.min(3, zoom));
-    panX = sx - (sx - panX) * (zoom / oldZoom);
-    panY = sy - (sy - panY) * (zoom / oldZoom);
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const oldZoom = zoom;
+    let newZoom = zoom * (e.deltaY < 0 ? 1.1 : 0.9);
+    newZoom = Math.max(0.3, Math.min(3, newZoom));
+    setZoom(newZoom);
+    setPanX(sx - (sx - panX) * (newZoom / oldZoom));
+    setPanY(sy - (sy - panY) * (newZoom / oldZoom));
     renderGraph();
     renderParticles();
   }, { passive: false });
 
   // ── Touch events ──
-  var touchStartNode = null;
-  var touchStartTime = 0;
-  var touchStartPos = { x: 0, y: 0 };
-  var lastTouchDist = 0;
+  let touchStartNode = null;
+  let touchStartTime = 0;
+  let touchStartPos = { x: 0, y: 0 };
+  let lastTouchDist = 0;
 
-  graphCanvas.addEventListener('touchstart', function(e) {
+  canvas.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
-      var touch = e.touches[0];
-      var rect = graphCanvas.getBoundingClientRect();
-      var sx = touch.clientX - rect.left, sy = touch.clientY - rect.top;
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const sx = touch.clientX - rect.left, sy = touch.clientY - rect.top;
       touchStartNode = hitTest(sx, sy);
       touchStartTime = Date.now();
       touchStartPos = { x: touch.clientX, y: touch.clientY };
-      if (touchStartNode) {
-        e.preventDefault();
-      }
-      lastMouse = { x: touch.clientX, y: touch.clientY };
+      if (touchStartNode) e.preventDefault();
+      setLastMouse({ x: touch.clientX, y: touch.clientY });
     } else if (e.touches.length === 2) {
-      // Pinch start
-      var dx = e.touches[0].clientX - e.touches[1].clientX;
-      var dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
       lastTouchDist = Math.sqrt(dx * dx + dy * dy);
     }
   }, { passive: false });
 
-  graphCanvas.addEventListener('touchmove', function(e) {
+  canvas.addEventListener('touchmove', (e) => {
     if (e.touches.length === 1) {
-      var touch = e.touches[0];
-      var dx = touch.clientX - touchStartPos.x;
-      var dy = touch.clientY - touchStartPos.y;
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartPos.x;
+      const dy = touch.clientY - touchStartPos.y;
       if (Math.abs(dx) + Math.abs(dy) > 10) {
-        touchStartNode = null; // Cancel tap
-        // Pan
-        panX += touch.clientX - lastMouse.x;
-        panY += touch.clientY - lastMouse.y;
+        touchStartNode = null;
+        setPanX(panX + touch.clientX - lastMouse.x);
+        setPanY(panY + touch.clientY - lastMouse.y);
         renderGraph();
         renderParticles();
       }
-      lastMouse = { x: touch.clientX, y: touch.clientY };
+      setLastMouse({ x: touch.clientX, y: touch.clientY });
       e.preventDefault();
     } else if (e.touches.length === 2) {
-      // Pinch zoom
-      var dx = e.touches[0].clientX - e.touches[1].clientX;
-      var dy = e.touches[0].clientY - e.touches[1].clientY;
-      var dist = Math.sqrt(dx * dx + dy * dy);
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
       if (lastTouchDist > 0) {
-        var scale = dist / lastTouchDist;
-        var cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        var cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        var oldZoom = zoom;
-        zoom *= scale;
-        zoom = Math.max(0.3, Math.min(3, zoom));
-        panX = cx - (cx - panX) * (zoom / oldZoom);
-        panY = cy - (cy - panY) * (zoom / oldZoom);
+        const scale = dist / lastTouchDist;
+        const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const oldZoom = zoom;
+        let newZoom = zoom * scale;
+        newZoom = Math.max(0.3, Math.min(3, newZoom));
+        setZoom(newZoom);
+        setPanX(cx - (cx - panX) * (newZoom / oldZoom));
+        setPanY(cy - (cy - panY) * (newZoom / oldZoom));
         renderGraph();
         renderParticles();
       }
@@ -321,12 +337,12 @@ function setupCanvasEvents() {
     }
   }, { passive: false });
 
-  graphCanvas.addEventListener('touchend', function(e) {
+  canvas.addEventListener('touchend', () => {
     if (touchStartNode && Date.now() - touchStartTime < 300) {
-      var node = touchStartNode;
+      const node = touchStartNode;
       touchStartNode = null;
       lastTouchDist = 0;
-      if (tourState && tourState.active) return; // Prevent click-through during tour
+      if (tourState.active) return;
       enterPlanet(node.id);
       track('planet_click', { planet: node.id });
       return;
@@ -336,9 +352,9 @@ function setupCanvasEvents() {
   });
 
   // ── B7: Keyboard planet selection ──
-  graphCanvas.addEventListener('keydown', (e) => {
+  canvas.addEventListener('keydown', (e) => {
     if (currentLevel !== 'galaxy') return;
-    if (tourState && tourState.active) return;
+    if (tourState.active) return;
 
     const sorted = getSortedPlanets();
     if (!sorted.length) return;
@@ -347,27 +363,27 @@ function setupCanvasEvents() {
       case 'ArrowRight':
       case 'ArrowDown':
         e.preventDefault();
-        focusedPlanetIndex = (focusedPlanetIndex + 1) % sorted.length;
+        setFocusedPlanetIndex((focusedPlanetIndex + 1) % sorted.length);
         break;
       case 'ArrowLeft':
       case 'ArrowUp':
         e.preventDefault();
-        focusedPlanetIndex = (focusedPlanetIndex - 1 + sorted.length) % sorted.length;
+        setFocusedPlanetIndex((focusedPlanetIndex - 1 + sorted.length) % sorted.length);
         break;
       case 'Enter':
       case ' ':
         e.preventDefault();
         if (focusedPlanetIndex >= 0) {
           const planet = sorted[focusedPlanetIndex];
-          focusedPlanetIndex = -1;
+          setFocusedPlanetIndex(-1);
           enterPlanet(planet.id);
           track('planet_click', { planet: planet.id, method: 'keyboard' });
         }
         return;
       case 'Escape':
         e.preventDefault();
-        focusedPlanetIndex = -1;
-        graphCanvas.blur();
+        setFocusedPlanetIndex(-1);
+        canvas.blur();
         renderGraph();
         return;
       default:
@@ -379,17 +395,16 @@ function setupCanvasEvents() {
       const planet = sorted[focusedPlanetIndex];
       const desc = NPSP[planet.id] ? NPSP[planet.id].description.substring(0, 80) : '';
       announce(`${planet.label}: ${desc}`);
-      // Re-render to show focus ring
-      graphSettled = false;
+      setGraphSettled(false);
       requestAnimationFrame(graphTick);
     }
   });
 }
 
 // ── Transition Presets ──
-var PRESETS = ['', 'transition-cinematic', 'transition-snappy'];
-var PRESET_NAMES = ['Gentle', 'Cinematic', 'Snappy'];
-var presetIndex = 0;
+const PRESETS = ['', 'transition-cinematic', 'transition-snappy'];
+const PRESET_NAMES = ['Gentle', 'Cinematic', 'Snappy'];
+let presetIndex = 0;
 
 function cyclePreset() {
   document.body.classList.remove('transition-cinematic', 'transition-snappy');
@@ -400,36 +415,36 @@ function cyclePreset() {
 }
 
 function showPresetIndicator(name) {
-  var el = document.getElementById('preset-indicator');
+  let el = document.getElementById('preset-indicator');
   if (!el) {
     el = document.createElement('div');
     el.id = 'preset-indicator';
     document.body.appendChild(el);
   }
-  el.textContent = 'Transition: ' + name;
+  el.textContent = `Transition: ${name}`;
   el.classList.add('visible');
   clearTimeout(el._timer);
-  el._timer = setTimeout(function() { el.classList.remove('visible'); }, 1500);
+  el._timer = setTimeout(() => el.classList.remove('visible'), 1500);
 }
 
 // ── Keyboard Shortcuts ──
 function setupKeyboard() {
-  var searchInput = document.getElementById('searchInput');
-  var searchShell = document.getElementById('searchShell');
+  const searchInput = document.getElementById('searchInput');
+  const searchShell = document.getElementById('searchShell');
 
   // Search input focus/blur
-  searchInput.addEventListener('focus', function() {
-    if (this.value.length > 0) {
-      expandSearch(this.value);
+  searchInput.addEventListener('focus', () => {
+    if (searchInput.value.length > 0) {
+      expandSearch(searchInput.value);
     } else {
       searchShell.classList.add('focused');
     }
   });
 
-  searchInput.addEventListener('blur', function() {
-    setTimeout(function() {
+  searchInput.addEventListener('blur', () => {
+    setTimeout(() => {
       if (document.activeElement !== searchInput) {
-        var dropOpen = document.getElementById('searchDrop').classList.contains('open');
+        const dropOpen = document.getElementById('searchDrop').classList.contains('open');
         if (dropOpen) {
           closeSearch();
         } else {
@@ -440,8 +455,8 @@ function setupKeyboard() {
   });
 
   // Search input handler
-  searchInput.addEventListener('input', function() {
-    var q = this.value;
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value;
     if (q.length > 0) {
       expandSearch(q);
     } else {
@@ -450,7 +465,7 @@ function setupKeyboard() {
   });
 
   // Search keyboard navigation
-  searchInput.addEventListener('keydown', function(e) {
+  searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       e.stopPropagation();
       closeSearch();
@@ -460,7 +475,7 @@ function setupKeyboard() {
       e.preventDefault();
       if (searchResults.length > 0 && searchIndex >= 0) activateResult(searchIndex);
     }
-    var dropOpen = document.getElementById('searchDrop').classList.contains('open');
+    const dropOpen = document.getElementById('searchDrop').classList.contains('open');
     if (dropOpen) {
       if (e.key === 'ArrowDown') { e.preventDefault(); cycleResult(1); }
       if (e.key === 'ArrowUp') { e.preventDefault(); cycleResult(-1); }
@@ -468,12 +483,10 @@ function setupKeyboard() {
   });
 
   // Click scrim to close search
-  document.getElementById('searchScrim').addEventListener('click', function() {
-    closeSearch();
-  });
+  document.getElementById('searchScrim').addEventListener('click', () => closeSearch());
 
   // Global shortcuts
-  document.addEventListener('keydown', function(e) {
+  document.addEventListener('keydown', (e) => {
     if (e.key === '/' && document.activeElement !== searchInput &&
         document.activeElement.tagName !== 'INPUT') {
       e.preventDefault();
@@ -481,7 +494,7 @@ function setupKeyboard() {
       track('keyboard_shortcut', { key: '/' });
     }
     if (e.key === 'Escape' && document.activeElement.tagName !== 'INPUT') {
-      if (tourState && tourState.active) {
+      if (tourState.active) {
         exitTour();
         track('keyboard_shortcut', { key: 'Escape', context: 'tour' });
         return;
@@ -502,7 +515,7 @@ function setupKeyboard() {
     // Tour navigation with left/right arrows
     if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
         document.activeElement.tagName !== 'INPUT' &&
-        tourState && tourState.active) {
+        tourState.active) {
       e.preventDefault();
       advanceStop(e.key === 'ArrowRight' ? 1 : -1);
       track('keyboard_shortcut', { key: e.key, context: 'tour' });
@@ -512,9 +525,9 @@ function setupKeyboard() {
     if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
         document.activeElement.tagName !== 'INPUT' &&
         currentLevel === 'core') {
-      var tabs = document.querySelectorAll('.entity-tab');
+      const tabs = document.querySelectorAll('.entity-tab');
       if (tabs.length > 1) {
-        var activeIdx = Array.from(tabs).findIndex(function(t) { return t.classList.contains('active'); });
+        const activeIdx = Array.from(tabs).findIndex((t) => t.classList.contains('active'));
         if (e.key === 'ArrowLeft' && activeIdx > 0) {
           tabs[activeIdx - 1].click();
         } else if (e.key === 'ArrowRight' && activeIdx < tabs.length - 1) {
@@ -527,26 +540,26 @@ function setupKeyboard() {
 
 // ── Help Button ──
 function setupHelpButton() {
-  var btn = document.getElementById('helpBtn');
-  var stack = document.getElementById('helpStack');
+  const btn = document.getElementById('helpBtn');
+  const stack = document.getElementById('helpStack');
   if (!btn || !stack) return;
-  function show() { stack.classList.add('visible'); btn.classList.add('pressed'); }
-  function hide() { stack.classList.remove('visible'); btn.classList.remove('pressed'); }
-  btn.addEventListener('mousedown', function(e) { e.preventDefault(); show(); });
+  const show = () => { stack.classList.add('visible'); btn.classList.add('pressed'); };
+  const hide = () => { stack.classList.remove('visible'); btn.classList.remove('pressed'); };
+  btn.addEventListener('mousedown', (e) => { e.preventDefault(); show(); });
   document.addEventListener('mouseup', hide);
-  btn.addEventListener('touchstart', function(e) { e.preventDefault(); show(); }, { passive: false });
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); show(); }, { passive: false });
   document.addEventListener('touchend', hide);
   document.addEventListener('touchcancel', hide);
 }
 
 // ── Build Stats ──
 function buildStats() {
-  var totalClasses = 0, totalTriggers = 0, totalObjects = 0;
-  var totalComponents = 0, domains = 0;
+  let totalClasses = 0, totalTriggers = 0, totalObjects = 0;
+  let totalComponents = 0, domains = 0;
 
-  for (var pid in NPSP) {
+  for (const pid in NPSP) {
     domains++;
-    var p = NPSP[pid];
+    const p = NPSP[pid];
     totalComponents += p.components.length;
     if (p._entities) {
       totalClasses += (p._entities.classes || []).length;
@@ -580,31 +593,20 @@ window.addEventListener('popstate', () => {
 });
 
 // ── Lazy Entity Loading ──
-let entitiesLoaded = false;
-
 const loadEntities = () => {
   const script = document.createElement('script');
   script.src = 'js/npsp-entities.js?v=4';
   script.onload = () => {
-    entitiesLoaded = true;
+    setEntitiesLoaded(true);
     mergeEntities();
     rebuildSearchIndex();
     buildStats();
-    refreshCurrentViewIfNeeded();
+    refreshCurrentView();
   };
   script.onerror = () => {
     console.warn('Failed to load entity data');
   };
   document.head.appendChild(script);
-};
-
-// If user is viewing a component/planet when entities finish loading, refresh it
-const refreshCurrentViewIfNeeded = () => {
-  if (currentLevel === 'planet' && currentPlanet) {
-    renderPlanetView(currentPlanet);
-  } else if (currentLevel === 'core' && currentPlanet && currentComponent) {
-    renderCoreView(currentPlanet, currentComponent);
-  }
 };
 
 // ── Init ──
@@ -628,6 +630,15 @@ function init() {
   updateBreadcrumb();
   buildStats();
   initTours();
+
+  // Navbar event listeners (replaced inline onclick from index.html)
+  document.getElementById('nav-brand').addEventListener('click', () => navigateTo('galaxy'));
+  document.getElementById('nav-brand').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateTo('galaxy'); }
+  });
+  document.getElementById('tour-btn').addEventListener('click', () => toggleTourPicker());
+  document.getElementById('theme-toggle').addEventListener('click', () => toggleTheme());
+
   window.addEventListener('resize', onResize);
   requestAnimationFrame(graphTick);
   requestAnimationFrame(particleTick);

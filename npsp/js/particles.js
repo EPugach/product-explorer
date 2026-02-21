@@ -2,6 +2,9 @@
 //  PARTICLES — Connection flow particles + ambient nebula
 // ══════════════════════════════════════════════════════════════
 
+import { hexToRgba } from './utils.js';
+import { edges, nodeMap, zoom, panX, panY, hoveredNode } from './physics.js';
+
 let particleCanvas, particleCtx;
 let connectionParticles = [];
 let nebulaBlobs = [];
@@ -9,7 +12,7 @@ let particlesVisible = true;
 const CONNECTION_PARTICLE_COUNT = 3; // per edge
 const NEBULA_BLOB_COUNT = 5;
 
-function initParticles() {
+export function initParticles() {
   particleCanvas = document.getElementById('particle-canvas');
   particleCtx = particleCanvas.getContext('2d');
   resizeParticleCanvas();
@@ -17,7 +20,7 @@ function initParticles() {
   initNebulaBlobs();
 }
 
-function resizeParticleCanvas() {
+export function resizeParticleCanvas() {
   particleCanvas.width = innerWidth * devicePixelRatio;
   particleCanvas.height = innerHeight * devicePixelRatio;
   particleCanvas.style.width = innerWidth + 'px';
@@ -90,7 +93,7 @@ function renderConnectionParticles() {
 
 // ── Nebula Blobs ──
 // Large, soft, slow-moving colored washes creating depth
-function initNebulaBlobs() {
+export function initNebulaBlobs() {
   nebulaBlobs = [];
   const colors = document.body.classList.contains('theme-light')
     ? ['#d8edff', '#cce4ff', '#b0d5f7', '#e0e0e0', '#d4e3f5']
@@ -143,13 +146,13 @@ function renderNebulaBlobs() {
 }
 
 // ── Combined update + render ──
-function updateParticles() {
+export function updateParticles() {
   if (!particlesVisible) return;
   updateConnectionParticles();
   updateNebulaBlobs();
 }
 
-function renderParticles() {
+export function renderParticles() {
   particleCtx.save();
   particleCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
   particleCtx.clearRect(0, 0, innerWidth, innerHeight);
@@ -165,14 +168,5 @@ function renderParticles() {
   particleCtx.restore();
 }
 
-function showParticles() { particlesVisible = true; }
-function hideParticles() { particlesVisible = false; }
-
-// hexToRgba utility (also used by renderer)
-function hexToRgba(hex, a) {
-  if (!hex || hex[0] !== '#') return `rgba(77,139,255,${a})`;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${a})`;
-}
+export function showParticles() { particlesVisible = true; }
+export function hideParticles() { particlesVisible = false; }

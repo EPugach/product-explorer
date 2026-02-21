@@ -3,12 +3,22 @@
 //  Radial gradient orbs, bezier edges, glow, labels
 // ══════════════════════════════════════════════════════════════
 
-var _light = function() { return document.body.classList.contains('theme-light'); };
+import { hexToRgba } from './utils.js';
+import {
+  nodes, edges, nodeMap, graphCtx, canvasW, canvasH,
+  zoom, panX, panY, hoveredNode
+} from './physics.js';
+import {
+  tourFocusNode, tourHighlightedEdges, tourStopPlanets,
+  focusedPlanetIndex
+} from './state.js';
+
+const _light = () => document.body.classList.contains('theme-light');
 
 let renderFrame = 0;
 let entranceStart = 0;
 
-function initRenderer() {
+export function initRenderer() {
   entranceStart = performance.now();
 }
 
@@ -32,13 +42,6 @@ function darkenColor(hex, pct) {
   return `rgb(${r},${g},${b})`;
 }
 
-function hexToRgba(hex, a) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${a})`;
-}
-
 // Compute bezier control point for an edge
 function edgeBezier(s, t) {
   const mx = (s.x + t.x) / 2;
@@ -48,7 +51,7 @@ function edgeBezier(s, t) {
   return { mx: mx + (-dy * 0.1), my: my + (dx * 0.1) };
 }
 
-function renderGraph() {
+export function renderGraph() {
   renderFrame++;
   const elapsed = performance.now() - entranceStart;
   const ctx = graphCtx;
@@ -80,7 +83,7 @@ function renderGraph() {
 
     if (isTourEdge) {
       // Tour highlighted edge: solid, bright, thick
-      var tourColor = nodeMap[tourFocusNode] ? nodeMap[tourFocusNode].color : '#88bbff';
+      const tourColor = nodeMap[tourFocusNode] ? nodeMap[tourFocusNode].color : '#88bbff';
       ctx.globalAlpha = 0.8 * edgeAlpha;
       ctx.strokeStyle = tourColor;
       ctx.lineWidth = 3;
@@ -187,14 +190,14 @@ function renderGraph() {
 
     // Class count subtitle on hover
     if (isH) {
-      ctx.font = `9px -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.font = '9px -apple-system, BlinkMacSystemFont, sans-serif';
       ctx.fillStyle = _light() ? '#444444' : '#64748b';
       ctx.fillText(`${n.classCount} classes`, n.x, n.y + r + 22);
     }
   }
 
   // ── B7: Keyboard focus ring on focused planet ──
-  if (typeof focusedPlanetIndex !== 'undefined' && focusedPlanetIndex >= 0) {
+  if (focusedPlanetIndex >= 0) {
     const sorted = [...nodes].sort((a, b) => a.x - b.x);
     const focusedNode = sorted[focusedPlanetIndex];
     if (focusedNode) {

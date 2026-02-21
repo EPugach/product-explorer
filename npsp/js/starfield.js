@@ -17,7 +17,7 @@ let starfieldPaused = false;
 let starfieldAnimId = null;
 let starfieldFrame = 0;
 
-function initStarfield() {
+export function initStarfield() {
   starfieldCanvas = document.getElementById('starfield');
   starfieldCtx = starfieldCanvas.getContext('2d');
   resizeStarfield();
@@ -127,11 +127,11 @@ function starfieldAnimate() {
 }
 
 // Pause/resume starfield animation (used by navigation + Page Visibility)
-function pauseStarfield() {
+export function pauseStarfield() {
   starfieldPaused = true;
 }
 
-function resumeStarfield() {
+export function resumeStarfield() {
   if (!starfieldPaused) return;
   starfieldPaused = false;
   if (!starfieldAnimId) {
@@ -139,7 +139,7 @@ function resumeStarfield() {
   }
 }
 
-function resizeStarfield() {
+export function resizeStarfield() {
   starfieldCanvas.width = innerWidth;
   starfieldCanvas.height = innerHeight;
   for (const star of stars) {

@@ -3,13 +3,41 @@
 //  Adapted from galaxy-v2 with touch support + responsive sizing
 // ══════════════════════════════════════════════════════════════
 
-let nodes = [], edges = [], nodeMap = {};
-let graphCanvas, graphCtx, canvasW, canvasH;
-let zoom = 1, panX = 0, panY = 0;
-let dragNode = null, hoveredNode = null;
-let isDragging = false, isPanning = false;
-let lastMouse = { x: 0, y: 0 };
-let alpha = 1.0, graphSettled = false;
+import { NPSP } from './npsp-data.js';
+
+// ── Exported mutable state ──
+// These are read by renderer.js, particles.js, and main.js.
+// We export setter functions so other modules can mutate them.
+export let nodes = [];
+export let edges = [];
+export let nodeMap = {};
+export let graphCanvas, graphCtx, canvasW, canvasH;
+export let zoom = 1, panX = 0, panY = 0;
+export let dragNode = null, hoveredNode = null;
+export let isDragging = false, isPanning = false;
+export let lastMouse = { x: 0, y: 0 };
+export let alpha = 1.0, graphSettled = false;
+
+// Setters for mutable state that other modules need to write
+export const setZoom = (v) => { zoom = v; };
+export const setPanX = (v) => { panX = v; };
+export const setPanY = (v) => { panY = v; };
+export const setDragNode = (v) => { dragNode = v; };
+export const setHoveredNode = (v) => { hoveredNode = v; };
+export const setIsDragging = (v) => { isDragging = v; };
+export const setIsPanning = (v) => { isPanning = v; };
+export const setLastMouse = (v) => { lastMouse = v; };
+export const setAlpha = (v) => { alpha = v; };
+export const setGraphSettled = (v) => { graphSettled = v; };
+
+// ── Render callbacks ──
+// Set by main.js after all modules load to break circular import with renderer/particles.
+let _renderGraph = null;
+let _renderParticles = null;
+export const setRenderCallbacks = (renderGraphFn, renderParticlesFn) => {
+  _renderGraph = renderGraphFn;
+  _renderParticles = renderParticlesFn;
+};
 
 // Node sizing: weighted by codebase complexity
 const CODEBASE_WEIGHT = {
@@ -26,7 +54,7 @@ function getRadiusRange() {
   return small ? { min: 18, range: 16 } : { min: 28, range: 24 };
 }
 
-function calcRadius(key) {
+export function calcRadius(key) {
   const d = NPSP[key];
   const cw = CODEBASE_WEIGHT[key] || 5;
   const compW = d.components.length * 10;
@@ -34,7 +62,7 @@ function calcRadius(key) {
   const mult = FOUNDATIONAL[key] || 1.0;
   const raw = (cw + compW + connW) * mult;
 
-  const scores = Object.keys(NPSP).map(k => {
+  const scores = Object.keys(NPSP).map((k) => {
     const dd = NPSP[k];
     return ((CODEBASE_WEIGHT[k] || 5) + dd.components.length * 10 + dd.connections.length * 3) * (FOUNDATIONAL[k] || 1.0);
   });
@@ -65,7 +93,7 @@ const LAYOUT_SEED = {
   errors:        { angle: -0.35, ring: 0.50 }
 };
 
-function initGraph() {
+export function initGraph() {
   graphCanvas = document.getElementById('graph-canvas');
   graphCtx = graphCanvas.getContext('2d');
   resizeGraphCanvas();
@@ -76,7 +104,7 @@ function initGraph() {
   const spreadY = canvasH * 0.18;   // flat vertical
   const tilt = -0.26;               // ~15 degree tilt
 
-  nodes = keys.map(key => {
+  nodes = keys.map((key) => {
     const seed = LAYOUT_SEED[key] || { angle: Math.random() * Math.PI * 2, ring: 0.7 };
     return {
       id: key,
@@ -108,7 +136,7 @@ function initGraph() {
   });
 
   nodeMap = {};
-  nodes.forEach(n => { nodeMap[n.id] = n; });
+  nodes.forEach((n) => { nodeMap[n.id] = n; });
 
   // Build edges from connections
   const edgeSet = new Set();
@@ -127,7 +155,7 @@ function initGraph() {
   graphSettled = false;
 }
 
-function resizeGraphCanvas() {
+export function resizeGraphCanvas() {
   const w = innerWidth, h = innerHeight;
   graphCanvas.width = w * devicePixelRatio;
   graphCanvas.height = h * devicePixelRatio;
@@ -137,7 +165,7 @@ function resizeGraphCanvas() {
   canvasH = h;
 }
 
-function simulate() {
+export function simulate() {
   if (alpha < 0.001) { graphSettled = true; return; }
   alpha *= 0.992;
 
@@ -190,11 +218,11 @@ function simulate() {
   }
 }
 
-function screenToGraph(sx, sy) {
+export function screenToGraph(sx, sy) {
   return { x: (sx - panX) / zoom, y: (sy - panY) / zoom };
 }
 
-function hitTest(sx, sy) {
+export function hitTest(sx, sy) {
   const { x, y } = screenToGraph(sx, sy);
   for (let i = nodes.length - 1; i >= 0; i--) {
     const n = nodes[i];
@@ -205,25 +233,25 @@ function hitTest(sx, sy) {
 }
 
 // Recalculate radii and spring lengths on resize
-function onGraphResize() {
+export function onGraphResize() {
   resizeGraphCanvas();
-  nodes.forEach(n => { n.radius = calcRadius(n.id); });
+  nodes.forEach((n) => { n.radius = calcRadius(n.id); });
   alpha = Math.max(alpha, 0.3);
   graphSettled = false;
 }
 
 // ── Zoom-to-planet animation ──
-var zoomAnimId = null;
+let zoomAnimId = null;
 
-function animateZoomTo(node, duration, callback) {
-  var startZoom = zoom, startPanX = panX, startPanY = panY;
+export function animateZoomTo(node, duration, callback) {
+  const startZoom = zoom, startPanX = panX, startPanY = panY;
 
   // Target: zoom centered on planet
-  var targetZoom = Math.min(canvasW / (node.radius * 6), 3);
-  var targetPanX = canvasW / 2 - node.x * targetZoom;
-  var targetPanY = canvasH / 2 - node.y * targetZoom;
+  const targetZoom = Math.min(canvasW / (node.radius * 6), 3);
+  const targetPanX = canvasW / 2 - node.x * targetZoom;
+  const targetPanY = canvasH / 2 - node.y * targetZoom;
 
-  var startTime = performance.now();
+  const startTime = performance.now();
 
   // Skip animation for reduced motion
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -232,16 +260,16 @@ function animateZoomTo(node, duration, callback) {
   }
 
   function step(now) {
-    var t = Math.min((now - startTime) / duration, 1);
+    const t = Math.min((now - startTime) / duration, 1);
     // Ease-out cubic for smooth deceleration
-    var e = 1 - Math.pow(1 - t, 3);
+    const e = 1 - Math.pow(1 - t, 3);
 
     zoom = startZoom + (targetZoom - startZoom) * e;
     panX = startPanX + (targetPanX - startPanX) * e;
     panY = startPanY + (targetPanY - startPanY) * e;
 
-    renderGraph();
-    renderParticles();
+    if (_renderGraph) _renderGraph();
+    if (_renderParticles) _renderParticles();
 
     if (t < 1) {
       zoomAnimId = requestAnimationFrame(step);
@@ -255,38 +283,38 @@ function animateZoomTo(node, duration, callback) {
   zoomAnimId = requestAnimationFrame(step);
 }
 
-function animatePanTo(node, duration, targetZoomLevel, callback) {
-  var startZoom = zoom, startPanX = panX, startPanY = panY;
+export function animatePanTo(node, duration, targetZoomLevel, callback) {
+  const startZoom = zoom, startPanX = panX, startPanY = panY;
 
   // Target: center on planet at specified zoom level (e.g. 1.4x)
-  var targetZoom = targetZoomLevel || 1.4;
-  var targetPanX = canvasW / 2 - node.x * targetZoom;
-  var targetPanY = canvasH / 2 - node.y * targetZoom;
+  const targetZoom = targetZoomLevel || 1.4;
+  const targetPanX = canvasW / 2 - node.x * targetZoom;
+  const targetPanY = canvasH / 2 - node.y * targetZoom;
 
-  var startTime = performance.now();
+  const startTime = performance.now();
 
   // Skip animation for reduced motion
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     zoom = targetZoom;
     panX = targetPanX;
     panY = targetPanY;
-    renderGraph();
-    renderParticles();
+    if (_renderGraph) _renderGraph();
+    if (_renderParticles) _renderParticles();
     if (callback) callback();
     return;
   }
 
   function step(now) {
-    var t = Math.min((now - startTime) / duration, 1);
+    const t = Math.min((now - startTime) / duration, 1);
     // Ease-out cubic for smooth deceleration
-    var e = 1 - Math.pow(1 - t, 3);
+    const e = 1 - Math.pow(1 - t, 3);
 
     zoom = startZoom + (targetZoom - startZoom) * e;
     panX = startPanX + (targetPanX - startPanX) * e;
     panY = startPanY + (targetPanY - startPanY) * e;
 
-    renderGraph();
-    renderParticles();
+    if (_renderGraph) _renderGraph();
+    if (_renderParticles) _renderParticles();
 
     if (t < 1) {
       zoomAnimId = requestAnimationFrame(step);
@@ -300,7 +328,7 @@ function animatePanTo(node, duration, targetZoomLevel, callback) {
   zoomAnimId = requestAnimationFrame(step);
 }
 
-function resetZoomPan() {
+export function resetZoomPan() {
   if (zoomAnimId) { cancelAnimationFrame(zoomAnimId); zoomAnimId = null; }
   zoom = 1; panX = 0; panY = 0;
 }
@@ -311,11 +339,11 @@ const SOLVER_ITERATIONS = 3;        // Gauss-Seidel passes for cascade resolutio
 const VELOCITY_DAMPING = 0.97;      // floaty zero-gravity decay (~1.5s)
 const COLLISION_GAP = 4;            // min px gap between surfaces
 const REPULSION_RANGE = 40;         // soft repulsion buffer zone (px)
-const REPULSION_STRENGTH = 0.12;    // quadratic ramp force
+const REPULSION_STRENGTH_ORBIT = 0.12;    // quadratic ramp force
 const RESTITUTION = 0.1;            // near-inelastic, gentle nudge
 const WALL_BOUNCE = 0.1;            // soft wall reflection
 
-function applyOrbitalDrift() {
+export function applyOrbitalDrift() {
   if (!graphSettled || dragNode) return;
   const cx = canvasW / 2, cy = (200 + canvasH - 80) / 2;
   const cosA = Math.cos(ORBIT_SPEED), sinA = Math.sin(ORBIT_SPEED);
@@ -340,11 +368,11 @@ function applyOrbitalDrift() {
 
       // Quadratic ramp: zero at buffer edge, max at contact
       const t = Math.max(0, 1 - (dist - contactDist) / (bufferDist - contactDist));
-      const force = t * t * REPULSION_STRENGTH;
+      const force = t * t * REPULSION_STRENGTH_ORBIT;
 
       const nx = dx / dist, ny = dy / dist;
 
-      // Inverse-mass weighting (mass = radius², area-proportional)
+      // Inverse-mass weighting (mass = radius^2, area-proportional)
       const wA = 1 / (a.radius * a.radius);
       const wB = 1 / (b.radius * b.radius);
       const wSum = wA + wB;

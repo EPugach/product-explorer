@@ -45,9 +45,9 @@
 
 <!-- Navbar -->
 <nav id="navbar" aria-label="Navigation">
-  <div class="nav-brand" onclick="navigateTo('galaxy')" style="cursor:pointer" role="button" tabindex="0">NPSP EXPLORER</div>
-  <button id="tour-btn" class="tour-btn" onclick="toggleTourPicker()" aria-label="Tour">Tour <span class="tour-btn-icon">&#x1F68C;</span></button>
-  <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">&#x263D;</button>
+  <div class="nav-brand" id="nav-brand" style="cursor:pointer" role="button" tabindex="0">NPSP EXPLORER</div>
+  <button id="tour-btn" class="tour-btn" aria-label="Tour">Tour <span class="tour-btn-icon">&#x1F68C;</span></button>
+  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">&#x263D;</button>
   <div class="search-box" id="searchBox">
     <div class="search-shell" id="searchShell">
       <span class="s-icon" aria-hidden="true">&#x1F50D;</span>
@@ -123,17 +123,13 @@
 <!-- Screen reader announcements -->
 <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-<!-- Scripts: data first, then systems, then integration (defer preserves order) -->
+<!-- ES module entry point — imports all other modules automatically -->
 <!-- npsp-entities.js (780KB) is lazy-loaded after galaxy is interactive — see main.js -->
-<script defer src="js/npsp-data.js?v=8"></script>
-<script defer src="js/tour-data.js?v=2"></script>
-<script defer src="js/starfield.js?v=9"></script>
-<script defer src="js/physics.js?v=14"></script>
-<script defer src="js/renderer.js?v=11"></script>
-<script defer src="js/particles.js?v=9"></script>
-<script defer src="js/navigation.js?v=10"></script>
-<script defer src="js/search.js?v=10"></script>
-<script defer src="js/tours.js?v=4"></script>
-<script defer src="js/main.js?v=12"></script>
+<!-- Preload hints for critical modules to speed up parallel fetch -->
+<link rel="modulepreload" href="js/npsp-data.js?v=9">
+<link rel="modulepreload" href="js/physics.js?v=15">
+<link rel="modulepreload" href="js/renderer.js?v=12">
+<link rel="modulepreload" href="js/navigation.js?v=11">
+<script type="module" src="js/main.js?v=13"></script>
 </body>
 </html>

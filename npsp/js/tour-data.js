@@ -3,7 +3,7 @@
 //  Each tour is a sequence of stops with admin & dev narration
 // ══════════════════════════════════════════════════════════════
 
-var TOURS = [
+export const TOURS = [
   {
     id: 'donation-lifecycle',
     title: 'The Donation Lifecycle',
