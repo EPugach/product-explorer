@@ -100,14 +100,14 @@ body.theme-light {
   --depth-4: #ffffff;
   --text-primary: #181818;
   --text-secondary: #444444;
-  --text-dim: #706e6b;
+  --text-dim: #595959;
   --glow-primary: #0176d3;
   --glow-accent: #0176d3;
   --glow-warm: #fe9339;
   --glow-alert: #ea001e;
   --glow-success: #2e844a;
   --glow-info: #0176d3;
-  --glow-muted: #706e6b;
+  --glow-muted: #595959;
 }
 
 /* ── Reset ── */
@@ -966,7 +966,7 @@ body {
     --text-xl: 1.5rem;
   }
 
-  #navbar { padding: 0 var(--space-3); }
+  #navbar { padding: 0 var(--space-3); gap: var(--space-2); }
   .nav-brand { font-size: 11px; letter-spacing: 1px; }
   .search-box { max-width: 200px; }
   .search-shell.expanded {
@@ -983,6 +983,10 @@ body {
   }
   #zoom-indicator { display: none; }
 
+  /* Touch targets (font-size/gap for tour-btn in tour-responsive block below base styles) */
+  .tour-btn { min-width: 44px; min-height: 44px; justify-content: center; }
+  .theme-toggle { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+
   .galaxy-title h1 { font-size: var(--text-xl); letter-spacing: 2px; }
   .galaxy-title p { font-size: var(--text-xs); padding: 0 var(--space-4); }
   .galaxy-stats {
@@ -995,8 +999,13 @@ body {
 
   #planet-view { padding: 60px var(--space-4) var(--space-4); }
   #core-view { padding: 60px var(--space-4) var(--space-4); }
+  #entity-view { padding: 60px var(--space-4) var(--space-4); }
 
   .component-grid { grid-template-columns: 1fr; }
+  .entity-grid { grid-template-columns: 1fr; }
+  .eft-header, .eft-row { grid-template-columns: 1fr 80px 2fr; }
+  .entity-tab-bar { scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; }
+  .entity-tab-bar::-webkit-scrollbar { display: none; }
 
 }
 
@@ -1007,9 +1016,17 @@ body {
     --text-xl: 1.35rem;
   }
 
+  /* Navbar compaction */
+  #navbar { gap: var(--space-1); padding: 0 var(--space-2); }
+  .nav-brand { font-size: 10px; }
+  .search-box { max-width: none; }
+  .search-shell { height: 30px; }
+  .search-shell input { padding: 0 6px 0 28px; font-size: 13px; }
+  .search-shell .s-icon { font-size: 14px; left: 8px; }
+  .search-drop { left: 8px; right: 8px; }
+
   .galaxy-title { margin-bottom: var(--space-3); }
   .galaxy-title h1 { letter-spacing: 1px; }
-  /* subtitle is short enough for mobile now */
 
   .galaxy-stats {
     bottom: var(--space-2);
@@ -1021,6 +1038,45 @@ body {
 
   .planet-header { flex-direction: column; align-items: flex-start; }
 
+  /* Content view padding reduction */
+  #planet-view, #core-view { padding: 56px var(--space-3) var(--space-3); }
+  #entity-view { padding: 56px var(--space-3) var(--space-3); }
+
+  /* Entity details */
+  .entity-detail-header { flex-wrap: wrap; }
+  .entity-detail-name { font-size: 18px; }
+  .entity-fields-table { overflow-x: auto; }
+
+  /* Flow nodes */
+  .flow-node { white-space: normal; }
+
+  /* Lab tabs */
+  .lab-tabs { overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; }
+  .lab-tabs::-webkit-scrollbar { display: none; }
+
+  /* Tour picker */
+  .tour-picker { left: var(--space-2); right: var(--space-2); min-width: unset; }
+
+  /* Breadcrumbs */
+  .bc { font-size: var(--text-xs); }
+  .bc-here { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
+
+  /* Help stack */
+  .help-stack { max-width: calc(100vw - 20px); }
+
+  /* Code header */
+  .code-header { flex-wrap: wrap; }
+
+}
+
+/* ── Responsive: Small Phone (360px) ── */
+@media (max-width: 360px) {
+  .nav-brand { font-size: 0; width: 0; overflow: hidden; padding: 0; margin: 0; border: none; }
+  .search-shell .s-kbd { display: none; }
+
+  .galaxy-stats { gap: var(--space-1); padding: var(--space-1) var(--space-2); }
+  .stat-value { font-size: 11px; }
+  .stat-label { font-size: 9px; }
 }
 
 /* ── Entity Count Badges on Component Cards ── */
@@ -1409,8 +1465,8 @@ body.theme-light .search-shell.expanded {
   border-color: #c9c9c9;
 }
 body.theme-light .search-shell.expanded input { color: #181818; }
-body.theme-light .search-shell.expanded input::placeholder { color: #706e6b; }
-body.theme-light .search-shell.expanded .s-icon { color: #706e6b; }
+body.theme-light .search-shell.expanded input::placeholder { color: #595959; }
+body.theme-light .search-shell.expanded .s-icon { color: #595959; }
 body.theme-light .search-drop {
   background: #ffffff;
   border-color: #c9c9c9;
@@ -1419,7 +1475,7 @@ body.theme-light .search-drop {
 body.theme-light .search-drop .search-hint {
   background: #f3f3f3;
   border-top-color: #c9c9c9;
-  color: #706e6b;
+  color: #595959;
 }
 body.theme-light .search-scrim {
   background: rgba(0,0,0,0.15);
@@ -1445,7 +1501,7 @@ body.theme-light .planet-tooltip {
   border-color: #c9c9c9;
   box-shadow: 0 2px 8px rgba(0,0,0,0.16);
 }
-body.theme-light .help-btn { background: #ffffff; border-color: #c9c9c9; color: #706e6b; }
+body.theme-light .help-btn { background: #ffffff; border-color: #c9c9c9; color: #595959; }
 body.theme-light .help-btn:hover { border-color: #0176d3; color: #0176d3; }
 body.theme-light .help-stack { background: #ffffff; border-color: #c9c9c9; }
 body.theme-light .help-row kbd { background: #f3f3f3; border-color: #c9c9c9; }
@@ -1455,7 +1511,7 @@ body.theme-light .kw { color: #ea001e; }
 body.theme-light .ty { color: #0176d3; }
 body.theme-light .fn { color: #9050e9; }
 body.theme-light .st { color: #014486; }
-body.theme-light .cm { color: #706e6b; }
+body.theme-light .cm { color: #595959; }
 body.theme-light .nu { color: #0176d3; }
 body.theme-light .an { color: #fe9339; }
 body.theme-light .op { color: #ea001e; }
@@ -1795,6 +1851,9 @@ body.theme-light .tour-nav-btn:hover:not(.disabled) {
     left: var(--space-3);
     min-width: 280px;
   }
+  /* Tour button: hide text, show icon only (must be after base .tour-btn) */
+  .tour-btn { font-size: 0; gap: 0; padding: 4px; }
+  .tour-btn .tour-btn-icon { font-size: 18px; }
 }
 
 @media (max-width: 480px) {
@@ -1805,6 +1864,7 @@ body.theme-light .tour-nav-btn:hover:not(.disabled) {
   .tour-card-title-row { width: calc(100% - 32px); }
   .tour-mode-toggle { order: 3; }
   .tour-nav-btn { min-width: 64px; padding: 6px 10px; font-size: 12px; }
+  .tour-picker { left: var(--space-2); right: var(--space-2); min-width: unset; }
 }
 
 /* ── Immersive Tour Mode ── */
