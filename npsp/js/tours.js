@@ -175,6 +175,12 @@ function goToStop(index) {
 
   // Update narration card
   renderNarrationCard(tour, stop, index);
+
+  // B5: Screen reader announcement for tour stop
+  if (typeof announce === 'function') {
+    var planetName = (typeof NPSP !== 'undefined' && NPSP[stop.planet]) ? NPSP[stop.planet].name : stop.planet;
+    announce('Tour stop ' + (index + 1) + ' of ' + tour.stops.length + ': ' + planetName);
+  }
 }
 
 function advanceStop(direction) {

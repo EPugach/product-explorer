@@ -236,6 +236,7 @@ function closeSearch() {
 }
 
 var _searchTrackTimer = null;
+var _searchAnnounceTimer = null;
 function expandSearch(query) {
   var shell = document.getElementById('searchShell');
   var drop = document.getElementById('searchDrop');
@@ -252,6 +253,14 @@ function expandSearch(query) {
     _searchTrackTimer = setTimeout(function() {
       track('search_used', { query: query, result_count: searchResults.length });
     }, 800);
+  }
+  // B5: Debounced screen reader announcement for search results
+  clearTimeout(_searchAnnounceTimer);
+  if (query.length >= 2 && typeof announce === 'function') {
+    _searchAnnounceTimer = setTimeout(function() {
+      const count = searchResults.length;
+      announce(count === 0 ? 'No results found' : `${count} result${count !== 1 ? 's' : ''} found`);
+    }, 500);
   }
 }
 
