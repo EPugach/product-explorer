@@ -7,13 +7,17 @@ function track(event, params) {
   if (typeof gtag === 'function') gtag('event', event, params || {});
 }
 
+// ── Safe localStorage wrapper (Safari private browsing throws) ──
+function safeLSGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+function safeLSSet(key, val) { try { localStorage.setItem(key, val); } catch (e) { /* silent */ } }
+
 // ── Theme Toggle ──
 function isLightMode() { return document.body.classList.contains('theme-light'); }
 
 function toggleTheme() {
   document.body.classList.toggle('theme-light');
   var light = isLightMode();
-  localStorage.setItem('npsp-theme', light ? 'light' : 'dark');
+  safeLSSet('npsp-theme', light ? 'light' : 'dark');
   document.getElementById('theme-toggle').textContent = light ? '\u2600' : '\u263D';
   initNebulaBlobs();
   renderGraph();
@@ -483,7 +487,7 @@ function onResize() {
 // ── Init ──
 function init() {
   // Restore saved theme
-  if (localStorage.getItem('npsp-theme') === 'light') {
+  if (safeLSGet('npsp-theme') === 'light') {
     document.body.classList.add('theme-light');
     document.getElementById('theme-toggle').textContent = '\u2600';
   }

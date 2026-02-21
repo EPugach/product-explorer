@@ -19,7 +19,7 @@ var tourStopPlanets = null;        // Set of planet ids in current tour
 
 function initTours() {
   // Restore mode preference
-  var saved = localStorage.getItem('npsp-tour-mode');
+  var saved = safeLSGet('npsp-tour-mode');
   if (saved === 'dev' || saved === 'admin') tourState.mode = saved;
 
   // Create tour picker dropdown container
@@ -248,7 +248,7 @@ function exitTour() {
 
 function setTourMode(mode) {
   tourState.mode = mode;
-  localStorage.setItem('npsp-tour-mode', mode);
+  safeLSSet('npsp-tour-mode', mode);
 
   // Re-render current card content without camera movement
   if (tourState.active) {
