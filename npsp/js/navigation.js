@@ -113,6 +113,7 @@ function enterEntity(pid, cid, entityType, entityName) {
   renderEntityView(pid, cid, entityType, entityName);
   showView('entity-view', 'in');
   updateBreadcrumb();
+  if (typeof track === 'function') track('entity_view', { type: entityType, name: entityName });
 }
 
 function navigateToCore(pid, cid) {
@@ -155,6 +156,7 @@ function navigateTo(level) {
 }
 
 function goBack() {
+  if (typeof track === 'function') track('back_navigation', { from: currentLevel });
   if (navHistory.length > 0) {
     const prev = navHistory.pop();
     if (prev.level === 'galaxy') {
@@ -369,6 +371,7 @@ function renderCoreView(pid, cid) {
 
 // ── Switch Entity Tab ──
 function switchEntityTab(pid, cid, tabKey) {
+  if (typeof track === 'function') track('tab_switch', { tab: tabKey });
   // Update active tab styling
   document.querySelectorAll('.entity-tab').forEach(function(t) {
     t.classList.toggle('active', t.dataset.tab === tabKey);

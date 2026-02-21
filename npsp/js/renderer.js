@@ -3,6 +3,8 @@
 //  Radial gradient orbs, bezier edges, glow, labels
 // ══════════════════════════════════════════════════════════════
 
+var _light = function() { return document.body.classList.contains('theme-light'); };
+
 let renderFrame = 0;
 let entranceStart = 0;
 
@@ -68,24 +70,43 @@ function renderGraph() {
     if (edgeAlpha <= 0) continue;
 
     const isHL = hoveredNode && (e.source === hoveredNode.id || e.target === hoveredNode.id);
+    const edgeKey = [e.source, e.target].sort().join('--');
+    const isTourEdge = tourHighlightedEdges && tourHighlightedEdges.has(edgeKey);
     const { mx, my } = edgeBezier(s, t);
 
     ctx.beginPath();
     ctx.moveTo(s.x, s.y);
     ctx.quadraticCurveTo(mx, my, t.x, t.y);
 
-    if (hoveredNode) {
+    if (isTourEdge) {
+      // Tour highlighted edge: solid, bright, thick
+      var tourColor = nodeMap[tourFocusNode] ? nodeMap[tourFocusNode].color : '#88bbff';
+      ctx.globalAlpha = 0.8 * edgeAlpha;
+      ctx.strokeStyle = tourColor;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([]);
+      ctx.shadowColor = tourColor;
+      ctx.shadowBlur = 12;
+    } else if (tourHighlightedEdges) {
+      // Tour is active but this edge is not highlighted: very dim
+      ctx.globalAlpha = 0.04 * edgeAlpha;
+      ctx.strokeStyle = _light() ? 'rgba(1,118,211,0.15)' : 'rgba(100,140,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6, 5]);
+    } else if (hoveredNode) {
       ctx.globalAlpha = (isHL ? 0.6 : 0.04) * edgeAlpha;
-      ctx.strokeStyle = isHL ? '#88bbff' : 'rgba(100,140,255,0.2)';
+      ctx.strokeStyle = isHL ? (_light() ? '#0176d3' : '#88bbff') : (_light() ? 'rgba(1,118,211,0.15)' : 'rgba(100,140,255,0.2)');
       ctx.lineWidth = isHL ? 2 : 1;
+      ctx.setLineDash([6, 5]);
     } else {
       ctx.globalAlpha = 0.25 * edgeAlpha;
-      ctx.strokeStyle = 'rgba(100,140,255,0.3)';
+      ctx.strokeStyle = _light() ? 'rgba(1,118,211,0.35)' : 'rgba(100,140,255,0.3)';
       ctx.lineWidth = 1;
+      ctx.setLineDash([6, 5]);
     }
-    ctx.setLineDash([6, 5]);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
 
     // Edge label on hover
@@ -93,7 +114,7 @@ function renderGraph() {
       const perpX = -(t.y - s.y) * 0.1;
       const perpY = (t.x - s.x) * 0.1;
       ctx.font = '9px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = _light() ? '#444444' : '#64748b';
       ctx.textAlign = 'center';
       const lbl = e.label.length > 40 ? e.label.substring(0, 40) + '...' : e.label;
       ctx.fillText(lbl, mx + perpX * 0.4, my + perpY * 0.4 - 5);
@@ -131,14 +152,16 @@ function renderGraph() {
     ctx.beginPath();
     ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
     ctx.fillStyle = grad;
-    const dimFactor = hoveredNode && !isH ? 0.3 : 1;
+    const dimFactor = tourFocusNode
+      ? (tourStopPlanets && tourStopPlanets.has(n.id) ? 1 : 0.15)
+      : (hoveredNode && !isH ? 0.3 : 1);
     ctx.globalAlpha = n.entranceAlpha * dimFactor;
     ctx.fill();
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
 
     // Ring outline
-    ctx.strokeStyle = `rgba(180,200,255,${(isH ? 0.5 : 0.15) * n.entranceAlpha})`;
+    ctx.strokeStyle = _light() ? `rgba(1,118,211,${(isH ? 0.5 : 0.2) * n.entranceAlpha})` : `rgba(180,200,255,${(isH ? 0.5 : 0.15) * n.entranceAlpha})`;
     ctx.lineWidth = isH ? 2 : 1;
     ctx.stroke();
 
@@ -153,17 +176,19 @@ function renderGraph() {
     // Label
     const labelSize = Math.min(canvasW, canvasH) < 600 ? 9 : 10;
     ctx.font = `600 ${labelSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
-    ctx.fillStyle = isH ? '#e2e8f0' : '#94a3b8';
+    ctx.fillStyle = isH ? (_light() ? '#181818' : '#e2e8f0') : (_light() ? '#444444' : '#94a3b8');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.globalAlpha = n.entranceAlpha * (hoveredNode && !isH ? 0.2 : 0.9);
+    ctx.globalAlpha = n.entranceAlpha * (tourFocusNode
+      ? (tourStopPlanets && tourStopPlanets.has(n.id) ? 0.9 : 0.1)
+      : (hoveredNode && !isH ? 0.2 : 0.9));
     ctx.fillText(n.label.toUpperCase(), n.x, n.y + r + 8);
     ctx.globalAlpha = 1;
 
     // Class count subtitle on hover
     if (isH) {
       ctx.font = `9px -apple-system, BlinkMacSystemFont, sans-serif`;
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = _light() ? '#444444' : '#64748b';
       ctx.fillText(`${n.classCount} classes`, n.x, n.y + r + 22);
     }
   }

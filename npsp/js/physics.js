@@ -45,24 +45,24 @@ function calcRadius(key) {
 
 // Intentional initial layout: arrange domains in a meaningful pattern
 const LAYOUT_SEED = {
-  donations:     { angle: -1.2, ring: 0.7 },
-  contacts:      { angle: -2.2, ring: 0.8 },
-  recurring:     { angle: -0.3, ring: 0.8 },
-  rollups:       { angle: -0.8, ring: 0.5 },
-  softcredits:   { angle: -2.8, ring: 0.9 },
-  allocations:   { angle: 0.3, ring: 0.9 },
-  tdtm:          { angle: -1.8, ring: 0.4 },
-  batch:         { angle: 0.0, ring: 0.6 },
-  relationships: { angle: -2.5, ring: 0.7 },
-  addresses:     { angle: -2.0, ring: 0.7 },
-  affiliations:  { angle: 0.6, ring: 0.8 },
-  engagement:    { angle: -3.0, ring: 0.9 },
-  bdi:           { angle: -1.5, ring: 0.8 },
-  giftentry:     { angle: -0.5, ring: 0.8 },
-  levels:        { angle: 0.8, ring: 0.9 },
-  errors:        { angle: -2.3, ring: 0.6 },
-  settings:      { angle: -1.0, ring: 0.6 },
-  elevate:       { angle: 0.4, ring: 0.7 }
+  donations:     { angle:  0.00, ring: 0.70 },
+  recurring:     { angle:  0.35, ring: 0.80 },
+  allocations:   { angle:  0.70, ring: 0.75 },
+  softcredits:   { angle:  1.05, ring: 0.85 },
+  rollups:       { angle:  1.40, ring: 0.55 },
+  batch:         { angle:  1.75, ring: 0.70 },
+  bdi:           { angle:  2.09, ring: 0.80 },
+  giftentry:     { angle:  2.44, ring: 0.75 },
+  elevate:       { angle:  2.79, ring: 0.80 },
+  contacts:      { angle:  3.14, ring: 0.65 },
+  relationships: { angle: -2.79, ring: 0.85 },
+  affiliations:  { angle: -2.44, ring: 0.80 },
+  addresses:     { angle: -2.09, ring: 0.65 },
+  engagement:    { angle: -1.75, ring: 0.80 },
+  levels:        { angle: -1.40, ring: 0.85 },
+  tdtm:          { angle: -1.05, ring: 0.40 },
+  settings:      { angle: -0.70, ring: 0.45 },
+  errors:        { angle: -0.35, ring: 0.50 }
 };
 
 function initGraph() {
@@ -72,7 +72,9 @@ function initGraph() {
 
   const keys = Object.keys(NPSP);
   const cx = canvasW / 2, cy = (200 + canvasH - 80) / 2;
-  const spread = Math.min(canvasW, canvasH) * 0.24;
+  const spreadX = canvasW * 0.38;   // wide horizontal
+  const spreadY = canvasH * 0.18;   // flat vertical
+  const tilt = -0.26;               // ~15 degree tilt
 
   nodes = keys.map(key => {
     const seed = LAYOUT_SEED[key] || { angle: Math.random() * Math.PI * 2, ring: 0.7 };
@@ -86,8 +88,12 @@ function initGraph() {
       classCount: CODEBASE_WEIGHT[key] || 0,
       connectionCount: NPSP[key].connections.length,
       radius: calcRadius(key),
-      x: cx + Math.cos(seed.angle) * spread * seed.ring + (Math.random() - 0.5) * 30,
-      y: cy + Math.sin(seed.angle) * spread * seed.ring + (Math.random() - 0.5) * 30,
+      x: cx + (Math.cos(seed.angle) * spreadX * seed.ring) * Math.cos(tilt)
+             - (Math.sin(seed.angle) * spreadY * seed.ring) * Math.sin(tilt)
+             + (Math.random() - 0.5) * 20,
+      y: cy + (Math.cos(seed.angle) * spreadX * seed.ring) * Math.sin(tilt)
+             + (Math.sin(seed.angle) * spreadY * seed.ring) * Math.cos(tilt)
+             + (Math.random() - 0.5) * 20,
       vx: 0, vy: 0,
       fx: null, fy: null,
       pulsePhase: Math.random() * Math.PI * 2,
@@ -155,18 +161,18 @@ function simulate() {
     if (!s || !t) continue;
     let dx = t.x - s.x, dy = t.y - s.y;
     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const idealLen = Math.min(canvasW, canvasH) < 600 ? 160 : 240;
+    const idealLen = Math.min(canvasW, canvasH) < 600 ? 160 : 260;
     const force = (dist - idealLen) * 0.04 * alpha;
     const fx = (dx / dist) * force, fy = (dy / dist) * force;
     s.vx += fx; s.vy += fy;
     t.vx -= fx; t.vy -= fy;
   }
 
-  // Centering gravity (offset down to avoid title area)
+  // Anisotropic centering gravity (weaker x to spread, stronger y to keep flat)
   const cx = canvasW / 2, cy = (200 + canvasH - 80) / 2;
   for (const n of nodes) {
-    n.vx += (cx - n.x) * 0.008 * alpha;
-    n.vy += (cy - n.y) * 0.008 * alpha;
+    n.vx += (cx - n.x) * 0.005 * alpha;   // weaker x: let them spread
+    n.vy += (cy - n.y) * 0.015 * alpha;   // stronger y: keep band flat
   }
 
   // Integration with friction
@@ -249,7 +255,162 @@ function animateZoomTo(node, duration, callback) {
   zoomAnimId = requestAnimationFrame(step);
 }
 
+function animatePanTo(node, duration, targetZoomLevel, callback) {
+  var startZoom = zoom, startPanX = panX, startPanY = panY;
+
+  // Target: center on planet at specified zoom level (e.g. 1.4x)
+  var targetZoom = targetZoomLevel || 1.4;
+  var targetPanX = canvasW / 2 - node.x * targetZoom;
+  var targetPanY = canvasH / 2 - node.y * targetZoom;
+
+  var startTime = performance.now();
+
+  // Skip animation for reduced motion
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    zoom = targetZoom;
+    panX = targetPanX;
+    panY = targetPanY;
+    renderGraph();
+    renderParticles();
+    if (callback) callback();
+    return;
+  }
+
+  function step(now) {
+    var t = Math.min((now - startTime) / duration, 1);
+    // Ease-out cubic for smooth deceleration
+    var e = 1 - Math.pow(1 - t, 3);
+
+    zoom = startZoom + (targetZoom - startZoom) * e;
+    panX = startPanX + (targetPanX - startPanX) * e;
+    panY = startPanY + (targetPanY - startPanY) * e;
+
+    renderGraph();
+    renderParticles();
+
+    if (t < 1) {
+      zoomAnimId = requestAnimationFrame(step);
+    } else {
+      zoomAnimId = null;
+      if (callback) callback();
+    }
+  }
+
+  if (zoomAnimId) cancelAnimationFrame(zoomAnimId);
+  zoomAnimId = requestAnimationFrame(step);
+}
+
 function resetZoomPan() {
   if (zoomAnimId) { cancelAnimationFrame(zoomAnimId); zoomAnimId = null; }
   zoom = 1; panX = 0; panY = 0;
+}
+
+// ── Orbital Drift with Realistic Physics ──
+const ORBIT_SPEED = 0.00002;        // ~0.07 deg/sec
+const SOLVER_ITERATIONS = 3;        // Gauss-Seidel passes for cascade resolution
+const VELOCITY_DAMPING = 0.97;      // floaty zero-gravity decay (~1.5s)
+const COLLISION_GAP = 4;            // min px gap between surfaces
+const REPULSION_RANGE = 40;         // soft repulsion buffer zone (px)
+const REPULSION_STRENGTH = 0.12;    // quadratic ramp force
+const RESTITUTION = 0.1;            // near-inelastic, gentle nudge
+const WALL_BOUNCE = 0.1;            // soft wall reflection
+
+function applyOrbitalDrift() {
+  if (!graphSettled || dragNode) return;
+  const cx = canvasW / 2, cy = (200 + canvasH - 80) / 2;
+  const cosA = Math.cos(ORBIT_SPEED), sinA = Math.sin(ORBIT_SPEED);
+
+  // 1. Rotate all planets (orbital motion)
+  for (const n of nodes) {
+    const dx = n.x - cx, dy = n.y - cy;
+    n.x = cx + dx * cosA - dy * sinA;
+    n.y = cy + dx * sinA + dy * cosA;
+  }
+
+  // 2. Soft repulsion field (preventive force before contact)
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b = nodes[j];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+      const contactDist = a.radius + b.radius + COLLISION_GAP;
+      const bufferDist = contactDist + REPULSION_RANGE;
+
+      if (dist >= bufferDist) continue;
+
+      // Quadratic ramp: zero at buffer edge, max at contact
+      const t = Math.max(0, 1 - (dist - contactDist) / (bufferDist - contactDist));
+      const force = t * t * REPULSION_STRENGTH;
+
+      const nx = dx / dist, ny = dy / dist;
+
+      // Inverse-mass weighting (mass = radius², area-proportional)
+      const wA = 1 / (a.radius * a.radius);
+      const wB = 1 / (b.radius * b.radius);
+      const wSum = wA + wB;
+
+      a.vx -= nx * force * (wA / wSum);
+      a.vy -= ny * force * (wA / wSum);
+      b.vx += nx * force * (wB / wSum);
+      b.vy += ny * force * (wB / wSum);
+    }
+  }
+
+  // 3. Integrate velocities
+  for (const n of nodes) {
+    n.x += n.vx;
+    n.y += n.vy;
+  }
+
+  // 4. Iterative constraint projection (Gauss-Seidel, fixes cascading overlaps)
+  for (let iter = 0; iter < SOLVER_ITERATIONS; iter++) {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+        const minDist = a.radius + b.radius + COLLISION_GAP;
+
+        if (dist >= minDist) continue;
+
+        const nx = dx / dist, ny = dy / dist;
+        const overlap = minDist - dist;
+
+        // Mass-weighted position correction
+        const wA = 1 / (a.radius * a.radius);
+        const wB = 1 / (b.radius * b.radius);
+        const wSum = wA + wB;
+
+        a.x -= nx * overlap * (wA / wSum);
+        a.y -= ny * overlap * (wA / wSum);
+        b.x += nx * overlap * (wB / wSum);
+        b.y += ny * overlap * (wB / wSum);
+
+        // Elastic impulse (only when approaching)
+        const relVelN = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+        if (relVelN < 0) {
+          const impulse = -(1 + RESTITUTION) * relVelN / wSum;
+          a.vx -= nx * impulse * wA;
+          a.vy -= ny * impulse * wA;
+          b.vx += nx * impulse * wB;
+          b.vy += ny * impulse * wB;
+        }
+      }
+    }
+  }
+
+  // 5. Damping + boundary reflection
+  for (const n of nodes) {
+    n.vx *= VELOCITY_DAMPING;
+    n.vy *= VELOCITY_DAMPING;
+
+    const margin = n.radius + 20;
+    const topBound = Math.max(margin, 200);
+    const bottomBound = canvasH - margin - 100;
+
+    if (n.x < margin)            { n.x = margin;          n.vx = Math.abs(n.vx) * WALL_BOUNCE; }
+    else if (n.x > canvasW - margin) { n.x = canvasW - margin; n.vx = -Math.abs(n.vx) * WALL_BOUNCE; }
+    if (n.y < topBound)          { n.y = topBound;         n.vy = Math.abs(n.vy) * WALL_BOUNCE; }
+    else if (n.y > bottomBound)  { n.y = bottomBound;      n.vy = -Math.abs(n.vy) * WALL_BOUNCE; }
+  }
 }

@@ -2,6 +2,26 @@
 //  MAIN — Init, animation loop, canvas events, touch, tooltip
 // ══════════════════════════════════════════════════════════════
 
+// ── Analytics helper ──
+function track(event, params) {
+  if (typeof gtag === 'function') gtag('event', event, params || {});
+}
+
+// ── Theme Toggle ──
+function isLightMode() { return document.body.classList.contains('theme-light'); }
+
+function toggleTheme() {
+  document.body.classList.toggle('theme-light');
+  var light = isLightMode();
+  localStorage.setItem('npsp-theme', light ? 'light' : 'dark');
+  document.getElementById('theme-toggle').textContent = light ? '\u2600' : '\u263D';
+  initNebulaBlobs();
+  renderGraph();
+  renderParticles();
+  showPresetIndicator(light ? 'Light' : 'Dark');
+  track('theme_change', { theme: light ? 'light' : 'dark' });
+}
+
 // ── Merge generated entities into NPSP data ──
 function mergeEntities() {
   if (typeof NPSP_ENTITIES === 'undefined') return;
@@ -82,10 +102,9 @@ function hideTooltip() {
 function graphTick() {
   if (currentLevel !== 'galaxy') return;
   simulate();
+  applyOrbitalDrift();
   renderGraph();
-  if (!graphSettled || dragNode || hoveredNode) {
-    requestAnimationFrame(graphTick);
-  }
+  requestAnimationFrame(graphTick);
 }
 
 // Particle loop (runs indefinitely on galaxy view)
@@ -161,9 +180,12 @@ function setupCanvasEvents() {
       dragNode.fx = null; dragNode.fy = null;
       dragNode = null; isPanning = false;
       hideTooltip();
+      if (tourState && tourState.active) return; // Prevent click-through during tour
       enterPlanet(node.id);
+      track('planet_click', { planet: node.id });
       return;
     } else if (dragNode) {
+      track('planet_drag', { planet: dragNode.id });
       dragNode.fx = null; dragNode.fy = null;
       alpha = Math.max(alpha, 0.1);
       graphSettled = false;
@@ -262,7 +284,9 @@ function setupCanvasEvents() {
       var node = touchStartNode;
       touchStartNode = null;
       lastTouchDist = 0;
+      if (tourState && tourState.active) return; // Prevent click-through during tour
       enterPlanet(node.id);
+      track('planet_click', { planet: node.id });
       return;
     }
     touchStartNode = null;
@@ -280,6 +304,7 @@ function cyclePreset() {
   presetIndex = (presetIndex + 1) % PRESETS.length;
   if (PRESETS[presetIndex]) document.body.classList.add(PRESETS[presetIndex]);
   showPresetIndicator(PRESET_NAMES[presetIndex]);
+  track('transition_change', { preset: PRESET_NAMES[presetIndex] });
 }
 
 function showPresetIndicator(name) {
@@ -361,13 +386,35 @@ function setupKeyboard() {
         document.activeElement.tagName !== 'INPUT') {
       e.preventDefault();
       openSearch();
+      track('keyboard_shortcut', { key: '/' });
     }
     if (e.key === 'Escape' && document.activeElement.tagName !== 'INPUT') {
+      if (tourState && tourState.active) {
+        exitTour();
+        track('keyboard_shortcut', { key: 'Escape', context: 'tour' });
+        return;
+      }
       goBack();
+      track('keyboard_shortcut', { key: 'Escape' });
     }
     if ((e.key === 't' || e.key === 'T') && document.activeElement !== searchInput &&
         document.activeElement.tagName !== 'INPUT') {
       cyclePreset();
+      track('keyboard_shortcut', { key: 'T' });
+    }
+    if ((e.key === 'l' || e.key === 'L') && document.activeElement !== searchInput &&
+        document.activeElement.tagName !== 'INPUT') {
+      toggleTheme();
+      track('keyboard_shortcut', { key: 'L' });
+    }
+    // Tour navigation with left/right arrows
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
+        document.activeElement.tagName !== 'INPUT' &&
+        tourState && tourState.active) {
+      e.preventDefault();
+      advanceStop(e.key === 'ArrowRight' ? 1 : -1);
+      track('keyboard_shortcut', { key: e.key, context: 'tour' });
+      return;
     }
     // Tab navigation with left/right arrows (when on core view)
     if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
@@ -384,6 +431,20 @@ function setupKeyboard() {
       }
     }
   });
+}
+
+// ── Help Button ──
+function setupHelpButton() {
+  var btn = document.getElementById('helpBtn');
+  var stack = document.getElementById('helpStack');
+  if (!btn || !stack) return;
+  function show() { stack.classList.add('visible'); btn.classList.add('pressed'); }
+  function hide() { stack.classList.remove('visible'); btn.classList.remove('pressed'); }
+  btn.addEventListener('mousedown', function(e) { e.preventDefault(); show(); });
+  document.addEventListener('mouseup', hide);
+  btn.addEventListener('touchstart', function(e) { e.preventDefault(); show(); }, { passive: false });
+  document.addEventListener('touchend', hide);
+  document.addEventListener('touchcancel', hide);
 }
 
 // ── Build Stats ──
@@ -421,6 +482,11 @@ function onResize() {
 
 // ── Init ──
 function init() {
+  // Restore saved theme
+  if (localStorage.getItem('npsp-theme') === 'light') {
+    document.body.classList.add('theme-light');
+    document.getElementById('theme-toggle').textContent = '\u2600';
+  }
   mergeEntities();
   rebuildSearchIndex();
   createTooltip();
@@ -430,8 +496,10 @@ function init() {
   initParticles();
   setupCanvasEvents();
   setupKeyboard();
+  setupHelpButton();
   updateBreadcrumb();
   buildStats();
+  initTours();
   window.addEventListener('resize', onResize);
   requestAnimationFrame(graphTick);
   requestAnimationFrame(particleTick);
