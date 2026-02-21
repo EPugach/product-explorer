@@ -230,6 +230,10 @@ function exitTour() {
   // Reset camera
   if (typeof resetZoomPan === 'function') resetZoomPan();
 
+  // Reset hash to galaxy view
+  if (typeof setHash === 'function') setHash('#/');
+  if (typeof updateDocumentTitle === 'function') updateDocumentTitle('galaxy');
+
   // Force re-render to clear dimming
   if (typeof graphSettled !== 'undefined') {
     graphSettled = false;
