@@ -8,7 +8,8 @@ import { track, safeLSGet, safeLSSet, announce } from './utils.js';
 import {
   tourState, focusedPlanetIndex, setFocusedPlanetIndex,
   pageHidden, setPageHidden,
-  entitiesLoaded, setEntitiesLoaded
+  entitiesLoaded, setEntitiesLoaded,
+  prefersReducedMotion
 } from './state.js';
 import { initStarfield, pauseStarfield, resumeStarfield, resizeStarfield } from './starfield.js';
 import {
@@ -608,6 +609,33 @@ const loadEntities = () => {
   document.head.appendChild(script);
 };
 
+// ── First-Visit Onboarding Hint ──
+function showOnboardingHint() {
+  const hint = document.createElement('div');
+  hint.className = 'onboarding-hint';
+  hint.textContent = 'Click any planet to explore the NPSP universe';
+  hint.setAttribute('role', 'status');
+  document.body.appendChild(hint);
+
+  // Show after a brief delay for entrance stagger
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    hint.classList.add('visible');
+  }));
+
+  const dismiss = () => {
+    hint.classList.remove('visible');
+    safeLSSet('npsp-visited', '1');
+    setTimeout(() => { if (hint.parentNode) hint.parentNode.removeChild(hint); }, 500);
+    document.removeEventListener('click', dismiss);
+    document.removeEventListener('keydown', dismiss);
+    clearTimeout(autoHide);
+  };
+
+  document.addEventListener('click', dismiss, { once: true });
+  document.addEventListener('keydown', dismiss, { once: true });
+  const autoHide = setTimeout(dismiss, 6000);
+}
+
 // ── Init ──
 function init() {
   // Restore saved theme
@@ -641,6 +669,11 @@ function init() {
   window.addEventListener('resize', onResize);
   requestAnimationFrame(graphTick);
   requestAnimationFrame(particleTick);
+
+  // Show first-visit onboarding hint
+  if (!safeLSGet('npsp-visited')) {
+    showOnboardingHint();
+  }
 
   // Lazy-load entity data (780KB) after the galaxy is interactive
   requestAnimationFrame(() => loadEntities());
