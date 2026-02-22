@@ -988,20 +988,54 @@ body {
 
   #navbar { padding: 0 var(--space-3); gap: var(--space-2); }
   .nav-brand { font-size: 11px; letter-spacing: 1px; }
-  .search-box { width: 200px; max-width: 200px; }
+  #zoom-indicator { display: none; }
+
+  /* Search: collapse to icon button */
+  .search-box { position: static; transform: none; width: auto; max-width: none; }
+  .search-shell {
+    width: 32px; height: 32px; padding: 0;
+    border-radius: 6px; position: relative;
+  }
+  .search-shell .s-icon {
+    position: static; transform: none;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .search-shell input {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; padding: 0;
+  }
+  .search-shell .s-kbd { display: none; }
+
+  /* Search: expand to full-width overlay on focus */
+  .search-shell.focused,
   .search-shell.expanded {
-    border-radius: 8px;
-    border-bottom-color: rgba(77,139,255,0.35);
+    position: fixed; top: 8px; left: 12px; right: 12px;
+    width: auto; height: 36px; padding: 0 12px 0 0;
+    z-index: 200;
+    background: rgba(8,10,24,0.97);
+    border-color: rgba(77,139,255,0.35);
+    box-shadow: 0 0 16px rgba(77,139,255,0.1);
+  }
+  .search-shell.expanded { border-radius: 8px 8px 0 0; border-bottom-color: transparent; }
+  .search-shell.focused .s-icon,
+  .search-shell.expanded .s-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    width: auto; height: auto;
+  }
+  .search-shell.focused input,
+  .search-shell.expanded input {
+    position: static; opacity: 1; flex: 1;
+    padding: 0 8px 0 32px; cursor: text;
   }
   .search-drop {
     position: fixed;
     left: 12px; right: 12px;
     width: auto; max-width: none;
-    top: 56px;
+    top: 52px;
     border: 1px solid rgba(77,139,255,0.35);
-    border-radius: 10px;
+    border-radius: 0 0 10px 10px;
   }
-  #zoom-indicator { display: none; }
 
   /* Touch targets already set at 44px in base styles */
 
@@ -1037,11 +1071,6 @@ body {
   /* Navbar compaction */
   #navbar { gap: var(--space-1); padding: 0 var(--space-2); }
   .nav-brand { font-size: 10px; }
-  .search-box { position: static; transform: none; width: auto; max-width: none; flex: 1; min-width: 0; }
-  .search-shell { height: 30px; }
-  .search-shell input { padding: 0 6px 0 28px; font-size: 13px; }
-  .search-shell .s-icon { font-size: 14px; left: 8px; }
-  .search-drop { left: 8px; right: 8px; }
 
   .galaxy-title { margin-bottom: var(--space-3); }
   .galaxy-title h1 { letter-spacing: 1px; }
