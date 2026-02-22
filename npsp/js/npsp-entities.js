@@ -556,8 +556,16 @@ export default {
       {
         "name": "Account",
         "label": "Account",
-        "fieldCount": 21,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "Batch__c",
+            "type": "Lookup",
+            "field": "Batch__c"
+          }
+        ],
+        "description": "The standard Salesforce Account object extended by NPSP with 21 custom fields for nonprofit-specific functionality. Key additions include matching gift configuration fields, the Grantmaker flag, deceased household tracking, and rollup mode controls. NPSP uses the Account object to represent both organizational donors and Household Accounts that group related Contacts.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Account",
+        "fields": [
           {
             "name": "All_Members_Deceased__c",
             "type": "Checkbox",
@@ -568,7 +576,7 @@ export default {
             "name": "Batch__c",
             "type": "Lookup",
             "label": "Batch",
-            "desc": ""
+            "desc": "The batch this Account was created in."
           },
           {
             "name": "CustomizableRollups_UseSkewMode__c",
@@ -647,23 +655,68 @@ export default {
             "type": "Phone",
             "label": "Matching Gift Phone",
             "desc": "The phone number of the company&apos;s Matching Gift administrator."
+          },
+          {
+            "name": "Matching_Gift_Request_Deadline__c",
+            "type": "Text",
+            "label": "Matching Gift Request Deadline",
+            "desc": "Use this field to note any age restrictions this company places on Matching Gift eligibility."
+          },
+          {
+            "name": "Membership_Span__c",
+            "type": "Number",
+            "label": "Membership Span",
+            "desc": "The number of years that a member of this Household has had a Membership (read only)."
+          },
+          {
+            "name": "Membership_Status__c",
+            "type": "Text",
+            "label": "Membership Status",
+            "desc": "The Membership status of this Household, for example, Current, Expired, or Grace Period. The value is based on Membership End Date and Grace Period. The Default Grace Period is set in NPSP Settings, under Household Settings. This field is read only."
+          },
+          {
+            "name": "Number_of_Household_Members__c",
+            "type": "Number",
+            "label": "Number of Household Members",
+            "desc": "The number of Contacts who are members of this Household."
+          },
+          {
+            "name": "Sustainer__c",
+            "type": "Picklist",
+            "label": "Sustainer",
+            "desc": "Indicates if this Account is an active, lapsed, or former recurring donor. The value is based on the Status of the related Recurring Donations."
+          },
+          {
+            "name": "Undeliverable_Address__c",
+            "type": "Checkbox",
+            "label": "Undeliverable Billing Address",
+            "desc": "Indicates the address is undeliverable."
           }
-        ],
+        ]
+      },
+      {
+        "name": "Contact",
+        "label": "Contact",
         "relationships": [
           {
             "target": "Batch__c",
             "type": "Lookup",
             "field": "Batch__c"
+          },
+          {
+            "target": "Address__c",
+            "type": "Lookup",
+            "field": "Current_Address__c"
+          },
+          {
+            "target": "Account",
+            "type": "Lookup",
+            "field": "Primary_Affiliation__c"
           }
         ],
-        "description": "The standard Salesforce Account object extended by NPSP with 21 custom fields for nonprofit-specific functionality. Key additions include matching gift configuration fields, the Grantmaker flag, deceased household tracking, and rollup mode controls. NPSP uses the Account object to represent both organizational donors and Household Accounts that group related Contacts.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Account"
-      },
-      {
-        "name": "Contact",
-        "label": "Contact",
-        "fieldCount": 27,
-        "keyFields": [
+        "description": "The standard Salesforce Contact object extended by NPSP with 27 custom fields for donor management and household membership. Key additions include the Current_Address__c lookup, Deceased and Do_Not_Contact flags, soft credit rollup fields, and household naming exclusion checkboxes. The Contact is the primary person record in NPSP, linked to a Household Account and optionally to Address records.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Contact",
+        "fields": [
           {
             "name": "Address_Verification_Status__c",
             "type": "Text",
@@ -737,6 +790,12 @@ export default {
             "desc": "Holds the Id of the Household record (either Household Account, or Household object) this Contact is currently associated with (read only)."
           },
           {
+            "name": "is_Address_Override__c",
+            "type": "Checkbox",
+            "label": "Address Override",
+            "desc": "When selected, NPSP will not sync this Contact&apos;s address with the Household Default or Seasonal Address. Use this to maintain a separate Mailing Address for this particular Contact."
+          },
+          {
             "name": "Largest_Soft_Credit_Amount__c",
             "type": "Currency",
             "label": "Largest Soft Credit Amount",
@@ -753,43 +812,89 @@ export default {
             "type": "Currency",
             "label": "Last Soft Credit Amount",
             "desc": "The amount of this Contact&apos;s most recent soft credit."
-          }
-        ],
-        "relationships": [
-          {
-            "target": "Batch__c",
-            "type": "Lookup",
-            "field": "Batch__c"
           },
           {
-            "target": "Address__c",
-            "type": "Lookup",
-            "field": "Current_Address__c"
+            "name": "Last_Soft_Credit_Date__c",
+            "type": "Date",
+            "label": "Last Soft Credit Date",
+            "desc": "The date of this Contact&apos;s most recent soft credit."
           },
           {
-            "target": "Account",
+            "name": "Number_of_Soft_Credits__c",
+            "type": "Number",
+            "label": "Number of Soft Credits",
+            "desc": "The total number of soft credits attributed to this Contact."
+          },
+          {
+            "name": "Number_of_Soft_Credits_Last_N_Days__c",
+            "type": "Number",
+            "label": "Number of Soft Credits Last N Days",
+            "desc": "The number of soft credits attributed to this Contact that closed in the last N days. The value of N is set in NPSP Settings | Donations | Donor Statistics."
+          },
+          {
+            "name": "Number_of_Soft_Credits_Last_Year__c",
+            "type": "Number",
+            "label": "Number of Soft Credits Last Year",
+            "desc": "The number of soft credits attributed to this Contact in the previous calendar year."
+          },
+          {
+            "name": "Number_of_Soft_Credits_This_Year__c",
+            "type": "Number",
+            "label": "Number of Soft Credits This Year",
+            "desc": "The number of soft credits attributed to this Contact this calendar year."
+          },
+          {
+            "name": "Number_of_Soft_Credits_Two_Years_Ago__c",
+            "type": "Number",
+            "label": "Number of Soft Credits Two Years Ago",
+            "desc": "The number of soft credits attributed to this Contact two calendar years ago."
+          },
+          {
+            "name": "Primary_Affiliation__c",
             "type": "Lookup",
-            "field": "Primary_Affiliation__c"
+            "label": "Primary Affiliation",
+            "desc": "The Account marked as Primary in this Contact&apos;s list of Organization Affiliations."
+          },
+          {
+            "name": "Primary_Contact__c",
+            "type": "Checkbox",
+            "label": "Primary Contact",
+            "desc": "Indicates if this Contact is designated as the Primary Contact on their Account (read only)."
+          },
+          {
+            "name": "Soft_Credit_Last_N_Days__c",
+            "type": "Currency",
+            "label": "Soft Credit Last N Days",
+            "desc": "The total amount of soft credit attributed to this Contact in the last N days. The value of N is set in NPSP Settings | Donations | Donor Statistics."
+          },
+          {
+            "name": "Sustainer__c",
+            "type": "Picklist",
+            "label": "Sustainer",
+            "desc": "Indicates if this Contact is an active, lapsed, or former recurring donor. The value is based on the Status of the related Recurring Donations."
+          },
+          {
+            "name": "Undeliverable_Address__c",
+            "type": "Checkbox",
+            "label": "Undeliverable Mailing Address",
+            "desc": "Indicates the address is undeliverable."
           }
-        ],
-        "description": "The standard Salesforce Contact object extended by NPSP with 27 custom fields for donor management and household membership. Key additions include the Current_Address__c lookup, Deceased and Do_Not_Contact flags, soft credit rollup fields, and household naming exclusion checkboxes. The Contact is the primary person record in NPSP, linked to a Household Account and optionally to Address records.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Contact"
+        ]
       },
       {
         "name": "npo02__Household__c",
         "label": "npo02__Household__c",
-        "fieldCount": 1,
-        "keyFields": [
+        "relationships": [],
+        "description": "Legacy custom object that represented Households before NPSP migrated to the Household Account model. It contains a Number_of_Household_Members__c field and was used to group Contacts for naming and communication purposes. Organizations on newer NPSP versions use Household Accounts instead, but this object remains for backward compatibility.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npo02__Household__c",
+        "fields": [
           {
             "name": "Number_of_Household_Members__c",
             "type": "Number",
             "label": "Number of Household Members",
-            "desc": ""
+            "desc": "the number of Contacts in the Household."
           }
-        ],
-        "relationships": [],
-        "description": "Legacy custom object that represented Households before NPSP migrated to the Household Account model. It contains a Number_of_Household_Members__c field and was used to group Contacts for naming and communication purposes. Organizations on newer NPSP versions use Household Accounts instead, but this object remains for backward compatibility.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npo02__Household__c"
+        ]
       }
     ],
     "triggers": [
@@ -1069,8 +1174,10 @@ export default {
       {
         "name": "Addr_Verification_Settings__c",
         "label": "Address Verification Settings",
-        "fieldCount": 10,
-        "keyFields": [
+        "relationships": [],
+        "description": "Custom Settings object that stores the active configuration for address verification services in NPSP. It holds the verification endpoint URL, authentication credentials, the implementing class name, and behavioral flags like automatic verification and ambiguous address rejection. This is the runtime settings object that ADDR_Validator reads during verification.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Addr_Verification_Settings__c",
+        "fields": [
           {
             "name": "Address_Verification_Endpoint__c",
             "type": "Url",
@@ -1131,16 +1238,15 @@ export default {
             "label": "Zipcode Verification Endpoint",
             "desc": "Zipcode Verification URL"
           }
-        ],
-        "relationships": [],
-        "description": "Custom Settings object that stores the active configuration for address verification services in NPSP. It holds the verification endpoint URL, authentication credentials, the implementing class name, and behavioral flags like automatic verification and ambiguous address rejection. This is the runtime settings object that ADDR_Validator reads during verification.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Addr_Verification_Settings__c"
+        ]
       },
       {
         "name": "Address_Verification_Settings__c",
         "label": "Address Verification Settings-DEPRECATED",
-        "fieldCount": 11,
-        "keyFields": [
+        "relationships": [],
+        "description": "Deprecated Custom Settings object that previously stored address verification configuration before being superseded by Addr_Verification_Settings__c. It contains the same field structure including endpoint URLs, auth credentials, and verification flags, all marked as deprecated. This object remains in the codebase for backward compatibility with older NPSP installations.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Address_Verification_Settings__c",
+        "fields": [
           {
             "name": "Address_Verification_Endpoint__c",
             "type": "Url",
@@ -1163,7 +1269,7 @@ export default {
             "name": "Auto_Update_Addresses__c",
             "type": "Checkbox",
             "label": "Auto-Update Addresses-DEPRECATED",
-            "desc": ""
+            "desc": "If checked, changed addresses get updated automatically with the response from the service (when there is one verified result)."
           },
           {
             "name": "Class__c",
@@ -1175,7 +1281,7 @@ export default {
             "name": "Clear_Invalid_Addresses__c",
             "type": "Checkbox",
             "label": "Clear Invalid Addresses-DEPRECATED",
-            "desc": ""
+            "desc": "If checked, any US account address that the service marks undeliverable will automatically get cleared out. (You can review the invalid entry in the Address record.)"
           },
           {
             "name": "Enable_Automatic_Verification__c",
@@ -1207,22 +1313,21 @@ export default {
             "label": "Zipcode Verification Endpoint-DEPRECATED",
             "desc": "URL used for zip code verification."
           }
-        ],
-        "relationships": [],
-        "description": "Deprecated Custom Settings object that previously stored address verification configuration before being superseded by Addr_Verification_Settings__c. It contains the same field structure including endpoint URLs, auth credentials, and verification flags, all marked as deprecated. This object remains in the codebase for backward compatibility with older NPSP installations.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Address_Verification_Settings__c"
+        ]
       },
       {
         "name": "Address__c",
         "label": "Address",
-        "fieldCount": 33,
-        "keyFields": [
+        "relationships": [
           {
-            "name": "API_Response__c",
-            "type": "LongTextArea",
-            "label": "API Response",
-            "desc": "Contains the raw response or an error message."
-          },
+            "target": "Account",
+            "type": "MasterDetail",
+            "field": "Household_Account__c"
+          }
+        ],
+        "description": "Custom object that stores physical mailing addresses associated with Household Accounts via a Master-Detail relationship. It tracks 33 fields including street, city, state, ZIP, geolocation coordinates, verification status, congressional district, and seasonal date ranges. NPSP uses this object to maintain a full address history and support features like default address management and seasonal address switching.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Address__c",
+        "fields": [
           {
             "name": "Address_Type__c",
             "type": "Picklist",
@@ -1240,6 +1345,12 @@ export default {
             "type": "Checkbox",
             "label": "Ambiguous",
             "desc": "Indicates whether more than one valid Address was found when attempting to validate it through an external service."
+          },
+          {
+            "name": "API_Response__c",
+            "type": "LongTextArea",
+            "label": "API Response",
+            "desc": "Contains the raw response or an error message."
           },
           {
             "name": "Congressional_District__c",
@@ -1306,17 +1417,116 @@ export default {
             "type": "Text",
             "label": "Mailing City",
             "desc": ""
-          }
-        ],
-        "relationships": [
+          },
           {
-            "target": "Account",
-            "type": "MasterDetail",
-            "field": "Household_Account__c"
+            "name": "MailingCountry__c",
+            "type": "Text",
+            "label": "Mailing Country",
+            "desc": ""
+          },
+          {
+            "name": "MailingPostalCode__c",
+            "type": "Text",
+            "label": "Mailing Zip/Postal Code",
+            "desc": ""
+          },
+          {
+            "name": "MailingState__c",
+            "type": "Text",
+            "label": "Mailing State/Province",
+            "desc": ""
+          },
+          {
+            "name": "MailingStreet__c",
+            "type": "Text",
+            "label": "Mailing Street",
+            "desc": ""
+          },
+          {
+            "name": "MailingStreet2__c",
+            "type": "TextArea",
+            "label": "Mailing Street2",
+            "desc": ""
+          },
+          {
+            "name": "NCOA_Evaluation_Date__c",
+            "type": "DateTime",
+            "label": "NCOA Evaluation Date",
+            "desc": "The date and time the address was evaluated by an NCOA process"
+          },
+          {
+            "name": "NCOA_Result_Code__c",
+            "type": "Text",
+            "label": "NCOA Result Code",
+            "desc": "The result code form the NCOA vendor"
+          },
+          {
+            "name": "Pre_Verification_Address__c",
+            "type": "TextArea",
+            "label": "Pre-Verification Address",
+            "desc": "Stores the Address as it was before verification with a remote service, in case any information is lost in the verification process."
+          },
+          {
+            "name": "Seasonal_End_Day__c",
+            "type": "Picklist",
+            "label": "Seasonal End Day",
+            "desc": "The day of the month when this Address no longer replaces the Default Address."
+          },
+          {
+            "name": "Seasonal_End_Month__c",
+            "type": "Picklist",
+            "label": "Seasonal End Month",
+            "desc": "The month of the year when this Address no longer replaces the Default Address."
+          },
+          {
+            "name": "Seasonal_Start_Day__c",
+            "type": "Picklist",
+            "label": "Seasonal Start Day",
+            "desc": "The day of the month when this Address replaces the Default Address."
+          },
+          {
+            "name": "Seasonal_Start_Month__c",
+            "type": "Picklist",
+            "label": "Seasonal Start Month",
+            "desc": "The month of the year when this Address replaces the Default Address."
+          },
+          {
+            "name": "State_Lower_District__c",
+            "type": "Text",
+            "label": "State Lower District",
+            "desc": "The state lower district (such as a state assembly district) this address belongs to."
+          },
+          {
+            "name": "State_Upper_District__c",
+            "type": "Text",
+            "label": "State Upper District",
+            "desc": "The state upper district (such as state senate district) this address belongs to."
+          },
+          {
+            "name": "Undeliverable__c",
+            "type": "Checkbox",
+            "label": "Undeliverable",
+            "desc": "Indicates the address is undeliverable."
+          },
+          {
+            "name": "Verification_Status__c",
+            "type": "Text",
+            "label": "Verification Status",
+            "desc": "If this Address requires verification, click the Show more actions dropdown arrow in the upper right and then click Verify Address. Consult NPSP documentation for more information on Address Verification."
+          },
+          {
+            "name": "Verified__c",
+            "type": "Checkbox",
+            "label": "Verified",
+            "desc": "Indicates whether the Address has been verified by an external address verification service."
+          },
+          {
+            "name": "Verified_Date__c",
+            "type": "DateTime",
+            "label": "Verified Date",
+            "desc": "The date and time the address was verified"
           }
-        ],
-        "description": "Custom object that stores physical mailing addresses associated with Household Accounts via a Master-Detail relationship. It tracks 33 fields including street, city, state, ZIP, geolocation coordinates, verification status, congressional district, and seasonal date ranges. NPSP uses this object to maintain a full address history and support features like default address management and seasonal address switching.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Address__c"
+        ]
       }
     ],
     "triggers": [
@@ -5695,21 +5905,6 @@ export default {
       {
         "name": "Activity",
         "label": "Activity",
-        "fieldCount": 2,
-        "keyFields": [
-          {
-            "name": "Engagement_Plan_Task__c",
-            "type": "Lookup",
-            "label": "Engagement Plan Task",
-            "desc": ""
-          },
-          {
-            "name": "Engagement_Plan__c",
-            "type": "Lookup",
-            "label": "Engagement Plan",
-            "desc": ""
-          }
-        ],
         "relationships": [
           {
             "target": "Engagement_Plan_Task__c",
@@ -5723,13 +5918,29 @@ export default {
           }
         ],
         "description": "Extends the standard Activity object with lookup fields to Engagement_Plan_Task__c and Engagement_Plan__c, linking tasks and events to the NPSP Engagement Plan framework. It allows activities created from engagement plans to maintain a reference back to the originating plan and specific task definition. These lookups enable reporting on engagement plan completion and tracking task execution against planned timelines.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Activity"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Activity",
+        "fields": [
+          {
+            "name": "Engagement_Plan__c",
+            "type": "Lookup",
+            "label": "Engagement Plan",
+            "desc": ""
+          },
+          {
+            "name": "Engagement_Plan_Task__c",
+            "type": "Lookup",
+            "label": "Engagement Plan Task",
+            "desc": ""
+          }
+        ]
       },
       {
         "name": "AutoNumber__c",
         "label": "AutoNumber",
-        "fieldCount": 7,
-        "keyFields": [
+        "relationships": [],
+        "description": "Stores auto-numbering configuration for NPSP objects, defining display formats, starting numbers, and target fields for automatic number generation. Each record maps to a specific object and field combination via Object_API_Name__c and Field_API_Name__c, with Max_Used_Number__c tracking the last assigned value to prevent duplicates. The IsActive__c flag allows administrators to enable or disable auto-numbering per object without deleting configuration records.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/AutoNumber__c",
+        "fields": [
           {
             "name": "Description__c",
             "type": "LongTextArea",
@@ -5758,7 +5969,7 @@ export default {
             "name": "Max_Used_Number__c",
             "type": "Number",
             "label": "Max Used Number",
-            "desc": ""
+            "desc": "The highest auto-number used for this format."
           },
           {
             "name": "Object_API_Name__c",
@@ -5772,16 +5983,15 @@ export default {
             "label": "Starting Number",
             "desc": "The first number in the auto-numbered sequence."
           }
-        ],
-        "relationships": [],
-        "description": "Stores auto-numbering configuration for NPSP objects, defining display formats, starting numbers, and target fields for automatic number generation. Each record maps to a specific object and field combination via Object_API_Name__c and Field_API_Name__c, with Max_Used_Number__c tracking the last assigned value to prevent duplicates. The IsActive__c flag allows administrators to enable or disable auto-numbering per object without deleting configuration records.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/AutoNumber__c"
+        ]
       },
       {
         "name": "Batch_Data_Entry_Settings__c",
         "label": "Batch Data Entry Settings",
-        "fieldCount": 3,
-        "keyFields": [
+        "relationships": [],
+        "description": "A legacy custom settings object that controlled the original Batch Data Entry (BDE) tool behavior, including opportunity naming preferences and blank name handling. This feature has been retired in favor of the newer Gift Entry and NPSP Data Import tools. The Viewed_Retirement_Alert__c field tracks whether administrators have acknowledged the deprecation notice.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Batch_Data_Entry_Settings__c",
+        "fields": [
           {
             "name": "Allow_Blank_Opportunity_Names__c",
             "type": "Checkbox",
@@ -5792,7 +6002,7 @@ export default {
             "name": "Opportunity_Naming__c",
             "type": "Checkbox",
             "label": "Opportunity Naming",
-            "desc": ""
+            "desc": "This setting automatically generates the record name for batch entered Opportunity records based on the value of the entered fields."
           },
           {
             "name": "Viewed_Retirement_Alert__c",
@@ -5800,16 +6010,15 @@ export default {
             "label": "Viewed Retirement Alert",
             "desc": ""
           }
-        ],
-        "relationships": [],
-        "description": "A legacy custom settings object that controlled the original Batch Data Entry (BDE) tool behavior, including opportunity naming preferences and blank name handling. This feature has been retired in favor of the newer Gift Entry and NPSP Data Import tools. The Viewed_Retirement_Alert__c field tracks whether administrators have acknowledged the deprecation notice.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Batch_Data_Entry_Settings__c"
+        ]
       },
       {
         "name": "Custom_Column_Header__c",
         "label": "Custom Column Header",
-        "fieldCount": 3,
-        "keyFields": [
+        "relationships": [],
+        "description": "Defines custom column configurations for NPSP list views, storing the field API name, display position index, and target list name for each column. It allows administrators to customize which fields appear in batch and template list views within the NPSP Settings UI. The List_Name__c field maps each column header to a specific list context such as Batches or Templates.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Custom_Column_Header__c",
+        "fields": [
           {
             "name": "Field_Api_Name__c",
             "type": "Text",
@@ -5828,16 +6037,15 @@ export default {
             "label": "List Name",
             "desc": "The list view (e.g. Batches or Templates) that displays this field."
           }
-        ],
-        "relationships": [],
-        "description": "Defines custom column configurations for NPSP list views, storing the field API name, display position index, and target list name for each column. It allows administrators to customize which fields appear in batch and template list views within the NPSP Settings UI. The List_Name__c field maps each column header to a specific list context such as Batches or Templates.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Custom_Column_Header__c"
+        ]
       },
       {
         "name": "Custom_Notification__mdt",
         "label": "Custom Notification",
-        "fieldCount": 5,
-        "keyFields": [
+        "relationships": [],
+        "description": "A custom metadata type that configures NPSP in-app notifications, defining the notification channel, content implementation class, audience targeting logic, and redirect URLs. Each record specifies an Apex class for determining notification content and another for resolving the target audience. The IsActive__c flag allows administrators to enable or disable specific notification types without removing the metadata records.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Custom_Notification__mdt",
+        "fields": [
           {
             "name": "Audience_Implementation__c",
             "type": "Text",
@@ -5868,27 +6076,20 @@ export default {
             "label": "Redirect URL",
             "desc": "Redirect url for notification"
           }
-        ],
-        "relationships": [],
-        "description": "A custom metadata type that configures NPSP in-app notifications, defining the notification channel, content implementation class, audience targeting logic, and redirect URLs. Each record specifies an Apex class for determining notification content and another for resolving the target audience. The IsActive__c flag allows administrators to enable or disable specific notification types without removing the metadata records.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Custom_Notification__mdt"
+        ]
       },
       {
         "name": "Customizable_Rollup_Settings__c",
         "label": "Customizable Rollup Settings",
-        "fieldCount": 22,
-        "keyFields": [
+        "relationships": [],
+        "description": "A hierarchical custom settings object that controls the Customizable Rollups (CRLP) engine, including batch sizes for account, contact, and soft credit rollup jobs, LDV chunk sizes, and incremental processing flags. It serves as the central configuration hub for the CRLP engine, with Customizable_Rollups_Enabled__c as the master toggle. The CMT_API_Status__c field tracks the deployment status of rollup definition metadata, and various batch size fields allow performance tuning for organizations of different scales.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Customizable_Rollup_Settings__c",
+        "fields": [
           {
             "name": "AccountHardCreditNonSkew_Incremental__c",
             "type": "Checkbox",
             "label": "Incremental Account Hard Credit Non-Skew",
-            "desc": ""
-          },
-          {
-            "name": "CMT_API_Status__c",
-            "type": "TextArea",
-            "label": "CMT API Deployment Result",
-            "desc": "Result of the last CustomMetadataType deployment"
+            "desc": "When checked, the Account Hard Credit (Non-Skew) nightly job limits the number of Accounts selected for recalculation by looking for recently updated Opportunities on those Accounts. This helps to improve Customizable Rollup nightly job performance."
           },
           {
             "name": "ChunkSize_Account_HardCredit__c",
@@ -5909,22 +6110,28 @@ export default {
             "desc": "Only used by the new Customizable Rollups engine in LDV Orgs and only when required for LDV orgs"
           },
           {
+            "name": "CMT_API_Status__c",
+            "type": "TextArea",
+            "label": "CMT API Deployment Result",
+            "desc": "Result of the last CustomMetadataType deployment"
+          },
+          {
             "name": "ContactHardCreditNonSkew_Incremental__c",
             "type": "Checkbox",
             "label": "Incremental Contact Hard Credit Non-Skew",
-            "desc": ""
+            "desc": "When checked, the Contact Hard Credit (Non-Skew) nightly job limits the number of Contacts selected for recalculation by looking for those Contacts recently updated Opportunities. This helps to improve Customizable Rollup nightly job performance."
           },
           {
             "name": "Customizable_Rollups_Enabled__c",
             "type": "Checkbox",
             "label": "Enable Customizable Rollups",
-            "desc": ""
+            "desc": "Check this box to enable the new NPSP Customizable Rollup Engine"
           },
           {
             "name": "Disable_Related_Records_Filter__c",
             "type": "Checkbox",
             "label": "Disable Related Records Filter",
-            "desc": ""
+            "desc": "Check this box to prevent hard credit and soft credit rollups on Accounts and Contacts from only processing Account and Contact records that have existing related Opportunity or Opportunity Contact Role records."
           },
           {
             "name": "LimitRecalculatedRecurringDonations__c",
@@ -5967,33 +6174,73 @@ export default {
             "type": "Number",
             "label": "Contact Hard Credit Batch Size",
             "desc": "Used by the old and new Rollups engine"
+          },
+          {
+            "name": "Rollups_Contact_SkewMode_Batch_Size__c",
+            "type": "Number",
+            "label": "Contact Skew Mode Batch Size",
+            "desc": "Only used by the new Customizable Rollups engine"
+          },
+          {
+            "name": "Rollups_Contact_Soft_Credit_Batch_Size__c",
+            "type": "Number",
+            "label": "Contact Soft Credit Batch Size",
+            "desc": "Used by the old and new Rollups engine"
+          },
+          {
+            "name": "Rollups_GAU_Batch_Size__c",
+            "type": "Number",
+            "label": "GAU Batch Size",
+            "desc": "Only used by the new Customizable Rollups engine"
+          },
+          {
+            "name": "Rollups_IncrementalLastNDays_FldOverride__c",
+            "type": "Text",
+            "label": "Incremental: Last N Days Field Override",
+            "desc": "For Incremental Rollups Override Use Only. This value overrides the field used to filter related Opportunities to determine which Accounts, Contacts, GAUs or RDs are recalculated during a nightly scheduled job. Defaults to SystemModStamp."
+          },
+          {
+            "name": "Rollups_IncrementalLastNDays_ValOverride__c",
+            "type": "Number",
+            "label": "Incremental: Last N Days Value Override",
+            "desc": "For Incremental Rollups Override Use Only. This value overrides the calculated number of days used to filter related Opportunities to determine which Accounts, Contacts, GAUs or RDs are recalculated during a nightly scheduled job."
+          },
+          {
+            "name": "Rollups_Limit_on_Attached_Opps_for_Skew__c",
+            "type": "Number",
+            "label": "Skew Mode Threshold",
+            "desc": "Only used by the new Customizable Rollups engine"
+          },
+          {
+            "name": "Rollups_Skew_Dispatcher_Batch_Size__c",
+            "type": "Number",
+            "label": "Skew Mode Dispatcher Batch Size",
+            "desc": "Only used by the new Customizable Rollups engine"
           }
-        ],
-        "relationships": [],
-        "description": "A hierarchical custom settings object that controls the Customizable Rollups (CRLP) engine, including batch sizes for account, contact, and soft credit rollup jobs, LDV chunk sizes, and incremental processing flags. It serves as the central configuration hub for the CRLP engine, with Customizable_Rollups_Enabled__c as the master toggle. The CMT_API_Status__c field tracks the deployment status of rollup definition metadata, and various batch size fields allow performance tuning for organizations of different scales.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Customizable_Rollup_Settings__c"
+        ]
       },
       {
         "name": "Data_Import_Field_Mapping_Set__mdt",
         "label": "Data Import Field Mapping Set",
-        "fieldCount": 1,
-        "keyFields": [
+        "relationships": [],
+        "description": "A custom metadata type that groups Data Import field mappings into a named set, linked to a parent Data_Import_Object_Mapping_Set__mdt record. It acts as a container for organizing individual field-level mapping rules used during NPSP Data Import processing. Only one default set is shipped with NPSP, referenced by the Data_Import_Settings__c configuration.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Field_Mapping_Set__mdt",
+        "fields": [
           {
             "name": "Data_Import_Object_Mapping_Set__c",
             "type": "MetadataRelationship",
             "label": "Data Import Object Mapping Set",
             "desc": "The Data Import Object Group that contains this Field Mapping Set."
           }
-        ],
-        "relationships": [],
-        "description": "A custom metadata type that groups Data Import field mappings into a named set, linked to a parent Data_Import_Object_Mapping_Set__mdt record. It acts as a container for organizing individual field-level mapping rules used during NPSP Data Import processing. Only one default set is shipped with NPSP, referenced by the Data_Import_Settings__c configuration.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Field_Mapping_Set__mdt"
+        ]
       },
       {
         "name": "Data_Import_Field_Mapping__mdt",
         "label": "Data Import Field Mapping",
-        "fieldCount": 6,
-        "keyFields": [
+        "relationships": [],
+        "description": "A custom metadata type that defines individual field-level mappings between the NPSP Data Import object and target Salesforce objects. Each record specifies a source field API name on the Data Import record, a target field API name on the destination object, and whether the field is required for dry run validation. It belongs to a Data_Import_Field_Mapping_Set__mdt and links to a Target_Object_Mapping__c, with 135 shipped records covering the default NPSP import mappings.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Field_Mapping__mdt",
+        "fields": [
           {
             "name": "Data_Import_Field_Mapping_Set__c",
             "type": "MetadataRelationship",
@@ -6030,25 +6277,23 @@ export default {
             "label": "Target Object Mapping",
             "desc": "The target Object Group for this Field Mapping."
           }
-        ],
-        "relationships": [],
-        "description": "A custom metadata type that defines individual field-level mappings between the NPSP Data Import object and target Salesforce objects. Each record specifies a source field API name on the Data Import record, a target field API name on the destination object, and whether the field is required for dry run validation. It belongs to a Data_Import_Field_Mapping_Set__mdt and links to a Target_Object_Mapping__c, with 135 shipped records covering the default NPSP import mappings.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Field_Mapping__mdt"
+        ]
       },
       {
         "name": "Data_Import_Object_Mapping_Set__mdt",
         "label": "Data Import Object Mapping Set",
-        "fieldCount": 0,
-        "keyFields": [],
         "relationships": [],
         "description": "A top-level custom metadata type that serves as the root container for the Advanced Mapping framework in NPSP Data Import. It groups Data_Import_Object_Mapping__mdt records into a named set and is referenced by Data_Import_Settings__c as the active mapping configuration. One default record is shipped with NPSP, providing the standard mapping set for all supported import objects.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Object_Mapping_Set__mdt"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Object_Mapping_Set__mdt",
+        "fields": []
       },
       {
         "name": "Data_Import_Object_Mapping__mdt",
         "label": "Data Import Object Mapping",
-        "fieldCount": 10,
-        "keyFields": [
+        "relationships": [],
+        "description": "A custom metadata type that maps NPSP Data Import records to target Salesforce objects, defining the object API name, import status tracking fields, predecessor relationships, and optional custom mapping logic classes. Each record establishes a processing node in the import dependency graph, with Predecessor__c and Relationship_To_Predecessor__c controlling the order of record creation. NPSP ships 13 records covering objects like Contact, Account, Opportunity, Payment, and more, enabling the Batch Data Import engine to orchestrate multi-object inserts.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Object_Mapping__mdt",
+        "fields": [
           {
             "name": "Custom_Mapping_Logic_Class__c",
             "type": "Text",
@@ -6109,16 +6354,15 @@ export default {
             "label": "Relationship To Predecessor",
             "desc": "This indicates if this object is a parent or child of the predecessor."
           }
-        ],
-        "relationships": [],
-        "description": "A custom metadata type that maps NPSP Data Import records to target Salesforce objects, defining the object API name, import status tracking fields, predecessor relationships, and optional custom mapping logic classes. Each record establishes a processing node in the import dependency graph, with Predecessor__c and Relationship_To_Predecessor__c controlling the order of record creation. NPSP ships 13 records covering objects like Contact, Account, Opportunity, Payment, and more, enabling the Batch Data Import engine to orchestrate multi-object inserts.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Object_Mapping__mdt"
+        ]
       },
       {
         "name": "Data_Import_Settings__c",
         "label": "Data Import Settings",
-        "fieldCount": 15,
-        "keyFields": [
+        "relationships": [],
+        "description": "A hierarchical custom settings object that governs NPSP Data Import behavior, including matching rules for accounts, contacts, and donations, batch processing size, and field mapping method selection. It connects to the Advanced Mapping framework through Default_Data_Import_Field_Mapping_Set__c and Field_Mapping_Method__c, and supports extensibility via Donation_Matching_Implementing_Class__c and Post_Process_Implementing_Class__c. The CMT_API_Status__c and CMT_Deployment_ID__c fields track metadata deployment state for mapping configuration changes.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Settings__c",
+        "fields": [
           {
             "name": "Account_Custom_Unique_ID__c",
             "type": "Text",
@@ -6209,16 +6453,15 @@ export default {
             "label": "Calculate Donation Rollups with Batch",
             "desc": "When checked, NPSP calculates donor statistics when donations are processed. If unchecked, donor statistics are calculated during the default nightly Scheduled Job. Note that selecting this checkbox may slow down processing of this batch."
           }
-        ],
-        "relationships": [],
-        "description": "A hierarchical custom settings object that governs NPSP Data Import behavior, including matching rules for accounts, contacts, and donations, batch processing size, and field mapping method selection. It connects to the Advanced Mapping framework through Default_Data_Import_Field_Mapping_Set__c and Field_Mapping_Method__c, and supports extensibility via Donation_Matching_Implementing_Class__c and Post_Process_Implementing_Class__c. The CMT_API_Status__c and CMT_Deployment_ID__c fields track metadata deployment state for mapping configuration changes.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Data_Import_Settings__c"
+        ]
       },
       {
         "name": "DeploymentEvent__e",
         "label": "Deployment Event",
-        "fieldCount": 3,
-        "keyFields": [
+        "relationships": [],
+        "description": "A platform event that broadcasts the completion status of metadata deployments within NPSP, carrying the deployment ID, status, and completion timestamp. It enables asynchronous notification to LWC components and Apex subscribers when Custom Metadata Type deployments finish. The NPSP Settings UI listens for these events to refresh rollup and mapping configurations after metadata is deployed.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DeploymentEvent__e",
+        "fields": [
           {
             "name": "CompletedDate__c",
             "type": "DateTime",
@@ -6237,25 +6480,23 @@ export default {
             "label": "Status",
             "desc": ""
           }
-        ],
-        "relationships": [],
-        "description": "A platform event that broadcasts the completion status of metadata deployments within NPSP, carrying the deployment ID, status, and completion timestamp. It enables asynchronous notification to LWC components and Apex subscribers when Custom Metadata Type deployments finish. The NPSP Settings UI listens for these events to refresh rollup and mapping configurations after metadata is deployed.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DeploymentEvent__e"
+        ]
       },
       {
         "name": "DuplicateRecordSet",
         "label": "DuplicateRecordSet",
-        "fieldCount": 0,
-        "keyFields": [],
         "relationships": [],
         "description": "Extends the standard DuplicateRecordSet object for use within NPSP duplicate management workflows. It groups duplicate records identified by Salesforce Duplicate Rules, allowing administrators to review and merge potential duplicates across contacts, accounts, and other NPSP entities. No custom NPSP fields are added; it relies on the standard platform duplicate detection framework.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DuplicateRecordSet"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DuplicateRecordSet",
+        "fields": []
       },
       {
         "name": "Engagement_Plan_Template__c",
         "label": "Engagement Plan Template",
-        "fieldCount": 7,
-        "keyFields": [
+        "relationships": [],
+        "description": "Defines reusable templates for NPSP Engagement Plans, specifying default task assignment rules, weekend handling preferences, and child task date recalculation behavior. It acts as the blueprint from which Engagement_Plan__c records are created, with rollup summary fields tracking total plans and tasks generated from the template. The Skip_Weekends__c and Reschedule_To__c fields ensure task due dates avoid non-business days.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Engagement_Plan_Template__c",
+        "fields": [
           {
             "name": "Automatically_Update_Child_Task_Due_Date__c",
             "type": "Checkbox",
@@ -6298,16 +6539,15 @@ export default {
             "label": "Total Tasks",
             "desc": ""
           }
-        ],
-        "relationships": [],
-        "description": "Defines reusable templates for NPSP Engagement Plans, specifying default task assignment rules, weekend handling preferences, and child task date recalculation behavior. It acts as the blueprint from which Engagement_Plan__c records are created, with rollup summary fields tracking total plans and tasks generated from the template. The Skip_Weekends__c and Reschedule_To__c fields ensure task due dates avoid non-business days.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Engagement_Plan_Template__c"
+        ]
       },
       {
         "name": "Filter_Group__mdt",
         "label": "Filter Group",
-        "fieldCount": 2,
-        "keyFields": [
+        "relationships": [],
+        "description": "A custom metadata type that groups related filter rules for NPSP Customizable Rollups, providing a named collection of criteria that can be applied to rollup calculations. Each filter group is referenced by Rollup__mdt records to restrict which detail records are included in a rollup aggregation. The Is_Deleted__c flag supports soft deletion through the NPSP Settings UI without removing the underlying metadata record.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Filter_Group__mdt",
+        "fields": [
           {
             "name": "Description__c",
             "type": "TextArea",
@@ -6320,16 +6560,15 @@ export default {
             "label": "Deleted",
             "desc": ""
           }
-        ],
-        "relationships": [],
-        "description": "A custom metadata type that groups related filter rules for NPSP Customizable Rollups, providing a named collection of criteria that can be applied to rollup calculations. Each filter group is referenced by Rollup__mdt records to restrict which detail records are included in a rollup aggregation. The Is_Deleted__c flag supports soft deletion through the NPSP Settings UI without removing the underlying metadata record.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Filter_Group__mdt"
+        ]
       },
       {
         "name": "Filter_Rule__mdt",
         "label": "Filter Rule",
-        "fieldCount": 6,
-        "keyFields": [
+        "relationships": [],
+        "description": "A custom metadata type that defines individual filter criteria within a Filter_Group__mdt for NPSP Customizable Rollups. Each rule specifies an object, field, comparison operator, and constant value to evaluate against detail records during rollup processing. Rules within the same filter group are combined with AND logic to determine which source records are included in the rollup calculation.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Filter_Rule__mdt",
+        "fields": [
           {
             "name": "Constant__c",
             "type": "Text",
@@ -6366,16 +6605,15 @@ export default {
             "label": "Operator",
             "desc": ""
           }
-        ],
-        "relationships": [],
-        "description": "A custom metadata type that defines individual filter criteria within a Filter_Group__mdt for NPSP Customizable Rollups. Each rule specifies an object, field, comparison operator, and constant value to evaluate against detail records during rollup processing. Rules within the same filter group are combined with AND logic to determine which source records are included in the rollup calculation.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Filter_Rule__mdt"
+        ]
       },
       {
         "name": "Gift_Entry_Settings__c",
         "label": "Gift Entry Settings",
-        "fieldCount": 4,
-        "keyFields": [
+        "relationships": [],
+        "description": "A hierarchical custom settings object that controls the NPSP Gift Entry feature, including the default template reference, Elevate gateway assignment toggle, and recurring donation support within gift entry forms. The Enable_Gift_Entry__c field serves as the master switch, requiring Advanced Mapping to be active. The Enable_Gateway_Assignment__c field integrates with Salesforce.org Elevate to support multiple payment gateways per batch.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Gift_Entry_Settings__c",
+        "fields": [
           {
             "name": "Default_Gift_Entry_Template__c",
             "type": "Text",
@@ -6400,16 +6638,15 @@ export default {
             "label": "Enable Recurring Donations in Gift Entry",
             "desc": "Indicates if Recurring Donations are available in Gift Entry."
           }
-        ],
-        "relationships": [],
-        "description": "A hierarchical custom settings object that controls the NPSP Gift Entry feature, including the default template reference, Elevate gateway assignment toggle, and recurring donation support within gift entry forms. The Enable_Gift_Entry__c field serves as the master switch, requiring Advanced Mapping to be active. The Enable_Gateway_Assignment__c field integrates with Salesforce.org Elevate to support multiple payment gateways per batch.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Gift_Entry_Settings__c"
+        ]
       },
       {
         "name": "Household_Naming_Settings__c",
         "label": "Household Naming Settings",
-        "fieldCount": 7,
-        "keyFields": [
+        "relationships": [],
+        "description": "A hierarchical custom settings object that controls how NPSP generates household names, formal greetings, and informal greetings from member contact data. It defines format strings for each naming output, connector words (e.g., \"and\" or \"&\"), overrun text for large households, and the maximum contact count before truncation. The Implementing_Class__c field allows organizations to provide a custom Apex class implementing HH_INaming for completely custom naming logic.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Household_Naming_Settings__c",
+        "fields": [
           {
             "name": "Contact_Overrun_Count__c",
             "type": "Number",
@@ -6452,21 +6689,26 @@ export default {
             "label": "Name Overrun",
             "desc": "The string to use when replacing long lists of names."
           }
-        ],
-        "relationships": [],
-        "description": "A hierarchical custom settings object that controls how NPSP generates household names, formal greetings, and informal greetings from member contact data. It defines format strings for each naming output, connector words (e.g., \"and\" or \"&\"), overrun text for large households, and the maximum contact count before truncation. The Implementing_Class__c field allows organizations to provide a custom Apex class implementing HH_INaming for completely custom naming logic.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Household_Naming_Settings__c"
+        ]
       },
       {
         "name": "Lead",
         "label": "Lead",
-        "fieldCount": 6,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "Batch__c",
+            "type": "Lookup",
+            "field": "Batch__c"
+          }
+        ],
+        "description": "Extends the standard Lead object with NPSP-specific fields for batch processing and company address data. The Batch__c lookup associates leads with NPSP Data Import batches for bulk processing, while CompanyCity__c, CompanyCountry__c, CompanyPostalCode__c, CompanyState__c, and CompanyStreet__c fields capture structured company address information. These fields support lead conversion workflows within the NPSP data model.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Lead",
+        "fields": [
           {
             "name": "Batch__c",
             "type": "Lookup",
             "label": "Batch",
-            "desc": ""
+            "desc": "The batch this lead was created from."
           },
           {
             "name": "CompanyCity__c",
@@ -6498,22 +6740,15 @@ export default {
             "label": "Company Street",
             "desc": ""
           }
-        ],
-        "relationships": [
-          {
-            "target": "Batch__c",
-            "type": "Lookup",
-            "field": "Batch__c"
-          }
-        ],
-        "description": "Extends the standard Lead object with NPSP-specific fields for batch processing and company address data. The Batch__c lookup associates leads with NPSP Data Import batches for bulk processing, while CompanyCity__c, CompanyCountry__c, CompanyPostalCode__c, CompanyState__c, and CompanyStreet__c fields capture structured company address information. These fields support lead conversion workflows within the NPSP data model.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Lead"
+        ]
       },
       {
         "name": "Levels_Settings__c",
         "label": "Levels Settings",
-        "fieldCount": 3,
-        "keyFields": [
+        "relationships": [],
+        "description": "A hierarchical custom settings object that configures the NPSP Levels engine, which assigns donor levels to contacts and accounts based on cumulative giving or other criteria. It tracks the last successful batch run timestamp for both Account and Contact level assignments, enabling incremental processing. The Level_Assignment_Batch_Size__c field controls how many records are evaluated per batch execution.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Levels_Settings__c",
+        "fields": [
           {
             "name": "LastJobStartTimeAccount__c",
             "type": "DateTime",
@@ -6532,32 +6767,30 @@ export default {
             "label": "Level Assignment Batch Size",
             "desc": "Used by the Levels Assignment engine"
           }
-        ],
-        "relationships": [],
-        "description": "A hierarchical custom settings object that configures the NPSP Levels engine, which assigns donor levels to contacts and accounts based on cumulative giving or other criteria. It tracks the last successful batch run timestamp for both Account and Contact level assignments, enabling incremental processing. The Level_Assignment_Batch_Size__c field controls how many records are evaluated per batch execution.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Levels_Settings__c"
+        ]
       },
       {
         "name": "Package_Settings__c",
         "label": "NPSP Package Settings",
-        "fieldCount": 1,
-        "keyFields": [
+        "relationships": [],
+        "description": "A hierarchical custom settings object that stores the active NPSP namespace prefix, enabling the codebase to dynamically reference namespaced fields and objects. It allows NPSP code to function correctly in both managed package (npsp__) and unmanaged environments. This single-field setting is read by utility classes throughout the NPSP framework to construct API names at runtime.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Package_Settings__c",
+        "fields": [
           {
             "name": "Namespace_Prefix__c",
             "type": "Text",
             "label": "Namespace Prefix",
             "desc": "The active package namespace prefix for NPSP."
           }
-        ],
-        "relationships": [],
-        "description": "A hierarchical custom settings object that stores the active NPSP namespace prefix, enabling the codebase to dynamically reference namespaced fields and objects. It allows NPSP code to function correctly in both managed package (npsp__) and unmanaged environments. This single-field setting is read by utility classes throughout the NPSP framework to construct API names at runtime.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Package_Settings__c"
+        ]
       },
       {
         "name": "Payment_Services_Configuration__c",
         "label": "Payment Services Configuration",
-        "fieldCount": 5,
-        "keyFields": [
+        "relationships": [],
+        "description": "Stores key-value configuration pairs for Salesforce.org Elevate payment services integration. Each record represents a named configuration entry associated with a specific Elevate service, with the Service_Key__c field providing a composite key of service name and configuration key. The Is_Secret__c flag marks sensitive values such as API tokens, enabling the UI to mask them appropriately.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Payment_Services_Configuration__c",
+        "fields": [
           {
             "name": "Is_Secret__c",
             "type": "Checkbox",
@@ -6571,16 +6804,16 @@ export default {
             "desc": "The name of a piece of configuration data from Elevate. It&apos;s associated value is stored in the Value__c field."
           },
           {
-            "name": "Service_Key__c",
-            "type": "Text",
-            "label": "Service Key",
-            "desc": "The combination of the Service and the Key value, delimited by &quot;::&quot;."
-          },
-          {
             "name": "Service__c",
             "type": "Text",
             "label": "Service",
             "desc": "The name of the Elevate service the Key and Value are associated with."
+          },
+          {
+            "name": "Service_Key__c",
+            "type": "Text",
+            "label": "Service Key",
+            "desc": "The combination of the Service and the Key value, delimited by &quot;::&quot;."
           },
           {
             "name": "Value__c",
@@ -6588,16 +6821,15 @@ export default {
             "label": "Value",
             "desc": "The value of a piece of configuration data from Elevate. It&apos;s associated name is stored in the key__c field."
           }
-        ],
-        "relationships": [],
-        "description": "Stores key-value configuration pairs for Salesforce.org Elevate payment services integration. Each record represents a named configuration entry associated with a specific Elevate service, with the Service_Key__c field providing a composite key of service name and configuration key. The Is_Secret__c flag marks sensitive values such as API tokens, enabling the UI to mask them appropriately.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Payment_Services_Configuration__c"
+        ]
       },
       {
         "name": "RecurringDonationStatusMapping__mdt",
         "label": "Recurring Donation Status Mapping",
-        "fieldCount": 2,
-        "keyFields": [
+        "relationships": [],
+        "description": "A custom metadata type that maps recurring donation status picklist values to their underlying state (Active, Lapsed, or Closed) for the Enhanced Recurring Donations engine. Each record pairs a Status__c text value with a State__c picklist entry, allowing organizations to create custom status values while preserving consistent state-based behavior. This mapping drives lifecycle transitions, installment creation logic, and rollup calculations for recurring donations.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/RecurringDonationStatusMapping__mdt",
+        "fields": [
           {
             "name": "State__c",
             "type": "Picklist",
@@ -6610,16 +6842,15 @@ export default {
             "label": "Recurring Donation Status",
             "desc": "API name of the Recurring Donation Status that is mapped to a State."
           }
-        ],
-        "relationships": [],
-        "description": "A custom metadata type that maps recurring donation status picklist values to their underlying state (Active, Lapsed, or Closed) for the Enhanced Recurring Donations engine. Each record pairs a Status__c text value with a State__c picklist entry, allowing organizations to create custom status values while preserving consistent state-based behavior. This mapping drives lifecycle transitions, installment creation logic, and rollup calculations for recurring donations.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/RecurringDonationStatusMapping__mdt"
+        ]
       },
       {
         "name": "Rollup__mdt",
         "label": "Rollup",
-        "fieldCount": 16,
-        "keyFields": [
+        "relationships": [],
+        "description": "A custom metadata type that defines individual Customizable Rollup (CRLP) definitions in NPSP, specifying the source detail object and field, the target summary object and field, the aggregation operation, and optional time-bound constraints. Each record references a Filter_Group__mdt for conditional filtering and supports operations like Sum, Count, Average, Largest, Smallest, First, Last, and Best Year. With 16 fields per record, it provides a fully declarative alternative to the legacy rollup helpers, stored as deployable metadata rather than custom object data.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Rollup__mdt",
+        "fields": [
           {
             "name": "Active__c",
             "type": "Checkbox",
@@ -6709,17 +6940,22 @@ export default {
             "type": "Picklist",
             "label": "Time Frame",
             "desc": "Related to the Integer__c field. The value in that field represents the number of Years to sum or the number of days back to sum amounts for."
+          },
+          {
+            "name": "Use_Fiscal_Year__c",
+            "type": "Checkbox",
+            "label": "Use Fiscal Year",
+            "desc": "Checkbox to indicate that Fiscal Year is to be used instead of Calendar year"
           }
-        ],
-        "relationships": [],
-        "description": "A custom metadata type that defines individual Customizable Rollup (CRLP) definitions in NPSP, specifying the source detail object and field, the target summary object and field, the aggregation operation, and optional time-bound constraints. Each record references a Filter_Group__mdt for conditional filtering and supports operations like Sum, Count, Average, Largest, Smallest, First, Last, and Best Year. With 16 fields per record, it provides a fully declarative alternative to the legacy rollup helpers, stored as deployable metadata rather than custom object data.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Rollup__mdt"
+        ]
       },
       {
         "name": "Schedulable__c",
         "label": "DEPRECATED-Schedulable",
-        "fieldCount": 4,
-        "keyFields": [
+        "relationships": [],
+        "description": "A deprecated custom object that previously stored configuration for NPSP scheduled batch jobs, including the Apex class name, execution frequency, and last run timestamp. It has been superseded by the standard Salesforce scheduled job framework and NPSP's built-in batch scheduling. The Active__c checkbox and Frequency__c picklist controlled whether and how often each job would execute.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Schedulable__c",
+        "fields": [
           {
             "name": "Active__c",
             "type": "Checkbox",
@@ -6744,16 +6980,15 @@ export default {
             "label": "Last Time Run",
             "desc": "Last time the job was run."
           }
-        ],
-        "relationships": [],
-        "description": "A deprecated custom object that previously stored configuration for NPSP scheduled batch jobs, including the Apex class name, execution frequency, and last run timestamp. It has been superseded by the standard Salesforce scheduled job framework and NPSP's built-in batch scheduling. The Active__c checkbox and Frequency__c picklist controlled whether and how often each job would execute.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Schedulable__c"
+        ]
       },
       {
         "name": "npe01__Contacts_And_Orgs_Settings__c",
         "label": "npe01__Contacts_And_Orgs_Settings__c",
-        "fieldCount": 15,
-        "keyFields": [
+        "relationships": [],
+        "description": "A hierarchical custom settings object from the npe01 (Contacts & Organizations) package that controls core NPSP contact and organization behaviors. It configures automatic campaign member management, opportunity contact roles for organizational and household accounts, honoree and notification recipient roles, payment auto-creation exclusions, address management toggles, and accounting data consistency enforcement. Key fields like Payments_Auto_Close_Stage_Name__c and Max_Payments__c also govern payment processing behavior across the entire NPSP framework.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe01__Contacts_And_Orgs_Settings__c",
+        "fields": [
           {
             "name": "Advancement_Namespace__c",
             "type": "Text",
@@ -6844,16 +7079,15 @@ export default {
             "label": "Simple Address Change Treated as Update",
             "desc": "If checked, changes to a single Contact or Account address field update the existing Address, rather than creating a new Address."
           }
-        ],
-        "relationships": [],
-        "description": "A hierarchical custom settings object from the npe01 (Contacts & Organizations) package that controls core NPSP contact and organization behaviors. It configures automatic campaign member management, opportunity contact roles for organizational and household accounts, honoree and notification recipient roles, payment auto-creation exclusions, address management toggles, and accounting data consistency enforcement. Key fields like Payments_Auto_Close_Stage_Name__c and Max_Payments__c also govern payment processing behavior across the entire NPSP framework.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe01__Contacts_And_Orgs_Settings__c"
+        ]
       },
       {
         "name": "npe03__Recurring_Donations_Settings__c",
         "label": "npe03__Recurring_Donations_Settings__c",
-        "fieldCount": 20,
-        "keyFields": [
+        "relationships": [],
+        "description": "A hierarchical custom settings object from the npe03 (Recurring Donations) package that governs all recurring donation processing behavior in NPSP. It controls Enhanced Recurring Donations enablement, installment opportunity creation modes, batch sizes, automatic naming formats, change log tracking, status automation, and data migration state. With 20 fields spanning batch processing tuning, date matching ranges, and enablement state tracking, it is the most comprehensive settings object for the Recurring Donations domain.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe03__Recurring_Donations_Settings__c",
+        "fields": [
           {
             "name": "DataMigrationBatchSize__c",
             "type": "Number",
@@ -6915,6 +7149,12 @@ export default {
             "desc": "The number of days before or after the Next Donation Date that NPSP won&apos;t create a new\n            installment Opportunity if the next open Opportunity&apos;s Close Date is changed. Applies only to\n            Recurring Donations where Installment Period is Monthly or Yearly."
           },
           {
+            "name": "Recurring_Donation_Batch_Size__c",
+            "type": "Number",
+            "label": "Recurring Donation Batch Size",
+            "desc": "The number of records to process at a time when running the Recurring Donations batch job. The default size is 50. Reduce to a smaller number if the Recurring Donations batch job is failing due to system limits."
+          },
+          {
             "name": "RecurringDonationNameFormat__c",
             "type": "Text",
             "label": "Recurring Donation Name Format",
@@ -6933,43 +7173,65 @@ export default {
             "desc": "Contains latest dry run and data migration results."
           },
           {
-            "name": "Recurring_Donation_Batch_Size__c",
-            "type": "Number",
-            "label": "Recurring Donation Batch Size",
-            "desc": "The number of records to process at a time when running the Recurring Donations batch job. The default size is 50. Reduce to a smaller number if the Recurring Donations batch job is failing due to system limits."
-          },
-          {
             "name": "StatusAutomationClosedValue__c",
             "type": "Text",
             "label": "Status Automation Closed Value",
             "desc": "The Recurring Donation Status set when Status Automation closes the Recurring Donation record."
+          },
+          {
+            "name": "StatusAutomationDaysForClosed__c",
+            "type": "Number",
+            "label": "Status Automation Days for Closed",
+            "desc": "After the specified number of days, NPSP updates the Recurring Donation Status to the Status Automation Closed Value if donations aren&apos;t being received as expected."
+          },
+          {
+            "name": "StatusAutomationDaysForLapsed__c",
+            "type": "Number",
+            "label": "Status Automation Days for Lapsed",
+            "desc": "After the specified number of days, NPSP updates the Recurring Donation Status to the Status Automation Lapsed Value if donations aren&apos;t being received as expected."
+          },
+          {
+            "name": "StatusAutomationLapsedValue__c",
+            "type": "Text",
+            "label": "Status Automation Lapsed Value",
+            "desc": "The Recurring Donation Status set when Status Automation updates the Recurring Donation record as Lapsed."
+          },
+          {
+            "name": "StatusMappingDeploymentId__c",
+            "type": "Text",
+            "label": "Status Mapping Deployment Id",
+            "desc": "Status mapping custom metadata deployment Id"
+          },
+          {
+            "name": "UseFiscalYearForRecurringDonationValue__c",
+            "type": "Checkbox",
+            "label": "Use Fiscal Year for Recurring Donations",
+            "desc": "When checked, this option enables fiscal year for Recurring Donation value totals. To set the fiscal year start month, go to Setup | Company Settings | Fiscal Year. NOTE: Use Standard Fiscal Year only. Do not enable Custom Fiscal Year."
           }
-        ],
-        "relationships": [],
-        "description": "A hierarchical custom settings object from the npe03 (Recurring Donations) package that governs all recurring donation processing behavior in NPSP. It controls Enhanced Recurring Donations enablement, installment opportunity creation modes, batch sizes, automatic naming formats, change log tracking, status automation, and data migration state. With 20 fields spanning batch processing tuning, date matching ranges, and enablement state tracking, it is the most comprehensive settings object for the Recurring Donations domain.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe03__Recurring_Donations_Settings__c"
+        ]
       },
       {
         "name": "npe4__Relationship_Settings__c",
         "label": "npe4__Relationship_Settings__c",
-        "fieldCount": 1,
-        "keyFields": [
+        "relationships": [],
+        "description": "A hierarchical custom settings object from the npe4 (Relationships) package that controls relationship-related automation in NPSP. Its single field, Enable_Custom_Field_Sync__c, toggles the synchronization of custom fields between reciprocal relationship records. When enabled, changes to custom fields on one npe4__Relationship__c record are automatically mirrored to its reciprocal partner record.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe4__Relationship_Settings__c",
+        "fields": [
           {
             "name": "Enable_Custom_Field_Sync__c",
             "type": "Checkbox",
             "label": "Enable Custom Field Sync",
             "desc": "If TRUE, then synchronization of custom Relationship fields is enabled."
           }
-        ],
-        "relationships": [],
-        "description": "A hierarchical custom settings object from the npe4 (Relationships) package that controls relationship-related automation in NPSP. Its single field, Enable_Custom_Field_Sync__c, toggles the synchronization of custom fields between reciprocal relationship records. When enabled, changes to custom fields on one npe4__Relationship__c record are automatically mirrored to its reciprocal partner record.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe4__Relationship_Settings__c"
+        ]
       },
       {
         "name": "npo02__Households_Settings__c",
         "label": "npo02__Households_Settings__c",
-        "fieldCount": 3,
-        "keyFields": [
+        "relationships": [],
+        "description": "A hierarchical custom settings object from the npo02 (Households) package that controls household-level behaviors in NPSP. The Matched_Donor_Role__c field specifies the contact role assigned to matched donors in donation matching scenarios, while Seasonal_Addresses_Batch_Size__c tunes performance for the seasonal address rotation batch job. The Use_Dated_Conversion_Rates__c field enables advanced multi-currency support using Salesforce dated exchange rates for donation rollups.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npo02__Households_Settings__c",
+        "fields": [
           {
             "name": "Matched_Donor_Role__c",
             "type": "Text",
@@ -6986,12 +7248,9 @@ export default {
             "name": "Use_Dated_Conversion_Rates__c",
             "type": "Checkbox",
             "label": "Use Dated Conversion Rates if available",
-            "desc": ""
+            "desc": "Check this box to use Dated Conversion Rates when Advanced Currency Management is enabled in this Organization. If unchecked and ACM is enabled, all NPSP roll-ups will use the default exchange rate for by currency."
           }
-        ],
-        "relationships": [],
-        "description": "A hierarchical custom settings object from the npo02 (Households) package that controls household-level behaviors in NPSP. The Matched_Donor_Role__c field specifies the contact role assigned to matched donors in donation matching scenarios, while Seasonal_Addresses_Batch_Size__c tunes performance for the seasonal address rotation batch job. The Use_Dated_Conversion_Rates__c field enables advanced multi-currency support using Salesforce dated exchange rates for donation rollups.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npo02__Households_Settings__c"
+        ]
       }
     ],
     "triggers": [
@@ -7371,43 +7630,43 @@ export default {
         "name": "Custom_Notification",
         "recordCount": 1,
         "description": "A custom metadata type with 1 shipped record that configures an NPSP in-app notification definition. It references implementation classes for audience targeting and content generation, controlling how NPSP delivers notifications to users. The metadata record defines the default notification channel and behavior for NPSP system alerts.",
-        "keyFields": []
+        "fields": []
       },
       {
         "name": "Data_Import_Field_Mapping",
         "recordCount": 135,
         "description": "A custom metadata type with 135 shipped records that stores the complete set of default field-level mappings for the NPSP Advanced Mapping Data Import framework. Each record maps a source field on the DataImport__c object to a target field on a destination object such as Contact, Account, Opportunity, or Payment. These records are managed through the NPSP Settings UI and deployed via the Metadata API.",
-        "keyFields": []
+        "fields": []
       },
       {
         "name": "Data_Import_Field_Mapping_Set",
         "recordCount": 1,
         "description": "A custom metadata type with 1 shipped record that defines the default field mapping set for the NPSP Advanced Mapping framework. It serves as the named container referenced by Data_Import_Settings__c to identify which collection of field mappings is active. Additional mapping sets can be created for specialized import configurations.",
-        "keyFields": []
+        "fields": []
       },
       {
         "name": "Data_Import_Object_Mapping",
         "recordCount": 13,
         "description": "A custom metadata type with 13 shipped records that defines the target object configurations for the NPSP Advanced Mapping Data Import process. Each record maps to a Salesforce object (such as Contact, Account, Opportunity, or Payment) and specifies processing order through predecessor relationships. These records control how the Batch Data Import engine creates and links records across multiple objects.",
-        "keyFields": []
+        "fields": []
       },
       {
         "name": "Data_Import_Object_Mapping_Set",
         "recordCount": 1,
         "description": "A custom metadata type with 1 shipped record that serves as the root container for the NPSP Advanced Mapping object mapping hierarchy. It groups all Data_Import_Object_Mapping__mdt records into a named set, referenced by the Data_Import_Settings__c configuration. This top-level record anchors the entire object mapping framework used by the Batch Data Import engine.",
-        "keyFields": []
+        "fields": []
       },
       {
         "name": "GetStartedChecklistItem",
         "recordCount": 34,
         "description": "A custom metadata type with 34 shipped records that defines individual setup tasks within the NPSP Getting Started checklist experience. Each record represents a specific configuration action such as enabling a feature, reviewing settings, or completing a learning module. These records are consumed by the gsChecklist and gsChecklistItem LWC components to dynamically render the guided setup workflow.",
-        "keyFields": []
+        "fields": []
       },
       {
         "name": "GetStartedChecklistSection",
         "recordCount": 8,
         "description": "A custom metadata type with 8 shipped records that defines the major sections of the NPSP Getting Started checklist, grouping related setup tasks into logical categories. Each section record provides a label, description, and ordering for display in the gsChecklist LWC component. The 8 sections organize the 34 checklist items into categories such as People, Donations, Recurring Donations, and Customization.",
-        "keyFields": []
+        "fields": []
       }
     ]
   },
@@ -7734,8 +7993,36 @@ export default {
       {
         "name": "Allocation__c",
         "label": "GAU Allocation",
-        "fieldCount": 7,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "Campaign",
+            "type": "Lookup",
+            "field": "Campaign__c"
+          },
+          {
+            "target": "General_Accounting_Unit__c",
+            "type": "Lookup",
+            "field": "General_Accounting_Unit__c"
+          },
+          {
+            "target": "Opportunity",
+            "type": "Lookup",
+            "field": "Opportunity__c"
+          },
+          {
+            "target": "npe01__OppPayment__c",
+            "type": "Lookup",
+            "field": "Payment__c"
+          },
+          {
+            "target": "npe03__Recurring_Donation__c",
+            "type": "Lookup",
+            "field": "Recurring_Donation__c"
+          }
+        ],
+        "description": "Custom object that links a donation (Opportunity or Payment) to a General Accounting Unit for fund tracking and reporting. Each record can specify either a fixed Amount or a Percent of the parent, and supports lookups to Campaign and Recurring Donation for template-based allocation. NPSP uses this object to split donations across multiple funds or programs.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Allocation__c",
+        "fields": [
           {
             "name": "Amount__c",
             "type": "Currency",
@@ -7778,53 +8065,26 @@ export default {
             "label": "Recurring Donation",
             "desc": "The Recurring Donation this Allocation is attributed to. NPSP automatically allocates all new Opportunities associated with the Recurring Donation in the same way."
           }
-        ],
-        "relationships": [
-          {
-            "target": "Campaign",
-            "type": "Lookup",
-            "field": "Campaign__c"
-          },
-          {
-            "target": "General_Accounting_Unit__c",
-            "type": "Lookup",
-            "field": "General_Accounting_Unit__c"
-          },
-          {
-            "target": "Opportunity",
-            "type": "Lookup",
-            "field": "Opportunity__c"
-          },
-          {
-            "target": "npe01__OppPayment__c",
-            "type": "Lookup",
-            "field": "Payment__c"
-          },
-          {
-            "target": "npe03__Recurring_Donation__c",
-            "type": "Lookup",
-            "field": "Recurring_Donation__c"
-          }
-        ],
-        "description": "Custom object that links a donation (Opportunity or Payment) to a General Accounting Unit for fund tracking and reporting. Each record can specify either a fixed Amount or a Percent of the parent, and supports lookups to Campaign and Recurring Donation for template-based allocation. NPSP uses this object to split donations across multiple funds or programs.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Allocation__c"
+        ]
       },
       {
         "name": "Allocations_Settings__c",
         "label": "Allocations Settings",
-        "fieldCount": 7,
-        "keyFields": [
-          {
-            "name": "Default_Allocations_Enabled__c",
-            "type": "Checkbox",
-            "label": "Default Allocations Enabled",
-            "desc": "Enabling Default Allocations creates an Allocation object for each Opportunity. This enables reporting on allocations to a default General Accounting Unit, but uses more data storage."
-          },
+        "relationships": [],
+        "description": "Custom Settings object that stores the global configuration for the GAU Allocations feature. Key settings include enabling default allocations, specifying the default GAU ID, enabling payment-level allocations, configuring rollup N-day windows, and choosing fiscal vs. calendar year rollups. This settings object drives the behavior of all ALLO_ classes.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Allocations_Settings__c",
+        "fields": [
           {
             "name": "Default__c",
             "type": "Text",
             "label": "Default General Accounting Unit",
             "desc": "Holds the ID of the default General Accounting Unit for creation of default allocations or for the allocation of non allocated amounts."
+          },
+          {
+            "name": "Default_Allocations_Enabled__c",
+            "type": "Checkbox",
+            "label": "Default Allocations Enabled",
+            "desc": "Enabling Default Allocations creates an Allocation object for each Opportunity. This enables reporting on allocations to a default General Accounting Unit, but uses more data storage."
           },
           {
             "name": "Excluded_Opp_RecTypes__c",
@@ -7856,25 +8116,23 @@ export default {
             "label": "Use Fiscal Year for Rollups",
             "desc": "Checking this box will cause Allocation rollup totals to respect fiscal year, instead of calendar years settings. To set Fiscal Year information, go to Setup-&gt;Company Profile-&gt;Fiscal Year. NOTE: Custom Fiscal Year Settings are NOT supported."
           }
-        ],
-        "relationships": [],
-        "description": "Custom Settings object that stores the global configuration for the GAU Allocations feature. Key settings include enabling default allocations, specifying the default GAU ID, enabling payment-level allocations, configuring rollup N-day windows, and choosing fiscal vs. calendar year rollups. This settings object drives the behavior of all ALLO_ classes.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Allocations_Settings__c"
+        ]
       },
       {
         "name": "Fund__c",
         "label": "DEPRECATED-Fund",
-        "fieldCount": 0,
-        "keyFields": [],
         "relationships": [],
         "description": "Deprecated custom object that was the predecessor to General_Accounting_Unit__c for fund tracking in NPSP. It has zero fields and no active functionality, retained only for backward compatibility with legacy installations. Organizations should use General_Accounting_Unit__c and Allocation__c instead.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Fund__c"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Fund__c",
+        "fields": []
       },
       {
         "name": "General_Accounting_Unit__c",
         "label": "General Accounting Unit",
-        "fieldCount": 17,
-        "keyFields": [
+        "relationships": [],
+        "description": "Custom object that represents a fund, program, or accounting category to which donations can be allocated. It contains 17 rollup summary fields that track allocation totals, counts, averages, and date ranges across multiple time periods. NPSP updates these fields via the ALLO_Rollup_SCHED nightly batch job based on Closed/Won Opportunity data.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/General_Accounting_Unit__c",
+        "fields": [
           {
             "name": "Active__c",
             "type": "Checkbox",
@@ -7942,6 +8200,12 @@ export default {
             "desc": "The amount of the smallest Allocation to this General Accounting Unit. NPSP updates this field in a nightly Scheduled Job."
           },
           {
+            "name": "Total_Allocations__c",
+            "type": "Currency",
+            "label": "Total Allocations",
+            "desc": "The total amount from all Allocations from Closed/Won Opportunities. NPSP updates this field in a nightly Scheduled Job."
+          },
+          {
             "name": "Total_Allocations_Last_N_Days__c",
             "type": "Currency",
             "label": "Total Allocations Last N Days",
@@ -7964,17 +8228,28 @@ export default {
             "type": "Currency",
             "label": "Total Allocations Two Years Ago",
             "desc": "The total amount from Allocations from Closed/Won Opportunities two years ago. NPSP updates this field in a nightly Scheduled Job."
+          },
+          {
+            "name": "Total_Number_of_Allocations__c",
+            "type": "Number",
+            "label": "Total Number of Allocations",
+            "desc": "The total number of Allocations from Closed/Won Opportunities. NPSP updates this field in a nightly Scheduled Job."
           }
-        ],
-        "relationships": [],
-        "description": "Custom object that represents a fund, program, or accounting category to which donations can be allocated. It contains 17 rollup summary fields that track allocation totals, counts, averages, and date ranges across multiple time periods. NPSP updates these fields via the ALLO_Rollup_SCHED nightly batch job based on Closed/Won Opportunity data.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/General_Accounting_Unit__c"
+        ]
       },
       {
         "name": "Grant_Deadline__c",
         "label": "Deliverable",
-        "fieldCount": 5,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "Opportunity",
+            "type": "MasterDetail",
+            "field": "Opportunity__c"
+          }
+        ],
+        "description": "Custom object (labeled Deliverable) that tracks grant deliverables and deadlines as child records of an Opportunity via a Master-Detail relationship. Each record captures a due date, close date, requirements description, and deliverable type. This object supports grant management workflows by linking specific obligations to their parent grant Opportunity.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Grant_Deadline__c",
+        "fields": [
           {
             "name": "Grant_Deadline_Due_Date__c",
             "type": "Date",
@@ -8005,16 +8280,7 @@ export default {
             "label": "Type",
             "desc": ""
           }
-        ],
-        "relationships": [
-          {
-            "target": "Opportunity",
-            "type": "MasterDetail",
-            "field": "Opportunity__c"
-          }
-        ],
-        "description": "Custom object (labeled Deliverable) that tracks grant deliverables and deadlines as child records of an Opportunity via a Master-Detail relationship. Each record captures a due date, close date, requirements description, and deliverable type. This object supports grant management workflows by linking specific obligations to their parent grant Opportunity.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Grant_Deadline__c"
+        ]
       }
     ],
     "triggers": [
@@ -8635,8 +8901,46 @@ export default {
       {
         "name": "Opportunity",
         "label": "Opportunity",
-        "fieldCount": 44,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "Batch__c",
+            "type": "Lookup",
+            "field": "Batch__c"
+          },
+          {
+            "target": "Contact",
+            "type": "Lookup",
+            "field": "Honoree_Contact__c"
+          },
+          {
+            "target": "Account",
+            "type": "Lookup",
+            "field": "Matching_Gift_Account__c"
+          },
+          {
+            "target": "Opportunity",
+            "type": "Lookup",
+            "field": "Matching_Gift__c"
+          },
+          {
+            "target": "Contact",
+            "type": "Lookup",
+            "field": "Notification_Recipient_Contact__c"
+          },
+          {
+            "target": "Opportunity",
+            "type": "Lookup",
+            "field": "Previous_Grant_Opportunity__c"
+          },
+          {
+            "target": "Contact",
+            "type": "Lookup",
+            "field": "Primary_Contact__c"
+          }
+        ],
+        "description": "The standard Salesforce Opportunity object extended by NPSP with 44 custom fields for donation management. Key additions include acknowledgment tracking, matching gift lookups, grant management fields, and the Primary_Contact__c lookup that drives donor attribution. It serves as the central record for all donation, pledge, and grant activity in NPSP.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Opportunity",
+        "fields": [
           {
             "name": "Acknowledgment_Date__c",
             "type": "Date",
@@ -8647,7 +8951,7 @@ export default {
             "name": "Acknowledgment_Status__c",
             "type": "Picklist",
             "label": "Acknowledgment Status",
-            "desc": "The acknowledgement status of this Opportunity. "
+            "desc": "The acknowledgement status of this Opportunity."
           },
           {
             "name": "Ask_Date__c",
@@ -8656,16 +8960,16 @@ export default {
             "desc": "The date the donor was asked for this Donation. This may be different from the date you received it."
           },
           {
-            "name": "Batch_Number__c",
-            "type": "Text",
-            "label": "Batch Number",
-            "desc": "The batch that created this Opportunity. This field is automatically populated based on your Batch Number Settings in NPSP Settings."
-          },
-          {
             "name": "Batch__c",
             "type": "Lookup",
             "label": "Batch",
             "desc": ""
+          },
+          {
+            "name": "Batch_Number__c",
+            "type": "Text",
+            "label": "Batch Number",
+            "desc": "The batch that created this Opportunity. This field is automatically populated based on your Batch Number Settings in NPSP Settings."
           },
           {
             "name": "Closed_Lost_Reason__c",
@@ -8726,53 +9030,190 @@ export default {
             "type": "TextArea",
             "label": "Program Areas",
             "desc": "Use this to describe the funding areas for the Grant or Donation. For example, the names of the programs the Grant or Donation is designated for."
+          },
+          {
+            "name": "Grant_Requirements_Website__c",
+            "type": "Url",
+            "label": "Grant Requirements Website",
+            "desc": "A URL that points to the grant requirements on the grantmaker&apos;s website."
+          },
+          {
+            "name": "Honoree_Contact__c",
+            "type": "Lookup",
+            "label": "Honoree Contact",
+            "desc": "Lookup to the Contact record of the honoree for this Donation."
+          },
+          {
+            "name": "Honoree_Information__c",
+            "type": "LongTextArea",
+            "label": "Honoree Information",
+            "desc": "Contact information, such as email, address, or phone the donor provided for the tribute honoree."
+          },
+          {
+            "name": "Honoree_Name__c",
+            "type": "Text",
+            "label": "Honoree Name",
+            "desc": "The honoree name as provided by the donor. If this field is left blank, and the Honoree Contact field contains a value, NPSP automatically populates this field with that value."
+          },
+          {
+            "name": "In_Kind_Description__c",
+            "type": "Html",
+            "label": "In-Kind Description",
+            "desc": "Holds any rich text description of the In-Kind Gift, including pictures."
+          },
+          {
+            "name": "In_Kind_Donor_Declared_Value__c",
+            "type": "Checkbox",
+            "label": "In-Kind Donor Declared Value",
+            "desc": "Indicates whether the donor provided the Fair Market Value for this In-Kind Gift."
+          },
+          {
+            "name": "In_Kind_Type__c",
+            "type": "Picklist",
+            "label": "In-Kind Type",
+            "desc": "The type of In-Kind Gift, for example, Goods or Services."
+          },
+          {
+            "name": "Is_Grant_Renewal__c",
+            "type": "Checkbox",
+            "label": "Is Grant Renewal",
+            "desc": "Indicates whether the Grant is a renewal of a previous Grant."
+          },
+          {
+            "name": "Matching_Gift__c",
+            "type": "Lookup",
+            "label": "Matching Gift",
+            "desc": "Lookup to the Opportunity record for the Matching Gift for this Donation."
+          },
+          {
+            "name": "Matching_Gift_Account__c",
+            "type": "Lookup",
+            "label": "Matching Gift Account",
+            "desc": "Lookup to the Account record of the company that will match this Donation."
+          },
+          {
+            "name": "Matching_Gift_Employer__c",
+            "type": "Text",
+            "label": "Matching Gift Employer",
+            "desc": "The name of the company that will match this Donation."
+          },
+          {
+            "name": "Matching_Gift_Status__c",
+            "type": "Picklist",
+            "label": "Matching Gift Status",
+            "desc": "The status of the Matching Gift for this Donation, for example, Submitted or Received."
+          },
+          {
+            "name": "Next_Grant_Deadline_Due_Date__c",
+            "type": "Summary",
+            "label": "Next Deliverable Date",
+            "desc": "The due date for this Opportunity&apos;s next Deliverable (read only)."
+          },
+          {
+            "name": "Notification_Message__c",
+            "type": "LongTextArea",
+            "label": "Notification Message",
+            "desc": "A personalized message for the notification recipient."
+          },
+          {
+            "name": "Notification_Preference__c",
+            "type": "Picklist",
+            "label": "Notification Preference",
+            "desc": "Indicates how the notification recipient should be notified, for example, by email or phone."
+          },
+          {
+            "name": "Notification_Recipient_Contact__c",
+            "type": "Lookup",
+            "label": "Notification Recipient Contact",
+            "desc": "Lookup to the Contact record of the person who should be notified about this Donation."
+          },
+          {
+            "name": "Notification_Recipient_Email__c",
+            "type": "Email",
+            "label": "Notification Recipient Email",
+            "desc": "The email address for the person receiving the honor/memorial notification."
+          },
+          {
+            "name": "Notification_Recipient_Information__c",
+            "type": "TextArea",
+            "label": "Notification Recipient Information",
+            "desc": "Enter any contact information such as address, phone, or email that the donor provided for the notification recipient."
+          },
+          {
+            "name": "Notification_Recipient_Name__c",
+            "type": "Text",
+            "label": "Notification Recipient Name",
+            "desc": "The name that the donor provided of the person you should notify about this Donation. If this field is left blank and the Notification Recipient Contact field contains a value, NPSP automatically populates this field with that value."
+          },
+          {
+            "name": "Previous_Grant_Opportunity__c",
+            "type": "Lookup",
+            "label": "Previous Grant/Gift Opportunity",
+            "desc": "If this Grant is a renewal of a previous Grant, use this field to relate this record to the previous Grant."
+          },
+          {
+            "name": "Primary_Contact__c",
+            "type": "Lookup",
+            "label": "Primary Contact",
+            "desc": "The Primary Contact for this Opportunity. If this is an individual Donation, NPSP attributes the Donation to the Primary Contact. If this is an organizational Donation, NPSP attributes a soft credit to the Primary Contact."
+          },
+          {
+            "name": "Primary_Contact_Campaign_Member_Status__c",
+            "type": "Text",
+            "label": "Primary Contact Campaign Member Status",
+            "desc": "The status NPSP uses when it creates a Campaign Member for this Opportunity&apos;s Primary Contact and Primary Campaign Source. Leave blank to default to a responded status for Closed/Won Opportunities, and a non-responded status for other Opportunities."
+          },
+          {
+            "name": "Qualified_Date__c",
+            "type": "Date",
+            "label": "Qualified Date",
+            "desc": "The date your organization identified this donor as qualifying for this Donation."
+          },
+          {
+            "name": "Recurring_Donation_Installment_Name__c",
+            "type": "Text",
+            "label": "Recurring Donation Installment Name",
+            "desc": "The installment name for inclusion in Opportunity naming. Shows the installment number in parentheses for open ended Recurring Donations, or the installment number out of the total for Recurring Donations with a set number of installments."
+          },
+          {
+            "name": "Recurring_Donation_Installment_Number__c",
+            "type": "Number",
+            "label": "Recurring Donation Installment Number",
+            "desc": "The installment number of this Opportunity&apos;s Recurring Donation schedule."
+          },
+          {
+            "name": "Requested_Amount__c",
+            "type": "Currency",
+            "label": "Requested Amount",
+            "desc": "The amount you are requesting. This number might be different from the final award amount."
+          },
+          {
+            "name": "Tribute_Notification_Date__c",
+            "type": "Date",
+            "label": "Tribute Notification Date",
+            "desc": "The date when a notification about this tribute gift was sent."
+          },
+          {
+            "name": "Tribute_Notification_Status__c",
+            "type": "Picklist",
+            "label": "Tribute Notification Status",
+            "desc": "Indicates whether a notification&apos;s been sent for this tribute gift."
+          },
+          {
+            "name": "Tribute_Type__c",
+            "type": "Picklist",
+            "label": "Tribute Type",
+            "desc": "Indicates whether the Donation is in honor or in memory of an individual."
           }
-        ],
-        "relationships": [
-          {
-            "target": "Batch__c",
-            "type": "Lookup",
-            "field": "Batch__c"
-          },
-          {
-            "target": "Contact",
-            "type": "Lookup",
-            "field": "Honoree_Contact__c"
-          },
-          {
-            "target": "Account",
-            "type": "Lookup",
-            "field": "Matching_Gift_Account__c"
-          },
-          {
-            "target": "Opportunity",
-            "type": "Lookup",
-            "field": "Matching_Gift__c"
-          },
-          {
-            "target": "Contact",
-            "type": "Lookup",
-            "field": "Notification_Recipient_Contact__c"
-          },
-          {
-            "target": "Opportunity",
-            "type": "Lookup",
-            "field": "Previous_Grant_Opportunity__c"
-          },
-          {
-            "target": "Contact",
-            "type": "Lookup",
-            "field": "Primary_Contact__c"
-          }
-        ],
-        "description": "The standard Salesforce Opportunity object extended by NPSP with 44 custom fields for donation management. Key additions include acknowledgment tracking, matching gift lookups, grant management fields, and the Primary_Contact__c lookup that drives donor attribution. It serves as the central record for all donation, pledge, and grant activity in NPSP.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Opportunity"
+        ]
       },
       {
         "name": "Opportunity_Naming_Settings__c",
         "label": "Opportunity Naming Settings",
-        "fieldCount": 4,
-        "keyFields": [
+        "relationships": [],
+        "description": "Custom Settings object that stores configurable naming formats for Opportunity records. Each record specifies a name format template, date format, attribution type (individual or organizational), and applicable record types. NPSP reads these settings to auto-generate Opportunity Name values via the OPP_OpportunityNaming class.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Opportunity_Naming_Settings__c",
+        "fields": [
           {
             "name": "Attribution__c",
             "type": "Text",
@@ -8797,16 +9238,15 @@ export default {
             "label": "Opportunity Record Types",
             "desc": "Specifies the opportunity record type that this naming scheme is for."
           }
-        ],
-        "relationships": [],
-        "description": "Custom Settings object that stores configurable naming formats for Opportunity records. Each record specifies a name format template, date format, attribution type (individual or organizational), and applicable record types. NPSP reads these settings to auto-generate Opportunity Name values via the OPP_OpportunityNaming class.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Opportunity_Naming_Settings__c"
+        ]
       },
       {
         "name": "Opportunity_Stage_To_State_Mapping__mdt",
         "label": "Opportunity Stage To State Mapping",
-        "fieldCount": 2,
-        "keyFields": [
+        "relationships": [],
+        "description": "Custom Metadata Type that maps Opportunity Stage picklist values to abstract NPSP states (Pledged, Finalized, etc.). Each record pairs an Opportunity_Stage__c text value with an Opportunity_State__c picklist value. NPSP uses these mappings throughout the codebase to make decisions based on donation lifecycle state.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Opportunity_Stage_To_State_Mapping__mdt",
+        "fields": [
           {
             "name": "Opportunity_Stage__c",
             "type": "Text",
@@ -8819,16 +9259,21 @@ export default {
             "label": "Opportunity State",
             "desc": "The state that the Opportunity Stage will be mapped to."
           }
-        ],
-        "relationships": [],
-        "description": "Custom Metadata Type that maps Opportunity Stage picklist values to abstract NPSP states (Pledged, Finalized, etc.). Each record pairs an Opportunity_Stage__c text value with an Opportunity_State__c picklist value. NPSP uses these mappings throughout the codebase to make decisions based on donation lifecycle state.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Opportunity_Stage_To_State_Mapping__mdt"
+        ]
       },
       {
         "name": "npe01__OppPayment__c",
         "label": "npe01__OppPayment__c",
-        "fieldCount": 29,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "npe01__OppPayment__c",
+            "type": "Lookup",
+            "field": "OriginalPayment__c"
+          }
+        ],
+        "description": "The Payment custom object that tracks individual payment installments against an Opportunity, with 29 fields covering payment amounts, dates, methods, and statuses. It includes Elevate payment gateway integration fields for card details, ACH transactions, and API status tracking. The OriginalPayment__c self-lookup supports refund chains by linking refund records back to their original payment.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe01__OppPayment__c",
+        "fields": [
           {
             "name": "ACH_Code__c",
             "type": "Picklist",
@@ -8918,17 +9363,92 @@ export default {
             "type": "DateTime",
             "label": "Elevate Payment Created Date",
             "desc": "The date and time the transaction was created."
-          }
-        ],
-        "relationships": [
+          },
           {
-            "target": "npe01__OppPayment__c",
+            "name": "Elevate_Payment_Created_UTC_Timestamp__c",
+            "type": "Text",
+            "label": "Elevate Payment Created  UTC Timestamp",
+            "desc": "The exact date and time (down to the millisecond) from Elevate that the transaction was created."
+          },
+          {
+            "name": "Elevate_Payment_ID__c",
+            "type": "Text",
+            "label": "Elevate Payment ID",
+            "desc": "The unique ID for this transaction from Elevate."
+          },
+          {
+            "name": "Elevate_Transaction_Fee__c",
+            "type": "Currency",
+            "label": "Elevate Transaction Fee",
+            "desc": "The transaction fee charged by Elevate."
+          },
+          {
+            "name": "Gateway_ID__c",
+            "type": "Text",
+            "label": "Gateway ID",
+            "desc": "The ID of the payment gateway that processed this transaction."
+          },
+          {
+            "name": "Gateway_Payment_ID__c",
+            "type": "Text",
+            "label": "Gateway Payment ID",
+            "desc": "The unique ID for this transaction from the payment gateway."
+          },
+          {
+            "name": "Gateway_Transaction_Fee__c",
+            "type": "Currency",
+            "label": "Gateway Transaction Fee",
+            "desc": "The transaction fee charged by your payment gateway."
+          },
+          {
+            "name": "Origin_ID__c",
+            "type": "Text",
+            "label": "Origin ID",
+            "desc": "The ID for the system where the transaction was initiated."
+          },
+          {
+            "name": "Origin_Name__c",
+            "type": "Text",
+            "label": "Origin Name",
+            "desc": "The name of the system where the transaction was initiated."
+          },
+          {
+            "name": "Origin_Type__c",
+            "type": "Text",
+            "label": "Origin Type",
+            "desc": "The type of system used to initiate the transaction. Available values include Engagement Hub, Giving Page, Payments API, Salesforce."
+          },
+          {
+            "name": "OriginalPayment__c",
             "type": "Lookup",
-            "field": "OriginalPayment__c"
+            "label": "Original Payment",
+            "desc": "The original payment transaction associated with this record."
+          },
+          {
+            "name": "Payment_Acknowledged_Date__c",
+            "type": "Date",
+            "label": "Payment Acknowledged Date",
+            "desc": "Used to track date opportunity was acknowledged"
+          },
+          {
+            "name": "Payment_Acknowledgment_Status__c",
+            "type": "Picklist",
+            "label": "Payment Acknowledgment Status",
+            "desc": "Status of Acknowledgment of this payment."
+          },
+          {
+            "name": "Total_Transaction_Fees__c",
+            "type": "Currency",
+            "label": "Total Transaction Fees",
+            "desc": "The sum of the transaction fees charged by Elevate and your payment gateway."
+          },
+          {
+            "name": "Type__c",
+            "type": "Text",
+            "label": "Type",
+            "desc": "Indicates the type of transaction."
           }
-        ],
-        "description": "The Payment custom object that tracks individual payment installments against an Opportunity, with 29 fields covering payment amounts, dates, methods, and statuses. It includes Elevate payment gateway integration fields for card details, ACH transactions, and API status tracking. The OriginalPayment__c self-lookup supports refund chains by linking refund records back to their original payment.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe01__OppPayment__c"
+        ]
       }
     ],
     "triggers": [
@@ -9748,8 +10268,16 @@ export default {
       {
         "name": "DataImportBatch__c",
         "label": "NPSP Data Import Batch",
-        "fieldCount": 28,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "Form_Template__c",
+            "type": "Lookup",
+            "field": "Form_Template__c"
+          }
+        ],
+        "description": "Custom object that represents a batch container for grouping DataImport__c records. It stores batch-level configuration including matching rules, processing size, donation matching behavior, contact matching rules, and active field definitions. The object has a lookup to Form_Template__c for Gift Entry integration and tracks batch status as records are processed through the BDI pipeline.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DataImportBatch__c",
+        "fields": [
           {
             "name": "Account_Custom_Unique_ID__c",
             "type": "Text",
@@ -9778,7 +10306,7 @@ export default {
             "name": "Batch_Description__c",
             "type": "LongTextArea",
             "label": "Batch Description",
-            "desc": ""
+            "desc": "An optional description about this batch."
           },
           {
             "name": "Batch_Gift_Entry_Version__c",
@@ -9839,114 +10367,90 @@ export default {
             "type": "Text",
             "label": "Donation Matching Implementing Class",
             "desc": "The developer name of an Apex class that implements the BDI_IMatching interface for Donations. Leave blank to let NPSP handle matching."
-          }
-        ],
-        "relationships": [
+          },
           {
-            "target": "Form_Template__c",
+            "name": "Donation_Matching_Rule__c",
+            "type": "Text",
+            "label": "Donation Matching Rule",
+            "desc": "Specifies which fields to match by when trying to match Donations in Data Import records against existing Opportunities and Payments. Control or Command click to select more than one field."
+          },
+          {
+            "name": "Expected_Count_of_Gifts__c",
+            "type": "Number",
+            "label": "Expected Count of Gifts",
+            "desc": "The number of gifts that are expected to be entered in this Batch."
+          },
+          {
+            "name": "Expected_Total_Batch_Amount__c",
+            "type": "Currency",
+            "label": "Expected Total Batch Amount",
+            "desc": "The expected total amount of all gifts entered in this Batch."
+          },
+          {
+            "name": "Form_Template__c",
             "type": "Lookup",
-            "field": "Form_Template__c"
+            "label": "Form Template",
+            "desc": "The Template to use for the gift entry form for this Batch."
+          },
+          {
+            "name": "GiftBatch__c",
+            "type": "Checkbox",
+            "label": "Gift Batch",
+            "desc": "This flag is set during batch creation to use the gift entry batch feature."
+          },
+          {
+            "name": "Last_Processed_On__c",
+            "type": "DateTime",
+            "label": "Last Processed On",
+            "desc": "The date and time when the batch was last processed."
+          },
+          {
+            "name": "Latest_Apex_Job_Id__c",
+            "type": "Text",
+            "label": "Latest Apex Job Id",
+            "desc": "The latest Apex Job Id for this NPSP Data Import Batch record."
+          },
+          {
+            "name": "Post_Process_Implementing_Class__c",
+            "type": "Text",
+            "label": "Post Process Implementing Class",
+            "desc": "The developer name of an Apex class that implements the BDI_IPostProcess interface for NPSP Data Import records."
+          },
+          {
+            "name": "Process_Using_Scheduled_Job__c",
+            "type": "Checkbox",
+            "label": "Process Using Scheduled Job",
+            "desc": "When checked, the NPSP Data Import Batch will be automatically processed based on the schedule for the associated job."
+          },
+          {
+            "name": "Records_Failed__c",
+            "type": "Number",
+            "label": "Records Failed",
+            "desc": "Shows the number of records that failed to be successfully processed on the date listed in the Last Processed On field."
+          },
+          {
+            "name": "Records_Successfully_Processed__c",
+            "type": "Number",
+            "label": "Records Successfully Processed",
+            "desc": "Shows the number of records that were successfully processed on the date listed in the Last Processed On field."
+          },
+          {
+            "name": "RequireTotalMatch__c",
+            "type": "Checkbox",
+            "label": "Require Expected Totals Match",
+            "desc": "When checked, the total number of gifts and total amount must match the expected totals entered for the batch."
+          },
+          {
+            "name": "Run_Opportunity_Rollups_while_Processing__c",
+            "type": "Checkbox",
+            "label": "Calculate Donation Rollups with Batch",
+            "desc": "When checked, NPSP calculates donor statistics when donations are processed. If unchecked, donor statistics are calculated during the default nightly Scheduled Job. Note that selecting this checkbox may slow down processing of this batch."
           }
-        ],
-        "description": "Custom object that represents a batch container for grouping DataImport__c records. It stores batch-level configuration including matching rules, processing size, donation matching behavior, contact matching rules, and active field definitions. The object has a lookup to Form_Template__c for Gift Entry integration and tracks batch status as records are processed through the BDI pipeline.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DataImportBatch__c"
+        ]
       },
       {
         "name": "DataImport__c",
         "label": "NPSP Data Import",
-        "fieldCount": 175,
-        "keyFields": [
-          {
-            "name": "ACH_Consent__c",
-            "type": "LongTextArea",
-            "label": "Payment ACH Consent Message",
-            "desc": "The Elevate Giving Page consent message the donor agreed to."
-          },
-          {
-            "name": "Account1ImportStatus__c",
-            "type": "Text",
-            "label": "Account1 Import Status",
-            "desc": ""
-          },
-          {
-            "name": "Account1Imported__c",
-            "type": "Lookup",
-            "label": "Account1 Imported",
-            "desc": ""
-          },
-          {
-            "name": "Account1_City__c",
-            "type": "Text",
-            "label": "Account1 City",
-            "desc": ""
-          },
-          {
-            "name": "Account1_Country__c",
-            "type": "Text",
-            "label": "Account1 Country",
-            "desc": ""
-          },
-          {
-            "name": "Account1_Name__c",
-            "type": "Text",
-            "label": "Account1 Name",
-            "desc": ""
-          },
-          {
-            "name": "Account1_Phone__c",
-            "type": "Phone",
-            "label": "Account1 Phone",
-            "desc": ""
-          },
-          {
-            "name": "Account1_State_Province__c",
-            "type": "Text",
-            "label": "Account1 State/Province",
-            "desc": ""
-          },
-          {
-            "name": "Account1_Street__c",
-            "type": "TextArea",
-            "label": "Account1 Street",
-            "desc": ""
-          },
-          {
-            "name": "Account1_Website__c",
-            "type": "Url",
-            "label": "Account1 Website",
-            "desc": ""
-          },
-          {
-            "name": "Account1_Zip_Postal_Code__c",
-            "type": "Text",
-            "label": "Account1 Zip/Postal Code",
-            "desc": ""
-          },
-          {
-            "name": "Account2ImportStatus__c",
-            "type": "Text",
-            "label": "Account2 Import Status",
-            "desc": ""
-          },
-          {
-            "name": "Account2Imported__c",
-            "type": "Lookup",
-            "label": "Account2 Imported",
-            "desc": ""
-          },
-          {
-            "name": "Account2_City__c",
-            "type": "Text",
-            "label": "Account2 City",
-            "desc": ""
-          },
-          {
-            "name": "Account2_Country__c",
-            "type": "Text",
-            "label": "Account2 Country",
-            "desc": ""
-          }
-        ],
         "relationships": [
           {
             "target": "Account",
@@ -10025,7 +10529,1059 @@ export default {
           }
         ],
         "description": "Core custom object with 175 fields that serves as the staging record for all data import operations in NPSP. Each record holds field values for up to two Contacts, two Accounts, a donation, payment, GAU allocations, home address, and recurring donation, plus lookup fields to their matched or created counterparts. This object is the central data structure consumed by both the BDI batch processor and the Gift Entry UI.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DataImport__c"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/DataImport__c",
+        "fields": [
+          {
+            "name": "Account1_City__c",
+            "type": "Text",
+            "label": "Account1 City",
+            "desc": "Account1.BillingCity"
+          },
+          {
+            "name": "Account1_Country__c",
+            "type": "Text",
+            "label": "Account1 Country",
+            "desc": "Account1.BillingCountry"
+          },
+          {
+            "name": "Account1_Name__c",
+            "type": "Text",
+            "label": "Account1 Name",
+            "desc": "Account1.Name"
+          },
+          {
+            "name": "Account1_Phone__c",
+            "type": "Phone",
+            "label": "Account1 Phone",
+            "desc": "Account1.Phone"
+          },
+          {
+            "name": "Account1_State_Province__c",
+            "type": "Text",
+            "label": "Account1 State/Province",
+            "desc": "Account1.BillingState"
+          },
+          {
+            "name": "Account1_Street__c",
+            "type": "TextArea",
+            "label": "Account1 Street",
+            "desc": "Account1.BillingStreet"
+          },
+          {
+            "name": "Account1_Website__c",
+            "type": "Url",
+            "label": "Account1 Website",
+            "desc": "Account1.Website"
+          },
+          {
+            "name": "Account1_Zip_Postal_Code__c",
+            "type": "Text",
+            "label": "Account1 Zip/Postal Code",
+            "desc": "Account1.BillingPostalCode"
+          },
+          {
+            "name": "Account1Imported__c",
+            "type": "Lookup",
+            "label": "Account1 Imported",
+            "desc": ""
+          },
+          {
+            "name": "Account1ImportStatus__c",
+            "type": "Text",
+            "label": "Account1 Import Status",
+            "desc": ""
+          },
+          {
+            "name": "Account2_City__c",
+            "type": "Text",
+            "label": "Account2 City",
+            "desc": "Account2.BillingCity"
+          },
+          {
+            "name": "Account2_Country__c",
+            "type": "Text",
+            "label": "Account2 Country",
+            "desc": "Account2.BillingCountry"
+          },
+          {
+            "name": "Account2_Name__c",
+            "type": "Text",
+            "label": "Account2 Name",
+            "desc": "Account2.Name"
+          },
+          {
+            "name": "Account2_Phone__c",
+            "type": "Phone",
+            "label": "Account2 Phone",
+            "desc": "Account2.Phone"
+          },
+          {
+            "name": "Account2_State_Province__c",
+            "type": "Text",
+            "label": "Account2 State/Province",
+            "desc": "Account2.BillingState"
+          },
+          {
+            "name": "Account2_Street__c",
+            "type": "TextArea",
+            "label": "Account2 Street",
+            "desc": "Account2.BillingStreet"
+          },
+          {
+            "name": "Account2_Website__c",
+            "type": "Url",
+            "label": "Account2 Website",
+            "desc": "Account2.Website"
+          },
+          {
+            "name": "Account2_Zip_Postal_Code__c",
+            "type": "Text",
+            "label": "Account2 Zip/Postal Code",
+            "desc": "Account2.BillingPostalCode"
+          },
+          {
+            "name": "Account2Imported__c",
+            "type": "Lookup",
+            "label": "Account2 Imported",
+            "desc": ""
+          },
+          {
+            "name": "Account2ImportStatus__c",
+            "type": "Text",
+            "label": "Account2 Import Status",
+            "desc": ""
+          },
+          {
+            "name": "ACH_Consent__c",
+            "type": "LongTextArea",
+            "label": "Payment ACH Consent Message",
+            "desc": "The Elevate Giving Page consent message the donor agreed to."
+          },
+          {
+            "name": "Additional_Object_JSON__c",
+            "type": "LongTextArea",
+            "label": "Additional Object JSON",
+            "desc": "This field allows a dynamic number of records for a dynamic number of objects to be created from a single Data Import record. Additional object information is stored here in JSON format."
+          },
+          {
+            "name": "ApexJobId__c",
+            "type": "Text",
+            "label": "ApexJobId",
+            "desc": "The ApexJobID of the Batch Job that processed the record."
+          },
+          {
+            "name": "Campaign_Member_Status__c",
+            "type": "Text",
+            "label": "Campaign Member Status",
+            "desc": ""
+          },
+          {
+            "name": "Contact1_Alternate_Email__c",
+            "type": "Email",
+            "label": "Contact1 Alternate Email",
+            "desc": "Contact1.npe01__AlternateEmail__c"
+          },
+          {
+            "name": "Contact1_Birthdate__c",
+            "type": "Date",
+            "label": "Contact1 Birthdate",
+            "desc": "Contact1.Birthdate"
+          },
+          {
+            "name": "Contact1_Consent_Message__c",
+            "type": "LongTextArea",
+            "label": "Contact1 Consent Message",
+            "desc": "Provides details on what the Contact opted in to."
+          },
+          {
+            "name": "Contact1_Consent_Opt_In__c",
+            "type": "Checkbox",
+            "label": "Contact1 Consent Opt-In",
+            "desc": "Determines if a Contact consented to opt in."
+          },
+          {
+            "name": "Contact1_Firstname__c",
+            "type": "Text",
+            "label": "Contact1 First Name",
+            "desc": "Contact1.Firstname"
+          },
+          {
+            "name": "Contact1_Home_Phone__c",
+            "type": "Phone",
+            "label": "Contact1 Home Phone",
+            "desc": "Contact1.HomePhone"
+          },
+          {
+            "name": "Contact1_Lastname__c",
+            "type": "Text",
+            "label": "Contact1 Last Name",
+            "desc": "Contact1.Lastname"
+          },
+          {
+            "name": "Contact1_Mobile_Phone__c",
+            "type": "Phone",
+            "label": "Contact1 Mobile Phone",
+            "desc": "Contact1.MobilePhone"
+          },
+          {
+            "name": "Contact1_Other_Phone__c",
+            "type": "Phone",
+            "label": "Contact1 Other Phone",
+            "desc": "Contact1.OtherPhone"
+          },
+          {
+            "name": "Contact1_Personal_Email__c",
+            "type": "Email",
+            "label": "Contact1 Personal Email",
+            "desc": "Contact1.npe01__HomeEmail__c"
+          },
+          {
+            "name": "Contact1_Preferred_Email__c",
+            "type": "Picklist",
+            "label": "Contact1 Preferred Email",
+            "desc": "Contact1.npe01__Preferred_Email__c"
+          },
+          {
+            "name": "Contact1_Preferred_Phone__c",
+            "type": "Picklist",
+            "label": "Contact1 Preferred Phone",
+            "desc": "Contact1.npe01__PreferredPhone__c"
+          },
+          {
+            "name": "Contact1_Salutation__c",
+            "type": "Text",
+            "label": "Contact1 Salutation",
+            "desc": "Contact1.Salutation"
+          },
+          {
+            "name": "Contact1_Title__c",
+            "type": "Text",
+            "label": "Contact1 Title",
+            "desc": "Contact1.Title"
+          },
+          {
+            "name": "Contact1_Work_Email__c",
+            "type": "Email",
+            "label": "Contact1 Work Email",
+            "desc": "Contact1.npe01__WorkEmail__c"
+          },
+          {
+            "name": "Contact1_Work_Phone__c",
+            "type": "Phone",
+            "label": "Contact1 Work Phone",
+            "desc": "Contact1.npe01__WorkPhone__c"
+          },
+          {
+            "name": "Contact1Imported__c",
+            "type": "Lookup",
+            "label": "Contact1 Imported",
+            "desc": ""
+          },
+          {
+            "name": "Contact1ImportStatus__c",
+            "type": "Text",
+            "label": "Contact1 Import Status",
+            "desc": ""
+          },
+          {
+            "name": "Contact2_Alternate_Email__c",
+            "type": "Email",
+            "label": "Contact2 Alternate Email",
+            "desc": "Contact2.npe01__AlternateEmail__c"
+          },
+          {
+            "name": "Contact2_Birthdate__c",
+            "type": "Date",
+            "label": "Contact2 Birthdate",
+            "desc": "Contact2.Birthdate"
+          },
+          {
+            "name": "Contact2_Firstname__c",
+            "type": "Text",
+            "label": "Contact2 First Name",
+            "desc": "Contact2.Firstname"
+          },
+          {
+            "name": "Contact2_Home_Phone__c",
+            "type": "Phone",
+            "label": "Contact2 Home Phone",
+            "desc": "Contact2.HomePhone"
+          },
+          {
+            "name": "Contact2_Lastname__c",
+            "type": "Text",
+            "label": "Contact2 Last Name",
+            "desc": "Contact2.Lastname"
+          },
+          {
+            "name": "Contact2_Mobile_Phone__c",
+            "type": "Phone",
+            "label": "Contact2 Mobile Phone",
+            "desc": "Contact2.MobilePhone"
+          },
+          {
+            "name": "Contact2_Other_Phone__c",
+            "type": "Phone",
+            "label": "Contact2 Other Phone",
+            "desc": "Contact2.OtherPhone"
+          },
+          {
+            "name": "Contact2_Personal_Email__c",
+            "type": "Email",
+            "label": "Contact2 Personal Email",
+            "desc": "Contact2.npe01__HomeEmail__c"
+          },
+          {
+            "name": "Contact2_Preferred_Email__c",
+            "type": "Picklist",
+            "label": "Contact2 Preferred Email",
+            "desc": "Contact2.npe01__Preferred_Email__c"
+          },
+          {
+            "name": "Contact2_Preferred_Phone__c",
+            "type": "Picklist",
+            "label": "Contact2 Preferred Phone",
+            "desc": "Contact2.npe01__PreferredPhone__c"
+          },
+          {
+            "name": "Contact2_Salutation__c",
+            "type": "Text",
+            "label": "Contact2 Salutation",
+            "desc": "Contact2.Salutation"
+          },
+          {
+            "name": "Contact2_Title__c",
+            "type": "Text",
+            "label": "Contact2 Title",
+            "desc": "Contact2.Title"
+          },
+          {
+            "name": "Contact2_Work_Email__c",
+            "type": "Email",
+            "label": "Contact2 Work Email",
+            "desc": "Contact2.npe01__WorkEmail__c"
+          },
+          {
+            "name": "Contact2_Work_Phone__c",
+            "type": "Phone",
+            "label": "Contact2 Work Phone",
+            "desc": "Contact2.npe01__WorkPhone__c"
+          },
+          {
+            "name": "Contact2Imported__c",
+            "type": "Lookup",
+            "label": "Contact2 Imported",
+            "desc": ""
+          },
+          {
+            "name": "Contact2ImportStatus__c",
+            "type": "Text",
+            "label": "Contact2 Import Status",
+            "desc": ""
+          },
+          {
+            "name": "Donation_Amount__c",
+            "type": "Currency",
+            "label": "Donation Amount",
+            "desc": "Opportunity.Amount"
+          },
+          {
+            "name": "Donation_Campaign_Name__c",
+            "type": "Text",
+            "label": "Campaign Name",
+            "desc": ""
+          },
+          {
+            "name": "Donation_Date__c",
+            "type": "Date",
+            "label": "Donation Date",
+            "desc": "Opportunity.CloseDate"
+          },
+          {
+            "name": "Donation_Description__c",
+            "type": "LongTextArea",
+            "label": "Donation Description",
+            "desc": "Opportunity.Description"
+          },
+          {
+            "name": "Donation_Donor__c",
+            "type": "Picklist",
+            "label": "Donation Donor",
+            "desc": "Specifies whether the donation is an individual donation from Contact1, or an organizational donation from Account1."
+          },
+          {
+            "name": "Donation_Elevate_Recurring_ID__c",
+            "type": "Text",
+            "label": "Donation Elevate Recurring ID",
+            "desc": "The external, unique ID of the Recurring Donation in Elevate that this donation Opportunity is linked to."
+          },
+          {
+            "name": "Donation_Honoree_Information__c",
+            "type": "LongTextArea",
+            "label": "Donation Honoree Information",
+            "desc": "Contact information, such as email, address, or phone the donor provided for the tribute honoree."
+          },
+          {
+            "name": "Donation_Honoree_Name__c",
+            "type": "Text",
+            "label": "Donation Honoree Name",
+            "desc": "The honoree name as provided by the donor."
+          },
+          {
+            "name": "Donation_Member_Level__c",
+            "type": "Text",
+            "label": "Donation Member Level",
+            "desc": "Opportunity.npe01__Member_Level__c"
+          },
+          {
+            "name": "Donation_Membership_End_Date__c",
+            "type": "Date",
+            "label": "Donation Membership End Date",
+            "desc": "Opportunity.npe01__Membership_End_Date__c"
+          },
+          {
+            "name": "Donation_Membership_Origin__c",
+            "type": "Text",
+            "label": "Donation Membership Origin",
+            "desc": "Opportunity.npe01__Membership_Origin__c"
+          },
+          {
+            "name": "Donation_Membership_Start_Date__c",
+            "type": "Date",
+            "label": "Donation Membership Start Date",
+            "desc": "Opportunity.npe01__Membership_Start_Date__c"
+          },
+          {
+            "name": "Donation_Name__c",
+            "type": "Text",
+            "label": "Donation Name",
+            "desc": "The donation&apos;s name.  Will be automatically generated by the system if left empty."
+          },
+          {
+            "name": "Donation_Notification_Message__c",
+            "type": "LongTextArea",
+            "label": "Donation Notification Message",
+            "desc": "A personalized message for the notification recipient."
+          },
+          {
+            "name": "Donation_Notification_Preference__c",
+            "type": "Picklist",
+            "label": "Donation Notification Preference",
+            "desc": "Indicates how the notification recipient should be notified. For example, by email or phone."
+          },
+          {
+            "name": "Donation_Notification_Recipient_Email__c",
+            "type": "Text",
+            "label": "Donation Notification Recipient Email",
+            "desc": "The email address for the person receiving the notification."
+          },
+          {
+            "name": "Donation_Notification_Recipient_Info__c",
+            "type": "LongTextArea",
+            "label": "Donation Notification Recipient Info",
+            "desc": "Contact information, such as address or phone the donor provided for the notification recipient."
+          },
+          {
+            "name": "Donation_Notification_Recipient_Name__c",
+            "type": "Text",
+            "label": "Donation Notification Recipient Name",
+            "desc": "The name of the person to notify of this gift."
+          },
+          {
+            "name": "Donation_Possible_Matches__c",
+            "type": "Text",
+            "label": "Donation Possible Matches",
+            "desc": "A comma-separated list of Ids for the first 10 possible Opportunity matches for a donation."
+          },
+          {
+            "name": "Donation_Record_Type_Name__c",
+            "type": "Text",
+            "label": "Donation Record Type Name",
+            "desc": "The Name of the Opportunity Record Type to use for the donation.  Uses default Record Type if left blank."
+          },
+          {
+            "name": "Donation_Stage__c",
+            "type": "Text",
+            "label": "Donation Stage",
+            "desc": "The Stage to set on the Opportunity.  Will set to Closed Won if left blank."
+          },
+          {
+            "name": "Donation_Tribute_Type__c",
+            "type": "Picklist",
+            "label": "Donation Tribute Type",
+            "desc": "Indicates whether the donation is in honor or in memory of an individual."
+          },
+          {
+            "name": "Donation_Type__c",
+            "type": "Text",
+            "label": "Donation Type",
+            "desc": "Opportunity.Type"
+          },
+          {
+            "name": "DonationCampaignImported__c",
+            "type": "Lookup",
+            "label": "Donation Campaign Source",
+            "desc": "Opportunity.CampaignId"
+          },
+          {
+            "name": "DonationCampaignImportStatus__c",
+            "type": "Text",
+            "label": "Donation Campaign Import Status",
+            "desc": ""
+          },
+          {
+            "name": "DonationImported__c",
+            "type": "Lookup",
+            "label": "Donation Imported",
+            "desc": ""
+          },
+          {
+            "name": "DonationImportStatus__c",
+            "type": "Text",
+            "label": "Donation Import Status",
+            "desc": ""
+          },
+          {
+            "name": "Elevate_Custom_Metadata__c",
+            "type": "LongTextArea",
+            "label": "Elevate Custom Metadata",
+            "desc": "Custom metadata from Elevate Giving Pages, stored as JSON."
+          },
+          {
+            "name": "Elevate_Payment_Status__c",
+            "type": "Text",
+            "label": "Elevate Payment Status",
+            "desc": "The transaction status shown in Elevate."
+          },
+          {
+            "name": "FailureInformation__c",
+            "type": "LongTextArea",
+            "label": "Failure Information",
+            "desc": "Description of what caused the Data Import record to fail to be imported."
+          },
+          {
+            "name": "GAU_Allocation_1_Amount__c",
+            "type": "Currency",
+            "label": "GAU Allocation 1: Amount",
+            "desc": "The monetary amount attributed to the Opportunity&apos;s first GAU Allocation. You must use Data Import Advanced Mapping to map to this field."
+          },
+          {
+            "name": "GAU_Allocation_1_GAU__c",
+            "type": "Lookup",
+            "label": "GAU Allocation 1: GAU",
+            "desc": "The salesforce id of the GAU to be used for the first allocation."
+          },
+          {
+            "name": "GAU_Allocation_1_Import_Status__c",
+            "type": "Text",
+            "label": "GAU Allocation 1: Import Status",
+            "desc": "The status from attempting to insert the first GAU Allocation."
+          },
+          {
+            "name": "GAU_Allocation_1_Imported__c",
+            "type": "Lookup",
+            "label": "GAU Allocation 1: Imported",
+            "desc": "A lookup to the first GAU Allocation if it was successfully created."
+          },
+          {
+            "name": "GAU_Allocation_1_Percent__c",
+            "type": "Percent",
+            "label": "GAU Allocation 1: Percent",
+            "desc": "The percent attributed to the Opportunity&apos;s first GAU Allocation. You must use Data Import Advanced Mapping to map to this field."
+          },
+          {
+            "name": "GAU_Allocation_2_Amount__c",
+            "type": "Currency",
+            "label": "GAU Allocation 2: Amount",
+            "desc": "The monetary amount attributed to the Opportunity&apos;s second GAU Allocation. You must use Data Import Advanced Mapping to map to this field."
+          },
+          {
+            "name": "GAU_Allocation_2_GAU__c",
+            "type": "Lookup",
+            "label": "GAU Allocation 2: GAU",
+            "desc": "The salesforce id of the GAU to be used for the second GAU allocation."
+          },
+          {
+            "name": "GAU_Allocation_2_Import_Status__c",
+            "type": "Text",
+            "label": "GAU Allocation 2: Import Status",
+            "desc": "The status from attempting to insert the second GAU Allocation."
+          },
+          {
+            "name": "GAU_Allocation_2_Imported__c",
+            "type": "Lookup",
+            "label": "GAU Allocation 2: Imported",
+            "desc": "A lookup to the first GAU Allocation if it was successfully created."
+          },
+          {
+            "name": "GAU_Allocation_2_Percent__c",
+            "type": "Percent",
+            "label": "GAU Allocation 2: Percent",
+            "desc": "The percent attributed to the Opportunity&apos;s second GAU Allocation. You must use Data Import Advanced Mapping to map to this field."
+          },
+          {
+            "name": "Home_City__c",
+            "type": "Text",
+            "label": "Home City",
+            "desc": "Address.npsp__MailingCity__c"
+          },
+          {
+            "name": "Home_Country__c",
+            "type": "Text",
+            "label": "Home Country",
+            "desc": "Address.npsp__MailingCountry__c"
+          },
+          {
+            "name": "Home_State_Province__c",
+            "type": "Text",
+            "label": "Home State/Province",
+            "desc": "Address.npsp__MailingState__c"
+          },
+          {
+            "name": "Home_Street__c",
+            "type": "TextArea",
+            "label": "Home Street",
+            "desc": "Address.npsp__MailingStreet__c"
+          },
+          {
+            "name": "Home_Zip_Postal_Code__c",
+            "type": "Text",
+            "label": "Home Zip/Postal Code",
+            "desc": "Address.npsp__MailingPostalCode__c"
+          },
+          {
+            "name": "HomeAddressImported__c",
+            "type": "Lookup",
+            "label": "Home Address Imported",
+            "desc": ""
+          },
+          {
+            "name": "HomeAddressImportStatus__c",
+            "type": "Text",
+            "label": "Home Address Import Status",
+            "desc": ""
+          },
+          {
+            "name": "Household_Phone__c",
+            "type": "Phone",
+            "label": "Household Phone",
+            "desc": "Household.Phone"
+          },
+          {
+            "name": "HouseholdAccountImported__c",
+            "type": "Lookup",
+            "label": "Household Account Imported",
+            "desc": ""
+          },
+          {
+            "name": "ImportedDate__c",
+            "type": "DateTime",
+            "label": "Imported Date",
+            "desc": "The date and time that the Data Import record was successfully imported."
+          },
+          {
+            "name": "NPSP_Data_Import_Batch__c",
+            "type": "Lookup",
+            "label": "NPSP Data Import Batch",
+            "desc": "Lookup to the NPSP Data Import Batch this record belongs to."
+          },
+          {
+            "name": "Opportunity_Contact_Role_1_Imported__c",
+            "type": "Text",
+            "label": "Opportunity Contact Role 1: Imported",
+            "desc": "The salesforce id of the imported opportunity contact role."
+          },
+          {
+            "name": "Opportunity_Contact_Role_1_ImportStatus__c",
+            "type": "Text",
+            "label": "Opportunity Contact Role 1: ImportStatus",
+            "desc": "The status from attempting to insert the first Opportunity Contact Role."
+          },
+          {
+            "name": "Opportunity_Contact_Role_1_Role__c",
+            "type": "Text",
+            "label": "Opportunity Contact Role 1: Role",
+            "desc": "The role that the Opportunity Contact Role should be created with.  For example enter &apos;Soft Credit&apos; to create a soft credit opportunity contact role."
+          },
+          {
+            "name": "Opportunity_Contact_Role_2_Imported__c",
+            "type": "Text",
+            "label": "Opportunity Contact Role 2: Imported",
+            "desc": "The salesforce id of the imported opportunity contact role."
+          },
+          {
+            "name": "Opportunity_Contact_Role_2_ImportStatus__c",
+            "type": "Text",
+            "label": "Opportunity Contact Role 2: ImportStatus",
+            "desc": "The status from attempting to insert the second Opportunity Contact Role."
+          },
+          {
+            "name": "Opportunity_Contact_Role_2_Role__c",
+            "type": "Text",
+            "label": "Opportunity Contact Role 2: Role",
+            "desc": "The role that the Opportunity Contact Role should be created with.  For example enter &apos;Soft Credit&apos; to create a soft credit opportunity contact role."
+          },
+          {
+            "name": "Payment_ACH_Code__c",
+            "type": "Picklist",
+            "label": "Payment ACH Code",
+            "desc": "The Standard Entry Class (SEC) code used for this ACH transaction."
+          },
+          {
+            "name": "Payment_ACH_Last_4__c",
+            "type": "Text",
+            "label": "Payment ACH Last 4",
+            "desc": "The last four digits of the bank account used for this transaction."
+          },
+          {
+            "name": "Payment_Authorization_Token__c",
+            "type": "Text",
+            "label": "Payment Authorization Token",
+            "desc": "Authorization token for a transaction."
+          },
+          {
+            "name": "Payment_Authorized_Date__c",
+            "type": "DateTime",
+            "label": "Payment Authorized Date",
+            "desc": "The date and time the transaction was authorized."
+          },
+          {
+            "name": "Payment_Authorized_UTC_Timestamp__c",
+            "type": "Text",
+            "label": "Payment Authorized UTC Timestamp",
+            "desc": "The exact date and time (down to the millisecond) from the payment gateway that this transaction was successfully authorized."
+          },
+          {
+            "name": "Payment_Card_Expiration_Month__c",
+            "type": "Text",
+            "label": "Payment Card Expiration Month",
+            "desc": "The expiration month of the card used for this transaction."
+          },
+          {
+            "name": "Payment_Card_Expiration_Year__c",
+            "type": "Text",
+            "label": "Payment Card Expiration Year",
+            "desc": "The expiration year of the card used for this transaction."
+          },
+          {
+            "name": "Payment_Card_Last_4__c",
+            "type": "Text",
+            "label": "Payment Card Last 4",
+            "desc": "The last four digits of the card used for this transaction."
+          },
+          {
+            "name": "Payment_Card_Network__c",
+            "type": "Text",
+            "label": "Payment Card Network",
+            "desc": "The card network of the card used for this transaction."
+          },
+          {
+            "name": "Payment_Check_Reference_Number__c",
+            "type": "Text",
+            "label": "Payment Check/Reference Number",
+            "desc": "Payment.npe01__Check_Reference_Number__c"
+          },
+          {
+            "name": "Payment_Declined_Reason__c",
+            "type": "Text",
+            "label": "Payment Elevate API Declined Reason",
+            "desc": "Provides detail about why a transaction was declined."
+          },
+          {
+            "name": "Payment_Donor_Cover_Amount__c",
+            "type": "Currency",
+            "label": "Payment Donor Cover Amount",
+            "desc": "The amount the donor paid in addition to their donation amount, often to help cover transaction fees or to add a tip to their donation."
+          },
+          {
+            "name": "Payment_Elevate_Batch_ID__c",
+            "type": "Text",
+            "label": "Payment Elevate Batch ID",
+            "desc": "The ID of a batch of payments sent to Elevate for processing."
+          },
+          {
+            "name": "Payment_Elevate_Created_Date__c",
+            "type": "DateTime",
+            "label": "Payment Elevate Created Date",
+            "desc": "The date and time the transaction was created."
+          },
+          {
+            "name": "Payment_Elevate_Created_UTC_Timestamp__c",
+            "type": "Text",
+            "label": "Payment Elevate Created UTC  Timestamp",
+            "desc": "The exact date and time (down to the millisecond) from Elevate that the transaction was created."
+          },
+          {
+            "name": "Payment_Elevate_ID__c",
+            "type": "Text",
+            "label": "Payment Elevate ID",
+            "desc": "The unique ID for this transaction from Elevate."
+          },
+          {
+            "name": "Payment_Elevate_Original_Payment_ID__c",
+            "type": "Text",
+            "label": "Payment Elevate Original Payment ID",
+            "desc": "For refunds only. Shows the ID of the original payment transaction from Elevate."
+          },
+          {
+            "name": "Payment_Elevate_Transaction_Fee__c",
+            "type": "Currency",
+            "label": "Payment Elevate Transaction Fee",
+            "desc": "The transaction fee charged by Elevate."
+          },
+          {
+            "name": "Payment_Gateway_ID__c",
+            "type": "Text",
+            "label": "Payment Gateway ID",
+            "desc": "The ID of the payment gateway that processed this transaction."
+          },
+          {
+            "name": "Payment_Gateway_Payment_ID__c",
+            "type": "Text",
+            "label": "Payment Gateway Payment ID",
+            "desc": "The unique ID for this transaction from the payment gateway."
+          },
+          {
+            "name": "Payment_Gateway_Transaction_Fee__c",
+            "type": "Currency",
+            "label": "Payment Gateway Transaction Fee",
+            "desc": "The transaction fee charged by your payment gateway."
+          },
+          {
+            "name": "Payment_Method__c",
+            "type": "Text",
+            "label": "Payment Method",
+            "desc": "Payment.npe01__Payment_Method__c"
+          },
+          {
+            "name": "Payment_Origin_ID__c",
+            "type": "Text",
+            "label": "Payment Origin ID",
+            "desc": "The ID for the system where the transaction was initiated."
+          },
+          {
+            "name": "Payment_Origin_Name__c",
+            "type": "Text",
+            "label": "Payment Origin Name",
+            "desc": "The name of the system where the transaction was initiated."
+          },
+          {
+            "name": "Payment_Origin_Type__c",
+            "type": "Text",
+            "label": "Payment Origin Type",
+            "desc": "The type of system used to initiate the transaction. Available values include Engagement Hub, Giving Page, Payments API, Salesforce."
+          },
+          {
+            "name": "Payment_Paid__c",
+            "type": "Picklist",
+            "label": "Payment Paid",
+            "desc": "Indicates if this payment is paid or not."
+          },
+          {
+            "name": "Payment_Possible_Matches__c",
+            "type": "Text",
+            "label": "Payment Possible Matches",
+            "desc": "A comma-separated list of Ids for the first 10 possible Payment matches for a Donation."
+          },
+          {
+            "name": "Payment_Status__c",
+            "type": "Text",
+            "label": "Payment Elevate API Status",
+            "desc": "The API status of the transaction from Elevate."
+          },
+          {
+            "name": "Payment_Total_Transaction_Fees__c",
+            "type": "Currency",
+            "label": "Payment Total Transaction Fees",
+            "desc": "The sum of the transaction fees charged by Elevate and your payment gateway."
+          },
+          {
+            "name": "Payment_Type__c",
+            "type": "Text",
+            "label": "Payment Type",
+            "desc": "Indicates the type of transaction."
+          },
+          {
+            "name": "PaymentImported__c",
+            "type": "Lookup",
+            "label": "Payment Imported",
+            "desc": ""
+          },
+          {
+            "name": "PaymentImportStatus__c",
+            "type": "Text",
+            "label": "Payment Import Status",
+            "desc": ""
+          },
+          {
+            "name": "Recurring_Donation_ACH_Last_4__c",
+            "type": "Text",
+            "label": "Recurring Donation ACH Last 4",
+            "desc": "The last four digits of the bank account used for this recurring donation."
+          },
+          {
+            "name": "Recurring_Donation_Amount__c",
+            "type": "Currency",
+            "label": "Recurring Donation Amount",
+            "desc": "The amount for each installment Opportunity."
+          },
+          {
+            "name": "Recurring_Donation_Card_Expiration_Month__c",
+            "type": "Text",
+            "label": "Recurring Donation Card Expiration Month",
+            "desc": "The expiration month of the card used for this recurring donation."
+          },
+          {
+            "name": "Recurring_Donation_Card_Expiration_Year__c",
+            "type": "Text",
+            "label": "Recurring Donation Card Expiration Year",
+            "desc": "The expiration year of the card used for this recurring donation."
+          },
+          {
+            "name": "Recurring_Donation_Card_Last_4__c",
+            "type": "Text",
+            "label": "Recurring Donation Card Last 4",
+            "desc": "The last four digits of the card used for this recurring donation."
+          },
+          {
+            "name": "Recurring_Donation_Change_Type__c",
+            "type": "Text",
+            "label": "Recurring Donation Change Type",
+            "desc": "The type of change (Upgrade, Downgrade, etc.) this Update represents."
+          },
+          {
+            "name": "Recurring_Donation_Date_Established__c",
+            "type": "Date",
+            "label": "Recurring Donation Date Established",
+            "desc": "The initial inception date for this Recurring Donation. The default is the current date."
+          },
+          {
+            "name": "Recurring_Donation_Day_of_Month__c",
+            "type": "Text",
+            "label": "Recurring Donation Day of Month",
+            "desc": "Sets the specific day of the month for future installment Opportunities when the Installment Period is Monthly. If you select 29 or 30, the installment date will be the last day of the month for months that don&apos;t have that many days."
+          },
+          {
+            "name": "Recurring_Donation_Effective_Date__c",
+            "type": "Date",
+            "label": "Recurring Donation Effective Date",
+            "desc": "The date that new or updated schedule information (Amount, Day of Month, etc.) for this Recurring Donation takes effect. The default is the current date."
+          },
+          {
+            "name": "Recurring_Donation_Elevate_Event_Version__c",
+            "type": "Number",
+            "label": "Recurring Donation Elevate Event Version",
+            "desc": "The version of the Elevate event that was used to create this Data Import record."
+          },
+          {
+            "name": "Recurring_Donation_Elevate_Recurring_ID__c",
+            "type": "Text",
+            "label": "Recurring Donation Elevate Recurring ID",
+            "desc": "The external, unique ID of the related Recurring Donation in Elevate."
+          },
+          {
+            "name": "Recurring_Donation_End_Date__c",
+            "type": "Date",
+            "label": "Recurring Donation End Date",
+            "desc": "The date on which this Recurring Donation was closed."
+          },
+          {
+            "name": "Recurring_Donation_Installment_Frequency__c",
+            "type": "Number",
+            "label": "Recurring Donation Installment Frequency",
+            "desc": "The Installment Frequency along with Installment Period defines the installment schedule of this Recurring Donation. For example, if Installment Period is Monthly and Installment Frequency is 3, the schedule is defined as &quot;every 3 months&quot;."
+          },
+          {
+            "name": "Recurring_Donation_Installment_Period__c",
+            "type": "Text",
+            "label": "Recurring Donation Installment Period",
+            "desc": "The Installment Period along with Installment Frequency defines the installment schedule of this Recurring Donation. For example, if Installment Period is Monthly and Installment Frequency is 3, the schedule is defined as &quot;every 3 months&quot;."
+          },
+          {
+            "name": "Recurring_Donation_Name__c",
+            "type": "Text",
+            "label": "Recurring Donation Name",
+            "desc": "Leave blank if you have a Recurring Donation Name Format selected. Otherwise, enter your own name."
+          },
+          {
+            "name": "Recurring_Donation_Payment_Method__c",
+            "type": "Text",
+            "label": "Recurring Donation Payment Method",
+            "desc": "The form of payment for this Recurring Donation. NPSP automatically copies the selected value to each related Payment record."
+          },
+          {
+            "name": "Recurring_Donation_Planned_Installments__c",
+            "type": "Number",
+            "label": "Recurring Donation Planned Installments",
+            "desc": "Number of installments you expect to receive. Only used when Recurring Type is Fixed."
+          },
+          {
+            "name": "Recurring_Donation_Recurring_Type__c",
+            "type": "Text",
+            "label": "Recurring Donation Recurring Type",
+            "desc": "Open indicates an ongoing Recurring Donation. Fixed indicates a Recurring Donation that has a specific number of installments. For Fixed, you must also populate the Number of Planned Installments field."
+          },
+          {
+            "name": "Recurring_Donation_Status__c",
+            "type": "Text",
+            "label": "Recurring Donation Status",
+            "desc": "Indicates if this Recurring Donation is actively in use, temporarily suspended, or closed."
+          },
+          {
+            "name": "Recurring_Donation_Status_Reason__c",
+            "type": "Text",
+            "label": "Recurring Donation Status Reason",
+            "desc": "The reason this Recurring Donation has its current Status value."
+          },
+          {
+            "name": "RecurringDonationImported__c",
+            "type": "Lookup",
+            "label": "Recurring Donation Imported",
+            "desc": "A lookup to the Recurring Donation if it was successfully created."
+          },
+          {
+            "name": "RecurringDonationImportStatus__c",
+            "type": "Text",
+            "label": "Recurring Donation Import Status",
+            "desc": "The status from attempting to insert the Recurring Donation."
+          },
+          {
+            "name": "Status__c",
+            "type": "Picklist",
+            "label": "Status",
+            "desc": "The status of the import for this record, for example, Imported or Failed."
+          },
+          {
+            "name": "UTM_Campaign__c",
+            "type": "Text",
+            "label": "UTM Campaign",
+            "desc": "Google Analytics parameter for tracking the name or solicitation code of the outreach effort. For example, spring_2021_fundraiser."
+          },
+          {
+            "name": "UTM_Content__c",
+            "type": "Text",
+            "label": "UTM Content",
+            "desc": "Google Analytics parameter for differentiating similar content or links within a solicitation."
+          },
+          {
+            "name": "UTM_Keyword_Terms__c",
+            "type": "Text",
+            "label": "UTM Keyword Terms",
+            "desc": "Google Analytics parameter for tracking paid search terms."
+          },
+          {
+            "name": "UTM_Medium__c",
+            "type": "Text",
+            "label": "UTM Medium",
+            "desc": "Google Analytics parameter for tracking how the URL was shared. For example, email or banner_ad."
+          },
+          {
+            "name": "UTM_Source__c",
+            "type": "Text",
+            "label": "UTM Source",
+            "desc": "Google Analytics parameter for tracking the referring source. For example, website or newsletter."
+          }
+        ]
       }
     ],
     "triggers": [
@@ -10331,8 +11887,10 @@ export default {
       {
         "name": "Form_Template__c",
         "label": "Form Template",
-        "fieldCount": 3,
-        "keyFields": [
+        "relationships": [],
+        "description": "Custom object that stores Gift Entry form template definitions. Each record holds a Template_JSON__c field containing the serialized layout of sections, fields, ordering, requirements, and default values. The Format_Version__c field tracks which version of Gift Entry created the template, supporting forward compatibility as the feature evolves.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Form_Template__c",
+        "fields": [
           {
             "name": "Description__c",
             "type": "TextArea",
@@ -10351,16 +11909,15 @@ export default {
             "label": "Template JSON",
             "desc": "The sections and fields on this template, along with their order, requirements, and default values. Stored as JSON. Do not edit directly."
           }
-        ],
-        "relationships": [],
-        "description": "Custom object that stores Gift Entry form template definitions. Each record holds a Template_JSON__c field containing the serialized layout of sections, fields, ordering, requirements, and default values. The Format_Version__c field tracks which version of Gift Entry created the template, supporting forward compatibility as the feature evolves.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Form_Template__c"
+        ]
       },
       {
         "name": "GetStartedChecklistItem__mdt",
         "label": "NPSP Get Started Checklist Item",
-        "fieldCount": 15,
-        "keyFields": [
+        "relationships": [],
+        "description": "Custom metadata type that defines individual checklist items on the NPSP Get Started page. Each record specifies a title, description, image, position, and up to two action buttons with configurable types (external link, Salesforce navigation, or disabled). Items belong to a parent GetStartedChecklistSection__mdt and reference labels from the gsLabelMapper LWC for localization.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/GetStartedChecklistItem__mdt",
+        "fields": [
           {
             "name": "Description_Label__c",
             "type": "Text",
@@ -10451,16 +12008,15 @@ export default {
             "label": "Title Label Name",
             "desc": "The API name for the Title label of a section item on the Get Started page. Must match an imported label in the gsLabelMapper LWC."
           }
-        ],
-        "relationships": [],
-        "description": "Custom metadata type that defines individual checklist items on the NPSP Get Started page. Each record specifies a title, description, image, position, and up to two action buttons with configurable types (external link, Salesforce navigation, or disabled). Items belong to a parent GetStartedChecklistSection__mdt and reference labels from the gsLabelMapper LWC for localization.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/GetStartedChecklistItem__mdt"
+        ]
       },
       {
         "name": "GetStartedChecklistSection__mdt",
         "label": "NPSP Get Started Checklist Section",
-        "fieldCount": 4,
-        "keyFields": [
+        "relationships": [],
+        "description": "Custom metadata type that defines top-level sections on the NPSP Get Started onboarding page. Each record has a title label, description label, position, and a Page_Type__c picklist to target either Admin or End User audiences. Sections serve as containers for GetStartedChecklistItem__mdt records that guide users through NPSP setup tasks.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/GetStartedChecklistSection__mdt",
+        "fields": [
           {
             "name": "Description_Label__c",
             "type": "Text",
@@ -10485,16 +12041,21 @@ export default {
             "label": "Title Label Name",
             "desc": "The API Name for the Title label of a section item on the Get Started page. Must match an imported label in the gsLabelMapper LWC."
           }
-        ],
-        "relationships": [],
-        "description": "Custom metadata type that defines top-level sections on the NPSP Get Started onboarding page. Each record has a title label, description label, position, and a Page_Type__c picklist to target either Admin or End User audiences. Sections serve as containers for GetStartedChecklistItem__mdt records that guide users through NPSP setup tasks.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/GetStartedChecklistSection__mdt"
+        ]
       },
       {
         "name": "GetStartedCompletionChecklistState__c",
         "label": "Get Started Completion Checklist State",
-        "fieldCount": 2,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "User",
+            "type": "Lookup",
+            "field": "User__c"
+          }
+        ],
+        "description": "Custom object that tracks per-user completion state of Get Started checklist items. Each record links a User__c lookup to an Item_Id__c text field identifying which checklist step was completed. This allows NPSP to persist onboarding progress so users see which setup steps they have already finished.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/GetStartedCompletionChecklistState__c",
+        "fields": [
           {
             "name": "Item_Id__c",
             "type": "Text",
@@ -10507,16 +12068,7 @@ export default {
             "label": "User",
             "desc": ""
           }
-        ],
-        "relationships": [
-          {
-            "target": "User",
-            "type": "Lookup",
-            "field": "User__c"
-          }
-        ],
-        "description": "Custom object that tracks per-user completion state of Get Started checklist items. Each record links a User__c lookup to an Item_Id__c text field identifying which checklist step was completed. This allows NPSP to persist onboarding progress so users see which setup steps they have already finished.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/GetStartedCompletionChecklistState__c"
+        ]
       }
     ],
     "triggers": [
@@ -12255,8 +13807,26 @@ export default {
       {
         "name": "Engagement_Plan_Task__c",
         "label": "Engagement Plan Task",
-        "fieldCount": 11,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "User",
+            "type": "Lookup",
+            "field": "Assigned_To__c"
+          },
+          {
+            "target": "Engagement_Plan_Template__c",
+            "type": "MasterDetail",
+            "field": "Engagement_Plan_Template__c"
+          },
+          {
+            "target": "Engagement_Plan_Task__c",
+            "type": "Lookup",
+            "field": "Parent_Task__c"
+          }
+        ],
+        "description": "Custom object representing an individual task template within an Engagement Plan Template, defining what action should be taken and when. It supports parent-child dependencies via the Parent_Task__c self-lookup, with Days_After__c controlling relative scheduling. Has a master-detail relationship to Engagement_Plan_Template__c and includes fields for priority, status, type, reminder settings, and assignee.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Engagement_Plan_Task__c",
+        "fields": [
           {
             "name": "Assigned_To__c",
             "type": "Lookup",
@@ -12294,16 +13864,16 @@ export default {
             "desc": "The priority of this Task."
           },
           {
-            "name": "Reminder_Time__c",
-            "type": "Text",
-            "label": "Reminder Time",
-            "desc": "The time on the Due Date that a reminder appears."
-          },
-          {
             "name": "Reminder__c",
             "type": "Checkbox",
             "label": "Reminder",
             "desc": "Sets a reminder for the Task."
+          },
+          {
+            "name": "Reminder_Time__c",
+            "type": "Text",
+            "label": "Reminder Time",
+            "desc": "The time on the Due Date that a reminder appears."
           },
           {
             "name": "Send_Email__c",
@@ -12323,12 +13893,31 @@ export default {
             "label": "Type",
             "desc": "The type of Task."
           }
-        ],
+        ]
+      },
+      {
+        "name": "Engagement_Plan__c",
+        "label": "Engagement Plan",
         "relationships": [
           {
-            "target": "User",
+            "target": "Account",
             "type": "Lookup",
-            "field": "Assigned_To__c"
+            "field": "Account__c"
+          },
+          {
+            "target": "Campaign",
+            "type": "Lookup",
+            "field": "Campaign__c"
+          },
+          {
+            "target": "Case",
+            "type": "Lookup",
+            "field": "Case__c"
+          },
+          {
+            "target": "Contact",
+            "type": "Lookup",
+            "field": "Contact__c"
           },
           {
             "target": "Engagement_Plan_Template__c",
@@ -12336,19 +13925,19 @@ export default {
             "field": "Engagement_Plan_Template__c"
           },
           {
-            "target": "Engagement_Plan_Task__c",
+            "target": "Opportunity",
             "type": "Lookup",
-            "field": "Parent_Task__c"
+            "field": "Opportunity__c"
+          },
+          {
+            "target": "npe03__Recurring_Donation__c",
+            "type": "Lookup",
+            "field": "Recurring_Donation__c"
           }
         ],
-        "description": "Custom object representing an individual task template within an Engagement Plan Template, defining what action should be taken and when. It supports parent-child dependencies via the Parent_Task__c self-lookup, with Days_After__c controlling relative scheduling. Has a master-detail relationship to Engagement_Plan_Template__c and includes fields for priority, status, type, reminder settings, and assignee.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Engagement_Plan_Task__c"
-      },
-      {
-        "name": "Engagement_Plan__c",
-        "label": "Engagement Plan",
-        "fieldCount": 11,
-        "keyFields": [
+        "description": "Custom object representing an active instance of an engagement plan applied to a specific record such as a Contact, Account, Opportunity, Campaign, Case, or Recurring Donation. It has a master-detail relationship to Engagement_Plan_Template__c and lookup relationships to each supported target object. Tracks progress through Completed_Tasks__c, Total_EP_Tasks__c, and Status__c fields.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Engagement_Plan__c",
+        "fields": [
           {
             "name": "Account__c",
             "type": "Lookup",
@@ -12415,46 +14004,7 @@ export default {
             "label": "Total Tasks",
             "desc": ""
           }
-        ],
-        "relationships": [
-          {
-            "target": "Account",
-            "type": "Lookup",
-            "field": "Account__c"
-          },
-          {
-            "target": "Campaign",
-            "type": "Lookup",
-            "field": "Campaign__c"
-          },
-          {
-            "target": "Case",
-            "type": "Lookup",
-            "field": "Case__c"
-          },
-          {
-            "target": "Contact",
-            "type": "Lookup",
-            "field": "Contact__c"
-          },
-          {
-            "target": "Engagement_Plan_Template__c",
-            "type": "MasterDetail",
-            "field": "Engagement_Plan_Template__c"
-          },
-          {
-            "target": "Opportunity",
-            "type": "Lookup",
-            "field": "Opportunity__c"
-          },
-          {
-            "target": "npe03__Recurring_Donation__c",
-            "type": "Lookup",
-            "field": "Recurring_Donation__c"
-          }
-        ],
-        "description": "Custom object representing an active instance of an engagement plan applied to a specific record such as a Contact, Account, Opportunity, Campaign, Case, or Recurring Donation. It has a master-detail relationship to Engagement_Plan_Template__c and lookup relationships to each supported target object. Tracks progress through Completed_Tasks__c, Total_EP_Tasks__c, and Status__c fields.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Engagement_Plan__c"
+        ]
       }
     ],
     "triggers": [
@@ -12662,8 +14212,10 @@ export default {
       {
         "name": "Error_Settings__c",
         "label": "Error Settings",
-        "fieldCount": 10,
-        "keyFields": [
+        "relationships": [],
+        "description": "Custom Settings object (hierarchy type) that stores org-wide configuration for the NPSP error handling framework. Key fields include Disable_Error_Handling__c, Store_Errors_On__c, Error_Notifications_On__c, and Error_Notifications_To__c, which control whether errors are captured, stored, and who receives notifications. Also manages flags for debug mode, duplicate rule behavior, and the scheduling of default NPSP jobs.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Error_Settings__c",
+        "fields": [
           {
             "name": "Async_Error_Check_Last_Run__c",
             "type": "DateTime",
@@ -12671,16 +14223,16 @@ export default {
             "desc": "If checked, NPSP&apos;s error handling framework is disabled."
           },
           {
-            "name": "DisableRecordDataHealthChecks__c",
-            "type": "Checkbox",
-            "label": "Disable Record Data Health Checks",
-            "desc": "Indicates whether record data related health checks are disabled"
-          },
-          {
             "name": "Disable_Error_Handling__c",
             "type": "Checkbox",
             "label": "Disable Error Handling",
             "desc": "If checked, NPSP&apos;s error handling framework is disabled."
+          },
+          {
+            "name": "DisableRecordDataHealthChecks__c",
+            "type": "Checkbox",
+            "label": "Disable Record Data Health Checks",
+            "desc": "Indicates whether record data related health checks are disabled"
           },
           {
             "name": "Don_t_Auto_Schedule_Default_NPSP_Jobs__c",
@@ -12724,16 +14276,15 @@ export default {
             "label": "Store Errors",
             "desc": "Flag that indicates whether errors are going to be stored in the database."
           }
-        ],
-        "relationships": [],
-        "description": "Custom Settings object (hierarchy type) that stores org-wide configuration for the NPSP error handling framework. Key fields include Disable_Error_Handling__c, Store_Errors_On__c, Error_Notifications_On__c, and Error_Notifications_To__c, which control whether errors are captured, stored, and who receives notifications. Also manages flags for debug mode, duplicate rule behavior, and the scheduling of default NPSP jobs.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Error_Settings__c"
+        ]
       },
       {
         "name": "Error__c",
         "label": "Error",
-        "fieldCount": 11,
-        "keyFields": [
+        "relationships": [],
+        "description": "Custom object that serves as the persistent error log for all NPSP errors, storing one record per error occurrence. Each record captures Context_Type__c, Error_Type__c, Full_Message__c, Stack_Trace__c, and a link to the Related_Record_ID__c that caused the error. Includes tracking fields like Email_Sent__c and Retry_Pending__c to coordinate notification delivery and automatic retry of failed operations.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Error__c",
+        "fields": [
           {
             "name": "Context_Type__c",
             "type": "TextArea",
@@ -12800,10 +14351,7 @@ export default {
             "label": "Stack Trace",
             "desc": "Stack trace for the thrown error, if available at runtime."
           }
-        ],
-        "relationships": [],
-        "description": "Custom object that serves as the persistent error log for all NPSP errors, storing one record per error occurrence. Each record captures Context_Type__c, Error_Type__c, Full_Message__c, Stack_Trace__c, and a link to the Related_Record_ID__c that caused the error. Includes tracking fields like Email_Sent__c and Retry_Pending__c to coordinate notification delivery and automatic retry of failed operations.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Error__c"
+        ]
       }
     ],
     "triggers": [],
@@ -12890,8 +14438,16 @@ export default {
       {
         "name": "Level__c",
         "label": "Level",
-        "fieldCount": 9,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "Engagement_Plan_Template__c",
+            "type": "Lookup",
+            "field": "Engagement_Plan_Template__c"
+          }
+        ],
+        "description": "Custom object that defines a donor level tier with minimum and maximum amount thresholds based on a configurable source field on the target object (Contact or Account). It includes fields for the Target__c object, Source_Field__c, Level_Field__c, Previous_Level_Field__c, and an optional lookup to Engagement_Plan_Template__c for automated plan assignment. Processed by LVL_LevelAssign_BATCH to assign and update levels based on giving history.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Level__c",
+        "fields": [
           {
             "name": "Active__c",
             "type": "Checkbox",
@@ -12946,16 +14502,7 @@ export default {
             "label": "Target",
             "desc": "The object that this Level applies to."
           }
-        ],
-        "relationships": [
-          {
-            "target": "Engagement_Plan_Template__c",
-            "type": "Lookup",
-            "field": "Engagement_Plan_Template__c"
-          }
-        ],
-        "description": "Custom object that defines a donor level tier with minimum and maximum amount thresholds based on a configurable source field on the target object (Contact or Account). It includes fields for the Target__c object, Source_Field__c, Level_Field__c, Previous_Level_Field__c, and an optional lookup to Engagement_Plan_Template__c for automated plan assignment. Processed by LVL_LevelAssign_BATCH to assign and update levels based on giving history.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Level__c"
+        ]
       }
     ],
     "triggers": [
@@ -13035,8 +14582,21 @@ export default {
       {
         "name": "Account_Soft_Credit__c",
         "label": "Account Soft Credit",
-        "fieldCount": 4,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "Account",
+            "type": "Lookup",
+            "field": "Account__c"
+          },
+          {
+            "target": "Opportunity",
+            "type": "MasterDetail",
+            "field": "Opportunity__c"
+          }
+        ],
+        "description": "Custom object that tracks soft credit allocations at the Account level for a given Opportunity. It stores the credited Account via a lookup, the soft credit Amount__c, the parent Opportunity via a master-detail relationship, and the Role__c describing the Account's involvement. Used by rollup calculations to include organizational soft credit amounts in Account giving totals.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Account_Soft_Credit__c",
+        "fields": [
           {
             "name": "Account__c",
             "type": "Lookup",
@@ -13061,12 +14621,16 @@ export default {
             "label": "Role",
             "desc": "The role associated with this soft credit. The role describes how the Account was involved with the Opportunity."
           }
-        ],
+        ]
+      },
+      {
+        "name": "Partial_Soft_Credit__c",
+        "label": "Partial Soft Credit",
         "relationships": [
           {
-            "target": "Account",
-            "type": "Lookup",
-            "field": "Account__c"
+            "target": "Contact",
+            "type": "MasterDetail",
+            "field": "Contact__c"
           },
           {
             "target": "Opportunity",
@@ -13074,19 +14638,20 @@ export default {
             "field": "Opportunity__c"
           }
         ],
-        "description": "Custom object that tracks soft credit allocations at the Account level for a given Opportunity. It stores the credited Account via a lookup, the soft credit Amount__c, the parent Opportunity via a master-detail relationship, and the Role__c describing the Account's involvement. Used by rollup calculations to include organizational soft credit amounts in Account giving totals.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Account_Soft_Credit__c"
-      },
-      {
-        "name": "Partial_Soft_Credit__c",
-        "label": "Partial Soft Credit",
-        "fieldCount": 6,
-        "keyFields": [
+        "description": "Custom object that tracks partial soft credit allocations at the Contact level, allowing a portion of an Opportunity's amount to be credited to additional Contacts. It has master-detail relationships to both Contact and Opportunity, with fields for Amount__c, Contact_Role_ID__c, and Role_Name__c. Managed through the PSC_ManageSoftCredits_CTRL interface and kept in sync by PSC_PartialSoftCredit_TDTM.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Partial_Soft_Credit__c",
+        "fields": [
           {
             "name": "Amount__c",
             "type": "Currency",
             "label": "Amount",
             "desc": "The amount to be soft credited."
+          },
+          {
+            "name": "Contact__c",
+            "type": "MasterDetail",
+            "label": "Contact",
+            "desc": "Lookup to the Contact who gets this soft credit."
           },
           {
             "name": "Contact_Name__c",
@@ -13101,12 +14666,6 @@ export default {
             "desc": "The Opportunity Contact Role this soft credit applies to."
           },
           {
-            "name": "Contact__c",
-            "type": "MasterDetail",
-            "label": "Contact",
-            "desc": "Lookup to the Contact who gets this soft credit."
-          },
-          {
             "name": "Opportunity__c",
             "type": "MasterDetail",
             "label": "Opportunity",
@@ -13118,21 +14677,7 @@ export default {
             "label": "Role Name",
             "desc": "The Role of this soft credit."
           }
-        ],
-        "relationships": [
-          {
-            "target": "Contact",
-            "type": "MasterDetail",
-            "field": "Contact__c"
-          },
-          {
-            "target": "Opportunity",
-            "type": "MasterDetail",
-            "field": "Opportunity__c"
-          }
-        ],
-        "description": "Custom object that tracks partial soft credit allocations at the Contact level, allowing a portion of an Opportunity's amount to be credited to additional Contacts. It has master-detail relationships to both Contact and Opportunity, with fields for Amount__c, Contact_Role_ID__c, and Role_Name__c. Managed through the PSC_ManageSoftCredits_CTRL interface and kept in sync by PSC_PartialSoftCredit_TDTM.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Partial_Soft_Credit__c"
+        ]
       }
     ],
     "triggers": [
@@ -14754,8 +16299,26 @@ export default {
       {
         "name": "RecurringDonationChangeLog__c",
         "label": "Recurring Donation Change Log",
-        "fieldCount": 25,
-        "keyFields": [
+        "relationships": [
+          {
+            "target": "Campaign",
+            "type": "Lookup",
+            "field": "NewCampaign__c"
+          },
+          {
+            "target": "Campaign",
+            "type": "Lookup",
+            "field": "PreviousCampaign__c"
+          },
+          {
+            "target": "npe03__Recurring_Donation__c",
+            "type": "MasterDetail",
+            "field": "RecurringDonation__c"
+          }
+        ],
+        "description": "A custom object that stores an audit trail of field-level changes made to Enhanced Recurring Donation records, with 25 fields tracking old and new values for Amount, Campaign, Installment Frequency, Period, Payment Method, Status, and more. It has a Master-Detail relationship to npe03__Recurring_Donation__c and Lookup relationships to Campaign for both new and previous values. The RD2_ChangeLogService creates these records whenever tracked fields change on a Recurring Donation.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/RecurringDonationChangeLog__c",
+        "fields": [
           {
             "name": "ChangeType__c",
             "type": "Picklist",
@@ -14823,16 +16386,16 @@ export default {
             "desc": "The new Recurring Type for the related Recurring Donation."
           },
           {
-            "name": "NewStatusReason__c",
-            "type": "Text",
-            "label": "New Status Reason",
-            "desc": "The new Status Reason for the related Recurring Donation."
-          },
-          {
             "name": "NewStatus__c",
             "type": "Text",
             "label": "New Status",
             "desc": "The new Status for the related Recurring Donation."
+          },
+          {
+            "name": "NewStatusReason__c",
+            "type": "Text",
+            "label": "New Status Reason",
+            "desc": "The new Status Reason for the related Recurring Donation."
           },
           {
             "name": "PreviousAmount__c",
@@ -14845,18 +16408,77 @@ export default {
             "type": "Currency",
             "label": "Previous Annual Value",
             "desc": "The previous annual value for this Recurring Donation, based on the amount and schedule"
+          },
+          {
+            "name": "PreviousCampaign__c",
+            "type": "Lookup",
+            "label": "Previous Campaign",
+            "desc": "The previous Campaign for the related Recurring Donation."
+          },
+          {
+            "name": "PreviousExpectedTotalValue__c",
+            "type": "Currency",
+            "label": "Previous Expected Total Value",
+            "desc": "The previous expected total value for this Fixed Recurring Donation, based on the amount and schedule."
+          },
+          {
+            "name": "PreviousInstallmentFrequency__c",
+            "type": "Number",
+            "label": "Previous Installment Frequency",
+            "desc": "The previous Installment Frequency for the related Recurring Donation."
+          },
+          {
+            "name": "PreviousInstallmentPeriod__c",
+            "type": "Text",
+            "label": "Previous Installment Period",
+            "desc": "The previous Installment Period for the related Recurring Donation."
+          },
+          {
+            "name": "PreviousPaymentMethod__c",
+            "type": "Text",
+            "label": "Previous Payment Method",
+            "desc": "The previous Payment Method for the related Recurring Donation."
+          },
+          {
+            "name": "PreviousPlannedInstallments__c",
+            "type": "Number",
+            "label": "Previous Number of Planned Installments",
+            "desc": "The previous number of installments (donations) you expect to receive. For Fixed-Length Recurring Donations only."
+          },
+          {
+            "name": "PreviousRecurringType__c",
+            "type": "Text",
+            "label": "Previous Recurring Type",
+            "desc": "The previous Recurring Type for the related Recurring Donation."
+          },
+          {
+            "name": "PreviousStatus__c",
+            "type": "Text",
+            "label": "Previous Status",
+            "desc": "The previous Status for the related Recurring Donation."
+          },
+          {
+            "name": "PreviousStatusReason__c",
+            "type": "Text",
+            "label": "Previous Status Reason",
+            "desc": "The previous Status Reason for the related Recurring Donation."
+          },
+          {
+            "name": "RecurringDonation__c",
+            "type": "MasterDetail",
+            "label": "Recurring Donation",
+            "desc": "The Recurring Donation related to this Change Log record."
           }
-        ],
+        ]
+      },
+      {
+        "name": "RecurringDonationSchedule__c",
+        "label": "Recurring Donation Schedule",
         "relationships": [
           {
             "target": "Campaign",
             "type": "Lookup",
-            "field": "NewCampaign__c"
-          },
-          {
-            "target": "Campaign",
-            "type": "Lookup",
-            "field": "PreviousCampaign__c"
+            "field": "Campaign__c"
           },
           {
             "target": "npe03__Recurring_Donation__c",
@@ -14864,14 +16486,9 @@ export default {
             "field": "RecurringDonation__c"
           }
         ],
-        "description": "A custom object that stores an audit trail of field-level changes made to Enhanced Recurring Donation records, with 25 fields tracking old and new values for Amount, Campaign, Installment Frequency, Period, Payment Method, Status, and more. It has a Master-Detail relationship to npe03__Recurring_Donation__c and Lookup relationships to Campaign for both new and previous values. The RD2_ChangeLogService creates these records whenever tracked fields change on a Recurring Donation.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/RecurringDonationChangeLog__c"
-      },
-      {
-        "name": "RecurringDonationSchedule__c",
-        "label": "Recurring Donation Schedule",
-        "fieldCount": 13,
-        "keyFields": [
+        "description": "A custom object that stores the installment schedule definitions for Enhanced Recurring Donations, including amount, frequency, period, day of month, start date, and end date across 13 fields. It supports pause functionality through the IsPause checkbox and tracks payment method and campaign at the schedule level. This object has a Master-Detail relationship to npe03__Recurring_Donation__c and is managed by RD2_ScheduleService.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/RecurringDonationSchedule__c",
+        "fields": [
           {
             "name": "Active__c",
             "type": "Checkbox",
@@ -14950,27 +16567,15 @@ export default {
             "label": "Status Reason",
             "desc": "Contains additional details for the schedule. For example, a paused reason for a paused schedule."
           }
-        ],
-        "relationships": [
-          {
-            "target": "Campaign",
-            "type": "Lookup",
-            "field": "Campaign__c"
-          },
-          {
-            "target": "npe03__Recurring_Donation__c",
-            "type": "MasterDetail",
-            "field": "RecurringDonation__c"
-          }
-        ],
-        "description": "A custom object that stores the installment schedule definitions for Enhanced Recurring Donations, including amount, frequency, period, day of month, start date, and end date across 13 fields. It supports pause functionality through the IsPause checkbox and tracks payment method and campaign at the schedule level. This object has a Master-Detail relationship to npe03__Recurring_Donation__c and is managed by RD2_ScheduleService.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/RecurringDonationSchedule__c"
+        ]
       },
       {
         "name": "npe03__Recurring_Donation__c",
         "label": "npe03__Recurring_Donation__c",
-        "fieldCount": 20,
-        "keyFields": [
+        "relationships": [],
+        "description": "The core Recurring Donation custom object from the npe03 managed package, storing donor commitments for periodic giving with 20+ custom fields for Enhanced RD features. It includes Elevate integration fields (CommitmentId, CardLast4, ACH_Last_4, LastElevateEventPlayed), scheduling fields (InstallmentFrequency, Day_of_Month, EndDate), and computed fields (CurrentYearValue, ChangeType). This object serves as the central record for both Legacy and Enhanced Recurring Donations across the entire domain.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe03__Recurring_Donation__c",
+        "fields": [
           {
             "name": "ACH_Last_4__c",
             "type": "Text",
@@ -14981,7 +16586,7 @@ export default {
             "name": "Always_Use_Last_Day_Of_Month__c",
             "type": "Checkbox",
             "label": "Always use last day of month",
-            "desc": ""
+            "desc": "Sets future monthly, custom monthly, or quarterly donation installments to the last day of the month, regardless of Next Donation Date. Installment period must be Monthly or Quarterly, or a custom installment period using months."
           },
           {
             "name": "CardExpirationMonth__c",
@@ -15029,7 +16634,7 @@ export default {
             "name": "Day_of_Month__c",
             "type": "Picklist",
             "label": "Day of Month",
-            "desc": ""
+            "desc": "Sets future monthly, custom monthly, or quarterly donation installments to the selected day of the month, regardless of Next Donation Date. NOTE: If the Always use last day of month checkbox is selected, it supersedes the Day of Month value."
           },
           {
             "name": "DisableFirstInstallment__c",
@@ -15060,11 +16665,38 @@ export default {
             "type": "Number",
             "label": "Last Elevate Version Played",
             "desc": "An Integer that represents the last Elevate event version played resulting in an update to this Recurring Donation. Incremented automatically after each call to the Elevate API for changes. Used to prevent circular updates and to ensure the latest version is never overwritten."
+          },
+          {
+            "name": "NextYearValue__c",
+            "type": "Currency",
+            "label": "Next Year Value",
+            "desc": "This Recurring Donation&apos;s total expected amount for the next calendar or fiscal year (read only)."
+          },
+          {
+            "name": "PaymentMethod__c",
+            "type": "Picklist",
+            "label": "Payment Method",
+            "desc": "The form of payment for this Recurring Donation. NPSP automatically copies the selected value to each related Payment record."
+          },
+          {
+            "name": "RecurringType__c",
+            "type": "Picklist",
+            "label": "Recurring Type",
+            "desc": "Select Open for an ongoing Recurring Donation. Select Fixed for a Recurring Donation that has a specific number of installments. For Fixed, you must also populate the Number of Planned Installments field."
+          },
+          {
+            "name": "StartDate__c",
+            "type": "Date",
+            "label": "Effective Date",
+            "desc": "The date that new or updated schedule information (Amount, Day of Month, etc.) for this Recurring Donation takes effect. The default is the current date."
+          },
+          {
+            "name": "Status__c",
+            "type": "Picklist",
+            "label": "Status",
+            "desc": "Indicates if this Recurring Donation is actively in use, temporarily suspended, or closed."
           }
-        ],
-        "relationships": [],
-        "description": "The core Recurring Donation custom object from the npe03 managed package, storing donor commitments for periodic giving with 20+ custom fields for Enhanced RD features. It includes Elevate integration fields (CommitmentId, CardLast4, ACH_Last_4, LastElevateEventPlayed), scheduling fields (InstallmentFrequency, Day_of_Month, EndDate), and computed fields (CurrentYearValue, ChangeType). This object serves as the central record for both Legacy and Enhanced Recurring Donations across the entire domain.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe03__Recurring_Donation__c"
+        ]
       }
     ],
     "triggers": [
@@ -15286,27 +16918,25 @@ export default {
       {
         "name": "Relationship_Sync_Excluded_Fields__c",
         "label": "Fields to Exclude from Sync",
-        "fieldCount": 0,
-        "keyFields": [],
         "relationships": [],
         "description": "Custom Settings object that allows administrators to specify which fields on npe4__Relationship__c should be excluded from reciprocal synchronization. When REL_Relationships_TDTM syncs field values between a relationship and its reciprocal, it skips any fields listed in this setting. Provides flexibility for orgs that need asymmetric field values on related relationship pairs.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Relationship_Sync_Excluded_Fields__c"
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Relationship_Sync_Excluded_Fields__c",
+        "fields": []
       },
       {
         "name": "npe4__Relationship__c",
         "label": "npe4__Relationship__c",
-        "fieldCount": 1,
-        "keyFields": [
+        "relationships": [],
+        "description": "Core custom object from the Relationships package (npe4) that stores relationship connections between two Contacts, such as \"Spouse,\" \"Employer,\" or \"Friend.\" NPSP extends it with the Related_Opportunity_Contact_Role__c field, which automatically assigns an OCR role when Opportunities are created for related Contacts. Each relationship record has a reciprocal counterpart managed by REL_Relationships_TDTM.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe4__Relationship__c",
+        "fields": [
           {
             "name": "Related_Opportunity_Contact_Role__c",
             "type": "Picklist",
             "label": "Related Opportunity Contact Role",
             "desc": "When you create an Opportunity for the Contact in this Relationship, NPSP assigns this Opportunity Contact Role to the Related Contact."
           }
-        ],
-        "relationships": [],
-        "description": "Core custom object from the Relationships package (npe4) that stores relationship connections between two Contacts, such as \"Spouse,\" \"Employer,\" or \"Friend.\" NPSP extends it with the Related_Opportunity_Contact_Role__c field, which automatically assigns an OCR role when Opportunities are created for related Contacts. Each relationship record has a reciprocal counterpart managed by REL_Relationships_TDTM.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe4__Relationship__c"
+        ]
       }
     ],
     "triggers": [
@@ -15349,8 +16979,10 @@ export default {
       {
         "name": "Batch__c",
         "label": "Batch",
-        "fieldCount": 4,
-        "keyFields": [
+        "relationships": [],
+        "description": "Custom object that represents a batch processing container used for grouping records during bulk data operations. It tracks the batch's status via Batch_Status__c, a description, the number of items via Number_of_Items__c, and the target object API name via Object_Name__c. Used in NPSP's legacy batch processing workflows to monitor and manage the progress of bulk record operations.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Batch__c",
+        "fields": [
           {
             "name": "Batch_Status__c",
             "type": "Picklist",
@@ -15375,10 +17007,7 @@ export default {
             "label": "Object Name",
             "desc": "API Name of the object of which this is a batch."
           }
-        ],
-        "relationships": [],
-        "description": "Custom object that represents a batch processing container used for grouping records during bulk data operations. It tracks the batch's status via Batch_Status__c, a description, the number of items via Number_of_Items__c, and the target object API name via Object_Name__c. Used in NPSP's legacy batch processing workflows to monitor and manage the progress of bulk record operations.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/Batch__c"
+        ]
       }
     ],
     "triggers": [],
@@ -15391,18 +17020,17 @@ export default {
       {
         "name": "npe5__Affiliation__c",
         "label": "npe5__Affiliation__c",
-        "fieldCount": 1,
-        "keyFields": [
+        "relationships": [],
+        "description": "Core custom object from the Affiliations package (npe5) that links a Contact to an Organization (Account), representing formal or informal organizational affiliations. NPSP extends it with the Related_Opportunity_Contact_Role__c field, which automatically assigns an OCR role when Opportunities are created for the affiliated Organization. Managed through TDTM trigger handlers that maintain primary affiliation status and handle record lifecycle events.",
+        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe5__Affiliation__c",
+        "fields": [
           {
             "name": "Related_Opportunity_Contact_Role__c",
             "type": "Picklist",
             "label": "Related Opportunity Contact Role",
             "desc": "When you create an Opportunity for the Organization in this Affiliation, NPSP assigns this Opportunity Contact Role to the affiliated Contact."
           }
-        ],
-        "relationships": [],
-        "description": "Core custom object from the Affiliations package (npe5) that links a Contact to an Organization (Account), representing formal or informal organizational affiliations. NPSP extends it with the Related_Opportunity_Contact_Role__c field, which automatically assigns an OCR role when Opportunities are created for the affiliated Organization. Managed through TDTM trigger handlers that maintain primary affiliation status and handle record lifecycle events.",
-        "sourceUrl": "https://github.com/SalesforceFoundation/NPSP/tree/main/force-app/main/default/objects/npe5__Affiliation__c"
+        ]
       }
     ],
     "triggers": [

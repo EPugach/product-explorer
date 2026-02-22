@@ -76,8 +76,9 @@ function buildSearchIndex() {
               if (entItem.implements) entTags.push(entItem.implements);
             }
             // Objects: field names and labels
-            if (entType === 'object' && entItem.keyFields) {
-              for (const f of entItem.keyFields) {
+            const flds = entItem.fields || entItem.keyFields;
+            if (entType === 'object' && flds) {
+              for (const f of flds) {
                 entTags.push(f.name);
                 if (f.label) entTags.push(f.label);
               }
@@ -92,8 +93,8 @@ function buildSearchIndex() {
               entTags = entTags.concat(entItem.imports);
             }
             // Metadata: field names
-            if (entType === 'metadata' && entItem.keyFields) {
-              for (const f of entItem.keyFields) {
+            if (entType === 'metadata' && flds) {
+              for (const f of flds) {
                 entTags.push(f.name);
               }
             }
@@ -103,8 +104,8 @@ function buildSearchIndex() {
             if (entItem.implements) docParts.push('implements ' + entItem.implements);
             if (entItem.keyMethods) docParts.push(entItem.keyMethods.join(' '));
             if (entItem.referencedObjects) docParts.push(entItem.referencedObjects.join(' '));
-            if (entItem.keyFields) {
-              docParts.push(entItem.keyFields.map((f) =>
+            if (flds) {
+              docParts.push(flds.map((f) =>
                 `${f.name} ${f.label || ''} ${f.type || ''}`
               ).join(' '));
             }
