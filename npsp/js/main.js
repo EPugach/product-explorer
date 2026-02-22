@@ -92,6 +92,10 @@ function mergeEntities() {
         )
       };
     }
+    // Update physics node tooltip counts with actual entity data
+    if (nodeMap[domainKey]) {
+      nodeMap[domainKey].classCount = (entities.classes || []).length;
+    }
   }
 }
 
