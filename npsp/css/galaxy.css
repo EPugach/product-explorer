@@ -205,6 +205,7 @@ body {
 /* ── Search Component ── */
 .search-box {
   flex: 1; min-width: 0; max-width: 480px;
+  margin: 0 auto;
   position: relative; z-index: 110;
 }
 
@@ -1589,6 +1590,7 @@ body.theme-light .var { color: #fe9339; }
 
 /* Theme toggle button */
 .theme-toggle {
+  margin-left: auto;
   background: none;
   border: 1px solid rgba(100,140,255,0.15);
   color: var(--text-dim);
