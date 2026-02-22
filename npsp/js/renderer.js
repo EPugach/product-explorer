@@ -12,6 +12,7 @@ import {
   tourFocusNode, tourHighlightedEdges, tourStopPlanets,
   focusedPlanetIndex, prefersReducedMotion
 } from './state.js';
+import { getCanvasIcon } from './icons.js?v=3';
 
 const _light = () => document.body.classList.contains('theme-light');
 
@@ -168,13 +169,21 @@ export function renderGraph() {
     ctx.lineWidth = isH ? 2 : 1;
     ctx.stroke();
 
-    // Emoji icon
-    ctx.font = Math.round(r * 0.6) + "px 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.globalAlpha = n.entranceAlpha * dimFactor;
-    ctx.fillText(n.icon, n.x, n.y);
-    ctx.globalAlpha = 1;
+    // SVG icon (Circuit-Cosmic)
+    const iconImg = getCanvasIcon(n.id);
+    if (iconImg) {
+      const iconSize = r * 1.0;
+      ctx.globalAlpha = n.entranceAlpha * dimFactor;
+      ctx.drawImage(iconImg, n.x - iconSize / 2, n.y - iconSize / 2, iconSize, iconSize);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.font = Math.round(r * 0.6) + "px 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = n.entranceAlpha * dimFactor;
+      ctx.fillText(n.icon, n.x, n.y);
+      ctx.globalAlpha = 1;
+    }
 
     // Label
     const labelSize = Math.min(canvasW, canvasH) < 600 ? 9 : 10;

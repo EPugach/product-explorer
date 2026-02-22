@@ -4,6 +4,7 @@
 
 import { NPSP } from './npsp-data.js';
 import { track, announce } from './utils.js';
+import { entitySvg, domainSvg } from './icons.js?v=3';
 
 // Navigation functions are set via setNavigationCallbacks after navigation.js loads
 let _enterPlanet = null;
@@ -26,7 +27,7 @@ function buildSearchIndex() {
   for (const [pid, planet] of Object.entries(NPSP)) {
     idx.push({
       type: 'planet', id: pid, name: planet.name, desc: planet.description,
-      icon: planet.icon, color: planet.color, tags: [], level: 'NPSP',
+      icon: domainSvg(pid, 20), color: planet.color, tags: [], level: 'NPSP',
       action: () => { if (_enterPlanet) _enterPlanet(pid); }
     });
     for (const comp of planet.components) {
@@ -51,11 +52,11 @@ function buildSearchIndex() {
       const ents = comp.entities;
       if (ents) {
         const entityTypes = [
-          { key: 'classes', type: 'class', icon: '{ }', color: '#4d8bff' },
-          { key: 'objects', type: 'object', icon: '\u{1F5C3}', color: '#22c55e' },
-          { key: 'triggers', type: 'trigger', icon: '\u26A1', color: '#ef4444' },
-          { key: 'lwcs', type: 'lwc', icon: '\u{1F9E9}', color: '#a855f7' },
-          { key: 'metadata', type: 'metadata', icon: '\u{1F4CB}', color: '#f59e0b' }
+          { key: 'classes', type: 'class', icon: entitySvg('class', 14), color: '#4d8bff' },
+          { key: 'objects', type: 'object', icon: entitySvg('object', 14), color: '#22c55e' },
+          { key: 'triggers', type: 'trigger', icon: entitySvg('trigger', 14), color: '#ef4444' },
+          { key: 'lwcs', type: 'lwc', icon: entitySvg('lwc', 14), color: '#a855f7' },
+          { key: 'metadata', type: 'metadata', icon: entitySvg('metadata', 14), color: '#f59e0b' }
         ];
         for (const et of entityTypes) {
           const arr = ents[et.key] || [];

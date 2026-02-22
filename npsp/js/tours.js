@@ -5,6 +5,7 @@
 
 import { TOURS } from './tour-data.js';
 import { NPSP } from './npsp-data.js';
+import { domainSvg } from './icons.js?v=3';
 import { safeLSGet, safeLSSet, track, announce } from './utils.js';
 import { animatePanTo, resetZoomPan, nodeMap, setGraphSettled } from './physics.js';
 import {
@@ -343,7 +344,7 @@ function renderNarrationCard(tour, stop, index) {
     `<div class="tour-card-header">` +
       `<div class="tour-card-title-row">` +
         `<span class="tour-card-planet-icon" style="color:${planetColor}">` +
-          `${planetData ? planetData.icon : ''}` +
+          `${planetData ? '<span class="icon-svg">' + domainSvg(stop.planet, 20) + '</span>' : ''}` +
         `</span>` +
         `<h3 class="tour-card-title">${content.title}</h3>` +
       `</div>` +
