@@ -122,7 +122,7 @@ function buildSearchIndex() {
               action: () => {
                 if (_navigateToCore) _navigateToCore(planetId, compId);
                 setTimeout(() => {
-                  if (_enterEntity) _enterEntity(planetId, compId, entType, entItem.name);
+                  if (_enterEntity) _enterEntity(planetId, compId, et.key, entItem.name);
                 }, 100);
               }
             });
