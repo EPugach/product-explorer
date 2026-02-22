@@ -1072,7 +1072,7 @@ body {
 
   .component-grid { grid-template-columns: 1fr; }
   .entity-grid { grid-template-columns: 1fr; }
-  .eft-header, .eft-row { grid-template-columns: 1fr 80px 2fr; }
+  .entity-fields-table { grid-template-columns: minmax(120px, max-content) 70px 1fr; }
   .entity-tab-bar { scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; }
   .entity-tab-bar::-webkit-scrollbar { display: none; }
 
@@ -1444,6 +1444,7 @@ body {
 .entity-detail-code {
   font-family: var(--font-mono);
   color: var(--glow-primary);
+  white-space: nowrap;
 }
 .entity-methods {
   display: flex;
@@ -1495,14 +1496,19 @@ body {
   background: rgba(77,139,255,0.15);
 }
 
-/* Object fields table */
+/* Object fields table — single grid so columns align across ALL rows */
 .entity-fields-table {
+  display: grid;
+  grid-template-columns: minmax(180px, max-content) 80px 1fr;
+  column-gap: var(--space-2);
   font-size: var(--text-xs);
+  overflow-x: auto;
+  max-width: 100%;
 }
 .eft-header {
-  display: grid;
-  grid-template-columns: 1fr 100px 2fr;
-  gap: var(--space-2);
+  display: contents;
+}
+.eft-header > span {
   padding: 6px 0;
   border-bottom: 1px solid rgba(100,140,255,0.1);
   color: var(--text-dim);
@@ -1512,9 +1518,9 @@ body {
   letter-spacing: 0.05em;
 }
 .eft-row {
-  display: grid;
-  grid-template-columns: 1fr 100px 2fr;
-  gap: var(--space-2);
+  display: contents;
+}
+.eft-row > span {
   padding: 4px 0;
   border-bottom: 1px solid rgba(100,140,255,0.04);
 }
@@ -1524,6 +1530,9 @@ body {
 }
 .eft-desc {
   color: var(--text-secondary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 /* Trigger handler chain */

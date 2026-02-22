@@ -601,7 +601,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading (dynamic import, ES module) ──
 const loadEntities = async () => {
   try {
-    const module = await import('./npsp-entities.js?v=5');
+    const module = await import('./npsp-entities.js?v=6');
     _entityData = module.default;
     setEntitiesLoaded(true);
     mergeEntities();
