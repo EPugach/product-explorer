@@ -163,7 +163,7 @@ body {
 #navbar {
   position: fixed; top: 0; left: 0; right: 0;
   z-index: 100;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center;
   gap: var(--space-4);
   padding: 0 var(--space-5);
   height: 48px;
@@ -204,9 +204,8 @@ body {
 
 /* ── Search Component ── */
 .search-box {
-  position: absolute; left: 50%; transform: translateX(-50%);
-  width: calc(100% - 540px); max-width: 480px;
-  z-index: 110;
+  flex: 1; min-width: 0; max-width: 480px;
+  position: relative; z-index: 110;
 }
 
 .search-shell {
@@ -990,44 +989,7 @@ body {
   .nav-brand { font-size: 11px; letter-spacing: 1px; }
   #zoom-indicator { display: none; }
 
-  /* Search: collapse to icon button */
-  .search-box { position: static; transform: none; width: auto; max-width: none; }
-  .search-shell {
-    width: 32px; height: 32px; padding: 0;
-    border-radius: 6px; position: relative;
-  }
-  .search-shell .s-icon {
-    position: static; transform: none;
-    width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-  }
-  .search-shell input {
-    position: absolute; inset: 0; opacity: 0; cursor: pointer; padding: 0;
-  }
   .search-shell .s-kbd { display: none; }
-
-  /* Search: expand to full-width overlay on focus */
-  .search-shell.focused,
-  .search-shell.expanded {
-    position: fixed; top: 8px; left: 12px; right: 12px;
-    width: auto; height: 36px; padding: 0 12px 0 0;
-    z-index: 200;
-    background: rgba(8,10,24,0.97);
-    border-color: rgba(77,139,255,0.35);
-    box-shadow: 0 0 16px rgba(77,139,255,0.1);
-  }
-  .search-shell.expanded { border-radius: 8px 8px 0 0; border-bottom-color: transparent; }
-  .search-shell.focused .s-icon,
-  .search-shell.expanded .s-icon {
-    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    width: auto; height: auto;
-  }
-  .search-shell.focused input,
-  .search-shell.expanded input {
-    position: static; opacity: 1; flex: 1;
-    padding: 0 8px 0 32px; cursor: text;
-  }
   .search-drop {
     position: fixed;
     left: 12px; right: 12px;
@@ -1071,6 +1033,8 @@ body {
   /* Navbar compaction */
   #navbar { gap: var(--space-1); padding: 0 var(--space-2); }
   .nav-brand { font-size: 10px; }
+  .search-shell { height: 30px; }
+  .search-shell input { font-size: 13px; }
 
   .galaxy-title { margin-bottom: var(--space-3); }
   .galaxy-title h1 { letter-spacing: 1px; }
@@ -1625,7 +1589,6 @@ body.theme-light .var { color: #fe9339; }
 
 /* Theme toggle button */
 .theme-toggle {
-  margin-left: auto;
   background: none;
   border: 1px solid rgba(100,140,255,0.15);
   color: var(--text-dim);
