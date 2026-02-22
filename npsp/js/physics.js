@@ -49,6 +49,30 @@ const CODEBASE_WEIGHT = {
 };
 const FOUNDATIONAL = { tdtm: 2.5, settings: 1.3, errors: 1.2 };
 
+// ── Cluster layout: data-driven domain groupings ──
+// Groups from .plans/data-audit-connection-summary.md (audited connection density)
+// Centers use normalized coords (0-1), scaled to canvas in simulate()
+const DOMAIN_GROUPS = {
+  // Group 0: Core Transaction (upper-center) — highest connectivity
+  donations: 0, contacts: 0, recurring: 0, softcredits: 0,
+  // Group 1: Data Processing (lower-left)
+  rollups: 1, batch: 1, allocations: 1, levels: 1,
+  // Group 2: Data Entry & Integration (lower-right)
+  bdi: 2, giftentry: 2, elevate: 2,
+  // Group 3: Framework & Support (right)
+  tdtm: 3, settings: 3, errors: 3,
+  relationships: 3, addresses: 3, affiliations: 3, engagement: 3
+};
+
+const GROUP_CENTERS = [
+  { x: 0.45, y: 0.38 },  // 0: Core Transaction — upper center
+  { x: 0.25, y: 0.62 },  // 1: Data Processing — lower left
+  { x: 0.70, y: 0.62 },  // 2: Data Entry — lower right
+  { x: 0.75, y: 0.38 },  // 3: Framework — right
+];
+
+const GROUP_GRAVITY = 0.20;  // Tuned up from 0.10 — 0.10 was too subtle visually
+
 // Responsive radius range
 function getRadiusRange() {
   const small = Math.min(canvasW, canvasH) < 600;
@@ -72,26 +96,30 @@ export function calcRadius(key) {
   return min + ((raw - mn) / (mx - mn)) * range;
 }
 
-// Intentional initial layout: arrange domains in a meaningful pattern
+// Intentional initial layout: seed positions near group centers for faster convergence
 const LAYOUT_SEED = {
-  donations:     { angle:  0.00, ring: 0.70 },
-  recurring:     { angle:  0.35, ring: 0.80 },
-  allocations:   { angle:  0.70, ring: 0.75 },
-  softcredits:   { angle:  1.05, ring: 0.85 },
-  rollups:       { angle:  1.40, ring: 0.55 },
-  batch:         { angle:  1.75, ring: 0.70 },
-  bdi:           { angle:  2.09, ring: 0.80 },
-  giftentry:     { angle:  2.44, ring: 0.75 },
-  elevate:       { angle:  2.79, ring: 0.80 },
-  contacts:      { angle:  3.14, ring: 0.65 },
-  relationships: { angle: -2.79, ring: 0.85 },
-  affiliations:  { angle: -2.44, ring: 0.80 },
-  addresses:     { angle: -2.09, ring: 0.65 },
-  engagement:    { angle: -1.75, ring: 0.80 },
-  levels:        { angle: -1.40, ring: 0.85 },
-  tdtm:          { angle: -1.05, ring: 0.40 },
+  // Group 0: Core Transaction (upper-center, angles ~-0.3 to 0.8)
+  donations:     { angle:  0.00, ring: 0.45 },
+  contacts:      { angle:  0.50, ring: 0.50 },
+  recurring:     { angle:  0.25, ring: 0.65 },
+  softcredits:   { angle: -0.25, ring: 0.60 },
+  // Group 1: Data Processing (lower-left, angles ~1.5 to 2.5)
+  rollups:       { angle:  1.60, ring: 0.65 },
+  batch:         { angle:  2.00, ring: 0.70 },
+  allocations:   { angle:  1.80, ring: 0.80 },
+  levels:        { angle:  2.30, ring: 0.85 },
+  // Group 2: Data Entry & Integration (lower-right, angles ~-1.0 to -1.8)
+  bdi:           { angle: -1.20, ring: 0.70 },
+  giftentry:     { angle: -1.50, ring: 0.75 },
+  elevate:       { angle: -1.00, ring: 0.80 },
+  // Group 3: Framework & Support (right, angles ~-0.4 to -2.5)
+  tdtm:          { angle: -0.50, ring: 0.40 },
   settings:      { angle: -0.70, ring: 0.45 },
-  errors:        { angle: -0.35, ring: 0.50 }
+  errors:        { angle: -0.90, ring: 0.50 },
+  relationships: { angle:  0.80, ring: 0.85 },
+  addresses:     { angle: -2.30, ring: 0.75 },
+  affiliations:  { angle:  0.70, ring: 0.80 },
+  engagement:    { angle: -1.80, ring: 0.85 },
 };
 
 export function initGraph() {
@@ -202,6 +230,17 @@ export function simulate() {
   for (const n of nodes) {
     n.vx += (cx - n.x) * 0.005 * alpha;   // weaker x: let them spread
     n.vy += (cy - n.y) * 0.015 * alpha;   // stronger y: keep band flat
+  }
+
+  // Group gravity — weak pull toward cluster center
+  for (const n of nodes) {
+    const g = DOMAIN_GROUPS[n.id];
+    if (g === undefined) continue;
+    const center = GROUP_CENTERS[g];
+    const targetX = center.x * canvasW;
+    const targetY = center.y * canvasH;
+    n.vx += (targetX - n.x) * GROUP_GRAVITY * alpha;
+    n.vy += (targetY - n.y) * GROUP_GRAVITY * alpha;
   }
 
   // Integration with friction
