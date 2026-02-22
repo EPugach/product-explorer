@@ -419,5 +419,189 @@ export const TOURS = [
         }
       }
     ]
+  },
+  {
+    id: 'supporter-journey',
+    title: 'The Supporter Journey',
+    icon: '\uD83E\uDD1D',
+    desc: 'How contacts, households, and relationships form the people model that confuses every new admin',
+    stops: [
+      {
+        planet: 'contacts',
+        highlightEdges: ['addresses', 'relationships'],
+        admin: {
+          title: 'A New Supporter Arrives',
+          body: 'When you create a new Contact, NPSP automatically creates a Household Account for them. This is the #1 confusion point for new admins: Contacts live inside Household Accounts, not the other way around. The Household model groups family members together for shared addresses, combined giving totals, and joint acknowledgment letters.'
+        },
+        dev: {
+          title: 'Account Model Initialization',
+          body: 'ACCT_IndividualAccounts_TDTM fires on Contact insert. It checks npe01__Contacts_And_Orgs_Settings__c.npe01__Account_Processor__c to determine the model (Household, One-to-One, or Individual Bucket). For Household model, it creates an Account with RecordType "Household Account" and triggers HH_HouseholdNaming to build the name using Household_Naming_Settings__c token templates.'
+        }
+      },
+      {
+        planet: 'addresses',
+        highlightEdges: ['contacts'],
+        admin: {
+          title: 'Where They Live',
+          body: 'NPSP manages addresses at the household level, not the contact level. When you update a Household Account address, it pushes down to all members. Supporters can have seasonal addresses (winter in Florida, summer in Maine) that switch automatically on schedule. This keeps your mailings accurate year-round.'
+        },
+        dev: {
+          title: 'Address Sync Architecture',
+          body: 'ADDR_Addresses_TDTM implements bidirectional sync between Address__c and Contact mailing fields. On Address__c insert/update, it pushes to all Contacts in the parent Household. On Contact mailing field change, it creates or updates the corresponding Address__c record. ADDR_Seasonal_SCHED runs nightly to evaluate Start_Date__c and End_Date__c on seasonal addresses and swap the household default.'
+        }
+      },
+      {
+        planet: 'relationships',
+        highlightEdges: ['contacts', 'affiliations'],
+        admin: {
+          title: 'Personal Connections',
+          body: 'Relationships link one Contact to another: spouse, parent, mentor, referrer. When you create a relationship, NPSP automatically creates the reciprocal. Mark Alice as Bob\'s spouse and Bob becomes Alice\'s spouse. These connections power soft credit automation and help fundraisers understand donor networks.'
+        },
+        dev: {
+          title: 'Reciprocal Relationship Engine',
+          body: 'REL_Relationships_TDTM fires on npe4__Relationship__c DML. It reads npe4__Relationship_Settings__c.npe4__Reciprocal_Method__c (List Setting by default) to look up reciprocal types from Relationship_Lookup__c custom metadata. Gender-neutral reciprocals use the "Neutral" field. A static Set<Id> prevents infinite recursion between paired relationship records.'
+        }
+      },
+      {
+        planet: 'affiliations',
+        highlightEdges: ['contacts', 'relationships'],
+        admin: {
+          title: 'Organization Ties',
+          body: 'Affiliations connect a supporter to organizations: their employer, a board they serve on, a volunteer group. Unlike Relationships (person-to-person), Affiliations are person-to-organization. A Contact can have multiple affiliations with roles and start/end dates, giving your team a full picture of institutional connections.'
+        },
+        dev: {
+          title: 'Affiliation Processing',
+          body: 'AFFL_Affiliations_TDTM fires on Contact and npe5__Affiliation__c changes. It manages the bidirectional sync between Contact.Primary_Affiliation__c and the npe5__Primary__c flag on the Affiliation record. AFFL_MultiRecordType_TDTM auto-creates Affiliation records when a Contact is linked to an Organization Account, using Account Record Type to Affiliation mapping rules.'
+        }
+      },
+      {
+        planet: 'softcredits',
+        highlightEdges: ['contacts', 'donations'],
+        admin: {
+          title: 'Who Gets Credit',
+          body: 'Soft Credits recognize everyone who influenced a gift without double-counting the amount. A spouse gets household member credit, a board member gets solicitor credit, and the original donor keeps the hard credit. NPSP rolls up soft credit totals separately, so you always know both "who gave" and "who helped."'
+        },
+        dev: {
+          title: 'Soft Credit Architecture',
+          body: 'Soft credits are driven by OpportunityContactRole records. PSC_PartialSoftCredit_TDTM manages Partial_Soft_Credit__c for amount-specific attribution (when a solicitor deserves credit for a portion). The CRLP engine calculates npo02__Soft_Credit_Total__c and related rollup fields using Filter_Group__mdt rules that include OCR Role values like "Soft Credit" and "Household Member."'
+        }
+      },
+      {
+        planet: 'donations',
+        highlightEdges: ['contacts', 'softcredits'],
+        admin: {
+          title: 'The First Gift',
+          body: 'When a supporter makes their first donation, everything comes together. NPSP auto-names the Opportunity using the Contact and Household info, creates Contact Roles linking the gift to the donor, and triggers rollup calculations. The supporter\'s record now shows Total Gifts, Largest Gift, First Gift Date, and more.'
+        },
+        dev: {
+          title: 'Donation-to-Contact Binding',
+          body: 'On Opportunity insert, OPP_OpportunityContactRoles_TDTM creates the Primary OCR using the Contact lookup. OPP_OpportunityNaming_TDTM queries the Contact and Account to build the Opportunity Name from naming settings. CRLP_RollupProcessor.runRollupsForIds() recalculates Contact and Account rollup fields incrementally, updating npo02__TotalOppAmount__c, npo02__LargestAmount__c, and other summary fields.'
+        }
+      },
+      {
+        planet: 'recurring',
+        highlightEdges: ['donations', 'contacts'],
+        admin: {
+          title: 'Becoming a Sustainer',
+          body: 'The journey\'s milestone: a one-time donor converts to recurring giving. Enhanced Recurring Donations (RD2) track the schedule, automatically creating installment Opportunities each period. The supporter\'s profile now shows both historical giving and future committed revenue, giving fundraisers a complete picture.'
+        },
+        dev: {
+          title: 'RD2 Commitment Creation',
+          body: 'On npe03__Recurring_Donation__c insert, RD2_ScheduleService builds projected installments from Installment_Period__c and Day_of_Month__c. RD2_OpportunityService creates the first installment Opportunity with npe03__Recurring_Donation__c lookup. RD2_OpportunityEvaluation_BATCH runs nightly to create future installments within the configured look-ahead window from npe03__Recurring_Donations_Settings__c.'
+        }
+      }
+    ]
+  },
+  {
+    id: 'behind-the-scenes',
+    title: 'Behind the Scenes',
+    icon: '\u2699\uFE0F',
+    desc: 'The invisible infrastructure that keeps your NPSP org healthy: triggers, errors, batch jobs, and settings',
+    stops: [
+      {
+        planet: 'tdtm',
+        highlightEdges: ['settings', 'errors'],
+        admin: {
+          title: 'The Traffic Controller',
+          body: 'NPSP uses one trigger per object, dispatching to handler classes listed in Trigger Handler records. This is your first stop when troubleshooting: go to NPSP Settings and check which handlers are active. Need to temporarily disable automation? Uncheck the Active flag on the handler record instead of modifying code.'
+        },
+        dev: {
+          title: 'TDTM Dispatch Pattern',
+          body: 'TDTM_TriggerHandler queries Trigger_Handler__c records filtered by Object__c and Trigger_Action__c (BeforeInsert, AfterUpdate, etc.), ordered by Load_Order__c. Each handler class is instantiated via Type.forName(Class__c) and receives the trigger context. Handlers extend TDTM_Runnable, return DmlWrapper for batched DML, and respect the Active__c and Usernames_to_Exclude__c fields for selective execution.'
+        }
+      },
+      {
+        planet: 'errors',
+        highlightEdges: ['tdtm', 'settings'],
+        admin: {
+          title: 'When Things Go Wrong',
+          body: 'When a trigger handler fails, NPSP catches the error and logs it to the Error Log (visible in NPSP Settings). Each error record shows which object, which operation, and the full error message. Enable error notification emails so you hear about failures immediately instead of discovering them days later during reconciliation.'
+        },
+        dev: {
+          title: 'Error Capture Pipeline',
+          body: 'ERR_Handler wraps every TDTM handler invocation in try/catch. On failure, ERR_ExceptionHandler.processException() creates Error__c records with Context_Type__c (the handler class), Error_Type__c, Full_Message__c, and Stack_Trace__c. ERR_Notifier evaluates Error_Notifications_On__c and Error_Notification_Recipients__c from npe01__Contacts_And_Orgs_Settings__c to send email digests. The framework distinguishes DML exceptions from general Apex exceptions for targeted recovery guidance.'
+        }
+      },
+      {
+        planet: 'batch',
+        highlightEdges: ['tdtm', 'rollups'],
+        admin: {
+          title: 'The Overnight Crew',
+          body: 'Every night, NPSP runs a chain of batch jobs: recalculate rollups, evaluate recurring donations, assign donor levels, and update seasonal addresses. When rollup totals look wrong, check the batch job status first. Most "data is out of sync" issues resolve after a successful nightly run. You can also trigger rollup recalculation manually from NPSP Settings.'
+        },
+        dev: {
+          title: 'Batch Chain Orchestration',
+          body: 'UTIL_MasterSchedulableHelper implements Schedulable and kicks off the nightly chain. Each batch class (CRLP_Account_BATCH, CRLP_Contact_BATCH, RD2_OpportunityEvaluation_BATCH, LVL_LevelAssign_BATCH, ADDR_Seasonal_SCHED) chains to the next via Database.executeBatch() in its finish() method. Scope sizes are configurable per batch class in Custom Settings to balance throughput against governor limits.'
+        }
+      },
+      {
+        planet: 'rollups',
+        highlightEdges: ['batch', 'settings'],
+        admin: {
+          title: 'The Calculation Engine',
+          body: 'Customizable Rollups (CRLP) replaced the legacy rollup helpers. Defined in Custom Metadata, rollups survive sandbox refreshes and can be deployed via change sets. When a rollup looks wrong, check three things: the Filter Group rules, the batch job status, and whether the rollup is set to incremental or full recalculation mode.'
+        },
+        dev: {
+          title: 'CRLP Metadata Architecture',
+          body: 'Rollup definitions live in Rollup__mdt, each specifying Summary_Object__c, Summary_Field__c, Detail_Object__c, Detail_Field__c, and Operation (SUM, COUNT, AVERAGE, BEST_YEAR, YEARS_DONATED, FIRST, LAST). Filter_Group__mdt and Filter_Rule__mdt control which records are included. CRLP_RollupProcessor supports two modes: incremental (trigger-based, processes only changed records) and full (batch-based, reprocesses all records). CRLP_ApiService exposes configuration to Lightning components.'
+        }
+      },
+      {
+        planet: 'settings',
+        highlightEdges: ['tdtm', 'batch'],
+        admin: {
+          title: 'The Control Panel',
+          body: 'NPSP Settings is where 14+ Custom Settings objects converge into a single admin UI. Household naming formats, payment automation rules, batch schedules, and feature toggles all live here. Settings use Salesforce Hierarchy Custom Settings, meaning you can override values per-profile or per-user for testing without affecting the whole org.'
+        },
+        dev: {
+          title: 'Settings Facade Pattern',
+          body: 'UTIL_CustomSettingsFacade provides static getter methods for every settings object: getContactsSettings(), getHouseholdsSettings(), getRecurringDonationsSettings(), and more. Each getter lazy-loads from the hierarchy and caches for the transaction. STG_InstallScript runs on package install/upgrade to create default Trigger_Handler__c records and initialize all Custom Settings. STG_Panel Lightning components read/write settings via STG_PanelController.'
+        }
+      },
+      {
+        planet: 'allocations',
+        highlightEdges: ['donations', 'settings'],
+        admin: {
+          title: 'Fund Accounting',
+          body: 'GAU Allocations split donations across funds (General Accounting Units). You can set a default allocation so every gift is automatically tagged, or let staff allocate manually. NPSP validates that allocation percentages total 100% and recalculates rollups per GAU so finance teams always know how much each fund received.'
+        },
+        dev: {
+          title: 'Allocation Trigger Logic',
+          body: 'ALLO_Allocations_TDTM fires on Opportunity and Allocation__c DML. On Opportunity insert, it creates default Allocation__c records from Allocations_Settings__c if configured. ALLO_AllocationsUtil enforces percentage/amount validation: if percentages are used, they must sum to 100. The handler cascades changes to Payment Allocations and triggers CRLP recalculation on the related General_Accounting_Unit__c records.'
+        }
+      },
+      {
+        planet: 'levels',
+        highlightEdges: ['rollups', 'batch'],
+        admin: {
+          title: 'Automatic Donor Tiers',
+          body: 'Levels auto-assign donor tiers (Bronze, Silver, Gold, Platinum) based on any numeric rollup field. Define your thresholds in Level records, and the nightly batch job evaluates every Contact and Account against them. Donor segments stay current without manual work, powering stewardship workflows and segmented communications.'
+        },
+        dev: {
+          title: 'Level Assignment Batch',
+          body: 'LVL_LevelAssign_BATCH runs nightly as part of the UTIL_MasterSchedulableHelper chain. It queries all Level__c records and groups them by Target__c (Contact or Account). For each target record, it reads the Source_Field__c value (typically a CRLP rollup field like npo02__TotalOppAmount__c) and compares against Minimum_Amount__c and Maximum_Amount__c. The highest matching Level is written to the target\'s Level__c lookup field.'
+        }
+      }
+    ]
   }
 ];

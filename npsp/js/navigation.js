@@ -8,6 +8,9 @@ import { NPSP } from './npsp-data.js';
 import { track, announce } from './utils.js';
 import { resetZoomPan, setGraphSettled, nodeMap } from './physics.js';
 import { pauseStarfield, resumeStarfield } from './starfield.js';
+
+// Normalize singular entity type slugs (from old URLs / search) to plural data keys
+const ENTITY_TYPE_MAP = { class: 'classes', object: 'objects', trigger: 'triggers', lwc: 'lwcs' };
 import { setFocusedPlanetIndex, entitiesLoaded } from './state.js';
 
 const PLANET_META = {};
@@ -95,7 +98,8 @@ export const handleHashNavigation = () => {
     setGalaxyCanvasVisible(false); showViewDirect('core-view');
     updateBreadcrumb(); updateDocumentTitle('core', domainId, componentId);
   } else if (segments.length >= 4) {
-    const [domainId, componentId, entityType, ...entityNameParts] = segments;
+    const [domainId, componentId, rawEntityType, ...entityNameParts] = segments;
+    const entityType = ENTITY_TYPE_MAP[rawEntityType] || rawEntityType;
     const entityName = decodeURIComponent(entityNameParts.join('/'));
     if (!NPSP[domainId]) { setHash('#/'); handleHashNavigation(); return; }
     const comp = NPSP[domainId].components.find((c) => c.id === componentId);
@@ -369,7 +373,8 @@ function findEntityAcrossDomains(entityName, entityType) {
   return null;
 }
 
-function renderEntityView(pid, cid, entityType, entityName) {
+function renderEntityView(pid, cid, rawType, entityName) {
+  const entityType = ENTITY_TYPE_MAP[rawType] || rawType;
   const p = NPSP[pid]; const c = p.components.find(x=>x.id===cid);
   if (!c||!c.entities) {
     // Entities not loaded yet: show loading indicator
@@ -382,7 +387,14 @@ function renderEntityView(pid, cid, entityType, entityName) {
     return;
   }
   const entity = (c.entities[entityType]||[]).find(e=>e.name===entityName);
-  if (!entity) return;
+  if (!entity) {
+    const el = document.getElementById('entity-content');
+    el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">NPSP</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="back">${c.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entityName}</span></div><div class="entity-not-found"><div class="entity-not-found-icon">\u{1F50D}</div><div class="entity-not-found-text">${entityName} not found in ${entityType}</div><button class="entity-not-found-back" data-nav="back">\u2190 Back to ${c.name}</button></div>`;
+    el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
+    el.querySelectorAll('[data-nav="planet"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('planet'));});
+    el.querySelectorAll('[data-nav="back"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>goBack());});
+    return;
+  }
   const el = document.getElementById('entity-content');
   let h = `<div class="bc"><span class="bc-link" data-nav="galaxy">NPSP</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="back">${c.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entity.name}</span></div>`;
   if (entityType==='classes') h+=renderClassDetail(entity);

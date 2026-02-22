@@ -1143,6 +1143,18 @@ body {
 .entity-loading-text {
   font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.5px;
 }
+.entity-not-found {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--space-3); padding: var(--space-8) 0; color: var(--text-dim);
+}
+.entity-not-found-icon { font-size: 2rem; opacity: 0.5; }
+.entity-not-found-text { font-family: var(--font-mono); font-size: var(--text-sm); }
+.entity-not-found-back {
+  margin-top: var(--space-2); background: none; border: 1px solid rgba(100,140,255,0.3);
+  color: var(--glow-primary); padding: 6px 16px; border-radius: 6px; cursor: pointer;
+  font-family: var(--font-mono); font-size: var(--text-xs); transition: background 0.2s;
+}
+.entity-not-found-back:hover { background: rgba(100,140,255,0.1); }
 
 /* ── Entity Count Badges on Component Cards ── */
 .entity-badges {
@@ -1584,6 +1596,9 @@ body.theme-light .var { color: #fe9339; }
 
 /* Theme toggle button */
 .theme-toggle {
+  margin-left: auto;
+  position: relative;
+  z-index: 115;
   background: none;
   border: 1px solid rgba(100,140,255,0.15);
   color: var(--text-dim);
@@ -1618,6 +1633,8 @@ body.theme-light .theme-toggle:hover {
 
 /* ── Tour Button (Navbar) ── */
 .tour-btn {
+  position: relative;
+  z-index: 115;
   background: none;
   border: 1px solid rgba(100,140,255,0.15);
   color: var(--text-dim);
