@@ -35,6 +35,7 @@ import {
   cycleResult, activateResult
 } from './search.js';
 import { initTours, advanceStop, exitTour, setTourAnimationCallbacks, toggleTourPicker } from './tours.js';
+import { uiSvg, domainSvg, preloadCanvasIcons } from './icons.js?v=3';
 
 // ── Wire cross-module callbacks ──
 // physics.js needs render functions from renderer.js and particles.js
@@ -50,7 +51,7 @@ function toggleTheme() {
   document.body.classList.toggle('theme-light');
   const light = isLightMode();
   safeLSSet('npsp-theme', light ? 'light' : 'dark');
-  document.getElementById('theme-toggle').textContent = light ? '\u2600' : '\u263D';
+  document.getElementById('theme-icon').innerHTML = uiSvg(light ? 'sun' : 'moon', 18);
   initNebulaBlobs();
   renderGraph();
   renderParticles();
@@ -120,7 +121,7 @@ function createTooltip() {
 function showTooltip(node, sx, sy) {
   if (!tooltipEl) return;
   tooltipEl.innerHTML =
-    `<div class="tt-name" style="color:${node.color}">${node.icon} ${node.label}</div>` +
+    `<div class="tt-name" style="color:${node.color}"><span class="icon-svg">${domainSvg(node.id, 18)}</span> ${node.label}</div>` +
     `<div class="tt-desc">${node.desc.substring(0, 120)}${node.desc.length > 120 ? '...' : ''}</div>` +
     `<div class="tt-stats">` +
       `<span><span class="tt-stat-val">${node.classCount}</span> classes</span>` +
@@ -641,12 +642,28 @@ function showOnboardingHint() {
 }
 
 // ── Init ──
-function init() {
+async function init() {
   // Restore saved theme
-  if (safeLSGet('npsp-theme') === 'light') {
+  const lightMode = safeLSGet('npsp-theme') === 'light';
+  if (lightMode) {
     document.body.classList.add('theme-light');
-    document.getElementById('theme-toggle').textContent = '\u2600';
   }
+
+  // Populate SVG icons in navbar
+  document.getElementById('search-icon').innerHTML = uiSvg('search', 16);
+  document.getElementById('tour-icon').innerHTML = uiSvg('tour', 16);
+  document.getElementById('help-icon').innerHTML = uiSvg('help', 18);
+  document.getElementById('theme-icon').innerHTML = uiSvg(lightMode ? 'sun' : 'moon', 18);
+
+  // Help panel icons
+  const helpTourIcon = document.querySelector('.help-tour-icon');
+  if (helpTourIcon) helpTourIcon.innerHTML = uiSvg('tour', 14);
+  const helpDragIcon = document.querySelector('.help-drag-icon');
+  if (helpDragIcon) helpDragIcon.innerHTML = '&#x1F91A;';
+
+  // Pre-load domain icons for canvas rendering
+  await preloadCanvasIcons();
+
   // mergeEntities() is a no-op here since NPSP_ENTITIES isn't loaded yet
   mergeEntities();
   rebuildSearchIndex();

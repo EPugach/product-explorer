@@ -24,7 +24,7 @@
   gtag('js', new Date());
   gtag('config', 'G-HJTE1NYP82');
 </script>
-<link rel="stylesheet" href="css/galaxy.css?v=16">
+<link rel="stylesheet" href="css/galaxy.css?v=20">
 </head>
 <body>
 <a href="#stage" class="skip-link">Skip to content</a>
@@ -45,10 +45,10 @@
 <!-- Navbar -->
 <nav id="navbar" aria-label="Navigation">
   <div class="nav-brand" id="nav-brand" style="cursor:pointer" role="button" tabindex="0">NPSP EXPLORER</div>
-  <button id="tour-btn" class="tour-btn" aria-label="Tour">Tour <span class="tour-btn-icon">&#x1F68C;</span></button>
+  <button id="tour-btn" class="tour-btn" aria-label="Tour">Tour <span class="tour-btn-icon nav-icon-svg" id="tour-icon"></span></button>
   <div class="search-box" id="searchBox">
     <div class="search-shell" id="searchShell">
-      <span class="s-icon" aria-hidden="true">&#x1F50D;</span>
+      <span class="s-icon nav-icon-svg" aria-hidden="true" id="search-icon"></span>
       <input type="text" id="searchInput" placeholder="Search components, triggers, objects..." autocomplete="off" spellcheck="false" aria-label="Search NPSP architecture">
       <span class="s-kbd">/</span>
     </div>
@@ -61,7 +61,7 @@
       </div>
     </div>
   </div>
-  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">&#x263D;</button>
+  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme"><span class="nav-icon-svg" id="theme-icon"></span></button>
   <div id="zoom-indicator" aria-hidden="true">
     <span style="font-size:10px;margin-right:4px">ZOOM</span>
     <div class="zoom-dot active" data-z="1"></div>
@@ -111,15 +111,15 @@
 <div id="version-indicator" aria-label="Data version">NPSP 3.x</div>
 
 <!-- Help button -->
-<button class="help-btn" id="helpBtn" aria-label="Keyboard shortcuts">?</button>
+<button class="help-btn" id="helpBtn" aria-label="Keyboard shortcuts"><span class="nav-icon-svg" id="help-icon"></span></button>
 <div class="help-stack" id="helpStack" role="tooltip">
   <div class="help-row"><kbd>L</kbd><span>Theme</span></div>
   <div class="help-row"><kbd>/</kbd><span>Search</span></div>
   <div class="help-row"><kbd>ESC</kbd><span>Back</span></div>
   <div class="help-row"><kbd>&larr;&rarr;</kbd><span>Tabs</span></div>
   <div class="help-row"><kbd>T</kbd><span>Transitions</span></div>
-  <div class="help-row"><kbd>&#x1F68C;</kbd><span>Tour Bus</span></div>
-  <div class="help-row"><span class="drag-icon">&#x1F91A;</span><span>Drag planets</span></div>
+  <div class="help-row"><kbd class="help-tour-icon"></kbd><span>Tour Bus</span></div>
+  <div class="help-row"><span class="drag-icon help-drag-icon"></span><span>Drag planets</span></div>
 </div>
 
 <!-- Screen reader announcements -->
@@ -128,10 +128,11 @@
 <!-- ES module entry point — imports all other modules automatically -->
 <!-- npsp-entities.js (780KB) is lazy-loaded via dynamic import() after galaxy is interactive -->
 <!-- Preload hints for critical modules to speed up parallel fetch -->
-<link rel="modulepreload" href="js/npsp-data.js?v=9">
-<link rel="modulepreload" href="js/physics.js?v=15">
-<link rel="modulepreload" href="js/renderer.js?v=12">
-<link rel="modulepreload" href="js/navigation.js?v=11">
-<script type="module" src="js/main.js?v=13"></script>
+<link rel="modulepreload" href="js/npsp-data.js?v=11">
+<link rel="modulepreload" href="js/icons.js?v=5">
+<link rel="modulepreload" href="js/physics.js?v=17">
+<link rel="modulepreload" href="js/renderer.js?v=16">
+<link rel="modulepreload" href="js/navigation.js?v=15">
+<script type="module" src="js/main.js?v=17"></script>
 </body>
 </html>

@@ -99,6 +99,60 @@ body.transition-snappy {
   --zoom-in-blur: 0px;
 }
 
+/* ── SVG Icon System ── */
+.icon-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+.icon-svg svg {
+  display: block;
+  flex-shrink: 0;
+}
+/* Navbar icons get a subtle glow on hover */
+.nav-icon-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.2s ease;
+}
+.nav-icon-svg:hover {
+  filter: drop-shadow(0 0 6px currentColor);
+}
+/* Planet header orb: SVG icon inside colored circle */
+.planet-header-orb .icon-svg svg {
+  stroke: #fff;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.5));
+}
+/* Entity badge SVG icons */
+.entity-badge .icon-svg {
+  margin-right: 3px;
+}
+.entity-badge .icon-svg svg {
+  vertical-align: -1px;
+}
+/* Search result icon: SVG inside .sr-icon */
+.sr-icon .icon-svg svg {
+  stroke: inherit;
+}
+/* Tour picker: SVG icon */
+.tour-picker-icon .icon-svg svg {
+  width: 24px;
+  height: 24px;
+}
+/* Tour card planet icon: SVG */
+.tour-card-planet-icon .icon-svg svg {
+  width: 20px;
+  height: 20px;
+}
+/* Connection planet: SVG icon inside colored circle */
+.conn-planet .icon-svg svg {
+  stroke: #fff;
+  width: 16px;
+  height: 16px;
+}
+
 /* Preset: Light mode — Salesforce Lightning Design System */
 body.theme-light {
   --bg-deep: #f3f3f3;
@@ -1923,6 +1977,14 @@ body.theme-light .tour-nav-btn:hover:not(.disabled) {
   border-color: #0176d3;
   color: #0176d3;
   background: rgba(1,118,211,0.06);
+}
+/* Light theme: reduce icon glow */
+body.theme-light .nav-icon-svg:hover {
+  filter: drop-shadow(0 0 4px rgba(0,0,0,0.2));
+}
+body.theme-light .planet-header-orb .icon-svg svg {
+  stroke: #fff;
+  filter: drop-shadow(0 0 3px rgba(0,0,0,0.3));
 }
 
 /* ── Responsive: Tour Card on Mobile ── */
