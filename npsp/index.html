@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NPSP Architecture Explorer</title>
-<meta name="description" content="Interactive galaxy-themed visualization of the Salesforce NPSP architecture. Explore 18 domains, 55 components, and 753 entities as an interconnected universe.">
-<meta property="og:title" content="NPSP Architecture Explorer">
-<meta property="og:description" content="Interactive galaxy-themed visualization of the Salesforce NPSP architecture. Explore 18 domains, 55 components, and 753 entities as an interconnected universe.">
+<title>NPSP Explorer</title>
+<meta name="description" content="Interactive galaxy-themed visualization of Salesforce NPSP. Explore 18 domains, 55 components, and 753 entities as an interconnected universe.">
+<meta property="og:title" content="NPSP Explorer">
+<meta property="og:description" content="Interactive galaxy-themed visualization of Salesforce NPSP. Explore 18 domains, 55 components, and 753 entities as an interconnected universe.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://epugach.github.io/product-explorer/npsp/">
 <meta property="og:image" content="https://epugach.github.io/product-explorer/npsp/og-image.png">
-<meta property="og:site_name" content="NPSP Architecture Explorer">
+<meta property="og:site_name" content="NPSP Explorer">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="NPSP Architecture Explorer">
-<meta name="twitter:description" content="Interactive galaxy-themed visualization of the Salesforce NPSP architecture. Explore 18 domains, 55 components, and 753 entities as an interconnected universe.">
+<meta name="twitter:title" content="NPSP Explorer">
+<meta name="twitter:description" content="Interactive galaxy-themed visualization of Salesforce NPSP. Explore 18 domains, 55 components, and 753 entities as an interconnected universe.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <!-- Google tag (gtag.js) -->
 <link rel="preconnect" href="https://www.googletagmanager.com">
@@ -31,12 +31,12 @@
 
 <!-- Canvas layers: starfield (z0) > force graph (z1) > particles (z2) -->
 <canvas id="starfield" role="presentation" aria-hidden="true"></canvas>
-<canvas id="graph-canvas" tabindex="0" role="img" aria-label="Interactive galaxy map of 18 NPSP architecture domains. Use arrow keys to navigate planets, Enter to select, or press / to search."></canvas>
+<canvas id="graph-canvas" tabindex="0" role="img" aria-label="Interactive galaxy map of 18 NPSP domains. Use arrow keys to navigate planets, Enter to select, or press / to search."></canvas>
 <canvas id="particle-canvas" role="presentation" aria-hidden="true"></canvas>
 
 <noscript>
   <div style="padding:60px 40px;text-align:center;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#050510;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center">
-    <h1 style="font-size:2rem;margin-bottom:16px;letter-spacing:2px">NPSP Architecture Explorer</h1>
+    <h1 style="font-size:2rem;margin-bottom:16px;letter-spacing:2px">NPSP Explorer</h1>
     <p style="font-size:1.1rem;color:#94a3b8;margin-bottom:12px">This interactive visualization requires JavaScript to run.</p>
     <p style="font-size:0.95rem;color:#64748b">Explore 18 domains, 55 components, and 753 entities from the Salesforce Nonprofit Success Pack.</p>
   </div>
@@ -49,7 +49,7 @@
   <div class="search-box" id="searchBox">
     <div class="search-shell" id="searchShell">
       <span class="s-icon nav-icon-svg" aria-hidden="true" id="search-icon"></span>
-      <input type="text" id="searchInput" placeholder="Search components, triggers, objects..." autocomplete="off" spellcheck="false" aria-label="Search NPSP architecture">
+      <input type="text" id="searchInput" placeholder="Search components, triggers, objects..." autocomplete="off" spellcheck="false" aria-label="Search NPSP">
       <span class="s-kbd">/</span>
     </div>
     <div class="search-drop" id="searchDrop">
