@@ -326,7 +326,7 @@ function renderOverviewTab(c) {
     h += `</div>`;
   }
   if (c.code) h += `<div class="trigger-section" style="animation-delay:120ms"><h3>\u{1F4BB} Source Code Pattern</h3><div class="code-block"><div class="code-header"><span class="lang">${c.code.lang}</span><span>${c.code.title}</span><button class="copy-btn" data-copy-code aria-label="Copy code">Copy</button></div><div class="code-body"><pre>${c.code.body}</pre></div></div></div>`;
-  h += `<div class="code-lab" style="animation-delay:180ms"><h3>\u{1F9EA} Code Lab: Explore Further</h3><div class="lab-desc">Related patterns for understanding this component deeper.</div><div class="lab-tabs"><button class="lab-tab active" data-lab-tab="pattern" aria-label="TDTM Pattern">TDTM Pattern</button><button class="lab-tab" data-lab-tab="testing" aria-label="Test Pattern">Test Pattern</button><button class="lab-tab" data-lab-tab="extension" aria-label="Extension Point">Extension Point</button></div><div id="lab-content"></div></div>`;
+  // Code Lab section removed (generic, not component-specific). labPatterns retained for future use.
   return h;
 }
 
@@ -347,10 +347,7 @@ function renderCoreView(pid, cid) {
 }
 
 function attachOverviewListeners(container) {
-  container.querySelectorAll('[data-lab-tab]').forEach(tab=>{tab.addEventListener('click',()=>switchTab(tab,tab.dataset.labTab));});
   container.querySelectorAll('[data-copy-code]').forEach(btn=>{btn.addEventListener('click',()=>copyCode(btn));});
-  const labTab = container.querySelector('.lab-tab.active');
-  if (labTab && labTab.dataset.labTab) switchTab(labTab, labTab.dataset.labTab);
 }
 
 function switchEntityTab(pid, cid, tabKey) {
