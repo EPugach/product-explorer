@@ -35,7 +35,8 @@ import {
   cycleResult, activateResult
 } from './search.js';
 import { initTours, advanceStop, exitTour, setTourAnimationCallbacks, toggleTourPicker } from './tours.js';
-import { uiSvg, domainSvg, preloadCanvasIcons } from './icons.js?v=3';
+import { uiSvg, domainSvg, preloadCanvasIcons } from './icons.js?v=6';
+import { initFeedback } from './feedback.js?v=1';
 
 // ── Wire cross-module callbacks ──
 // physics.js needs render functions from renderer.js and particles.js
@@ -645,14 +646,18 @@ function setupKeyboard() {
   document.getElementById('searchScrim').addEventListener('click', () => closeSearch());
 
   // Global shortcuts
+  const isTyping = () => {
+    const tag = document.activeElement.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  };
+
   document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement !== searchInput &&
-        document.activeElement.tagName !== 'INPUT') {
+    if (e.key === '/' && document.activeElement !== searchInput && !isTyping()) {
       e.preventDefault();
       openSearch();
       track('keyboard_shortcut', { key: '/' });
     }
-    if (e.key === 'Escape' && document.activeElement.tagName !== 'INPUT') {
+    if (e.key === 'Escape' && !isTyping()) {
       if (tourState.active) {
         exitTour();
         track('keyboard_shortcut', { key: 'Escape', context: 'tour' });
@@ -661,13 +666,11 @@ function setupKeyboard() {
       goBack();
       track('keyboard_shortcut', { key: 'Escape' });
     }
-    if ((e.key === 't' || e.key === 'T') && document.activeElement !== searchInput &&
-        document.activeElement.tagName !== 'INPUT') {
+    if ((e.key === 't' || e.key === 'T') && document.activeElement !== searchInput && !isTyping()) {
       cyclePreset();
       track('keyboard_shortcut', { key: 'T' });
     }
-    if ((e.key === 'l' || e.key === 'L') && document.activeElement !== searchInput &&
-        document.activeElement.tagName !== 'INPUT') {
+    if ((e.key === 'l' || e.key === 'L') && document.activeElement !== searchInput && !isTyping()) {
       toggleTheme();
       track('keyboard_shortcut', { key: 'L' });
     }
@@ -806,6 +809,7 @@ async function init() {
   document.getElementById('search-icon').innerHTML = uiSvg('search', 16);
   document.getElementById('tour-icon').innerHTML = uiSvg('tour', 16);
   document.getElementById('help-icon').innerHTML = uiSvg('help', 18);
+  document.getElementById('feedback-icon').innerHTML = uiSvg('feedback', 18);
   document.getElementById('theme-icon').innerHTML = uiSvg(lightMode ? 'sun' : 'moon', 18);
 
   // Help panel icons
@@ -828,6 +832,7 @@ async function init() {
   setupCanvasEvents();
   setupKeyboard();
   setupHelpButton();
+  initFeedback();
   updateBreadcrumb();
   buildStats();
   initTours();
