@@ -44,7 +44,7 @@ export const setHash = (hash) => {
 };
 
 export const updateDocumentTitle = (level, domainId, componentId, entityName) => {
-  const base = 'NPSP Architecture Explorer';
+  const base = 'NPSP Explorer';
   if (level === 'galaxy' || !domainId) { document.title = base; return; }
   const domain = NPSP[domainId];
   const domainName = domain ? domain.name : domainId;
