@@ -280,6 +280,24 @@ export { updateBreadcrumb };
 // Render helpers use innerHTML with trusted app-owned data (NPSP object).
 // No user input is rendered. This is safe and documented.
 
+function renderComponentCard(c, i, id, p) {
+  let eb = '';
+  if (c.entities) {
+    const cn = [];
+    if (c.entities.classes && c.entities.classes.length > 0) cn.push(`<span class="entity-badge badge-class"><span class="icon-svg">${entitySvg('class',12)}</span> ${c.entities.classes.length}</span>`);
+    if (c.entities.objects && c.entities.objects.length > 0) cn.push(`<span class="entity-badge badge-object"><span class="icon-svg">${entitySvg('object',12)}</span> ${c.entities.objects.length}</span>`);
+    if (c.entities.triggers && c.entities.triggers.length > 0) cn.push(`<span class="entity-badge badge-trigger"><span class="icon-svg">${entitySvg('trigger',12)}</span> ${c.entities.triggers.length}</span>`);
+    if (c.entities.lwcs && c.entities.lwcs.length > 0) cn.push(`<span class="entity-badge badge-lwc"><span class="icon-svg">${entitySvg('lwc',12)}</span> ${c.entities.lwcs.length}</span>`);
+    if (cn.length > 0) eb = `<div class="entity-badges">${cn.join('')}</div>`;
+  }
+
+  if (c._synthetic) {
+    return `<div class="component-card component-card--synthetic" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i*30,1500)}ms" role="button" tabindex="0"><div class="infra-badge">Infrastructure</div><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div>${eb}</div>`;
+  }
+
+  return `<div class="component-card" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i*30,1500)}ms" role="button" tabindex="0"><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div><div class="card-tags">${(c.tags||[]).map(t=>`<span class="card-tag">${t}</span>`).join('')}${(c.triggerTags||[]).map(t=>`<span class="card-tag trigger">${t}</span>`).join('')}</div>${eb}</div>`;
+}
+
 function renderPlanetView(id) {
   const p = NPSP[id]; const el = document.getElementById('planet-content');
   let domainStats = '';
@@ -291,7 +309,8 @@ function renderPlanetView(id) {
     if (dt) parts.push(dt+' triggers'); if (dl) parts.push(dl+' LWCs');
     if (parts.length > 0) domainStats = `<div class="domain-entity-stats">${p.components.length} groups \u00B7 ${parts.join(' \u00B7 ')}</div>`;
   }
-  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">NPSP</span><span class="bc-sep">\u276F</span><span class="bc-here">${p.name}</span></div><div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}"><span class="icon-svg">${domainSvg(id, 28)}</span></div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p></div></div>${domainStats}<div class="component-grid">${p.components.map((c,i) => { let eb=''; if(c.entities){const cn=[]; if(c.entities.classes&&c.entities.classes.length>0)cn.push(`<span class="entity-badge badge-class"><span class="icon-svg">${entitySvg('class',12)}</span> ${c.entities.classes.length}</span>`); if(c.entities.objects&&c.entities.objects.length>0)cn.push(`<span class="entity-badge badge-object"><span class="icon-svg">${entitySvg('object',12)}</span> ${c.entities.objects.length}</span>`); if(c.entities.triggers&&c.entities.triggers.length>0)cn.push(`<span class="entity-badge badge-trigger"><span class="icon-svg">${entitySvg('trigger',12)}</span> ${c.entities.triggers.length}</span>`); if(c.entities.lwcs&&c.entities.lwcs.length>0)cn.push(`<span class="entity-badge badge-lwc"><span class="icon-svg">${entitySvg('lwc',12)}</span> ${c.entities.lwcs.length}</span>`); if(cn.length>0)eb=`<div class="entity-badges">${cn.join('')}</div>`;} return `<div class="component-card" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${i*30}ms" role="button" tabindex="0"><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div><div class="card-tags">${(c.tags||[]).map(t=>`<span class="card-tag">${t}</span>`).join('')}${(c.triggerTags||[]).map(t=>`<span class="card-tag trigger">${t}</span>`).join('')}</div>${eb}</div>`; }).join('')}</div><div class="data-flow" style="animation-delay:${p.components.length*30+60}ms"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n,i)=>(i>0?`<span class="flow-arrow">\u2192</span>`:'')+`<span class="flow-node">${n}</span>`).join('')}</div></div><div class="connections-section" style="animation-delay:${p.components.length*30+120}ms"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map(c=>`<div class="connection-item" data-connection-planet="${c.planet}" role="button" tabindex="0"><div class="conn-planet" style="background:${PLANET_META[c.planet]?PLANET_META[c.planet].color:'#64748b'}"><span class="icon-svg">${PLANET_META[c.planet]?PLANET_META[c.planet].svg:''}</span></div><div><strong>${NPSP[c.planet]?NPSP[c.planet].name:c.planet}</strong><div style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px">${c.desc}</div></div></div>`).join('')}</div>`;
+  const cardHtml = p.components.map((c,i) => renderComponentCard(c, i, id, p)).join('');
+  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">NPSP</span><span class="bc-sep">\u276F</span><span class="bc-here">${p.name}</span></div><div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}"><span class="icon-svg">${domainSvg(id, 28)}</span></div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p></div></div>${domainStats}<div class="component-grid">${cardHtml}</div><div class="data-flow" style="animation-delay:${p.components.length*30+60}ms"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n,i)=>(i>0?`<span class="flow-arrow">\u2192</span>`:'')+`<span class="flow-node">${n}</span>`).join('')}</div></div><div class="connections-section" style="animation-delay:${p.components.length*30+120}ms"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map(c=>`<div class="connection-item" data-connection-planet="${c.planet}" role="button" tabindex="0"><div class="conn-planet" style="background:${PLANET_META[c.planet]?PLANET_META[c.planet].color:'#64748b'}"><span class="icon-svg">${PLANET_META[c.planet]?PLANET_META[c.planet].svg:''}</span></div><div><strong>${NPSP[c.planet]?NPSP[c.planet].name:c.planet}</strong><div style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px">${c.desc}</div></div></div>`).join('')}</div>`;
   el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
   el.querySelectorAll('.component-card').forEach(card=>{const cid=card.dataset.component,pid2=card.dataset.planet;card.addEventListener('click',()=>enterCore(pid2,cid));card.addEventListener('keydown',e=>{if(e.key==='Enter')enterCore(pid2,cid);});});
   el.querySelectorAll('[data-connection-planet]').forEach(item=>{const planetId=item.dataset.connectionPlanet;item.addEventListener('click',()=>enterPlanet(planetId));item.addEventListener('keydown',e=>{if(e.key==='Enter')enterPlanet(planetId);});});
@@ -349,7 +368,44 @@ function renderEntityGrid(component, entityType, pid) {
   if(entities.length===0) return `<div class="trigger-section"><p style="color:var(--text-dim)">No ${entityType} found.</p></div>`;
   const typeConfig = {classes:{icon:entitySvg('class',14),color:'rgba(77,139,255,',badgeClass:'badge-class'},objects:{icon:entitySvg('object',14),color:'rgba(34,197,94,',badgeClass:'badge-object'},triggers:{icon:entitySvg('trigger',14),color:'rgba(239,68,68,',badgeClass:'badge-trigger'},lwcs:{icon:entitySvg('lwc',14),color:'rgba(168,85,247,',badgeClass:'badge-lwc'},metadata:{icon:entitySvg('metadata',14),color:'rgba(245,158,11,',badgeClass:'badge-metadata'}};
   const cfg = typeConfig[entityType]||typeConfig.classes;
-  return `<div class="entity-grid">${entities.map((e,i)=>`<div class="entity-card" style="animation-delay:${i*30}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g,'&quot;')}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type?`<span class="entity-type-label">${e.type.replace('_',' ')}</span>`:''}<div class="entity-desc">${(e.description||'No description available.').substring(0,150)}${e.description&&e.description.length>150?'...':''}</div>${e.linesOfCode?`<span class="entity-loc">${e.linesOfCode} lines</span>`:''}${(e.fields||e.keyFields)?.length?`<span class="entity-loc">${(e.fields||e.keyFields).length} fields</span>`:e.fieldCount?`<span class="entity-loc">${e.fieldCount} fields</span>`:''}</div>`).join('')}</div>`;
+
+  // Group headers for large collections (>30 items) in synthetic components
+  const useGroups = component._synthetic && entities.length > 30 && entityType === 'classes';
+  if (useGroups) {
+    const groups = {};
+    for (const e of entities) {
+      let prefix;
+      if (e.name.startsWith('UTIL_')) prefix = 'Utility Classes';
+      else if (e.name.startsWith('STG_Panel')) prefix = 'Settings Panels';
+      else if (e.name.endsWith('_TEST') || e.name.includes('_TEST_')) prefix = 'Test Classes';
+      else if (e.name.startsWith('BDI_')) prefix = 'BDI Framework';
+      else if (e.name.startsWith('CMT_')) prefix = 'Custom Metadata';
+      else prefix = 'Other';
+      if (!groups[prefix]) groups[prefix] = [];
+      groups[prefix].push(e);
+    }
+    // Sort groups: named groups first alphabetically, Other last
+    const groupOrder = Object.keys(groups).sort((a,b) => {
+      if (a === 'Other') return 1;
+      if (b === 'Other') return -1;
+      return a.localeCompare(b);
+    });
+    let html = '';
+    let idx = 0;
+    for (const groupName of groupOrder) {
+      html += `<div class="entity-group-header">${groupName} <span class="entity-group-count">${groups[groupName].length}</span></div>`;
+      html += `<div class="entity-grid">`;
+      for (const e of groups[groupName]) {
+        const delay = Math.min(idx * 30, 1500);
+        html += `<div class="entity-card" style="animation-delay:${delay}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g,'&quot;')}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type?`<span class="entity-type-label">${e.type.replace('_',' ')}</span>`:''}<div class="entity-desc">${(e.description||'No description available.').substring(0,150)}${e.description&&e.description.length>150?'...':''}</div>${e.linesOfCode?`<span class="entity-loc">${e.linesOfCode} lines</span>`:''}${(e.fields||e.keyFields)?.length?`<span class="entity-loc">${(e.fields||e.keyFields).length} fields</span>`:e.fieldCount?`<span class="entity-loc">${e.fieldCount} fields</span>`:''}</div>`;
+        idx++;
+      }
+      html += `</div>`;
+    }
+    return html;
+  }
+
+  return `<div class="entity-grid">${entities.map((e,i)=>`<div class="entity-card" style="animation-delay:${Math.min(i*30,1500)}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g,'&quot;')}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type?`<span class="entity-type-label">${e.type.replace('_',' ')}</span>`:''}<div class="entity-desc">${(e.description||'No description available.').substring(0,150)}${e.description&&e.description.length>150?'...':''}</div>${e.linesOfCode?`<span class="entity-loc">${e.linesOfCode} lines</span>`:''}${(e.fields||e.keyFields)?.length?`<span class="entity-loc">${(e.fields||e.keyFields).length} fields</span>`:e.fieldCount?`<span class="entity-loc">${e.fieldCount} fields</span>`:''}</div>`).join('')}</div>`;
 }
 
 function attachEntityGridListeners(container) {

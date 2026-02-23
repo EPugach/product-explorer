@@ -63,47 +63,200 @@ function toggleTheme() {
 // since inline onclick handlers were replaced with addEventListener
 
 // ── Merge generated entities into NPSP data ──
+// Two-pass matching + synthetic infrastructure component for orphans
 let _entityData = null;
+const ENTITY_KEYS = ['classes', 'objects', 'triggers', 'lwcs', 'metadata'];
+
 function mergeEntities() {
   if (!_entityData) return;
   const NPSP_ENTITIES = _entityData;
+  let totalPass1 = 0, totalPass2 = 0, totalInfra = 0;
+
   for (const domainKey in NPSP_ENTITIES) {
     if (!NPSP[domainKey]) continue;
     const entities = NPSP_ENTITIES[domainKey];
-    // Attach domain-level entity counts
     NPSP[domainKey]._entities = entities;
-    // Map entities to individual component groups by tag matching
-    for (const comp of NPSP[domainKey].components) {
-      const tagSet = new Set((comp.tags || []).map((t) => t.toLowerCase()));
-      comp.entities = {
-        classes: (entities.classes || []).filter((c) =>
-          tagSet.has(c.name.toLowerCase()) || matchesByPrefix(c.name, comp.tags)
-        ),
-        objects: (entities.objects || []).filter((o) =>
-          tagSet.has(o.name.toLowerCase())
-        ),
-        triggers: (entities.triggers || []).filter((t) =>
-          tagSet.has(t.object.toLowerCase()) || tagSet.has(t.name.toLowerCase())
-        ),
-        lwcs: (entities.lwcs || []).filter((l) =>
-          tagSet.has(l.name.toLowerCase())
-        ),
-        metadata: (entities.metadata || []).filter((m) =>
-          tagSet.has(m.name.toLowerCase())
-        )
-      };
+
+    // Track which entities are claimed across all passes
+    const claimed = {};
+    for (const key of ENTITY_KEYS) {
+      claimed[key] = new Set();
     }
+
+    const components = NPSP[domainKey].components;
+
+    // ── Pass 1: Tag matching + LWC prefix matching ──
+    // Build LWC prefix map from explicitly tagged LWCs per component
+    const compLwcPrefixes = new Map();
+    for (const comp of components) {
+      const tagSet = new Set((comp.tags || []).map((t) => t.toLowerCase()));
+      const taggedLwcNames = (entities.lwcs || [])
+        .filter((l) => tagSet.has(l.name.toLowerCase()))
+        .map((l) => l.name.toLowerCase());
+      if (taggedLwcNames.length > 0) {
+        // Derive common prefixes (3+ chars) from tagged LWC names
+        const prefixes = new Set();
+        for (const name of taggedLwcNames) {
+          // Use full name as a prefix to match children (e.g. "rd2" matches "rd2Service")
+          if (name.length >= 3) prefixes.add(name);
+        }
+        compLwcPrefixes.set(comp, prefixes);
+      }
+    }
+
+    for (const comp of components) {
+      const tagSet = new Set((comp.tags || []).map((t) => t.toLowerCase()));
+      const prefixes = compLwcPrefixes.get(comp);
+
+      comp.entities = {};
+      for (const key of ENTITY_KEYS) {
+        const items = entities[key] || [];
+        const matched = [];
+        for (const item of items) {
+          if (claimed[key].has(item.name)) continue;
+          let isMatch = false;
+
+          if (key === 'classes') {
+            isMatch = tagSet.has(item.name.toLowerCase()) || matchesByPrefix(item.name, comp.tags);
+          } else if (key === 'triggers') {
+            isMatch = tagSet.has(item.object.toLowerCase()) || tagSet.has(item.name.toLowerCase());
+          } else if (key === 'lwcs') {
+            if (tagSet.has(item.name.toLowerCase())) {
+              isMatch = true;
+            } else if (prefixes) {
+              const lowerName = item.name.toLowerCase();
+              for (const pfx of prefixes) {
+                if (lowerName.startsWith(pfx) && lowerName.length > pfx.length) {
+                  isMatch = true;
+                  break;
+                }
+              }
+            }
+          } else {
+            isMatch = tagSet.has(item.name.toLowerCase());
+          }
+
+          if (isMatch) {
+            matched.push(item);
+            claimed[key].add(item.name);
+          }
+        }
+        comp.entities[key] = matched;
+        totalPass1 += matched.length;
+      }
+    }
+
+    // ── Pass 2: Orphan trigger matching via class-object references ──
+    // For unclaimed triggers, find the first component that has a class referencing
+    // the trigger's object (via referencedObjects or object field)
+    const orphanTriggers = (entities.triggers || []).filter((t) => !claimed.triggers.has(t.name));
+    for (const trigger of orphanTriggers) {
+      const objName = trigger.object;
+      let placed = false;
+      for (const comp of components) {
+        if (comp._synthetic) continue;
+        const compClasses = comp.entities.classes || [];
+        const hasRef = compClasses.some((cls) =>
+          (cls.referencedObjects && cls.referencedObjects.includes(objName)) ||
+          (cls.object && cls.object === objName)
+        );
+        if (hasRef) {
+          comp.entities.triggers.push(trigger);
+          claimed.triggers.add(trigger.name);
+          totalPass2++;
+          placed = true;
+          break;
+        }
+      }
+      // If no class reference found, check if trigger object name appears in any tag
+      if (!placed) {
+        const objLower = objName.toLowerCase();
+        for (const comp of components) {
+          if (comp._synthetic) continue;
+          const tagSet = new Set((comp.tags || []).map((t) => t.toLowerCase()));
+          // Check tag prefixes (e.g. "Lead" matches tags like "LEAD_...")
+          const tagMatch = [...tagSet].some((t) => t.includes(objLower) || objLower.includes(t.split('_')[0]));
+          if (tagMatch) {
+            comp.entities.triggers.push(trigger);
+            claimed.triggers.add(trigger.name);
+            totalPass2++;
+            placed = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // Also try to place orphan LWCs via broader prefix matching in Pass 2
+    const orphanLwcs = (entities.lwcs || []).filter((l) => !claimed.lwcs.has(l.name));
+    for (const lwc of orphanLwcs) {
+      const lowerName = lwc.name.toLowerCase();
+      for (const comp of components) {
+        if (comp._synthetic) continue;
+        const compLwcs = comp.entities.lwcs || [];
+        // Match if an existing LWC in this comp shares a 3+ char prefix with this orphan
+        const shares = compLwcs.some((existing) => {
+          const existLower = existing.name.toLowerCase();
+          const common = commonPrefix(lowerName, existLower);
+          return common.length >= 3;
+        });
+        if (shares) {
+          comp.entities.lwcs.push(lwc);
+          claimed.lwcs.add(lwc.name);
+          totalPass2++;
+          break;
+        }
+      }
+    }
+
+    // ── Synthetic Infrastructure component for remaining orphans ──
+    const infraEntities = {};
+    let infraTotal = 0;
+    for (const key of ENTITY_KEYS) {
+      const orphans = (entities[key] || []).filter((item) => !claimed[key].has(item.name));
+      infraEntities[key] = orphans;
+      infraTotal += orphans.length;
+    }
+
+    if (infraTotal > 0) {
+      const parts = [];
+      for (const key of ENTITY_KEYS) {
+        if (infraEntities[key].length > 0) {
+          parts.push(`${infraEntities[key].length} ${key}`);
+        }
+      }
+      components.push({
+        id: '_infra',
+        name: 'Infrastructure & Utilities',
+        icon: '\u2699\uFE0F',
+        desc: `Cross-cutting infrastructure: ${parts.join(', ')}. These entities support the domain but don't map to a single component.`,
+        tags: [],
+        triggerTags: [],
+        _synthetic: true,
+        entities: infraEntities
+      });
+      totalInfra += infraTotal;
+    }
+
     // Update physics node tooltip counts with actual entity data
     if (nodeMap[domainKey]) {
       nodeMap[domainKey].classCount = (entities.classes || []).length;
     }
   }
+
+  console.log(`[NPSP] Entity mapping: Pass 1: ${totalPass1} matched, Pass 2: ${totalPass2} matched, Infrastructure: ${totalInfra} remaining`);
 }
 
 function matchesByPrefix(className, tags) {
   if (!tags) return false;
   const classPrefix = className.split('_')[0] + '_';
   return tags.some((t) => t.startsWith(classPrefix));
+}
+
+function commonPrefix(a, b) {
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  return a.slice(0, i);
 }
 
 // ── Tooltip ──
