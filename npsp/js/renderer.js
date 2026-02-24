@@ -12,7 +12,7 @@ import {
   tourFocusNode, tourHighlightedEdges, tourStopPlanets,
   focusedPlanetIndex, prefersReducedMotion
 } from './state.js';
-import { getCanvasIcon } from './icons.js?v=3';
+import { getCanvasIcon } from './icons.js?v=6';
 
 const _light = () => document.body.classList.contains('theme-light');
 

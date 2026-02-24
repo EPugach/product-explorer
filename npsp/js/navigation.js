@@ -8,7 +8,7 @@ import { NPSP } from './npsp-data.js';
 import { track, announce } from './utils.js';
 import { resetZoomPan, setGraphSettled, nodeMap } from './physics.js';
 import { pauseStarfield, resumeStarfield } from './starfield.js';
-import { domainSvg, entitySvg } from './icons.js?v=3';
+import { domainSvg, entitySvg } from './icons.js?v=6';
 
 // Normalize singular entity type slugs (from old URLs / search) to plural data keys
 const ENTITY_TYPE_MAP = { class: 'classes', object: 'objects', trigger: 'triggers', lwc: 'lwcs' };

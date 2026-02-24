@@ -5,7 +5,7 @@
 
 import { TOURS } from './tour-data.js';
 import { NPSP } from './npsp-data.js';
-import { domainSvg } from './icons.js?v=3';
+import { domainSvg } from './icons.js?v=6';
 import { safeLSGet, safeLSSet, track, announce } from './utils.js';
 import { animatePanTo, resetZoomPan, nodeMap, setGraphSettled } from './physics.js';
 import {
