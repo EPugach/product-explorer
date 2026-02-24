@@ -4,7 +4,7 @@
 
 import { NPSP } from './npsp-data.js';
 import { track, announce } from './utils.js';
-import { entitySvg, domainSvg } from './icons.js?v=3';
+import { entitySvg, domainSvg } from './icons.js?v=6';
 
 // Navigation functions are set via setNavigationCallbacks after navigation.js loads
 let _enterPlanet = null;
