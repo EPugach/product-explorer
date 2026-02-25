@@ -2,7 +2,7 @@
 
 There's a gap between the people who build software and the people who need to understand it. Source code tells the whole story, but it's written in a language most stakeholders don't speak.
 
-Product Explorer closes that gap. It reads the codebase and renders it as an interactive visual system you can navigate, search, and explore without writing a single query.
+Product Explorer closes that gap. It reads the codebase and renders it as an interactive visual system you can navigate, search, and explore without reading a single line of code.
 
 ## What You Get
 
