@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-//  NPSP KNOWLEDGE BASE — 16 Feature Domains, 843 classes
+//  NPSP KNOWLEDGE BASE — 18 Feature Domains, 843 classes
 //  Auto-extracted from index.html
 // ══════════════════════════════════════════════════════════════
 

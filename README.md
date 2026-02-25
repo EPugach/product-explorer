@@ -1,16 +1,41 @@
-# NPSP Architecture Explorer
+# Product Explorer
 
-> **[Launch the Explorer](https://epugach.github.io/product-explorer/npsp/)**
+There's a gap between the people who build software and the people who need to understand it. Source code tells the whole story, but it's written in a language most stakeholders don't speak.
 
-An interactive visualization of the Salesforce Nonprofit Success Pack architecture. Explore 18 domains, 843 Apex classes, 65 custom objects, 26 triggers, Lightning Web Components, and custom metadata types in one navigable interface.
+Product Explorer closes that gap. It reads the codebase and renders it as an interactive visual system you can navigate, search, and explore without writing a single query.
 
-## What You Can Explore
+## What You Get
 
-- **18 feature domains** mapped as an interactive galaxy: Donations, Recurring Giving, TDTM Framework, Rollups, Batch Data Import, and more
-- **55 component groups** with execution flows, code samples, and trigger chains
-- **753 individual entities** including classes, objects, triggers, LWCs, and metadata types with AI-generated descriptions
-- **Cross-domain connections** showing how systems depend on and interact with each other
-- **Deep search** across every entity name, field, method, referenced object, and trigger event
+For admins, consultants, and implementation teams:
+- See how features connect without tracing code paths
+- Understand dependencies before making configuration changes
+- Explore guided tours that walk through architectural stories
+- Search across every entity, field, and method in one place
+
+For developers and architects:
+- Execution flows and code samples for every component
+- Complete entity data: classes, objects, triggers, LWCs, metadata
+- Cross-domain connection maps showing system interactions
+- AI-generated descriptions covering purpose, behavior, and architectural role
+
+## Available Products
+
+### NPSP (Salesforce Nonprofit Success Pack)
+
+> **[Launch the NPSP Explorer](https://epugach.github.io/product-explorer/npsp/)**
+
+The Salesforce Nonprofit Success Pack powers thousands of nonprofit organizations. This explorer maps its entire architecture:
+
+| | |
+|---|---|
+| Domains | 18 feature areas across 4 clusters |
+| Components | 55 functional groups |
+| Entities | 534 classes, objects, triggers, LWCs, metadata |
+| Connections | 86 cross-domain dependencies |
+| Tours | 9 guided constellation stories |
+| Source | SalesforceFoundation/NPSP repository |
+
+Entity data extracted from the Cumulus repository and enriched with AI-generated descriptions covering purpose, behavior, and architectural role.
 
 ## Navigation
 
@@ -20,7 +45,7 @@ An interactive visualization of the Salesforce Nonprofit Success Pack architectu
 | View a component | Click a component card within a domain |
 | Browse entities | Switch tabs (Classes, Objects, Triggers, LWCs, Metadata) |
 | View entity detail | Click any entity card |
-| Search | Press `/` or click the search bar |
+| Search | Press `/` or click the search icon |
 | Go back | Press `ESC` or click breadcrumbs |
 | Switch tabs | `Left` / `Right` arrow keys (on component view) |
 | Change transitions | Press `T` to cycle Gentle / Cinematic / Snappy |
@@ -30,47 +55,10 @@ An interactive visualization of the Salesforce Nonprofit Success Pack architectu
 ## Architecture
 
 ```
-Galaxy View (18 domains)
+Galaxy View (all domains)
   -> Domain View (component groups)
     -> Component View (overview, code, entity tabs)
-      -> Entity Detail (class methods, object fields, trigger handlers)
+      -> Entity Detail (methods, fields, handlers)
 ```
 
-### File Structure
-
-```
-npsp/
-  index.html          # HTML skeleton, planet positions, script loading
-  favicon.svg         # App icon
-  css/
-    galaxy.css        # Dark space theme, all layout and styling
-  js/
-    npsp-data.js      # NPSP domain data (18 domains, 55 components)
-    npsp-entities.js  # Entity data (753 classes, objects, triggers, LWCs, metadata)
-    starfield.js      # Twinkling stars canvas animation
-    physics.js        # Force-directed graph layout
-    renderer.js       # Canvas rendering for planets and connections
-    particles.js      # Particle effects along connection lines
-    navigation.js     # View transitions, breadcrumbs, entity renderers
-    search.js         # Fuzzy search engine
-    main.js           # Init, events, keyboard shortcuts
-```
-
-## Running Locally
-
-```bash
-git clone https://github.com/EPugach/product-explorer.git
-cd product-explorer
-python3 -m http.server 8000
-# Open http://localhost:8000/npsp/
-```
-
-No build step, no dependencies, no frameworks.
-
-## Data Generation
-
-Entity data (classes, objects, triggers, LWCs, metadata types) was extracted from the [Cumulus repository](https://github.com/SalesforceFoundation/NPSP) and enriched with AI-generated descriptions using a build script. The 753 entity descriptions cover purpose, behavior, and architectural role within the NPSP codebase.
-
-## Why This Exists
-
-NPSP powers thousands of nonprofit organizations on Salesforce, but understanding how 843 Apex classes, 26 triggers, and 65 custom objects connect and interact is a challenge that documentation alone doesn't solve. This explorer makes that complexity navigable by visualizing the architecture as an interactive system.
+No build step. No dependencies. No frameworks. Pure HTML, CSS, and ES modules.
