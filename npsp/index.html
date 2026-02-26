@@ -24,9 +24,9 @@
   gtag('js', new Date());
   gtag('config', 'G-HJTE1NYP82');
 </script>
-<link rel="stylesheet" href="css/galaxy.css?v=24">
+<link rel="stylesheet" href="../app/css/galaxy.css">
 </head>
-<body>
+<body data-product="npsp">
 <a href="#stage" class="skip-link">Skip to content</a>
 
 <!-- Canvas layers: starfield (z0) > force graph (z1) > particles (z2) -->
@@ -132,15 +132,7 @@
 <!-- Screen reader announcements -->
 <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-<!-- ES module entry point — imports all other modules automatically -->
-<!-- npsp-entities.js (780KB) is lazy-loaded via dynamic import() after galaxy is interactive -->
-<!-- Preload hints for critical modules to speed up parallel fetch -->
-<link rel="modulepreload" href="js/npsp-data.js?v=11">
-<link rel="modulepreload" href="js/icons.js?v=6">
-<link rel="modulepreload" href="js/physics.js?v=17">
-<link rel="modulepreload" href="js/renderer.js?v=16">
-<link rel="modulepreload" href="js/navigation.js?v=17">
-<link rel="modulepreload" href="js/feedback.js?v=1">
-<script type="module" src="js/main.js?v=21"></script>
+<!-- ES module entry point — loads shared engine which dynamically imports product data -->
+<script type="module" src="../app/js/main.js"></script>
 </body>
 </html>

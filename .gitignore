@@ -6,6 +6,25 @@
 !README.md
 !LICENSE
 
-# Allow the npsp explorer app
+# Allow root landing page
+!index.html
+
+# Allow the shared rendering engine
+!app/
+!app/**
+
+# Allow product data
+!products/
+!products/**
+
+# Allow product bootstrap pages
 !npsp/
-!npsp/**
+!npsp/index.html
+!npsp/favicon.svg
+!npsp/fonts/
+!npsp/fonts/**
+!npsp/og-image.png
+
+# Allow future product bootstraps
+!eda/
+!eda/index.html
