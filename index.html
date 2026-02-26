@@ -4,67 +4,446 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Product Explorer</title>
-<meta name="description" content="Interactive galaxy-themed visualizations of product architectures. Explore domains, components, and entities as interconnected universes.">
+<meta name="description" content="See the architecture. Skip the source code. Interactive visual explorations of product architectures for admins, consultants, developers, and architects.">
 <link rel="icon" type="image/svg+xml" href="npsp/favicon.svg">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#050510;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .landing{max-width:800px;width:100%;padding:40px 24px;text-align:center}
-  .landing-title{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;background:linear-gradient(135deg,#4d8bff,#93c5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .landing-sub{font-size:clamp(0.85rem,2vw,1.05rem);color:#94a3b8;margin-bottom:48px}
-  .product-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;text-align:left}
-  .product-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;cursor:pointer;transition:all 0.3s ease;text-decoration:none;color:inherit;display:block}
-  .product-card:hover{background:rgba(77,139,255,0.06);border-color:rgba(77,139,255,0.3);transform:translateY(-2px);box-shadow:0 8px 32px rgba(77,139,255,0.1)}
-  .card-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-  .card-orb{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
-  .card-name{font-size:1.3rem;font-weight:600;letter-spacing:1px}
-  .card-full{font-size:0.8rem;color:#64748b;margin-bottom:8px}
-  .card-desc{font-size:0.9rem;color:#94a3b8;line-height:1.5;margin-bottom:16px}
-  .card-stats{display:flex;gap:16px;flex-wrap:wrap}
-  .card-stat{font-size:0.75rem;color:#64748b}
-  .card-stat strong{color:#cbd5e1;font-size:0.85rem}
-  .footer{margin-top:60px;font-size:0.75rem;color:#334155}
+  @font-face {
+    font-family: 'Bricolage Grotesque';
+    src: url('app/fonts/BricolageGrotesque-latin.woff2') format('woff2');
+    font-weight: 100 900;
+    font-display: swap;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #f3f3f3;
+    color: #181818;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 72px 0 48px;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    color: #181818;
+    margin-bottom: 12px;
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    color: #0176d3;
+    font-weight: 500;
+    margin-bottom: 32px;
+  }
+
+  .hero-visual {
+    display: flex;
+    justify-content: center;
+    margin: 32px 0;
+  }
+
+  .hero-visual svg {
+    width: 100%;
+    max-width: 660px;
+    height: auto;
+  }
+
+  .hero-hook {
+    text-align: left;
+  }
+
+  .hero-hook p {
+    font-size: 1.05rem;
+    color: #444444;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+
+  .hero-hook p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* ── Value Props ── */
+  .value-props {
+    padding-bottom: 48px;
+  }
+
+  .props-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .prop-card {
+    background: #ffffff;
+    border: 1px solid rgba(201, 201, 201, 0.6);
+    border-radius: 12px;
+    padding: 32px;
+  }
+
+  .prop-card h2 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #181818;
+    margin-bottom: 16px;
+  }
+
+  .prop-card ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .prop-card li {
+    font-size: 0.95rem;
+    color: #444444;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(201, 201, 201, 0.3);
+    line-height: 1.5;
+  }
+
+  .prop-card li:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .prop-label {
+    font-weight: 600;
+    color: #181818;
+  }
+
+  /* ── Products ── */
+  .products {
+    padding-bottom: 48px;
+  }
+
+  .products-heading {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #181818;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  .product-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    background: #ffffff;
+    border: 1px solid rgba(201, 201, 201, 0.6);
+    border-radius: 12px;
+    padding: 24px 32px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s ease;
+  }
+
+  .product-card:hover {
+    border-color: #0176d3;
+  }
+
+  .product-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .product-name {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #181818;
+    margin-bottom: 2px;
+  }
+
+  .product-fullname {
+    font-size: 0.85rem;
+    color: #595959;
+    margin-bottom: 12px;
+  }
+
+  .product-stats {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .product-stat {
+    font-size: 0.8rem;
+    color: #595959;
+  }
+
+  .product-stat strong {
+    color: #181818;
+    font-weight: 600;
+  }
+
+  .product-cta {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0176d3;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    padding: 32px 0;
+    text-align: center;
+    border-top: 1px solid rgba(201, 201, 201, 0.6);
+  }
+
+  .footer-tech {
+    font-size: 0.85rem;
+    color: #595959;
+    margin-bottom: 8px;
+  }
+
+  .footer-brand {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #999999;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 600px) {
+    .hero {
+      padding: 48px 0 36px;
+    }
+
+    .hero-subtitle {
+      margin-bottom: 24px;
+    }
+
+    .hero-visual {
+      margin: 24px 0;
+    }
+
+    .props-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .prop-card {
+      padding: 24px;
+    }
+
+    .value-props {
+      padding-bottom: 36px;
+    }
+
+    .products {
+      padding-bottom: 36px;
+    }
+
+    .product-card {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 24px;
+    }
+
+    .product-cta {
+      align-self: flex-end;
+    }
+
+    .footer {
+      padding: 24px 0;
+    }
+  }
 </style>
 </head>
 <body>
-<div class="landing">
-  <h1 class="landing-title">Product Explorer</h1>
-  <p class="landing-sub">Interactive architecture visualizations for products</p>
-  <div class="product-grid" id="productGrid"></div>
-  <div class="footer">Powered by Product Explorer</div>
+
+<div class="page">
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1 class="hero-title">Product Explorer</h1>
+    <p class="hero-subtitle">See the architecture. Skip the source code.</p>
+
+    <div class="hero-hook">
+      <p>There's a gap between the people who build software and the people who need to understand it. Source code tells the whole story, but it's written in a language most stakeholders don't speak.</p>
+
+      <!-- Infographic: visual breather between problem and solution -->
+      <div class="hero-visual" role="img" aria-label="Source code becomes documentation becomes an interactive map">
+        <svg viewBox="0 0 660 148" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- ── Circle 1: Source Code ── -->
+          <circle cx="60" cy="52" r="40" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+          <path d="M48 40 L36 52 L48 64" stroke="#595959" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M72 40 L84 52 L72 64" stroke="#595959" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="64" y1="37" x2="56" y2="67" stroke="#595959" stroke-width="1.5" stroke-linecap="round"/>
+
+          <!-- ── Connector 1 ── -->
+          <line x1="112" y1="52" x2="268" y2="52" stroke="#d4d4d4" stroke-width="1" stroke-dasharray="5 4"/>
+          <path d="M264 46 L274 52 L264 58" stroke="#c9c9c9" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- ── Circle 2: Documentation ── -->
+          <circle cx="330" cy="52" r="40" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+          <path d="M330 38 C324 38 316 40 316 43 L316 62 C316 60 324 58 330 59" stroke="#0176d3" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M330 38 C336 38 344 40 344 43 L344 62 C344 60 336 58 330 59" stroke="#0176d3" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="330" y1="38" x2="330" y2="59" stroke="#0176d3" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="320" y1="45" x2="327" y2="45" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+          <line x1="320" y1="49" x2="326" y2="49" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+          <line x1="320" y1="53" x2="327" y2="53" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+          <line x1="333" y1="45" x2="340" y2="45" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+          <line x1="333" y1="49" x2="339" y2="49" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+          <line x1="333" y1="53" x2="340" y2="53" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+
+          <!-- ── Connector 2 ── -->
+          <line x1="382" y1="52" x2="538" y2="52" stroke="#d4d4d4" stroke-width="1" stroke-dasharray="5 4"/>
+          <path d="M534 46 L544 52 L534 58" stroke="#c9c9c9" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- ── Circle 3: Interactive Map ── -->
+          <circle cx="600" cy="52" r="40" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+          <line x1="600" y1="49" x2="586" y2="40" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
+          <line x1="600" y1="49" x2="614" y2="41" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
+          <line x1="600" y1="49" x2="589" y2="61" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
+          <line x1="600" y1="49" x2="613" y2="59" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
+          <line x1="586" y1="40" x2="578" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
+          <line x1="614" y1="41" x2="621" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
+          <line x1="589" y1="61" x2="578" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
+          <line x1="613" y1="59" x2="621" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
+          <circle cx="600" cy="49" r="5" fill="#0176d3"/>
+          <circle cx="586" cy="40" r="3" fill="#0176d3" opacity="0.55"/>
+          <circle cx="614" cy="41" r="2.5" fill="#0176d3" opacity="0.45"/>
+          <circle cx="589" cy="61" r="2.5" fill="#0176d3" opacity="0.45"/>
+          <circle cx="613" cy="59" r="3" fill="#0176d3" opacity="0.35"/>
+          <circle cx="578" cy="52" r="2" fill="#0176d3" opacity="0.3"/>
+          <circle cx="621" cy="52" r="2" fill="#0176d3" opacity="0.25"/>
+
+          <!-- ── Labels ── -->
+          <text x="60" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#181818">Source Code</text>
+          <text x="60" y="128" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" fill="#595959">Your codebase</text>
+
+          <text x="330" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#0176d3">Documentation</text>
+          <text x="330" y="128" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" fill="#595959">Analyzed and structured</text>
+
+          <text x="600" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#181818">Interactive Map</text>
+          <text x="600" y="128" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" fill="#595959">Navigate visually</text>
+
+        </svg>
+      </div>
+
+      <p>Product Explorer closes that gap. It reads the codebase, layers in available documentation, and renders it as an interactive visual system. Navigate, search, and explore without reading a single line of code.</p>
+    </div>
+  </section>
+
+  <!-- Value Props -->
+  <section class="value-props">
+    <div class="props-grid">
+      <div class="prop-card">
+        <h2>For Admins &amp; Consultants</h2>
+        <ul>
+          <li><span class="prop-label">Feature connections.</span> See how components relate across the product</li>
+          <li><span class="prop-label">Dependencies.</span> Understand what relies on what before making changes</li>
+          <li><span class="prop-label">Guided tours.</span> Walk through key workflows with narrated constellation stories</li>
+          <li><span class="prop-label">Universal search.</span> Find any component, entity, or domain instantly</li>
+        </ul>
+      </div>
+      <div class="prop-card">
+        <h2>For Developers &amp; Architects</h2>
+        <ul>
+          <li><span class="prop-label">Execution flows.</span> Trace how data moves through triggers, classes, and handlers</li>
+          <li><span class="prop-label">Entity data.</span> Inspect classes, objects, triggers, and LWCs per component</li>
+          <li><span class="prop-label">Connection maps.</span> Visualize cross-domain dependencies and data flows</li>
+          <li><span class="prop-label">AI descriptions.</span> Every component and entity annotated with plain-language summaries</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Products -->
+  <section class="products">
+    <h2 class="products-heading">Explore</h2>
+    <div id="productGrid"></div>
+  </section>
+
 </div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="page">
+    <p class="footer-tech">No build step. No dependencies. No frameworks. Pure HTML, CSS, and ES modules.</p>
+    <p class="footer-brand">Product Explorer</p>
+  </div>
+</footer>
+
 <script>
-  // Product registry — add new products here
   const PRODUCTS = [
     {
       id: 'npsp',
       name: 'NPSP',
       fullName: 'Nonprofit Success Pack',
-      description: 'The most widely adopted nonprofit technology on Salesforce. Explore 18 domains, 55 components, and 753 entities.',
-      color: '#4d8bff',
-      icon: '\uD83C\uDF0C',
-      stats: { domains: 18, components: 55, classes: 843 }
+      stats: [
+        ['Apex Classes', 534],
+        ['Triggers', 26],
+        ['Custom Objects', 64],
+        ['Domains', 18],
+        ['Components', 65],
+        ['Tours', 9]
+      ]
     }
-    // Future: { id: 'eda', name: 'EDA', ... }
   ];
 
   const grid = document.getElementById('productGrid');
   for (const p of PRODUCTS) {
     const card = document.createElement('a');
-    card.href = `${p.id}/`;
+    card.href = p.id + '/';
     card.className = 'product-card';
-    card.innerHTML =
-      `<div class="card-header">` +
-        `<div class="card-orb" style="background:${p.color}22;box-shadow:0 0 12px ${p.color}44">${p.icon}</div>` +
-        `<div class="card-name" style="color:${p.color}">${p.name}</div>` +
-      `</div>` +
-      `<div class="card-full">${p.fullName}</div>` +
-      `<div class="card-desc">${p.description}</div>` +
-      `<div class="card-stats">` +
-        `<span class="card-stat"><strong>${p.stats.domains}</strong> domains</span>` +
-        `<span class="card-stat"><strong>${p.stats.components}</strong> components</span>` +
-        `<span class="card-stat"><strong>${p.stats.classes}</strong> classes</span>` +
-      `</div>`;
+
+    const info = document.createElement('div');
+    info.className = 'product-info';
+
+    const name = document.createElement('div');
+    name.className = 'product-name';
+    name.textContent = p.name;
+
+    const full = document.createElement('div');
+    full.className = 'product-fullname';
+    full.textContent = p.fullName;
+
+    const stats = document.createElement('div');
+    stats.className = 'product-stats';
+
+    for (const [label, value] of p.stats) {
+      const span = document.createElement('span');
+      span.className = 'product-stat';
+      const strong = document.createElement('strong');
+      strong.textContent = value;
+      span.appendChild(strong);
+      span.appendChild(document.createTextNode(' ' + label));
+      stats.appendChild(span);
+    }
+
+    info.appendChild(name);
+    info.appendChild(full);
+    info.appendChild(stats);
+
+    const cta = document.createElement('span');
+    cta.className = 'product-cta';
+    cta.textContent = 'Launch Explorer \u2192';
+
+    card.appendChild(info);
+    card.appendChild(cta);
     grid.appendChild(card);
   }
 </script>
