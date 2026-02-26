@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Explorer</title>
+<meta name="description" content="Interactive galaxy-themed visualizations of product architectures. Explore domains, components, and entities as interconnected universes.">
+<link rel="icon" type="image/svg+xml" href="npsp/favicon.svg">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#050510;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .landing{max-width:800px;width:100%;padding:40px 24px;text-align:center}
+  .landing-title{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;background:linear-gradient(135deg,#4d8bff,#93c5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .landing-sub{font-size:clamp(0.85rem,2vw,1.05rem);color:#94a3b8;margin-bottom:48px}
+  .product-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;text-align:left}
+  .product-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;cursor:pointer;transition:all 0.3s ease;text-decoration:none;color:inherit;display:block}
+  .product-card:hover{background:rgba(77,139,255,0.06);border-color:rgba(77,139,255,0.3);transform:translateY(-2px);box-shadow:0 8px 32px rgba(77,139,255,0.1)}
+  .card-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .card-orb{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .card-name{font-size:1.3rem;font-weight:600;letter-spacing:1px}
+  .card-full{font-size:0.8rem;color:#64748b;margin-bottom:8px}
+  .card-desc{font-size:0.9rem;color:#94a3b8;line-height:1.5;margin-bottom:16px}
+  .card-stats{display:flex;gap:16px;flex-wrap:wrap}
+  .card-stat{font-size:0.75rem;color:#64748b}
+  .card-stat strong{color:#cbd5e1;font-size:0.85rem}
+  .footer{margin-top:60px;font-size:0.75rem;color:#334155}
+</style>
+</head>
+<body>
+<div class="landing">
+  <h1 class="landing-title">Product Explorer</h1>
+  <p class="landing-sub">Interactive architecture visualizations for products</p>
+  <div class="product-grid" id="productGrid"></div>
+  <div class="footer">Powered by Product Explorer</div>
+</div>
+<script>
+  // Product registry — add new products here
+  const PRODUCTS = [
+    {
+      id: 'npsp',
+      name: 'NPSP',
+      fullName: 'Nonprofit Success Pack',
+      description: 'The most widely adopted nonprofit technology on Salesforce. Explore 18 domains, 55 components, and 753 entities.',
+      color: '#4d8bff',
+      icon: '\uD83C\uDF0C',
+      stats: { domains: 18, components: 55, classes: 843 }
+    }
+    // Future: { id: 'eda', name: 'EDA', ... }
+  ];
+
+  const grid = document.getElementById('productGrid');
+  for (const p of PRODUCTS) {
+    const card = document.createElement('a');
+    card.href = `${p.id}/`;
+    card.className = 'product-card';
+    card.innerHTML =
+      `<div class="card-header">` +
+        `<div class="card-orb" style="background:${p.color}22;box-shadow:0 0 12px ${p.color}44">${p.icon}</div>` +
+        `<div class="card-name" style="color:${p.color}">${p.name}</div>` +
+      `</div>` +
+      `<div class="card-full">${p.fullName}</div>` +
+      `<div class="card-desc">${p.description}</div>` +
+      `<div class="card-stats">` +
+        `<span class="card-stat"><strong>${p.stats.domains}</strong> domains</span>` +
+        `<span class="card-stat"><strong>${p.stats.components}</strong> components</span>` +
+        `<span class="card-stat"><strong>${p.stats.classes}</strong> classes</span>` +
+      `</div>`;
+    grid.appendChild(card);
+  }
+</script>
+</body>
+</html>
