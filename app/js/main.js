@@ -64,8 +64,8 @@ let _prefixToPkg = {};
 async function loadProductData() {
   // Load config and data in parallel (required)
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=4`),
-    import(`${productsBase}/data.js?v=4`),
+    import(`${productsBase}/config.js?v=6`),
+    import(`${productsBase}/data.js?v=6`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
@@ -88,7 +88,7 @@ async function loadProductData() {
 
   // Load domain icons (required before canvas rendering)
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=4`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=6`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
@@ -96,7 +96,7 @@ async function loadProductData() {
 
   // Load tours (optional)
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=4`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=6`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     // Tours are optional; if not found, tour UI will be hidden
@@ -105,7 +105,7 @@ async function loadProductData() {
 
   // Load feedback module (optional)
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=4`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=6`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {
     // Feedback is optional
@@ -838,7 +838,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading (dynamic import, ES module) ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=4`);
+    const module = await import(`${productsBase}/entities.js?v=6`);
     _entityData = module.default;
     setEntitiesLoaded(true);
     mergeEntities();
