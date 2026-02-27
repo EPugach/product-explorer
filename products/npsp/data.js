@@ -1,6 +1,7 @@
 export const PRODUCT = {
 
 donations: {
+  packages: ['cumulus', 'npe01', 'npe03'],
   name: "Donations & Payments",
   icon: "\u{1F4B0}",
   color: "#4d8bff",
@@ -18,6 +19,7 @@ donations: {
 },
 
 contacts: {
+  packages: ['cumulus', 'npe01', 'npo02'],
   name: "Contacts & Households",
   icon: "\u{1F465}",
   color: "#a855f7",
@@ -33,6 +35,7 @@ contacts: {
 },
 
 recurring: {
+  packages: ['cumulus', 'npe03'],
   name: "Recurring Donations (RD2)",
   icon: "\u{1F504}",
   color: "#22c55e",
@@ -49,6 +52,7 @@ recurring: {
 },
 
 rollups: {
+  packages: ['cumulus'],
   name: "Customizable Rollups (CRLP)",
   icon: "\u{1F4CA}",
   color: "#f59e0b",
@@ -64,6 +68,7 @@ rollups: {
 },
 
 softcredits: {
+  packages: ['cumulus', 'npe01'],
   name: "Soft Credits",
   icon: "\u{1F91D}",
   color: "#ec4899",
@@ -77,6 +82,7 @@ softcredits: {
 },
 
 allocations: {
+  packages: ['cumulus'],
   name: "Allocations & Fund Accounting",
   icon: "\u{1F4C2}",
   color: "#06b6d4",
@@ -91,6 +97,7 @@ allocations: {
 },
 
 tdtm: {
+  packages: ['cumulus'],
   name: "TDTM Framework",
   icon: "\u{26A1}\uFE0F",
   color: "#ef4444",
@@ -105,6 +112,7 @@ tdtm: {
 },
 
 batch: {
+  packages: ['cumulus'],
   name: "Batch Processing",
   icon: "\u{2699}\uFE0F",
   color: "#8b5cf6",
@@ -120,6 +128,7 @@ batch: {
 },
 
 relationships: {
+  packages: ['npe4'],
   name: "Relationships",
   icon: "\u{1F517}",
   color: "#f43f5e",
@@ -134,6 +143,7 @@ relationships: {
 },
 
 addresses: {
+  packages: ['cumulus', 'npe01'],
   name: "Address Management",
   icon: "\u{1F4CD}",
   color: "#14b8a6",
@@ -148,6 +158,7 @@ addresses: {
 },
 
 affiliations: {
+  packages: ['npe5'],
   name: "Affiliations",
   icon: "\u{1F3E2}",
   color: "#6366f1",
@@ -160,6 +171,7 @@ affiliations: {
 },
 
 engagement: {
+  packages: ['cumulus'],
   name: "Engagement Plans",
   icon: "\u{1F4CB}",
   color: "#84cc16",
@@ -173,6 +185,7 @@ engagement: {
 },
 
 bdi: {
+  packages: ['cumulus'],
   name: "Batch Data Import (BDI)",
   icon: "\u{1F4E5}",
   color: "#d97706",
@@ -187,6 +200,7 @@ bdi: {
 },
 
 giftentry: {
+  packages: ['cumulus'],
   name: "Gift Entry",
   icon: "\u{1F381}",
   color: "#0ea5e9",
@@ -201,6 +215,7 @@ giftentry: {
 },
 
 levels: {
+  packages: ['cumulus', 'npo02'],
   name: "Levels (Donor Tiers)",
   icon: "\u{1F3C6}",
   color: "#10b981",
@@ -213,6 +228,7 @@ levels: {
 },
 
 errors: {
+  packages: ['cumulus'],
   name: "Error Handling",
   icon: "\u{26A0}\uFE0F",
   color: "#d946ef",
@@ -227,6 +243,7 @@ errors: {
 },
 
 settings: {
+  packages: ['cumulus'],
   name: "Settings & Configuration",
   icon: "\u{2699}\uFE0F",
   color: "#64748b",
@@ -241,6 +258,7 @@ settings: {
 },
 
 elevate: {
+  packages: ['cumulus'],
   name: "Payment Services (Elevate)",
   icon: "\u{1F4B3}",
   color: "#7c3aed",

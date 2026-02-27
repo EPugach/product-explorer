@@ -12,8 +12,16 @@ import { domainSvg, entitySvg } from './icons.js';
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
 let PRODUCT_CONFIG = {};
+let PRODUCT_PACKAGES = {};
 export const setProductData = (data) => { PRODUCT_DATA = data; };
 export const setProductConfig = (config) => { PRODUCT_CONFIG = config; };
+export const setPackages = (packages) => { PRODUCT_PACKAGES = packages || {}; };
+
+function packageBadge(entity) {
+  const pkg = PRODUCT_PACKAGES[entity._package];
+  if (!pkg) return '';
+  return `<span class="package-badge" style="--pkg-color:${pkg.color}">${pkg.abbr}</span>`;
+}
 
 // Normalize singular entity type slugs (from old URLs / search) to plural data keys
 const ENTITY_TYPE_MAP = { class: 'classes', object: 'objects', trigger: 'triggers', lwc: 'lwcs' };
@@ -317,8 +325,12 @@ function renderPlanetView(id) {
     if (dt) parts.push(dt+' triggers'); if (dl) parts.push(dl+' LWCs');
     if (parts.length > 0) domainStats = `<div class="domain-entity-stats">${p.components.length} groups \u00B7 ${parts.join(' \u00B7 ')}</div>`;
   }
+  let domainPkgHtml = '';
+  if (p.packages && p.packages.length > 0 && Object.keys(PRODUCT_PACKAGES).length > 0) {
+    domainPkgHtml = `<div class="domain-packages">${p.packages.map(pkgKey => {const pkg = PRODUCT_PACKAGES[pkgKey]; return pkg ? `<span class="package-badge" style="--pkg-color:${pkg.color}">${pkg.name}</span>` : ''}).join('')}</div>`;
+  }
   const cardHtml = p.components.map((c,i) => renderComponentCard(c, i, id, p)).join('');
-  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-here">${p.name}</span></div><div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}"><span class="icon-svg">${domainSvg(id, 28)}</span></div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p></div></div>${domainStats}<div class="component-grid">${cardHtml}</div><div class="data-flow" style="animation-delay:${p.components.length*30+60}ms"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n,i)=>(i>0?`<span class="flow-arrow">\u2192</span>`:'')+`<span class="flow-node">${n}</span>`).join('')}</div></div><div class="connections-section" style="animation-delay:${p.components.length*30+120}ms"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map(c=>`<div class="connection-item" data-connection-planet="${c.planet}" role="button" tabindex="0"><div class="conn-planet" style="background:${PLANET_META[c.planet]?PLANET_META[c.planet].color:'#64748b'}"><span class="icon-svg">${PLANET_META[c.planet]?PLANET_META[c.planet].svg:''}</span></div><div><strong>${PRODUCT_DATA[c.planet]?PRODUCT_DATA[c.planet].name:c.planet}</strong><div style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px">${c.desc}</div></div></div>`).join('')}</div>`;
+  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-here">${p.name}</span></div><div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}"><span class="icon-svg">${domainSvg(id, 28)}</span></div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p>${domainPkgHtml}</div></div>${domainStats}<div class="component-grid">${cardHtml}</div><div class="data-flow" style="animation-delay:${p.components.length*30+60}ms"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n,i)=>(i>0?`<span class="flow-arrow">\u2192</span>`:'')+`<span class="flow-node">${n}</span>`).join('')}</div></div><div class="connections-section" style="animation-delay:${p.components.length*30+120}ms"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map(c=>`<div class="connection-item" data-connection-planet="${c.planet}" role="button" tabindex="0"><div class="conn-planet" style="background:${PLANET_META[c.planet]?PLANET_META[c.planet].color:'#64748b'}"><span class="icon-svg">${PLANET_META[c.planet]?PLANET_META[c.planet].svg:''}</span></div><div><strong>${PRODUCT_DATA[c.planet]?PRODUCT_DATA[c.planet].name:c.planet}</strong><div style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px">${c.desc}</div></div></div>`).join('')}</div>`;
   el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
   el.querySelectorAll('.component-card').forEach(card=>{const cid=card.dataset.component,pid2=card.dataset.planet;card.addEventListener('click',()=>enterCore(pid2,cid));card.addEventListener('keydown',e=>{if(e.key==='Enter')enterCore(pid2,cid);});});
   el.querySelectorAll('[data-connection-planet]').forEach(item=>{const planetId=item.dataset.connectionPlanet;item.addEventListener('click',()=>enterPlanet(planetId));item.addEventListener('keydown',e=>{if(e.key==='Enter')enterPlanet(planetId);});});
@@ -395,14 +407,25 @@ function renderEntityGrid(component, entityType, pid) {
       if (b === 'Other') return -1;
       return a.localeCompare(b);
     });
+    // Package filter pills for grouped grids
+    const domainPkgs2 = PRODUCT_DATA[pid] && PRODUCT_DATA[pid].packages || [];
     let html = '';
+    if (domainPkgs2.length > 1 && Object.keys(PRODUCT_PACKAGES).length > 0) {
+      const counts = {};
+      entities.forEach(e => { const p = e._package || ''; if (p) counts[p] = (counts[p] || 0) + 1; });
+      const pills = domainPkgs2.filter(k => counts[k]).map(pkgKey => {
+        const pkg = PRODUCT_PACKAGES[pkgKey];
+        return pkg ? `<button class="pkg-pill" data-pkg="${pkgKey}" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>` : '';
+      }).join('');
+      if (pills) html += `<div class="package-filter"><button class="pkg-pill active" data-pkg="all" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
+    }
     let idx = 0;
     for (const groupName of groupOrder) {
       html += `<div class="entity-group-header">${groupName} <span class="entity-group-count">${groups[groupName].length}</span></div>`;
       html += `<div class="entity-grid">`;
       for (const e of groups[groupName]) {
         const delay = Math.min(idx * 30, 1500);
-        html += `<div class="entity-card" style="animation-delay:${delay}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g,'&quot;')}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type?`<span class="entity-type-label">${e.type.replace('_',' ')}</span>`:''}<div class="entity-desc">${(e.description||'No description available.').substring(0,150)}${e.description&&e.description.length>150?'...':''}</div>${e.linesOfCode?`<span class="entity-loc">${e.linesOfCode} lines</span>`:''}${(e.fields||e.keyFields)?.length?`<span class="entity-loc">${(e.fields||e.keyFields).length} fields</span>`:e.fieldCount?`<span class="entity-loc">${e.fieldCount} fields</span>`:''}</div>`;
+        html += `<div class="entity-card" style="animation-delay:${delay}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g,'&quot;')}" data-entity-pkg="${e._package||''}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type?`<span class="entity-type-label">${e.type.replace('_',' ')}</span>`:''}<div class="entity-desc">${(e.description||'No description available.').substring(0,150)}${e.description&&e.description.length>150?'...':''}</div>${e.linesOfCode?`<span class="entity-loc">${e.linesOfCode} lines</span>`:''}${(e.fields||e.keyFields)?.length?`<span class="entity-loc">${(e.fields||e.keyFields).length} fields</span>`:e.fieldCount?`<span class="entity-loc">${e.fieldCount} fields</span>`:''}</div>`;
         idx++;
       }
       html += `</div>`;
@@ -410,7 +433,19 @@ function renderEntityGrid(component, entityType, pid) {
     return html;
   }
 
-  return `<div class="entity-grid">${entities.map((e,i)=>`<div class="entity-card" style="animation-delay:${Math.min(i*30,1500)}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g,'&quot;')}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type?`<span class="entity-type-label">${e.type.replace('_',' ')}</span>`:''}<div class="entity-desc">${(e.description||'No description available.').substring(0,150)}${e.description&&e.description.length>150?'...':''}</div>${e.linesOfCode?`<span class="entity-loc">${e.linesOfCode} lines</span>`:''}${(e.fields||e.keyFields)?.length?`<span class="entity-loc">${(e.fields||e.keyFields).length} fields</span>`:e.fieldCount?`<span class="entity-loc">${e.fieldCount} fields</span>`:''}</div>`).join('')}</div>`;
+  // Package filter pills (only for multi-package domains)
+  const domainPkgs = PRODUCT_DATA[pid] && PRODUCT_DATA[pid].packages || [];
+  let filterHtml = '';
+  if (domainPkgs.length > 1 && Object.keys(PRODUCT_PACKAGES).length > 0) {
+    const counts = {};
+    entities.forEach(e => { const p = e._package || ''; if (p) counts[p] = (counts[p] || 0) + 1; });
+    const pills = domainPkgs.filter(k => counts[k]).map(pkgKey => {
+      const pkg = PRODUCT_PACKAGES[pkgKey];
+      return pkg ? `<button class="pkg-pill" data-pkg="${pkgKey}" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>` : '';
+    }).join('');
+    if (pills) filterHtml = `<div class="package-filter"><button class="pkg-pill active" data-pkg="all" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
+  }
+  return filterHtml + `<div class="entity-grid">${entities.map((e,i)=>`<div class="entity-card" style="animation-delay:${Math.min(i*30,1500)}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g,'&quot;')}" data-entity-pkg="${e._package||''}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type?`<span class="entity-type-label">${e.type.replace('_',' ')}</span>`:''}<div class="entity-desc">${(e.description||'No description available.').substring(0,150)}${e.description&&e.description.length>150?'...':''}</div>${e.linesOfCode?`<span class="entity-loc">${e.linesOfCode} lines</span>`:''}${(e.fields||e.keyFields)?.length?`<span class="entity-loc">${(e.fields||e.keyFields).length} fields</span>`:e.fieldCount?`<span class="entity-loc">${e.fieldCount} fields</span>`:''}</div>`).join('')}</div>`;
 }
 
 function attachEntityGridListeners(container) {
@@ -418,6 +453,17 @@ function attachEntityGridListeners(container) {
     const {entityPid:pid,entityCid:cid,entityType:type,entityName:name}=card.dataset;
     card.addEventListener('click',()=>enterEntity(pid,cid,type,name));
     card.addEventListener('keydown',e=>{if(e.key==='Enter')enterEntity(pid,cid,type,name);});
+  });
+  // Package filter pill click handlers
+  container.querySelectorAll('.pkg-pill').forEach(pill=>{
+    pill.addEventListener('click',()=>{
+      const pkg = pill.dataset.pkg;
+      container.querySelectorAll('.pkg-pill').forEach(p=>p.classList.remove('active'));
+      pill.classList.add('active');
+      container.querySelectorAll('.entity-card').forEach(card=>{
+        card.style.display = (pkg === 'all' || card.dataset.entityPkg === pkg) ? '' : 'none';
+      });
+    });
   });
 }
 
@@ -475,7 +521,7 @@ function renderEntityView(pid, cid, rawType, entityName) {
 function renderClassDetail(entity) {
   const typeColors = {tdtm_handler:{bg:'rgba(239,68,68,0.1)',color:'#ef4444',label:'TDTM Handler'},batch:{bg:'rgba(168,85,247,0.1)',color:'#a855f7',label:'Batch Job'},service:{bg:'rgba(34,197,94,0.1)',color:'#22c55e',label:'Service'},utility:{bg:'rgba(245,158,11,0.1)',color:'#f59e0b',label:'Utility'},controller:{bg:'rgba(6,182,212,0.1)',color:'#06b6d4',label:'Controller'},scheduled:{bg:'rgba(124,58,237,0.1)',color:'#7c3aed',label:'Scheduled'},'class':{bg:'rgba(77,139,255,0.1)',color:'#4d8bff',label:'Class'}};
   const tc = typeColors[entity.type]||typeColors['class'];
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-class"><span class="icon-svg">${entitySvg('class',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:${tc.bg};color:${tc.color}">${tc.label}</span>${entity.linesOfCode?`<span class="entity-detail-meta">${entity.linesOfCode} lines of code</span>`:''}</div></div>`;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-class"><span class="icon-svg">${entitySvg('class',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:${tc.bg};color:${tc.color}">${tc.label}</span>${packageBadge(entity)}${entity.linesOfCode?`<span class="entity-detail-meta">${entity.linesOfCode} lines of code</span>`:''}</div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description||'No description available.'}</p></div>`;
   if (entity.type==='tdtm_handler'&&entity.object) h += `<div class="entity-detail-section"><h3>\u26A1 Trigger Context</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Object:</span><span>${entity.object}</span></div>${entity.triggerActions?`<div class="edt-row"><span class="edt-label">Events:</span><span>${entity.triggerActions.map(a=>`<span class="card-tag trigger">${a}</span>`).join(' ')}</span></div>`:''}${entity.loadOrder?`<div class="edt-row"><span class="edt-label">Load Order:</span><span>${entity.loadOrder}</span></div>`:''}</div></div>`;
   if (entity.extends) h += `<div class="entity-detail-section"><h3>Inheritance</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Extends:</span><span class="entity-detail-code">${entity.extends}</span></div>${entity.implements?`<div class="edt-row"><span class="edt-label">Implements:</span><span class="entity-detail-code">${entity.implements}</span></div>`:''}</div></div>`;
@@ -488,7 +534,7 @@ function renderClassDetail(entity) {
 function renderObjectDetail(entity) {
   const flds = entity.fields||entity.keyFields||[];
   const fldCount = flds.length||entity.fieldCount||0;
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-object"><span class="icon-svg">${entitySvg('object',18)}</span></div><div><h2 class="entity-detail-name">${entity.label||entity.name}</h2><span class="entity-detail-meta" style="display:block;margin-top:2px">${entity.name}</span><span class="entity-detail-meta">${fldCount} fields</span></div></div>`;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-object"><span class="icon-svg">${entitySvg('object',18)}</span></div><div><h2 class="entity-detail-name">${entity.label||entity.name}</h2><span class="entity-detail-meta" style="display:block;margin-top:2px">${entity.name}</span>${packageBadge(entity)}<span class="entity-detail-meta">${fldCount} fields</span></div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description||'Custom object in the managed package.'}</p></div>`;
   if (entity.relationships&&entity.relationships.length>0) h += `<div class="entity-detail-section"><h3>\u{1F517} Relationships</h3><div class="entity-detail-table">${entity.relationships.map(r=>`<div class="edt-row"><span class="edt-label">${r.type}:</span><span><span class="entity-detail-code">${r.field}</span> \u2192 ${r.target}</span></div>`).join('')}</div></div>`;
   if (flds.length>0) h += `<div class="entity-detail-section"><h3>Fields (${flds.length})</h3><div class="entity-fields-table"><div class="eft-header"><span>Field</span><span>Type</span><span>Description</span></div>${flds.map(f=>`<div class="eft-row"><span class="entity-detail-code">${f.name}</span><span class="eft-type">${f.type}</span><span class="eft-desc">${f.desc||f.label||''}</span></div>`).join('')}</div></div>`;
@@ -497,7 +543,7 @@ function renderObjectDetail(entity) {
 }
 
 function renderTriggerDetail(entity) {
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-trigger"><span class="icon-svg">${entitySvg('trigger',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-meta">Trigger on ${entity.object}</span></div></div>`;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-trigger"><span class="icon-svg">${entitySvg('trigger',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2>${packageBadge(entity)}<span class="entity-detail-meta">Trigger on ${entity.object}</span></div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>Trigger for the ${entity.object} object. Dispatches to registered handler classes via the trigger framework.</p></div>`;
   if (entity.events&&entity.events.length>0) h += `<div class="entity-detail-section"><h3>\u26A1 Registered Events</h3><div class="entity-methods">${entity.events.map(e=>`<span class="card-tag trigger">${e}</span>`).join('')}</div></div>`;
   if (entity.handlers&&entity.handlers.length>0) h += `<div class="entity-detail-section"><h3>\u{1F517} Handler Chain</h3><p style="margin-bottom:8px;font-size:var(--text-xs);color:var(--text-dim)">Handlers execute in Load_Order__c sequence:</p><div class="trigger-handler-chain">${entity.handlers.map((handler,i)=>{const found=findEntityAcrossDomains(handler,'classes');const hh=found?`<span class="entity-detail-code entity-link" data-entity-link='${JSON.stringify({pid:found.pid,cid:found.cid,type:'classes',name:handler})}' role="button" tabindex="0">${handler} \u2197</span>`:`<span class="entity-detail-code">${handler}</span>`;return `<div class="handler-chain-item"><span class="handler-order">${i+1}</span>${hh}</div>`;}).join('')}</div></div>`;
@@ -506,7 +552,7 @@ function renderTriggerDetail(entity) {
 }
 
 function renderLwcDetail(entity) {
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-lwc"><span class="icon-svg">${entitySvg('lwc',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:rgba(168,85,247,0.1);color:#a855f7">Lightning Web Component</span></div></div>`;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-lwc"><span class="icon-svg">${entitySvg('lwc',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:rgba(168,85,247,0.1);color:#a855f7">Lightning Web Component</span>${packageBadge(entity)}</div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description||'Lightning Web Component in the managed package.'}</p></div>`;
   if (entity.imports&&entity.imports.length>0) h += `<div class="entity-detail-section"><h3>Imports</h3><div class="entity-methods">${entity.imports.map(imp=>`<span class="entity-method">${imp}</span>`).join('')}</div></div>`;
   if (entity.sourceUrl) h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View on GitHub \u2197</a></div>`;
@@ -514,7 +560,7 @@ function renderLwcDetail(entity) {
 }
 
 function renderMetadataDetail(entity) {
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-metadata"><span class="icon-svg">${entitySvg('metadata',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:rgba(245,158,11,0.1);color:#f59e0b">Custom Metadata Type</span>${entity.recordCount?`<span class="entity-detail-meta">${entity.recordCount} records</span>`:''}</div></div>`;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-metadata"><span class="icon-svg">${entitySvg('metadata',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:rgba(245,158,11,0.1);color:#f59e0b">Custom Metadata Type</span>${packageBadge(entity)}${entity.recordCount?`<span class="entity-detail-meta">${entity.recordCount} records</span>`:''}</div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description||'Custom Metadata Type used for configuration.'}</p></div>`;
   return h;
 }
