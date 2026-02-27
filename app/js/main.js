@@ -29,14 +29,15 @@ import {
   enterPlanet, enterEntity, navigateToCore, navigateTo, goBack,
   setAnimationCallbacks, refreshCurrentView, updateBreadcrumb,
   setProductData as setNavData, setProductConfig as setNavConfig,
-  rebuildPlanetMeta
+  setPackages as setNavPackages, rebuildPlanetMeta
 } from './navigation.js';
 import {
   setNavigationCallbacks, rebuildSearchIndex,
   searchResults, searchIndex,
   openSearch, closeSearch, expandSearch, collapseSearch,
   cycleResult, activateResult,
-  setProductData as setSearchData
+  setProductData as setSearchData,
+  setPackages as setSearchPackages
 } from './search.js';
 import {
   initTours, advanceStop, exitTour, setTourAnimationCallbacks, toggleTourPicker,
@@ -57,27 +58,37 @@ const productsBase = `../../products/${productId}`;
 // ── Dynamic product imports ──
 let PRODUCT_DATA = {};
 let PRODUCT_CONFIG = {};
+let PRODUCT_PACKAGES = {};
+let _prefixToPkg = {};
 
 async function loadProductData() {
   // Load config and data in parallel (required)
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=2`),
-    import(`${productsBase}/data.js?v=2`),
+    import(`${productsBase}/config.js?v=3`),
+    import(`${productsBase}/data.js?v=3`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
   PRODUCT_DATA = dataModule.PRODUCT;
+  PRODUCT_PACKAGES = configModule.PACKAGES || {};
+
+  // Build prefix-to-package lookup for entity derivation
+  _prefixToPkg = Object.fromEntries(
+    Object.entries(PRODUCT_PACKAGES).map(([key, pkg]) => [pkg.prefix, key])
+  );
 
   // Inject product data into all modules that need it
   setPhysicsData(PRODUCT_DATA);
   setNavData(PRODUCT_DATA);
   setNavConfig(PRODUCT_CONFIG);
+  setNavPackages(PRODUCT_PACKAGES);
   setSearchData(PRODUCT_DATA, PRODUCT_CONFIG.name);
+  setSearchPackages(PRODUCT_PACKAGES);
   setToursProductData(PRODUCT_DATA);
 
   // Load domain icons (required before canvas rendering)
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=2`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=3`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
@@ -85,7 +96,7 @@ async function loadProductData() {
 
   // Load tours (optional)
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=2`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=3`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     // Tours are optional; if not found, tour UI will be hidden
@@ -94,7 +105,7 @@ async function loadProductData() {
 
   // Load feedback module (optional)
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=2`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=3`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {
     // Feedback is optional
@@ -126,6 +137,17 @@ function toggleTheme() {
   track('theme_change', { theme: light ? 'light' : 'dark' });
 }
 
+// ── Package derivation ──
+// Derive which managed package an entity belongs to based on name prefix
+function derivePackage(entityName) {
+  for (const [prefix, pkgKey] of Object.entries(_prefixToPkg)) {
+    if (entityName.startsWith(prefix)) return pkgKey;
+  }
+  // Default: unnamespaced entities belong to the first package (Cumulus for NPSP)
+  const keys = Object.keys(PRODUCT_PACKAGES);
+  return keys.length > 0 ? keys[0] : null;
+}
+
 // ── Merge generated entities into product data ──
 // Two-pass matching + synthetic infrastructure component for orphans
 let _entityData = null;
@@ -140,6 +162,15 @@ function mergeEntities() {
     if (!PRODUCT_DATA[domainKey]) continue;
     const entities = ENTITIES[domainKey];
     PRODUCT_DATA[domainKey]._entities = entities;
+
+    // Stamp _package on every entity based on namespace prefix
+    if (Object.keys(PRODUCT_PACKAGES).length > 0) {
+      for (const key of ENTITY_KEYS) {
+        for (const item of (entities[key] || [])) {
+          item._package = derivePackage(item.name);
+        }
+      }
+    }
 
     // Track which entities are claimed across all passes
     const claimed = {};
@@ -806,7 +837,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading (dynamic import, ES module) ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=2`);
+    const module = await import(`${productsBase}/entities.js?v=3`);
     _entityData = module.default;
     setEntitiesLoaded(true);
     mergeEntities();

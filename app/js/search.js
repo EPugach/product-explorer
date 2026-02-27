@@ -8,7 +8,9 @@ import { entitySvg, domainSvg } from './icons.js';
 // Product data is injected by main.js via setProductData()
 let PRODUCT_DATA = {};
 let _productName = 'Product';
+let _packages = {};
 export const setProductData = (data, name) => { PRODUCT_DATA = data; if (name) _productName = name; };
+export const setPackages = (packages) => { _packages = packages || {}; };
 
 // Navigation functions are set via setNavigationCallbacks after navigation.js loads
 let _enterPlanet = null;
@@ -104,6 +106,9 @@ function buildSearchIndex() {
             }
             // Build docText for fuzzy matching
             const docParts = [entItem.description || ''];
+            if (entItem._package && _packages[entItem._package]) {
+              docParts.push(_packages[entItem._package].name);
+            }
             if (entItem.extends) docParts.push('extends ' + entItem.extends);
             if (entItem.implements) docParts.push('implements ' + entItem.implements);
             if (entItem.keyMethods) docParts.push(entItem.keyMethods.join(' '));

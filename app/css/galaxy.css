@@ -1550,6 +1550,55 @@ body {
   background: rgba(77,139,255,0.15);
 }
 
+/* Package badges */
+.package-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  background: color-mix(in srgb, var(--pkg-color) 15%, transparent);
+  color: var(--pkg-color);
+  border: 1px solid color-mix(in srgb, var(--pkg-color) 30%, transparent);
+  white-space: nowrap;
+}
+.domain-packages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* Package filter pills on entity tabs */
+.package-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 0 12px;
+}
+.pkg-pill {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(100,140,255,0.15);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.pkg-pill:hover {
+  background: rgba(100,140,255,0.08);
+  color: var(--text-primary);
+}
+.pkg-pill.active {
+  background: color-mix(in srgb, var(--pkg-color, var(--glow-primary)) 18%, transparent);
+  color: var(--pkg-color, var(--glow-primary));
+  border-color: color-mix(in srgb, var(--pkg-color, var(--glow-primary)) 40%, transparent);
+}
+
 /* Object fields table — single grid so columns align across ALL rows */
 .entity-fields-table {
   display: grid;
