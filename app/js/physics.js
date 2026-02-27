@@ -470,10 +470,17 @@ export function applyOrbitalDrift() {
     }
   }
 
-  // 5. Damping + boundary reflection
+  // 5. Damping + velocity cap + boundary reflection
+  const MAX_SPEED = 0.5;
   for (const n of nodes) {
     n.vx *= VELOCITY_DAMPING;
     n.vy *= VELOCITY_DAMPING;
+    const speed = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
+    if (speed > MAX_SPEED) {
+      const scale = MAX_SPEED / speed;
+      n.vx *= scale;
+      n.vy *= scale;
+    }
 
     const margin = n.radius + 20;
     const topBound = Math.max(margin, 200);

@@ -64,8 +64,8 @@ let _prefixToPkg = {};
 async function loadProductData() {
   // Load config and data in parallel (required)
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=3`),
-    import(`${productsBase}/data.js?v=3`),
+    import(`${productsBase}/config.js?v=4`),
+    import(`${productsBase}/data.js?v=4`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
@@ -88,7 +88,7 @@ async function loadProductData() {
 
   // Load domain icons (required before canvas rendering)
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=3`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=4`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
@@ -96,7 +96,7 @@ async function loadProductData() {
 
   // Load tours (optional)
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=3`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=4`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     // Tours are optional; if not found, tour UI will be hidden
@@ -105,7 +105,7 @@ async function loadProductData() {
 
   // Load feedback module (optional)
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=3`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=4`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {
     // Feedback is optional
@@ -133,7 +133,7 @@ function toggleTheme() {
   initNebulaBlobs();
   renderGraph();
   renderParticles();
-  showPresetIndicator(light ? 'Light' : 'Dark');
+  showPresetIndicator(light ? 'Light' : 'Dark', 'Theme');
   track('theme_change', { theme: light ? 'light' : 'dark' });
 }
 
@@ -661,14 +661,14 @@ function cyclePreset() {
   track('transition_change', { preset: PRESET_NAMES[presetIndex] });
 }
 
-function showPresetIndicator(name) {
+function showPresetIndicator(name, label = 'Transition') {
   let el = document.getElementById('preset-indicator');
   if (!el) {
     el = document.createElement('div');
     el.id = 'preset-indicator';
     document.body.appendChild(el);
   }
-  el.textContent = `Transition: ${name}`;
+  el.textContent = `${label}: ${name}`;
   el.classList.add('visible');
   clearTimeout(el._timer);
   el._timer = setTimeout(() => el.classList.remove('visible'), 1500);
@@ -787,11 +787,12 @@ function setupHelpButton() {
   if (!btn || !stack) return;
   const show = () => { stack.classList.add('visible'); btn.classList.add('pressed'); };
   const hide = () => { stack.classList.remove('visible'); btn.classList.remove('pressed'); };
-  btn.addEventListener('mousedown', (e) => { e.preventDefault(); show(); });
-  document.addEventListener('mouseup', hide);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); show(); }, { passive: false });
-  document.addEventListener('touchend', hide);
-  document.addEventListener('touchcancel', hide);
+  const toggle = () => { stack.classList.contains('visible') ? hide() : show(); };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+  document.addEventListener('click', (e) => {
+    if (!btn.contains(e.target) && !stack.contains(e.target)) hide();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
 }
 
 // ── Build Stats ──
@@ -837,7 +838,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading (dynamic import, ES module) ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=3`);
+    const module = await import(`${productsBase}/entities.js?v=4`);
     _entityData = module.default;
     setEntitiesLoaded(true);
     mergeEntities();

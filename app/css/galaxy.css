@@ -910,8 +910,8 @@ body {
 
 /* ── Preset Indicator Toast ── */
 #preset-indicator {
-  position: fixed; bottom: 60px; left: 50%;
-  transform: translateX(-50%);
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
   font-family: var(--font-mono); font-size: var(--text-xs);
   color: var(--glow-accent); background: var(--bg-panel);
   border: 1px solid var(--border-glow); border-radius: 6px;
@@ -1127,8 +1127,13 @@ body {
   .bc { font-size: var(--text-xs); }
   .bc-here { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
 
+  /* Help + Feedback buttons: shift above stats bar on small screens */
+  .help-btn { bottom: 64px; right: var(--space-2); width: 36px; height: 36px; font-size: 12px; }
+  .feedback-btn { bottom: calc(64px + 44px); right: var(--space-2); width: 36px; height: 36px; }
+  .feedback-btn svg { width: 16px; height: 16px; }
+
   /* Help stack */
-  .help-stack { max-width: calc(100vw - 20px); }
+  .help-stack { max-width: calc(100vw - 20px); bottom: 106px; }
 
   /* Code header */
   .code-header { flex-wrap: wrap; }
@@ -1143,6 +1148,11 @@ body {
   .galaxy-stats { gap: var(--space-1); padding: var(--space-1) var(--space-2); }
   .stat-value { font-size: 11px; }
   .stat-label { font-size: 9px; }
+
+  /* Stats bar wraps at this width; push buttons higher */
+  .help-btn { bottom: 84px; }
+  .feedback-btn { bottom: calc(84px + 44px); }
+  .help-stack { bottom: 126px; }
 }
 
 /* ── First-Visit Onboarding Hint ── */
@@ -1555,6 +1565,7 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
+  margin-right: 6px;
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
