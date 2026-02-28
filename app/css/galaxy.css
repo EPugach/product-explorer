@@ -496,6 +496,10 @@ body {
 }
 
 /* ── AI Feedback Buttons ── */
+.ai-header-left {
+  display: flex;
+  align-items: center;
+}
 .ai-feedback-btns {
   display: inline-flex;
   align-items: center;
@@ -785,6 +789,11 @@ body {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+}
+.sr-ai-label-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .sr-ai-label {
   display: flex;

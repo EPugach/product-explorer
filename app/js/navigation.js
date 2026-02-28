@@ -274,8 +274,9 @@ function renderSearchResultsPage(query, results, options = {}) {
   // AI answer section
   if (shouldAskAi) {
     html += `<div class="sr-ai-section" id="srAiSection">`;
-    html += `<div class="sr-ai-header"><span class="sr-ai-label"><span class="sr-ai-label-icon">\u2728</span> AI Answer</span>`;
-    html += `<span class="sr-ai-header-actions">${options.aiAnswer ? buildFeedbackButtonsHtml() : ''}`;
+    html += `<div class="sr-ai-header"><span class="sr-ai-label-group"><span class="sr-ai-label"><span class="sr-ai-label-icon">\u2728</span> AI Answer</span>`;
+    html += `${options.aiAnswer ? buildFeedbackButtonsHtml() : ''}</span>`;
+    html += `<span class="sr-ai-header-actions">`;
     html += `<button class="ai-copy-btn" id="srAiCopyBtn" style="display:${options.aiAnswer ? '' : 'none'}" aria-label="Copy answer">Copy</button>`;
     html += `</span></div>`;
     html += options.aiAnswer ? buildFeedbackPanelHtml() : '<div data-feedback-panel-slot></div>';
@@ -417,9 +418,9 @@ async function triggerAiFetch(query) {
     const header = section.querySelector('.sr-ai-header');
     const panelSlot = section.querySelector('[data-feedback-panel-slot]');
     if (header) {
-      const actionsSpan = header.querySelector('.sr-ai-header-actions');
-      if (actionsSpan) {
-        actionsSpan.insertAdjacentHTML('afterbegin', buildFeedbackButtonsHtml());
+      const labelGroup = header.querySelector('.sr-ai-label-group');
+      if (labelGroup) {
+        labelGroup.insertAdjacentHTML('beforeend', buildFeedbackButtonsHtml());
       }
     }
     if (panelSlot) {
