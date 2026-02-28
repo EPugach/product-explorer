@@ -157,6 +157,7 @@ export function initGraph() {
       vx: 0, vy: 0,
       fx: null, fy: null,
       pulsePhase: Math.random() * Math.PI * 2,
+      breathPhase: Math.random() * Math.PI * 2,
       entranceDelay: 0,
       entranceAlpha: 0
     };
@@ -189,8 +190,9 @@ export function initGraph() {
 
 export function resizeGraphCanvas() {
   const w = innerWidth, h = innerHeight;
-  graphCanvas.width = w * devicePixelRatio;
-  graphCanvas.height = h * devicePixelRatio;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  graphCanvas.width = w * dpr;
+  graphCanvas.height = h * dpr;
   graphCanvas.style.width = w + 'px';
   graphCanvas.style.height = h + 'px';
   canvasW = w;
@@ -374,6 +376,68 @@ export function animatePanTo(node, duration, targetZoomLevel, callback) {
 export function resetZoomPan() {
   if (zoomAnimId) { cancelAnimationFrame(zoomAnimId); zoomAnimId = null; }
   zoom = 1; panX = 0; panY = 0;
+}
+
+// ── Cinematic fly-in: zoom camera into a planet ──
+export function animateFlyIn(node, duration, onProgress, callback) {
+  const startZoom = zoom, startPanX = panX, startPanY = panY;
+  const targetZoom = Math.min(canvasW / (node.radius * 4), 5);
+  const targetPanX = canvasW / 2 - node.x * targetZoom;
+  const targetPanY = canvasH / 2 - node.y * targetZoom;
+  const startTime = performance.now();
+
+  if (prefersReducedMotion) {
+    if (onProgress) onProgress(1);
+    if (callback) callback();
+    return;
+  }
+
+  function step(now) {
+    const t = Math.min((now - startTime) / duration, 1);
+    const e = 1 - Math.pow(1 - t, 3);
+    zoom = startZoom + (targetZoom - startZoom) * e;
+    panX = startPanX + (targetPanX - startPanX) * e;
+    panY = startPanY + (targetPanY - startPanY) * e;
+    if (onProgress) onProgress(e);
+    if (_renderGraph) _renderGraph();
+    if (_renderParticles) _renderParticles();
+    if (t < 1) { zoomAnimId = requestAnimationFrame(step); }
+    else { zoomAnimId = null; if (callback) callback(); }
+  }
+
+  if (zoomAnimId) cancelAnimationFrame(zoomAnimId);
+  zoomAnimId = requestAnimationFrame(step);
+}
+
+// ── Cinematic fly-out: zoom camera back to galaxy overview ──
+export function animateFlyOut(duration, onProgress, callback) {
+  const startZoom = zoom, startPanX = panX, startPanY = panY;
+  const startTime = performance.now();
+
+  if (prefersReducedMotion) {
+    zoom = 1; panX = 0; panY = 0;
+    if (onProgress) onProgress(1);
+    if (_renderGraph) _renderGraph();
+    if (_renderParticles) _renderParticles();
+    if (callback) callback();
+    return;
+  }
+
+  function step(now) {
+    const t = Math.min((now - startTime) / duration, 1);
+    const e = 1 - Math.pow(1 - t, 3);
+    zoom = startZoom + (1 - startZoom) * e;
+    panX = startPanX - startPanX * e;
+    panY = startPanY - startPanY * e;
+    if (onProgress) onProgress(e);
+    if (_renderGraph) _renderGraph();
+    if (_renderParticles) _renderParticles();
+    if (t < 1) { zoomAnimId = requestAnimationFrame(step); }
+    else { zoomAnimId = null; if (callback) callback(); }
+  }
+
+  if (zoomAnimId) cancelAnimationFrame(zoomAnimId);
+  zoomAnimId = requestAnimationFrame(step);
 }
 
 // ── Orbital Drift with Realistic Physics ──

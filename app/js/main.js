@@ -27,7 +27,7 @@ import {
   currentLevel, currentPlanet, currentComponent,
   hashUpdateInProgress, handleHashNavigation,
   enterPlanet, enterEntity, enterSearchResults, navigateToCore, navigateTo, goBack,
-  setAnimationCallbacks, refreshCurrentView, updateBreadcrumb,
+  isFlyInAnimating, setAnimationCallbacks, refreshCurrentView, updateBreadcrumb,
   setProductData as setNavData, setProductConfig as setNavConfig,
   setPackages as setNavPackages, rebuildPlanetMeta
 } from './navigation.js';
@@ -65,8 +65,8 @@ let _prefixToPkg = {};
 async function loadProductData() {
   // Load config and data in parallel (required)
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=19`),
-    import(`${productsBase}/data.js?v=19`),
+    import(`${productsBase}/config.js?v=22`),
+    import(`${productsBase}/data.js?v=22`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
@@ -89,7 +89,7 @@ async function loadProductData() {
 
   // Load domain icons (required before canvas rendering)
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=19`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=22`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
@@ -97,7 +97,7 @@ async function loadProductData() {
 
   // Load tours (optional)
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=19`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=22`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     // Tours are optional; if not found, tour UI will be hidden
@@ -106,7 +106,7 @@ async function loadProductData() {
 
   // Load feedback module (optional)
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=19`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=22`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {
     // Feedback is optional
@@ -114,7 +114,7 @@ async function loadProductData() {
 
   // Load AI context (optional)
   try {
-    const aiContextMod = await import(`${productsBase}/ai-context.js?v=19`);
+    const aiContextMod = await import(`${productsBase}/ai-context.js?v=22`);
     const aiEndpoint = 'https://npsp-ai-search.epug.workers.dev';
     setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
     setFeedbackEndpoint(aiEndpoint + '/feedback');
@@ -144,7 +144,6 @@ function toggleTheme() {
   initNebulaBlobs();
   renderGraph();
   renderParticles();
-  showPresetIndicator(light ? 'Light' : 'Dark', 'Theme');
   track('theme_change', { theme: light ? 'light' : 'dark' });
 }
 
@@ -659,32 +658,6 @@ function setupCanvasEvents() {
   });
 }
 
-// ── Transition Presets ──
-const PRESETS = ['', 'transition-cinematic', 'transition-snappy'];
-const PRESET_NAMES = ['Gentle', 'Cinematic', 'Snappy'];
-let presetIndex = 0;
-
-function cyclePreset() {
-  document.body.classList.remove('transition-cinematic', 'transition-snappy');
-  presetIndex = (presetIndex + 1) % PRESETS.length;
-  if (PRESETS[presetIndex]) document.body.classList.add(PRESETS[presetIndex]);
-  showPresetIndicator(PRESET_NAMES[presetIndex]);
-  track('transition_change', { preset: PRESET_NAMES[presetIndex] });
-}
-
-function showPresetIndicator(name, label = 'Transition') {
-  let el = document.getElementById('preset-indicator');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'preset-indicator';
-    document.body.appendChild(el);
-  }
-  el.textContent = `${label}: ${name}`;
-  el.classList.add('visible');
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => el.classList.remove('visible'), 1500);
-}
-
 // ── Keyboard Shortcuts ──
 function setupKeyboard() {
   const searchInput = document.getElementById('searchInput');
@@ -775,10 +748,6 @@ function setupKeyboard() {
       goBack();
       track('keyboard_shortcut', { key: 'Escape' });
     }
-    if ((e.key === 't' || e.key === 'T') && document.activeElement !== searchInput && !isTyping()) {
-      cyclePreset();
-      track('keyboard_shortcut', { key: 'T' });
-    }
     if ((e.key === 'l' || e.key === 'L') && document.activeElement !== searchInput && !isTyping()) {
       toggleTheme();
       track('keyboard_shortcut', { key: 'L' });
@@ -865,7 +834,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading (dynamic import, ES module) ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=19`);
+    const module = await import(`${productsBase}/entities.js?v=22`);
     _entityData = module.default;
     setEntitiesLoaded(true);
 
