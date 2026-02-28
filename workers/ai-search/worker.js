@@ -2,10 +2,11 @@
 //  NPSP AI Search Worker — Cloudflare Workers AI
 //  Accepts questions, returns AI-generated answers grounded in
 //  NPSP product knowledge. Uses KV for caching, per-IP rate limiting.
+//  Logs questions to Google Sheets via Apps Script (fire-and-forget).
 // ══════════════════════════════════════════════════════════════
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     // CORS preflight
     const origin = request.headers.get('Origin') || '';
     const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim());
@@ -47,10 +48,9 @@ export default {
       const cacheKey = `answer:${qHash}`;
       const cached = await env.CACHE.get(cacheKey);
       if (cached) {
-        // Log cached question for analytics (fire-and-forget)
         const ipHash = (await sha256(ip)).substring(0, 8);
-        const ts = Date.now();
-        env.CACHE.put(`log:${ts}:${qHash.substring(0, 8)}`, JSON.stringify({ question: q, timestamp: ts, ipHash, cached: true }), { expirationTtl: 2592000 });
+        // Log to Google Sheets (fire-and-forget, non-blocking)
+        ctx.waitUntil(logToSheets(env, q, ipHash, true, cached.substring(0, 200)));
         return json({ answer: cached, cached: true }, 200, corsHeaders);
       }
 
@@ -85,10 +85,9 @@ export default {
       // Cache for 24 hours
       await env.CACHE.put(cacheKey, answer, { expirationTtl: 86400 });
 
-      // Log question for analytics
+      // Log to Google Sheets (fire-and-forget, non-blocking)
       const ipHash = (await sha256(ip)).substring(0, 8);
-      const ts = Date.now();
-      await env.CACHE.put(`log:${ts}:${qHash.substring(0, 8)}`, JSON.stringify({ question: q, timestamp: ts, ipHash, cached: false }), { expirationTtl: 2592000 });
+      ctx.waitUntil(logToSheets(env, q, ipHash, false, answer.substring(0, 200)));
 
       return json({ answer, cached: false }, 200, corsHeaders);
     } catch (err) {
@@ -97,6 +96,27 @@ export default {
     }
   }
 };
+
+// Fire-and-forget POST to Google Sheets via Apps Script
+async function logToSheets(env, question, ipHash, cached, answerPreview) {
+  const url = env.SHEETS_LOG_URL;
+  if (!url) return; // Skip if not configured
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        timestamp: new Date().toISOString(),
+        question,
+        ipHash,
+        cached,
+        answerPreview
+      })
+    });
+  } catch {
+    // Silent fail — logging should never break the main response
+  }
+}
 
 function json(data, status, headers) {
   return new Response(JSON.stringify(data), {
