@@ -1,18 +1,75 @@
 // ══════════════════════════════════════════════════════════════
-//  SEARCH ENGINE — Fuzzy search with overlay + ARIA
+//  SEARCH ENGINE — MiniSearch-powered fuzzy search with overlay + ARIA
+//  Phase 1: BM25+ scoring, fuzzy matching, prefix search, field boosting
+//  CDN fallback: if MiniSearch fails to load, uses substring matching
 // ══════════════════════════════════════════════════════════════
 
 import { track, announce } from './utils.js';
 import { entitySvg, domainSvg } from './icons.js';
 
-// Product data is injected by main.js via setProductData()
+// ── MiniSearch lazy CDN import with fallback ─────────────────
+// Loaded lazily in rebuildSearchIndex() to avoid top-level await
+// which would block DOMContentLoaded and prevent app initialization.
+let MiniSearch = null;
+let _useFallback = false;
+let _miniSearchLoaded = false;
+
+async function ensureMiniSearch() {
+  if (_miniSearchLoaded) return;
+  _miniSearchLoaded = true;
+  try {
+    const mod = await import('https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/es/index.min.js');
+    MiniSearch = mod.default;
+  } catch {
+    console.warn('[search] MiniSearch CDN unavailable, using fallback substring search');
+    _useFallback = true;
+  }
+}
+
+// ── Salesforce synonym map ───────────────────────────────────
+const SYNONYMS = {
+  tdtm:  'table driven trigger management',
+  gau:   'general accounting unit',
+  rd:    'recurring donation',
+  rd2:   'enhanced recurring donation',
+  ocr:   'opportunity contact role',
+  crlp:  'customizable rollup',
+  bdi:   'batch data import',
+  bge:   'batch gift entry',
+  npsp:  'nonprofit success pack',
+  hh:    'household',
+  pmt:   'payment',
+  opp:   'opportunity',
+  lwc:   'lightning web component'
+};
+
+// Build reverse map (full term -> abbreviation) for synonym text on documents
+const REVERSE_SYNONYMS = {};
+for (const [abbr, full] of Object.entries(SYNONYMS)) {
+  if (!REVERSE_SYNONYMS[full]) REVERSE_SYNONYMS[full] = [];
+  REVERSE_SYNONYMS[full].push(abbr);
+}
+
+function expandSynonyms(text) {
+  const lower = text.toLowerCase();
+  const expansions = [];
+  for (const [abbr, full] of Object.entries(SYNONYMS)) {
+    if (lower.includes(abbr)) expansions.push(full);
+  }
+  for (const [full, abbrs] of Object.entries(REVERSE_SYNONYMS)) {
+    if (lower.includes(full)) expansions.push(...abbrs);
+  }
+  return expansions.join(' ');
+}
+
+// ── Product data (injected by main.js) ──────────────────────
 let PRODUCT_DATA = {};
 let _productName = 'Product';
 let _packages = {};
 export const setProductData = (data, name) => { PRODUCT_DATA = data; if (name) _productName = name; };
 export const setPackages = (packages) => { _packages = packages || {}; };
 
-// Navigation functions are set via setNavigationCallbacks after navigation.js loads
+// ── Navigation callbacks (set after navigation.js loads) ────
 let _enterPlanet = null;
 let _navigateToCore = null;
 let _enterEntity = null;
@@ -28,32 +85,81 @@ export let searchIndex = -1;
 
 export const setSearchIndex = (val) => { searchIndex = val; };
 
+// ── Index data structures ────────────────────────────────────
+let _miniSearch = null;       // MiniSearch instance
+let _itemsById = new Map();   // numeric id -> {action, icon, color, level, type, planetId, componentId, name, desc}
+let _nextId = 0;
+let _fallbackIndex = [];      // flat array for substring fallback
+let _pendingDocs = [];        // docs waiting for MiniSearch to load
+
 function buildSearchIndex() {
-  const idx = [];
+  const docs = [];
+  _itemsById = new Map();
+  _nextId = 0;
+  const fallbackIdx = [];
+
   for (const [pid, planet] of Object.entries(PRODUCT_DATA)) {
-    idx.push({
+    const baseItem = {
       type: 'planet', id: pid, name: planet.name, desc: planet.description,
       icon: domainSvg(pid, 20), color: planet.color, tags: [], level: _productName || 'Product',
       action: () => { if (_enterPlanet) _enterPlanet(pid); }
+    };
+    const docId = _nextId++;
+    _itemsById.set(docId, baseItem);
+    docs.push({
+      _id: docId,
+      name: planet.name,
+      tagsText: '',
+      desc: planet.description || '',
+      docText: '',
+      synonymText: expandSynonyms(planet.name + ' ' + (planet.description || ''))
     });
+    fallbackIdx.push(baseItem);
+
     for (const comp of planet.components) {
       const allTags = [...(comp.tags || []), ...(comp.triggerTags || [])];
-      idx.push({
+      const compItem = {
         type: 'component', id: comp.id, planetId: pid,
         name: comp.name, desc: comp.desc, icon: comp.icon, color: planet.color,
         tags: allTags,
         docText: (comp.docs || []).join(' '),
         level: planet.name,
         action: () => { if (_navigateToCore) _navigateToCore(pid, comp.id); }
+      };
+      const compDocId = _nextId++;
+      _itemsById.set(compDocId, compItem);
+      const tagsText = allTags.join(' ');
+      const compDocText = (comp.docs || []).join(' ');
+      docs.push({
+        _id: compDocId,
+        name: comp.name,
+        tagsText,
+        desc: comp.desc || '',
+        docText: compDocText,
+        synonymText: expandSynonyms(comp.name + ' ' + tagsText + ' ' + (comp.desc || ''))
       });
+      fallbackIdx.push(compItem);
+
       for (const tag of allTags) {
-        idx.push({
+        const tagItem = {
           type: 'tag', id: tag, planetId: pid, componentId: comp.id,
           name: tag, desc: comp.desc, icon: comp.icon, color: planet.color,
           tags: [], level: `${planet.name} > ${comp.name}`,
           action: () => { if (_navigateToCore) _navigateToCore(pid, comp.id); }
+        };
+        const tagDocId = _nextId++;
+        _itemsById.set(tagDocId, tagItem);
+        docs.push({
+          _id: tagDocId,
+          name: tag,
+          tagsText: '',
+          desc: comp.desc || '',
+          docText: '',
+          synonymText: expandSynonyms(tag)
         });
+        fallbackIdx.push(tagItem);
       }
+
       // Index entities (classes, objects, triggers, lwcs, metadata)
       const ents = comp.entities;
       if (ents) {
@@ -74,14 +180,12 @@ function buildSearchIndex() {
             const compName = comp.name;
 
             let entTags = [];
-            // Classes: methods + referenced objects + extends + implements
             if (entType === 'class') {
               if (entItem.keyMethods) entTags = entTags.concat(entItem.keyMethods);
               if (entItem.referencedObjects) entTags = entTags.concat(entItem.referencedObjects);
               if (entItem.extends) entTags.push(entItem.extends);
               if (entItem.implements) entTags.push(entItem.implements);
             }
-            // Objects: field names and labels
             const flds = entItem.fields || entItem.keyFields;
             if (entType === 'object' && flds) {
               for (const f of flds) {
@@ -89,22 +193,19 @@ function buildSearchIndex() {
                 if (f.label) entTags.push(f.label);
               }
             }
-            // Triggers: object + events
             if (entType === 'trigger') {
               if (entItem.object) entTags.push(entItem.object);
               if (entItem.events) entTags = entTags.concat(entItem.events);
             }
-            // LWCs: imports
             if (entType === 'lwc' && entItem.imports) {
               entTags = entTags.concat(entItem.imports);
             }
-            // Metadata: field names
             if (entType === 'metadata' && flds) {
               for (const f of flds) {
                 entTags.push(f.name);
               }
             }
-            // Build docText for fuzzy matching
+
             const docParts = [entItem.description || ''];
             if (entItem._package && _packages[entItem._package]) {
               docParts.push(_packages[entItem._package].name);
@@ -118,10 +219,11 @@ function buildSearchIndex() {
                 `${f.name} ${f.label || ''} ${f.type || ''}`
               ).join(' '));
             }
-            idx.push({
+
+            const entItemData = {
               type: entType,
               id: `${entItem.name}:${planetId}:${compId}`,
-              planetId: planetId,
+              planetId,
               componentId: compId,
               name: entItem.name,
               desc: entItem.description || '',
@@ -136,26 +238,120 @@ function buildSearchIndex() {
                   if (_enterEntity) _enterEntity(planetId, compId, et.key, entItem.name);
                 }, 100);
               }
+            };
+
+            const entDocId = _nextId++;
+            _itemsById.set(entDocId, entItemData);
+            const entTagsText = entTags.join(' ');
+            const entDocText = docParts.join(' ');
+            docs.push({
+              _id: entDocId,
+              name: entItem.name,
+              tagsText: entTagsText,
+              desc: entItem.description || '',
+              docText: entDocText,
+              synonymText: expandSynonyms(entItem.name + ' ' + entTagsText + ' ' + (entItem.description || ''))
             });
+            fallbackIdx.push(entItemData);
           }
         }
       }
     }
   }
-  return idx;
-}
 
-let fullIndex = [];
+  return { docs, fallbackIdx };
+}
 
 export function rebuildSearchIndex() {
-  fullIndex = buildSearchIndex();
+  const { docs, fallbackIdx } = buildSearchIndex();
+  _fallbackIndex = fallbackIdx;
+
+  if (MiniSearch && !_useFallback) {
+    // MiniSearch already loaded, build index immediately
+    _miniSearch = new MiniSearch({
+      idField: '_id',
+      fields: ['name', 'tagsText', 'desc', 'docText', 'synonymText'],
+      storeFields: ['_id'],
+      searchOptions: {
+        boost: { name: 3, tagsText: 2, desc: 1.5, docText: 1, synonymText: 0.5 },
+        fuzzy: 0.2,
+        prefix: true
+      }
+    });
+    _miniSearch.addAll(docs);
+  } else if (!_useFallback) {
+    // MiniSearch not loaded yet, store docs and kick off load
+    _pendingDocs = docs;
+    ensureMiniSearch().then(() => {
+      if (MiniSearch && _pendingDocs.length > 0) {
+        _miniSearch = new MiniSearch({
+          idField: '_id',
+          fields: ['name', 'tagsText', 'desc', 'docText', 'synonymText'],
+          storeFields: ['_id'],
+          searchOptions: {
+            boost: { name: 3, tagsText: 2, desc: 1.5, docText: 1, synonymText: 0.5 },
+            fuzzy: 0.2,
+            prefix: true
+          }
+        });
+        _miniSearch.addAll(_pendingDocs);
+        _pendingDocs = [];
+      }
+    });
+  }
 }
 
-function searchProduct(query) {
+// ── Search functions ─────────────────────────────────────────
+
+function searchWithMiniSearch(query) {
+  if (!_miniSearch || !query.trim()) return [];
+
+  // Expand query synonyms: if user types "GAU", also search "general accounting unit"
+  const q = query.trim();
+  const qLower = q.toLowerCase();
+  const queries = [q];
+  for (const [abbr, full] of Object.entries(SYNONYMS)) {
+    if (qLower === abbr || qLower.startsWith(abbr + ' ') || qLower.endsWith(' ' + abbr)) {
+      queries.push(q.replace(new RegExp('\\b' + abbr + '\\b', 'gi'), full));
+    }
+  }
+
+  // Merge results from all query variants
+  const scoreMap = new Map(); // docId -> best score
+  for (const queryStr of queries) {
+    const results = _miniSearch.search(queryStr);
+    for (const r of results) {
+      const existing = scoreMap.get(r.id);
+      if (!existing || r.score > existing) {
+        scoreMap.set(r.id, r.score);
+      }
+    }
+  }
+
+  // Sort by score descending, map back to item shape
+  const sorted = [...scoreMap.entries()]
+    .sort((a, b) => b[1] - a[1]);
+
+  const seen = new Set();
+  const deduped = [];
+  for (const [docId] of sorted) {
+    const item = _itemsById.get(docId);
+    if (!item) continue;
+    const key = `${item.type}:${item.id}${item.planetId || ''}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push({ ...item, score: scoreMap.get(docId) });
+      if (deduped.length >= 50) break;
+    }
+  }
+  return deduped;
+}
+
+function searchProductFallback(query) {
   if (!query.trim()) return [];
   const q = query.toLowerCase();
   const scored = [];
-  for (const item of fullIndex) {
+  for (const item of _fallbackIndex) {
     let score = 0;
     const nm = item.name.toLowerCase();
     const ds = item.desc.toLowerCase();
@@ -186,10 +382,27 @@ function searchProduct(query) {
   return deduped;
 }
 
+function searchProduct(query) {
+  if (_useFallback || !_miniSearch) return searchProductFallback(query);
+  return searchWithMiniSearch(query);
+}
+
+// ── Highlight ────────────────────────────────────────────────
+
 function highlightMatch(text, query) {
   if (!query) return text;
-  const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-  return text.replace(re, '<span class="sr-match">$1</span>');
+  // Try exact substring match first
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('(' + escaped + ')', 'gi');
+  if (re.test(text)) {
+    return text.replace(re, '<span class="sr-match">$1</span>');
+  }
+  // Fallback: highlight individual query terms (for fuzzy matches)
+  const terms = query.trim().split(/\s+/).filter((t) => t.length >= 2);
+  if (terms.length === 0) return text;
+  const termPattern = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const termRe = new RegExp('(' + termPattern + ')', 'gi');
+  return text.replace(termRe, '<span class="sr-match">$1</span>');
 }
 
 // NOTE: innerHTML usage is safe here. All search data comes from the trusted
@@ -205,13 +418,14 @@ function renderSearchResults(results, query) {
     el.appendChild(noResults);
     return;
   }
+
   const typeColors = {
     planet: '#4d8bff', component: '#4d8bff', tag: '#64748b',
     'class': '#4d8bff', object: '#22c55e', trigger: '#ef4444',
     lwc: '#a855f7', metadata: '#f59e0b'
   };
   // Safe: all data is from trusted NPSP data object, not user input
-  el.innerHTML = results.map((r, i) => {
+  const resultsHtml = results.map((r, i) => {
     const typeColor = typeColors[r.type] || '#64748b';
     return `<div class="search-result${i === searchIndex ? ' active' : ''}" ` +
       `data-idx="${i}" data-search-result="${i}" ` +
@@ -226,7 +440,10 @@ function renderSearchResults(results, query) {
       `<span class="sr-level">${r.type}</span></div>`;
   }).join('');
 
-  // Attach event listeners instead of inline onclick/onmouseenter
+  // Safe: innerHTML from trusted app-owned data only (see note above)
+  el.innerHTML = resultsHtml;
+
+  // Attach event listeners for search results
   el.querySelectorAll('[data-search-result]').forEach((resultEl) => {
     const idx = parseInt(resultEl.dataset.searchResult, 10);
     resultEl.addEventListener('click', () => activateResult(idx));
@@ -235,6 +452,7 @@ function renderSearchResults(results, query) {
       highlightActive();
     });
   });
+
 }
 
 export function highlightActive() {
