@@ -7,7 +7,7 @@ binding = "AI"
 
 [[kv_namespaces]]
 binding = "CACHE"
-id = ""  # Set after `wrangler kv namespace create CACHE`
+id = "b36b0f495c5b4faab3863a19ddd7d53d"
 
 [vars]
 ALLOWED_ORIGINS = "https://epugach.github.io,http://localhost:8000,http://localhost:3000"

@@ -115,7 +115,7 @@ async function loadProductData() {
   // Load AI context (optional)
   try {
     const aiContextMod = await import(`${productsBase}/ai-context.js?v=9`);
-    const aiEndpoint = 'https://npsp-ai-search.epugach.workers.dev';
+    const aiEndpoint = 'https://npsp-ai-search.epug.workers.dev';
     setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
   } catch (e) {
     // AI is optional
