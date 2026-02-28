@@ -8,6 +8,7 @@ import { track, announce } from './utils.js';
 import { resetZoomPan, setGraphSettled, nodeMap } from './physics.js';
 import { pauseStarfield, resumeStarfield } from './starfield.js';
 import { domainSvg, entitySvg } from './icons.js';
+import { formatAiMarkdown } from './search.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -41,6 +42,7 @@ export let currentComponent = null;
 let currentEntity = null;
 let currentEntityTab = null;
 let navHistory = [];
+let _constellationDestroy = null;
 
 // Animation tick callbacks — set by main.js to avoid circular imports
 let _graphTick = null;
@@ -76,6 +78,8 @@ export const updateDocumentTitle = (level, domainId, componentId, entityName) =>
 };
 
 export const handleHashNavigation = () => {
+  // Clean up AI constellation if navigating away
+  if (currentLevel === 'ai-answer') destroyAiConstellation();
   const hash = window.location.hash || '#/';
   const path = hash.replace(/^#\/?/, '');
   if (!path) {
@@ -173,6 +177,8 @@ export function setGalaxyCanvasVisible(visible) {
 }
 
 function updateBreadcrumb() {
+  const zoomIndicator = document.getElementById('zoom-indicator');
+  if (zoomIndicator) zoomIndicator.style.display = currentLevel === 'ai-answer' ? 'none' : '';
   document.querySelectorAll('.zoom-dot').forEach((d, i) => {
     d.classList.toggle('active',
       (i === 0 && currentLevel === 'galaxy') || (i === 1 && currentLevel === 'planet') ||
@@ -225,6 +231,98 @@ export function enterEntity(pid, cid, entityType, entityName) {
   }, getTransitionMs() + 50);
 }
 
+export function enterAiAnswer(question, answer, relatedResults) {
+  navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent, entity: currentEntity, entityTab: currentEntityTab });
+  currentLevel = 'ai-answer';
+  renderAiAnswerView(question, answer, relatedResults);
+  setGalaxyCanvasVisible(false);
+  showView('ai-answer-view', 'in');
+  const base = PRODUCT_CONFIG.title || 'Product Explorer';
+  document.title = `AI Answer — ${base}`;
+  announce('AI answer view opened');
+  track('ai_answer_view', { question: question.substring(0, 50) });
+}
+
+// NOTE: safe innerHTML - question and answer are escaped, all other content is app-owned
+function renderAiAnswerView(question, answer, relatedResults) {
+  const el = document.getElementById('ai-answer-content');
+  const productName = PRODUCT_CONFIG.name || 'Product';
+  const safeQ = question.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const safeA = answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  el.innerHTML =
+    `<div class="bc"><span class="bc-link" data-nav="galaxy">${productName}</span><span class="bc-sep">❯</span><span class="bc-here">AI Answer</span></div>` +
+    `<div class="ai-answer-header">` +
+      `<div class="ai-answer-icon">&#x2728;</div>` +
+      `<div>` +
+        `<h2 class="ai-answer-question">${safeQ}</h2>` +
+        `<div class="ai-answer-text">${safeA}</div>` +
+        `<div class="ai-answer-attribution">Based on ${productName} product data</div>` +
+      `</div>` +
+    `</div>` +
+    (relatedResults.length > 0 ?
+      `<div class="ai-answer-constellation-section">` +
+        `<div class="ai-answer-constellation-title">Related Architecture</div>` +
+        `<canvas id="ai-constellation-canvas"></canvas>` +
+      `</div>` : '');
+
+  // Wire breadcrumb
+  el.querySelectorAll('[data-nav="galaxy"]').forEach(l => {
+    l.style.cursor = 'pointer';
+    l.addEventListener('click', () => navigateTo('galaxy'));
+  });
+
+  // Wire copy button
+  const copyBtn = el.querySelector('[data-ai-copy-view]');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const text = answer;
+      const onSuccess = () => {
+        copyBtn.classList.add('copied');
+        copyBtn.textContent = '\u2713 Copied';
+        setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(() => onSuccess());
+      } else {
+        onSuccess();
+      }
+    });
+  }
+
+  // Initialize mini constellation
+  if (relatedResults.length > 0) {
+    const canvas = document.getElementById('ai-constellation-canvas');
+    if (canvas) {
+      const w = canvas.parentElement.clientWidth;
+      const h = Math.min(400, Math.max(250, w * 0.5));
+      canvas.style.height = h + 'px';
+
+      import('./ai-constellation.js?v=11').then((mod) => {
+        const items = relatedResults.slice(0, 12);
+        const handle = mod.initConstellation(canvas, items, (result) => {
+          if (result && result.action) {
+            destroyAiConstellation();
+            result.action();
+          }
+        });
+        _constellationDestroy = handle ? handle.destroy : mod.destroyConstellation;
+      }).catch((err) => {
+        console.warn('[ai-constellation] Failed to load', err);
+      });
+    }
+  }
+
+  document.getElementById('ai-answer-view').scrollTop = 0;
+}
+
+function destroyAiConstellation() {
+  if (_constellationDestroy) {
+    _constellationDestroy();
+    _constellationDestroy = null;
+  }
+}
+
 export function navigateToCore(pid, cid) {
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
   currentLevel = 'core'; currentPlanet = pid; currentComponent = cid;
@@ -263,6 +361,8 @@ export function navigateTo(level) {
 
 export function goBack() {
   track('back_navigation', { from: currentLevel });
+  // Clean up AI constellation if leaving ai-answer view
+  if (currentLevel === 'ai-answer') destroyAiConstellation();
   if (navHistory.length > 0) {
     const prev = navHistory.pop();
     if (prev.level === 'galaxy') navigateTo('galaxy');
@@ -273,7 +373,8 @@ export function goBack() {
       setHash(`#/${prev.planet}/${prev.component}`); updateDocumentTitle('core', prev.planet, prev.component);
     }
   } else {
-    if (currentLevel === 'entity') navigateTo('core');
+    if (currentLevel === 'ai-answer') navigateTo('galaxy');
+    else if (currentLevel === 'entity') navigateTo('core');
     else if (currentLevel === 'core') navigateTo('planet');
     else if (currentLevel === 'planet') navigateTo('galaxy');
   }

@@ -85,11 +85,13 @@ export const setAiConfig = (endpoint, context) => {
 let _enterPlanet = null;
 let _navigateToCore = null;
 let _enterEntity = null;
+let _enterAiAnswer = null;
 
-export const setNavigationCallbacks = (enterPlanetFn, navigateToCoreFn, enterEntityFn) => {
+export const setNavigationCallbacks = (enterPlanetFn, navigateToCoreFn, enterEntityFn, enterAiAnswerFn) => {
   _enterPlanet = enterPlanetFn;
   _navigateToCore = navigateToCoreFn;
   _enterEntity = enterEntityFn;
+  _enterAiAnswer = enterAiAnswerFn;
 };
 
 export let searchResults = [];
@@ -483,6 +485,39 @@ function highlightMatch(text, query) {
   return text.replace(termRe, '<span class="sr-match">$1</span>');
 }
 
+// ── AI answer markdown formatting ─────────────────────────────
+// Lightweight parser for common markdown patterns in AI responses.
+// IMPORTANT: Must be called on ALREADY HTML-ESCAPED text to prevent XSS.
+// The input has &amp; &lt; &gt; — we only convert markdown syntax to HTML tags.
+export function formatAiMarkdown(escaped) {
+  return escaped
+    // Bold: **text** (use non-greedy match)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Italic: *text* (but not inside already-processed bold tags)
+    .replace(/(?<!<\/?)\*(.+?)\*/g, '<em>$1</em>')
+    // Inline code: `code`
+    .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>')
+    // Bullet lists: lines starting with "- " (after newline or start)
+    .replace(/(^|\n)- (.+)/g, '$1<span class="ai-bullet">$2</span>')
+    // Numbered lists: lines starting with "1. " etc.
+    .replace(/(^|\n)(\d+)\. (.+)/g, '$1<span class="ai-bullet"><span class="ai-bullet-num">$2.</span> $3</span>');
+}
+
+// ── AI answer copy helper ────────────────────────────────────
+function copyAiAnswer(btn, text) {
+  const onSuccess = () => {
+    btn.classList.add('copied');
+    const prev = btn.textContent;
+    btn.textContent = '\u2713 Copied';
+    setTimeout(() => { btn.textContent = prev; btn.classList.remove('copied'); }, 1500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(() => onSuccess());
+  } else {
+    onSuccess();
+  }
+}
+
 // NOTE: innerHTML usage is safe here. All search data comes from the trusted
 // NPSP data object (app-owned, not user input). The query is escaped via
 // highlightMatch's regex escaping. AI answers are from our own Worker.
@@ -502,14 +537,16 @@ function renderSearchResults(results, query, aiState) {
         `<div class="ai-skeleton"><div></div><div></div><div></div></div>` +
         `</div></div></div>`;
     } else if (aiState.answer) {
-      // Escape HTML in AI answer (AI-generated content, not app-owned)
+      // Escape HTML in AI answer (AI-generated content, not app-owned), then format markdown
       const safeAnswer = aiState.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const formattedAnswer = formatAiMarkdown(safeAnswer);
       aiHtml = `<div class="ai-section" id="ai-section">` +
-        `<div class="ai-header">AI ANSWER</div>` +
-        `<div class="ai-card">` +
+        `<div class="ai-header">AI ANSWER<button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
+        `<div class="ai-card ai-card-clickable" role="button" tabindex="0">` +
         `<div class="ai-icon">&#x2728;</div>` +
         `<div class="ai-body">` +
-        `<div class="ai-answer">${safeAnswer}</div>` +
+        `<div class="ai-answer ai-answer-formatted">${formattedAnswer}</div>` +
+        `<div class="ai-explore-hint">Click to explore related architecture</div>` +
         `<div class="ai-attribution">Based on ${_productName} product data</div>` +
         `</div></div></div>`;
     } else if (aiState.error) {
@@ -554,6 +591,30 @@ function renderSearchResults(results, query, aiState) {
   const aiSection = el.querySelector('.ai-section');
   if (aiSection) {
     aiSection.addEventListener('mousedown', (e) => { e.preventDefault(); });
+  }
+
+  // Wire copy button on AI answer card
+  const aiCopyBtn = el.querySelector('[data-ai-copy]');
+  if (aiCopyBtn && aiState && aiState.answer) {
+    const rawAnswer = aiState.answer;
+    aiCopyBtn.addEventListener('click', (e) => { e.stopPropagation(); copyAiAnswer(aiCopyBtn, rawAnswer); });
+    aiCopyBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
+  }
+
+  // Make AI card clickable to open AI answer exploration view
+  const aiClickable = el.querySelector('.ai-card-clickable');
+  if (aiClickable && _enterAiAnswer) {
+    const openAiView = () => {
+      const currentQuery = query;
+      const currentAnswer = aiState && aiState.answer ? aiState.answer : '';
+      const currentResults = [...results];
+      closeSearch();
+      setTimeout(() => { _enterAiAnswer(currentQuery, currentAnswer, currentResults); }, 100);
+    };
+    aiClickable.addEventListener('click', openAiView);
+    aiClickable.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); openAiView(); }
+    });
   }
 
   // Attach event listeners for search results
