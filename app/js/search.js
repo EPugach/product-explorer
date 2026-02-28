@@ -95,13 +95,13 @@ export const setAiConfig = (endpoint, context) => {
 let _enterPlanet = null;
 let _navigateToCore = null;
 let _enterEntity = null;
-let _enterAiAnswer = null;
+let _enterSearchResults = null;
 
-export const setNavigationCallbacks = (enterPlanetFn, navigateToCoreFn, enterEntityFn, enterAiAnswerFn) => {
+export const setNavigationCallbacks = (enterPlanetFn, navigateToCoreFn, enterEntityFn, enterSearchResultsFn) => {
   _enterPlanet = enterPlanetFn;
   _navigateToCore = navigateToCoreFn;
   _enterEntity = enterEntityFn;
-  _enterAiAnswer = enterAiAnswerFn;
+  _enterSearchResults = enterSearchResultsFn;
 };
 
 export let searchResults = [];
@@ -406,7 +406,7 @@ function searchProductFallback(query) {
   return deduped;
 }
 
-function searchProduct(query) {
+export function searchProduct(query) {
   if (_useFallback || !_miniSearch) return searchProductFallback(query);
   return searchWithMiniSearch(query);
 }
@@ -415,7 +415,7 @@ function searchProduct(query) {
 
 const QUESTION_WORDS = /^(what|how|why|does|is|are|can|will|could|should|would|explain|describe|tell|where|when|which|who)\b/i;
 
-function isQuestion(query) {
+export function isQuestion(query) {
   if (!query || query.trim().length < 5) return false;
   const q = query.trim();
   if (q.endsWith('?')) return true;
@@ -428,7 +428,7 @@ function isQuestion(query) {
 
 // ── AI answer fetching ───────────────────────────────────────
 
-async function askAi(question) {
+export async function askAi(question) {
   if (!_aiEndpoint) return { error: 'AI not configured' };
 
   const cacheKey = question.trim().toLowerCase();
@@ -673,19 +673,19 @@ function renderSearchResults(results, query, aiState) {
     aiCopyBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
   }
 
-  // Make AI card clickable to open AI answer exploration view
+  // Make AI card clickable to open search results page
   const aiClickable = el.querySelector('.ai-card-clickable');
-  if (aiClickable && _enterAiAnswer) {
-    const openAiView = () => {
+  if (aiClickable && _enterSearchResults) {
+    const openResultsPage = () => {
       const currentQuery = query;
-      const currentAnswer = aiState && aiState.answer ? aiState.answer : '';
+      const currentAnswer = aiState && aiState.answer ? aiState.answer : null;
       const currentResults = [...results];
       closeSearch();
-      setTimeout(() => { _enterAiAnswer(currentQuery, currentAnswer, currentResults); }, 100);
+      setTimeout(() => { _enterSearchResults(currentQuery, currentResults, { aiAnswer: currentAnswer }); }, 100);
     };
-    aiClickable.addEventListener('click', openAiView);
+    aiClickable.addEventListener('click', openResultsPage);
     aiClickable.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); openAiView(); }
+      if (e.key === 'Enter') { e.preventDefault(); openResultsPage(); }
     });
   }
 

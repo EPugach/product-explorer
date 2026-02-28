@@ -26,7 +26,7 @@ import { initParticles, resizeParticleCanvas, updateParticles, renderParticles, 
 import {
   currentLevel, currentPlanet, currentComponent,
   hashUpdateInProgress, handleHashNavigation,
-  enterPlanet, enterEntity, enterAiAnswer, navigateToCore, navigateTo, goBack,
+  enterPlanet, enterEntity, enterSearchResults, navigateToCore, navigateTo, goBack,
   setAnimationCallbacks, refreshCurrentView, updateBreadcrumb,
   setProductData as setNavData, setProductConfig as setNavConfig,
   setPackages as setNavPackages, rebuildPlanetMeta
@@ -65,8 +65,8 @@ let _prefixToPkg = {};
 async function loadProductData() {
   // Load config and data in parallel (required)
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=15`),
-    import(`${productsBase}/data.js?v=15`),
+    import(`${productsBase}/config.js?v=16`),
+    import(`${productsBase}/data.js?v=16`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
@@ -89,7 +89,7 @@ async function loadProductData() {
 
   // Load domain icons (required before canvas rendering)
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=15`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=16`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
@@ -97,7 +97,7 @@ async function loadProductData() {
 
   // Load tours (optional)
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=15`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=16`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     // Tours are optional; if not found, tour UI will be hidden
@@ -106,7 +106,7 @@ async function loadProductData() {
 
   // Load feedback module (optional)
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=15`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=16`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {
     // Feedback is optional
@@ -114,7 +114,7 @@ async function loadProductData() {
 
   // Load AI context (optional)
   try {
-    const aiContextMod = await import(`${productsBase}/ai-context.js?v=15`);
+    const aiContextMod = await import(`${productsBase}/ai-context.js?v=16`);
     const aiEndpoint = 'https://npsp-ai-search.epug.workers.dev';
     setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
   } catch (e) {
@@ -130,7 +130,7 @@ async function loadProductData() {
 setRenderCallbacks(renderGraph, renderParticles);
 
 // search.js needs navigation functions
-setNavigationCallbacks(enterPlanet, navigateToCore, enterEntity, enterAiAnswer);
+setNavigationCallbacks(enterPlanet, navigateToCore, enterEntity, enterSearchResults);
 
 // ── Theme Toggle ──
 const isLightMode = () => document.body.classList.contains('theme-light');
@@ -710,7 +710,10 @@ function setupKeyboard() {
     }, 150);
   });
 
+  let _arrowUsed = false;
+
   searchInput.addEventListener('input', () => {
+    _arrowUsed = false; // Reset arrow tracking when input changes
     const q = searchInput.value;
     if (q.length > 0) {
       expandSearch(q);
@@ -723,16 +726,29 @@ function setupKeyboard() {
     if (e.key === 'Escape') {
       e.stopPropagation();
       closeSearch();
+      _arrowUsed = false;
       return;
     }
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (searchResults.length > 0 && searchIndex >= 0) activateResult(searchIndex);
+      const query = searchInput.value.trim();
+      if (!query) return;
+      if (_arrowUsed && searchResults.length > 0 && searchIndex >= 0) {
+        // User arrowed to a specific result, activate it directly
+        activateResult(searchIndex);
+      } else {
+        // Open full search results page
+        const currentResults = [...searchResults];
+        closeSearch();
+        setTimeout(() => { enterSearchResults(query, currentResults, {}); }, 100);
+      }
+      _arrowUsed = false;
+      return;
     }
     const dropOpen = document.getElementById('searchDrop').classList.contains('open');
     if (dropOpen) {
-      if (e.key === 'ArrowDown') { e.preventDefault(); cycleResult(1); }
-      if (e.key === 'ArrowUp') { e.preventDefault(); cycleResult(-1); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); _arrowUsed = true; cycleResult(1); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); _arrowUsed = true; cycleResult(-1); }
     }
   });
 
@@ -848,7 +864,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading (dynamic import, ES module) ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=15`);
+    const module = await import(`${productsBase}/entities.js?v=16`);
     _entityData = module.default;
     setEntitiesLoaded(true);
 
