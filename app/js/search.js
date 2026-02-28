@@ -91,6 +91,145 @@ export const setAiConfig = (endpoint, context) => {
   _aiContext = context || '';
 };
 
+// ── AI feedback state ───────────────────────────────────────
+let _feedbackEndpoint = '';
+const _votedQuestions = new Set(); // prevents double-voting per session
+
+export const setFeedbackEndpoint = (url) => { _feedbackEndpoint = url || ''; };
+
+// SVG thumb icons (outline, 14px)
+export const THUMB_UP_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22V11l5-9 1.5.5c.8.3 1.5 1.2 1.5 2.1V8h5.5a2 2 0 0 1 2 2.3l-1.6 8A2 2 0 0 1 19.4 20H7z"/><rect x="1" y="11" width="6" height="11" rx="1"/></svg>';
+export const THUMB_DOWN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2v11l-5 9-1.5-.5c-.8-.3-1.5-1.2-1.5-2.1V16H3.5a2 2 0 0 1-2-2.3l1.6-8A2 2 0 0 1 5.1 4H17z"/><rect x="17" y="2" width="6" height="11" rx="1"/></svg>';
+
+const FEEDBACK_REASONS = ['Inaccurate', 'Not helpful', 'Outdated', 'Too vague'];
+
+// Build feedback buttons HTML (reused by overlay and full results page)
+export function buildFeedbackButtonsHtml() {
+  return `<span class="ai-feedback-btns">` +
+    `<button class="ai-feedback-btn" data-feedback="up" aria-label="Good answer" title="Good answer">${THUMB_UP_SVG}</button>` +
+    `<button class="ai-feedback-btn" data-feedback="down" aria-label="Bad answer" title="Bad answer">${THUMB_DOWN_SVG}</button>` +
+    `</span>`;
+}
+
+// Build feedback panel HTML (inserted after header, hidden by default)
+export function buildFeedbackPanelHtml() {
+  const chips = FEEDBACK_REASONS.map(r =>
+    `<button class="ai-feedback-chip" data-reason="${r}">${r}</button>`
+  ).join('');
+  return `<div class="ai-feedback-panel" data-feedback-panel>` +
+    `<div class="ai-feedback-label">What went wrong?</div>` +
+    `<div class="ai-feedback-chips">${chips}</div>` +
+    `<div class="ai-feedback-row">` +
+    `<input type="text" class="ai-feedback-input" data-feedback-text placeholder="Tell us more (optional)" maxlength="500">` +
+    `<button class="ai-feedback-submit" data-feedback-submit>Submit</button>` +
+    `</div>` +
+    `<div class="ai-feedback-thanks" data-feedback-thanks>Thanks for your feedback!</div>` +
+    `</div>`;
+}
+
+// Wire feedback buttons inside a container element
+export function wireFeedbackButtons(container, question) {
+  if (!container) return;
+  const upBtn = container.querySelector('[data-feedback="up"]');
+  const downBtn = container.querySelector('[data-feedback="down"]');
+  const panel = container.querySelector('[data-feedback-panel]');
+  if (!upBtn || !downBtn) return;
+
+  // Already voted on this question
+  if (_votedQuestions.has(question.trim().toLowerCase())) {
+    upBtn.classList.add('disabled');
+    downBtn.classList.add('disabled');
+    return;
+  }
+
+  upBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    upBtn.classList.add('active-up');
+    downBtn.classList.add('disabled');
+    upBtn.classList.add('disabled');
+    _votedQuestions.add(question.trim().toLowerCase());
+    sendFeedback(question, 'up');
+    // Show brief thanks
+    const thanks = container.querySelector('[data-feedback-thanks]');
+    if (thanks) {
+      thanks.classList.add('visible');
+      setTimeout(() => thanks.classList.remove('visible'), 2000);
+    }
+  });
+
+  upBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
+
+  downBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    downBtn.classList.add('active-down');
+    upBtn.classList.add('disabled');
+    if (panel) panel.classList.add('open');
+  });
+
+  downBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
+
+  // Wire chips and submit inside the panel
+  if (panel) {
+    let selectedReason = '';
+    panel.querySelectorAll('[data-reason]').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        panel.querySelectorAll('[data-reason]').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        selectedReason = chip.dataset.reason;
+      });
+      chip.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
+    });
+
+    const submitBtn = panel.querySelector('[data-feedback-submit]');
+    const textInput = panel.querySelector('[data-feedback-text]');
+    if (textInput) {
+      textInput.addEventListener('mousedown', (e) => { e.stopPropagation(); });
+      textInput.addEventListener('click', (e) => { e.stopPropagation(); });
+      textInput.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') { e.preventDefault(); doSubmit(); }
+      });
+    }
+
+    const doSubmit = () => {
+      const comment = textInput ? textInput.value.trim() : '';
+      if (!selectedReason && !comment) return; // need at least a reason or comment
+      downBtn.classList.add('disabled');
+      _votedQuestions.add(question.trim().toLowerCase());
+      sendFeedback(question, 'down', selectedReason, comment);
+      panel.classList.remove('open');
+      const thanks = container.querySelector('[data-feedback-thanks]');
+      if (thanks) {
+        thanks.classList.add('visible');
+        setTimeout(() => thanks.classList.remove('visible'), 3000);
+      }
+    };
+
+    if (submitBtn) {
+      submitBtn.addEventListener('click', (e) => { e.stopPropagation(); doSubmit(); });
+      submitBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
+    }
+  }
+}
+
+// Fire-and-forget POST to feedback endpoint
+function sendFeedback(question, rating, reason, comment) {
+  if (!_feedbackEndpoint) return;
+  fetch(_feedbackEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question: question.trim().substring(0, 300),
+      rating,
+      reason: reason || '',
+      comment: comment || ''
+    })
+  }).catch(() => {}); // silent fail
+}
+
 // ── Navigation callbacks (set after navigation.js loads) ────
 let _enterPlanet = null;
 let _navigateToCore = null;
@@ -613,7 +752,8 @@ function renderSearchResults(results, query, aiState) {
       const safeAnswer = aiState.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const formattedAnswer = formatAiMarkdown(linkifyEntityNames(safeAnswer));
       aiHtml = `<div class="ai-section" id="ai-section">` +
-        `<div class="ai-header">AI ANSWER<button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
+        `<div class="ai-header">AI ANSWER${buildFeedbackButtonsHtml()}<button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
+        buildFeedbackPanelHtml() +
         `<div class="ai-card ai-card-clickable" role="button" tabindex="0">` +
         `<div class="ai-icon">&#x2728;</div>` +
         `<div class="ai-body">` +
@@ -671,6 +811,11 @@ function renderSearchResults(results, query, aiState) {
     const rawAnswer = aiState.answer;
     aiCopyBtn.addEventListener('click', (e) => { e.stopPropagation(); copyAiAnswer(aiCopyBtn, rawAnswer); });
     aiCopyBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
+  }
+
+  // Wire feedback buttons on AI answer card (reuse aiSection from above)
+  if (aiSection && aiState && aiState.answer) {
+    wireFeedbackButtons(aiSection, query);
   }
 
   // Make AI card clickable to open search results page

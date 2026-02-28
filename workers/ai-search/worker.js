@@ -25,6 +25,12 @@ export default {
       return json({ error: 'Method not allowed' }, 405, corsHeaders);
     }
 
+    // Route: /feedback
+    const url = new URL(request.url);
+    if (url.pathname === '/feedback') {
+      return handleFeedback(request, env, ctx, corsHeaders);
+    }
+
     try {
       const body = await request.json();
       const { question, systemContext, faqMatches, searchMatches } = body;
@@ -98,21 +104,69 @@ export default {
   }
 };
 
+// ── Feedback endpoint ──────────────────────────────────────
+async function handleFeedback(request, env, ctx, corsHeaders) {
+  try {
+    const body = await request.json();
+    const { question, rating, reason, comment } = body;
+
+    if (!question || typeof question !== 'string' || question.trim().length < 3) {
+      return json({ error: 'Invalid question' }, 400, corsHeaders);
+    }
+    if (rating !== 'up' && rating !== 'down') {
+      return json({ error: 'Invalid rating' }, 400, corsHeaders);
+    }
+
+    // Rate limit: same 10/min/IP
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const rateLimitKey = `rate:${ip}:${Math.floor(Date.now() / 60000)}`;
+    const rateCount = parseInt(await env.CACHE.get(rateLimitKey) || '0', 10);
+    if (rateCount >= 10) {
+      return json({ error: 'Rate limit exceeded' }, 429, corsHeaders);
+    }
+    await env.CACHE.put(rateLimitKey, String(rateCount + 1), { expirationTtl: 120 });
+
+    const ipHash = (await sha256(ip)).substring(0, 8);
+    const q = question.trim().substring(0, 300);
+    const safeReason = (reason || '').substring(0, 100);
+    const safeComment = (comment || '').substring(0, 500);
+
+    ctx.waitUntil(logToSheets(env, q, ipHash, null, null, {
+      type: 'feedback',
+      rating,
+      reason: safeReason,
+      comment: safeComment
+    }));
+
+    return json({ ok: true }, 200, corsHeaders);
+  } catch (err) {
+    console.error('Feedback error:', err);
+    return json({ error: 'Internal error' }, 500, corsHeaders);
+  }
+}
+
 // Fire-and-forget POST to Google Sheets via Apps Script
-async function logToSheets(env, question, ipHash, cached, answerPreview) {
+async function logToSheets(env, question, ipHash, cached, answerPreview, feedback) {
   const url = env.SHEETS_LOG_URL;
   if (!url) return; // Skip if not configured
   try {
+    const payload = {
+      timestamp: new Date().toISOString(),
+      question,
+      ipHash,
+      cached,
+      answerPreview
+    };
+    if (feedback) {
+      payload.type = feedback.type;
+      payload.rating = feedback.rating;
+      payload.reason = feedback.reason;
+      payload.comment = feedback.comment;
+    }
     await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        timestamp: new Date().toISOString(),
-        question,
-        ipHash,
-        cached,
-        answerPreview
-      })
+      body: JSON.stringify(payload)
     });
   } catch {
     // Silent fail — logging should never break the main response
