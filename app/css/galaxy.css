@@ -541,6 +541,49 @@ body {
 .ai-answer-formatted a.ai-link:hover {
   text-decoration-color: var(--glow-accent);
 }
+.ai-answer-formatted .ai-heading {
+  display: block;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 12px 0 4px 0;
+  line-height: 1.3;
+}
+.ai-answer-formatted .ai-h1 { font-size: 1.15em; }
+.ai-answer-formatted .ai-h2 { font-size: 1.05em; }
+.ai-answer-formatted .ai-h3 { font-size: 0.95em; }
+.ai-answer-formatted .ai-code-block {
+  display: block;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(100,140,255,0.12);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  overflow-x: auto;
+  white-space: pre;
+}
+.ai-answer-formatted .ai-table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 0.9em;
+  width: 100%;
+  white-space: normal;
+}
+.ai-answer-formatted .ai-table th,
+.ai-answer-formatted .ai-table td {
+  border: 1px solid rgba(100,140,255,0.15);
+  padding: 6px 10px;
+  text-align: left;
+}
+.ai-answer-formatted .ai-table th {
+  background: rgba(100,140,255,0.08);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.ai-answer-formatted .ai-table td {
+  color: var(--text-secondary);
+}
 
 /* ── AI Card Clickable (search dropdown) ── */
 .ai-card-clickable {
@@ -2037,6 +2080,10 @@ body.theme-light .ai-answer-formatted .ai-bullet::before { color: #0176d3; }
 body.theme-light .ai-answer-formatted .ai-bullet .ai-bullet-num { color: #0176d3; }
 body.theme-light .ai-answer-formatted a.ai-link { color: #0176d3; text-decoration-color: rgba(1,118,211,0.3); }
 body.theme-light .ai-answer-formatted a.ai-link:hover { text-decoration-color: #0176d3; }
+body.theme-light .ai-answer-formatted .ai-code-block { background: rgba(1,118,211,0.04); border-color: rgba(1,118,211,0.12); }
+body.theme-light .ai-answer-formatted .ai-table th { background: rgba(1,118,211,0.06); }
+body.theme-light .ai-answer-formatted .ai-table th,
+body.theme-light .ai-answer-formatted .ai-table td { border-color: rgba(1,118,211,0.15); }
 body.theme-light .ai-explore-hint { color: #0176d3; }
 body.theme-light .ai-answer-icon { background: rgba(1, 118, 211, 0.08); border-color: rgba(1, 118, 211, 0.15); }
 body.theme-light .ai-related-chip { background: rgba(0, 0, 0, 0.03); border-color: #d9d9d9; }

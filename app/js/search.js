@@ -525,20 +525,53 @@ export function linkifyEntityNames(escapedText) {
 // Lightweight parser for common markdown patterns in AI responses.
 // IMPORTANT: Must be called on ALREADY HTML-ESCAPED text to prevent XSS.
 // The input has &amp; &lt; &gt; — we only convert markdown syntax to HTML tags.
+//
+// Parsing order matters:
+// 1. Code blocks (extract to placeholders first, protect inner content)
+// 2. Tables (multi-line, before inline formatting mangles pipe chars)
+// 3. Headings (before bullets, because # could match bullet patterns)
+// 4. Bold → Italic → Inline code → Links → Bullets → Numbered lists
+// 5. Restore code blocks from placeholders (last)
 export function formatAiMarkdown(escaped) {
-  return escaped
-    // Bold: **text** (use non-greedy match)
+  // ── Step 1: Extract code blocks to placeholders ──
+  const codeBlocks = [];
+  let text = escaped.replace(/(^|\n)```(\w*)\n([\s\S]*?)```/g, (_, pre, lang, code) => {
+    const idx = codeBlocks.length;
+    codeBlocks.push(`<pre class="ai-code-block"><code>${code.replace(/\n$/, '')}</code></pre>`);
+    return `${pre}\x00CODEBLOCK${idx}\x00`;
+  });
+
+  // ── Step 2: Parse tables ──
+  text = text.replace(/(^|\n)(\|.+\|)\n(\|[\s:|-]+\|)\n((?:\|.+\|\n?)+)/g, (_, pre, headerRow, _sepRow, bodyBlock) => {
+    const parseRow = row => row.replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+    const headers = parseRow(headerRow);
+    const headHtml = headers.map(h => `<th>${h}</th>`).join('');
+    const rows = bodyBlock.trim().split('\n');
+    const bodyHtml = rows.map(r => {
+      const cells = parseRow(r);
+      return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`;
+    }).join('');
+    return `${pre}<table class="ai-table"><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`;
+  });
+
+  // ── Step 3: Headings (### before ## before #) ──
+  text = text.replace(/(^|\n)###\s+(.+)/g, '$1<h4 class="ai-heading ai-h3">$2</h4>');
+  text = text.replace(/(^|\n)##\s+(.+)/g, '$1<h3 class="ai-heading ai-h2">$2</h3>');
+  text = text.replace(/(^|\n)#\s+(.+)/g, '$1<h2 class="ai-heading ai-h1">$2</h2>');
+
+  // ── Step 4: Inline formatting ──
+  text = text
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Italic: *text* (but not inside already-processed bold tags)
     .replace(/(?<!<\/?)\*(.+?)\*/g, '<em>$1</em>')
-    // Inline code: `code`
     .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>')
-    // Links: [text](url) — only http/https to prevent javascript: URIs
     .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" class="ai-link" target="_blank" rel="noopener noreferrer">$1</a>')
-    // Bullet lists: lines starting with "- " (after newline or start)
-    .replace(/(^|\n)- (.+)/g, '$1<span class="ai-bullet">$2</span>')
-    // Numbered lists: lines starting with "1. " etc.
+    .replace(/(^|\n)[*-] (.+)/g, '$1<span class="ai-bullet">$2</span>')
     .replace(/(^|\n)(\d+)\. (.+)/g, '$1<span class="ai-bullet"><span class="ai-bullet-num">$2.</span> $3</span>');
+
+  // ── Step 5: Restore code blocks ──
+  codeBlocks.forEach((html, i) => { text = text.replace(`\x00CODEBLOCK${i}\x00`, html); });
+
+  return text;
 }
 
 // ── AI answer copy helper ────────────────────────────────────
