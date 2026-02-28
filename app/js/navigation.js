@@ -8,7 +8,7 @@ import { track, announce } from './utils.js';
 import { resetZoomPan, setGraphSettled, nodeMap } from './physics.js';
 import { pauseStarfield, resumeStarfield } from './starfield.js';
 import { domainSvg, entitySvg } from './icons.js';
-import { formatAiMarkdown, linkifyEntityNames } from './search.js';
+import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct } from './search.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -42,8 +42,7 @@ export let currentComponent = null;
 let currentEntity = null;
 let currentEntityTab = null;
 let navHistory = [];
-let _constellationDestroy = null;
-let _lastAiAnswer = null;
+let _lastSearchPage = null; // { query, results, aiAnswer }
 
 // Animation tick callbacks — set by main.js to avoid circular imports
 let _graphTick = null;
@@ -79,8 +78,6 @@ export const updateDocumentTitle = (level, domainId, componentId, entityName) =>
 };
 
 export const handleHashNavigation = () => {
-  // When navigating away from ai-answer via hash, preserve it in history for back navigation
-  const wasAiAnswer = currentLevel === 'ai-answer' && _lastAiAnswer;
   const hash = window.location.hash || '#/';
   const path = hash.replace(/^#\/?/, '');
   if (!path) {
@@ -139,15 +136,6 @@ export const handleHashNavigation = () => {
   } else {
     setHash('#/'); handleHashNavigation();
   }
-  // If we navigated away from AI answer view via hash (e.g., chip click), rebuild history
-  // so back goes: current view -> AI answer -> original pre-AI-answer view
-  if (wasAiAnswer) {
-    const la = _lastAiAnswer;
-    navHistory = [
-      { level: la.prevLevel, planet: la.prevPlanet, component: la.prevComponent, entity: null, entityTab: null },
-      { level: 'ai-answer', planet: la.prevPlanet, component: la.prevComponent, entity: null, entityTab: null }
-    ];
-  }
 };
 
 function getTransitionMs() {
@@ -188,7 +176,7 @@ export function setGalaxyCanvasVisible(visible) {
 
 function updateBreadcrumb() {
   const zoomIndicator = document.getElementById('zoom-indicator');
-  if (zoomIndicator) zoomIndicator.style.display = currentLevel === 'ai-answer' ? 'none' : '';
+  if (zoomIndicator) zoomIndicator.style.display = currentLevel === 'search-results' ? 'none' : '';
   document.querySelectorAll('.zoom-dot').forEach((d, i) => {
     d.classList.toggle('active',
       (i === 0 && currentLevel === 'galaxy') || (i === 1 && currentLevel === 'planet') ||
@@ -241,63 +229,89 @@ export function enterEntity(pid, cid, entityType, entityName) {
   }, getTransitionMs() + 50);
 }
 
-export function enterAiAnswer(question, answer, relatedResults) {
+// ── Search Results Page ──
+// NOTE: safe innerHTML. All user/AI content is HTML-escaped before rendering.
+// AI-generated content is escaped THEN formatted via formatAiMarkdown (XSS-safe pattern).
+// Type labels, icons, and product name are app-owned trusted data.
+
+const SR_TYPE_COLORS = {
+  domain: '#00d4ff', planet: '#00d4ff', component: '#4d8bff', class: '#4d8bff',
+  object: '#22c55e', trigger: '#ef4444', lwc: '#a855f7', metadata: '#f59e0b', tag: '#64748b'
+};
+
+const SR_TYPE_ICONS = {
+  domain: '\u{1F30C}', planet: '\u{1F30C}', component: '\u2699\uFE0F', class: '\u{1F4D8}',
+  object: '\u{1F4E6}', trigger: '\u26A1', lwc: '\u{1F528}', metadata: '\u{1F4CB}', tag: '\u{1F3F7}\uFE0F'
+};
+
+export function enterSearchResults(query, results, options = {}) {
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent, entity: currentEntity, entityTab: currentEntityTab });
-  currentLevel = 'ai-answer';
-  _lastAiAnswer = { question, answer, relatedResults, prevLevel: currentLevel, prevPlanet: currentPlanet, prevComponent: currentComponent };
-  renderAiAnswerView(question, answer, relatedResults);
+  currentLevel = 'search-results';
+  _lastSearchPage = { query, results: [...results], aiAnswer: options.aiAnswer || null };
+  renderSearchResultsPage(query, results, options);
   setGalaxyCanvasVisible(false);
-  showView('ai-answer-view', 'in');
+  showView('search-results-view', 'in');
   const base = PRODUCT_CONFIG.title || 'Product Explorer';
-  document.title = `AI Answer — ${base}`;
-  announce('AI answer view opened');
-  track('ai_answer_view', { question: question.substring(0, 50) });
+  document.title = `Search: ${query} \u2014 ${base}`;
+  announce('Search results page opened');
+  track('search_results_page', { query: query.substring(0, 50), resultCount: results.length });
 }
 
-// NOTE: safe innerHTML - question and answer are HTML-escaped before rendering.
-// AI-generated content is escaped THEN formatted via formatAiMarkdown (XSS-safe pattern).
-// All other content (productName, type labels) is app-owned trusted data.
-function renderAiAnswerView(question, answer, relatedResults) {
-  const el = document.getElementById('ai-answer-content');
+// Safe innerHTML: all user/AI content is HTML-escaped before insertion.
+// Product name and type labels are app-owned trusted data.
+function renderSearchResultsPage(query, results, options = {}) {
+  const el = document.getElementById('search-results-content');
   const productName = PRODUCT_CONFIG.name || 'Product';
-  const safeQ = question.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const safeA = answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
+  const safeQ = query.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const shouldAskAi = isQuestion(query);
 
-  const typeColors = {
-    domain: '#00d4ff', planet: '#00d4ff', component: '#4d8bff', class: '#4d8bff',
-    object: '#22c55e', trigger: '#ef4444', lwc: '#a855f7', metadata: '#f59e0b', tag: '#64748b'
-  };
+  // Breadcrumb
+  let html = `<div class="bc"><span class="bc-link" data-nav="galaxy">${productName}</span><span class="bc-sep">&#x276F;</span><span class="bc-here">Search Results</span></div>`;
 
-  const chipsHtml = relatedResults.length > 0
-    ? `<div class="ai-related-section">` +
-        `<div class="ai-related-title">Related Architecture</div>` +
-        `<div class="ai-related-chips">` +
-        relatedResults.slice(0, 12).map((r, i) => {
-          const color = typeColors[r.type] || '#64748b';
-          const safeName = r.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-          return `<button class="ai-related-chip" data-chip-idx="${i}" style="--chip-color:${color}" title="${safeName} (${r.type})">` +
-            `<span class="ai-chip-dot" style="background:${color}"></span>` +
-            `<span class="ai-chip-name">${safeName}</span>` +
-            `<span class="ai-chip-type">${r.type}</span>` +
-          `</button>`;
-        }).join('') +
-        `</div></div>`
-    : '';
+  // Search input (value is HTML-escaped via safeQ)
+  html += `<div class="sr-search-box"><span class="sr-search-icon">\u{1F50D}</span><input type="text" class="sr-search-input" id="srSearchInput" value="${safeQ}" autocomplete="off" spellcheck="false" placeholder="Search ${productName}..."></div>`;
 
-  // Safe: all user/AI content is HTML-escaped above. Product name and type labels are app-owned.
-  el.innerHTML =
-    `<div class="bc"><span class="bc-link" data-nav="galaxy">${productName}</span><span class="bc-sep">&#x276F;</span><span class="bc-here">AI Answer</span></div>` +
-    `<div class="ai-answer-header">` +
-      `<div class="ai-answer-icon">&#x2728;</div>` +
-      `<div>` +
-        `<h2 class="ai-answer-question">${safeQ}</h2>` +
-        `<div class="ai-answer-text ai-answer-formatted">${formattedA}</div>` +
-        `<div class="ai-answer-attribution">Based on ${productName} product data</div>` +
-        `<button class="ai-copy-btn ai-copy-btn-view" data-ai-copy-view aria-label="Copy answer">Copy</button>` +
-      `</div>` +
-    `</div>` +
-    chipsHtml;
+  // AI answer section
+  if (shouldAskAi) {
+    html += `<div class="sr-ai-section" id="srAiSection">`;
+    html += `<div class="sr-ai-header"><span class="sr-ai-label"><span class="sr-ai-label-icon">\u2728</span> AI Answer</span>`;
+    html += `<button class="ai-copy-btn" id="srAiCopyBtn" style="display:${options.aiAnswer ? '' : 'none'}" aria-label="Copy answer">Copy</button>`;
+    html += `</div>`;
+    if (options.aiAnswer) {
+      const safeA = options.aiAnswer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
+      html += `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div>`;
+      html += `<div class="sr-ai-attribution">Based on ${productName} product data</div>`;
+    } else {
+      html += `<div class="sr-ai-skeleton" id="srAiSkeleton"><div class="sr-ai-skeleton-line"></div><div class="sr-ai-skeleton-line"></div><div class="sr-ai-skeleton-line"></div><div class="sr-ai-skeleton-line"></div></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Results (all content HTML-escaped, type labels are app-owned)
+  if (results.length > 0) {
+    html += `<div class="sr-results-header">Search Results (${results.length})</div>`;
+    html += `<div class="sr-results-list">`;
+    results.forEach((r, i) => {
+      const color = SR_TYPE_COLORS[r.type] || '#64748b';
+      const icon = SR_TYPE_ICONS[r.type] || '\u{1F4C4}';
+      const safeName = r.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const safeDesc = r.desc ? r.desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+      html += `<div class="sr-result-card" data-sr-idx="${i}" style="--card-accent:${color}" role="button" tabindex="0">`;
+      html += `<div class="sr-result-icon" style="color:${color}">${icon}</div>`;
+      html += `<div class="sr-result-body"><div class="sr-result-name">${safeName}</div>`;
+      if (safeDesc) html += `<div class="sr-result-desc">${safeDesc}</div>`;
+      html += `</div>`;
+      html += `<div class="sr-result-badge" style="--card-accent:${color}">${r.type}</div>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div class="sr-empty">No results found for "${safeQ}"</div>`;
+  }
+
+  // Safe: all content above is HTML-escaped or app-owned
+  el.innerHTML = html;
 
   // Wire breadcrumb
   el.querySelectorAll('[data-nav="galaxy"]').forEach(l => {
@@ -305,40 +319,102 @@ function renderAiAnswerView(question, answer, relatedResults) {
     l.addEventListener('click', () => navigateTo('galaxy'));
   });
 
-  // Wire copy button
-  const copyBtn = el.querySelector('[data-ai-copy-view]');
-  if (copyBtn) {
-    copyBtn.addEventListener('click', () => {
-      const text = answer;
-      const onSuccess = () => {
-        copyBtn.classList.add('copied');
-        copyBtn.textContent = '\u2713 Copied';
-        setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 1500);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(onSuccess).catch(() => onSuccess());
-      } else {
-        onSuccess();
-      }
-    });
-  }
-
-  // Wire chip clicks
-  el.querySelectorAll('[data-chip-idx]').forEach(chip => {
-    const idx = parseInt(chip.dataset.chipIdx, 10);
-    const result = relatedResults[idx];
+  // Wire result card clicks
+  el.querySelectorAll('[data-sr-idx]').forEach(card => {
+    const idx = parseInt(card.dataset.srIdx, 10);
+    const result = results[idx];
     if (result && result.action) {
-      chip.addEventListener('click', () => { result.action(); });
+      card.addEventListener('click', () => { result.action(); });
+      card.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); result.action(); } });
     }
   });
 
-  document.getElementById('ai-answer-view').scrollTop = 0;
+  // Wire copy button
+  const copyBtn = document.getElementById('srAiCopyBtn');
+  if (copyBtn && options.aiAnswer) {
+    wireAiCopyButton(copyBtn, options.aiAnswer);
+  }
+
+  // Wire search input for re-search
+  const srInput = document.getElementById('srSearchInput');
+  if (srInput) {
+    let reSearchTimer = null;
+    srInput.addEventListener('input', () => {
+      clearTimeout(reSearchTimer);
+      reSearchTimer = setTimeout(() => {
+        const newQuery = srInput.value.trim();
+        if (!newQuery) return;
+        const newResults = searchProduct(newQuery);
+        _lastSearchPage = { query: newQuery, results: [...newResults], aiAnswer: null };
+        renderSearchResultsPage(newQuery, newResults, {});
+        // Focus the input and restore cursor position
+        const input = document.getElementById('srSearchInput');
+        if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+        // Trigger AI fetch if question
+        if (isQuestion(newQuery)) {
+          triggerAiFetch(newQuery);
+        }
+      }, 300);
+    });
+    srInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); goBack(); }
+    });
+  }
+
+  // Trigger AI fetch if not already provided
+  if (shouldAskAi && !options.aiAnswer) {
+    triggerAiFetch(query);
+  }
+
+  document.getElementById('search-results-view').scrollTop = 0;
 }
 
-function destroyAiConstellation() {
-  if (_constellationDestroy) {
-    _constellationDestroy();
-    _constellationDestroy = null;
+function wireAiCopyButton(btn, rawAnswer) {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(rawAnswer).then(() => showCopied(btn)).catch(() => showCopied(btn));
+    } else {
+      showCopied(btn);
+    }
+  });
+}
+
+function showCopied(btn) {
+  btn.classList.add('copied');
+  btn.textContent = '\u2713 Copied';
+  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+}
+
+async function triggerAiFetch(query) {
+  const result = await askAi(query);
+  // Check we're still on the search results page with the same query
+  if (currentLevel !== 'search-results' || !_lastSearchPage || _lastSearchPage.query !== query) return;
+
+  const section = document.getElementById('srAiSection');
+  if (!section) return;
+
+  const skeleton = document.getElementById('srAiSkeleton');
+  const productName = PRODUCT_CONFIG.name || 'Product';
+
+  if (result.answer) {
+    _lastSearchPage.aiAnswer = result.answer;
+    // Safe: AI content is escaped then formatted via formatAiMarkdown (XSS-safe pattern)
+    const safeA = result.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
+    if (skeleton) {
+      skeleton.outerHTML = `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div><div class="sr-ai-attribution">Based on ${productName} product data</div>`;
+    }
+    const copyBtn = document.getElementById('srAiCopyBtn');
+    if (copyBtn) {
+      copyBtn.style.display = '';
+      wireAiCopyButton(copyBtn, result.answer);
+    }
+  } else if (result.error) {
+    if (skeleton) {
+      // Safe: error message is from our own worker, not user input
+      skeleton.outerHTML = `<div class="sr-ai-answer" style="color:var(--text-dim);font-style:italic">${result.error}</div>`;
+    }
   }
 }
 
@@ -380,18 +456,18 @@ export function navigateTo(level) {
 
 export function goBack() {
   track('back_navigation', { from: currentLevel });
-  // If navigating back and the previous history entry was ai-answer, restore it
-  if (currentLevel !== 'ai-answer' && navHistory.length > 0 && navHistory[navHistory.length - 1].level === 'ai-answer' && _lastAiAnswer) {
+  // If navigating back and the previous history entry was search-results, restore it
+  if (currentLevel !== 'search-results' && navHistory.length > 0 && navHistory[navHistory.length - 1].level === 'search-results' && _lastSearchPage) {
     const prev = navHistory.pop();
-    currentLevel = 'ai-answer';
+    currentLevel = 'search-results';
     currentPlanet = prev.planet;
     currentComponent = prev.component;
     currentEntity = prev.entity;
-    renderAiAnswerView(_lastAiAnswer.question, _lastAiAnswer.answer, _lastAiAnswer.relatedResults);
+    renderSearchResultsPage(_lastSearchPage.query, _lastSearchPage.results, { aiAnswer: _lastSearchPage.aiAnswer });
     setGalaxyCanvasVisible(false);
-    showView('ai-answer-view', 'out');
+    showView('search-results-view', 'out');
     const base = PRODUCT_CONFIG.title || 'Product Explorer';
-    document.title = `AI Answer — ${base}`;
+    document.title = `Search: ${_lastSearchPage.query} \u2014 ${base}`;
     return;
   }
   if (navHistory.length > 0) {
@@ -404,7 +480,7 @@ export function goBack() {
       setHash(`#/${prev.planet}/${prev.component}`); updateDocumentTitle('core', prev.planet, prev.component);
     }
   } else {
-    if (currentLevel === 'ai-answer') { _lastAiAnswer = null; navigateTo('galaxy'); }
+    if (currentLevel === 'search-results') { _lastSearchPage = null; navigateTo('galaxy'); }
     else if (currentLevel === 'entity') navigateTo('core');
     else if (currentLevel === 'core') navigateTo('planet');
     else if (currentLevel === 'planet') navigateTo('galaxy');
