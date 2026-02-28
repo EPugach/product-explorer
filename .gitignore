@@ -28,3 +28,11 @@
 # Allow future product bootstraps
 !eda/
 !eda/index.html
+
+# Allow scripts
+!scripts/
+!scripts/**
+
+# Allow workers
+!workers/
+!workers/**

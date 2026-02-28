@@ -37,7 +37,8 @@ import {
   openSearch, closeSearch, expandSearch, collapseSearch,
   cycleResult, activateResult,
   setProductData as setSearchData,
-  setPackages as setSearchPackages
+  setPackages as setSearchPackages,
+  setAiConfig
 } from './search.js';
 import {
   initTours, advanceStop, exitTour, setTourAnimationCallbacks, toggleTourPicker,
@@ -64,8 +65,8 @@ let _prefixToPkg = {};
 async function loadProductData() {
   // Load config and data in parallel (required)
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=8`),
-    import(`${productsBase}/data.js?v=8`),
+    import(`${productsBase}/config.js?v=9`),
+    import(`${productsBase}/data.js?v=9`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
@@ -88,7 +89,7 @@ async function loadProductData() {
 
   // Load domain icons (required before canvas rendering)
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=8`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=9`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
@@ -96,7 +97,7 @@ async function loadProductData() {
 
   // Load tours (optional)
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=8`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=9`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     // Tours are optional; if not found, tour UI will be hidden
@@ -105,10 +106,19 @@ async function loadProductData() {
 
   // Load feedback module (optional)
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=8`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=9`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {
     // Feedback is optional
+  }
+
+  // Load AI context (optional)
+  try {
+    const aiContextMod = await import(`${productsBase}/ai-context.js?v=9`);
+    const aiEndpoint = 'https://npsp-ai-search.epugach.workers.dev';
+    setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
+  } catch (e) {
+    // AI is optional
   }
 
   // Build planet metadata for navigation after icons are set
@@ -838,7 +848,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading (dynamic import, ES module) ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=8`);
+    const module = await import(`${productsBase}/entities.js?v=9`);
     _entityData = module.default;
     setEntitiesLoaded(true);
     mergeEntities();
