@@ -29,6 +29,10 @@
 !eda/
 !eda/index.html
 
+# Allow docs
+!docs/
+!docs/**
+
 # Allow scripts
 !scripts/
 !scripts/**
