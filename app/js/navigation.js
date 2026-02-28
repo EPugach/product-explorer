@@ -43,6 +43,7 @@ let currentEntity = null;
 let currentEntityTab = null;
 let navHistory = [];
 let _constellationDestroy = null;
+let _lastAiAnswer = null;
 
 // Animation tick callbacks — set by main.js to avoid circular imports
 let _graphTick = null;
@@ -78,8 +79,8 @@ export const updateDocumentTitle = (level, domainId, componentId, entityName) =>
 };
 
 export const handleHashNavigation = () => {
-  // Clean up AI constellation if navigating away
-  if (currentLevel === 'ai-answer') destroyAiConstellation();
+  // When navigating away from ai-answer via hash, preserve it in history for back navigation
+  const wasAiAnswer = currentLevel === 'ai-answer' && _lastAiAnswer;
   const hash = window.location.hash || '#/';
   const path = hash.replace(/^#\/?/, '');
   if (!path) {
@@ -137,6 +138,15 @@ export const handleHashNavigation = () => {
     updateBreadcrumb(); updateDocumentTitle('entity', domainId, componentId, entityName);
   } else {
     setHash('#/'); handleHashNavigation();
+  }
+  // If we navigated away from AI answer view via hash (e.g., chip click), rebuild history
+  // so back goes: current view -> AI answer -> original pre-AI-answer view
+  if (wasAiAnswer) {
+    const la = _lastAiAnswer;
+    navHistory = [
+      { level: la.prevLevel, planet: la.prevPlanet, component: la.prevComponent, entity: null, entityTab: null },
+      { level: 'ai-answer', planet: la.prevPlanet, component: la.prevComponent, entity: null, entityTab: null }
+    ];
   }
 };
 
@@ -234,6 +244,7 @@ export function enterEntity(pid, cid, entityType, entityName) {
 export function enterAiAnswer(question, answer, relatedResults) {
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent, entity: currentEntity, entityTab: currentEntityTab });
   currentLevel = 'ai-answer';
+  _lastAiAnswer = { question, answer, relatedResults, prevLevel: currentLevel, prevPlanet: currentPlanet, prevComponent: currentComponent };
   renderAiAnswerView(question, answer, relatedResults);
   setGalaxyCanvasVisible(false);
   showView('ai-answer-view', 'in');
@@ -243,28 +254,50 @@ export function enterAiAnswer(question, answer, relatedResults) {
   track('ai_answer_view', { question: question.substring(0, 50) });
 }
 
-// NOTE: safe innerHTML - question and answer are escaped, all other content is app-owned
+// NOTE: safe innerHTML - question and answer are HTML-escaped before rendering.
+// AI-generated content is escaped THEN formatted via formatAiMarkdown (XSS-safe pattern).
+// All other content (productName, type labels) is app-owned trusted data.
 function renderAiAnswerView(question, answer, relatedResults) {
   const el = document.getElementById('ai-answer-content');
   const productName = PRODUCT_CONFIG.name || 'Product';
   const safeQ = question.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const safeA = answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const formattedA = formatAiMarkdown(safeA);
 
+  const typeColors = {
+    domain: '#00d4ff', planet: '#00d4ff', component: '#4d8bff', class: '#4d8bff',
+    object: '#22c55e', trigger: '#ef4444', lwc: '#a855f7', metadata: '#f59e0b', tag: '#64748b'
+  };
+
+  const chipsHtml = relatedResults.length > 0
+    ? `<div class="ai-related-section">` +
+        `<div class="ai-related-title">Related Architecture</div>` +
+        `<div class="ai-related-chips">` +
+        relatedResults.slice(0, 12).map((r, i) => {
+          const color = typeColors[r.type] || '#64748b';
+          const safeName = r.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          return `<button class="ai-related-chip" data-chip-idx="${i}" style="--chip-color:${color}" title="${safeName} (${r.type})">` +
+            `<span class="ai-chip-dot" style="background:${color}"></span>` +
+            `<span class="ai-chip-name">${safeName}</span>` +
+            `<span class="ai-chip-type">${r.type}</span>` +
+          `</button>`;
+        }).join('') +
+        `</div></div>`
+    : '';
+
+  // Safe: all user/AI content is HTML-escaped above. Product name and type labels are app-owned.
   el.innerHTML =
-    `<div class="bc"><span class="bc-link" data-nav="galaxy">${productName}</span><span class="bc-sep">❯</span><span class="bc-here">AI Answer</span></div>` +
+    `<div class="bc"><span class="bc-link" data-nav="galaxy">${productName}</span><span class="bc-sep">&#x276F;</span><span class="bc-here">AI Answer</span></div>` +
     `<div class="ai-answer-header">` +
       `<div class="ai-answer-icon">&#x2728;</div>` +
       `<div>` +
         `<h2 class="ai-answer-question">${safeQ}</h2>` +
-        `<div class="ai-answer-text">${safeA}</div>` +
+        `<div class="ai-answer-text ai-answer-formatted">${formattedA}</div>` +
         `<div class="ai-answer-attribution">Based on ${productName} product data</div>` +
+        `<button class="ai-copy-btn ai-copy-btn-view" data-ai-copy-view aria-label="Copy answer">Copy</button>` +
       `</div>` +
     `</div>` +
-    (relatedResults.length > 0 ?
-      `<div class="ai-answer-constellation-section">` +
-        `<div class="ai-answer-constellation-title">Related Architecture</div>` +
-        `<canvas id="ai-constellation-canvas"></canvas>` +
-      `</div>` : '');
+    chipsHtml;
 
   // Wire breadcrumb
   el.querySelectorAll('[data-nav="galaxy"]').forEach(l => {
@@ -290,28 +323,14 @@ function renderAiAnswerView(question, answer, relatedResults) {
     });
   }
 
-  // Initialize mini constellation
-  if (relatedResults.length > 0) {
-    const canvas = document.getElementById('ai-constellation-canvas');
-    if (canvas) {
-      const w = canvas.parentElement.clientWidth;
-      const h = Math.min(400, Math.max(250, w * 0.5));
-      canvas.style.height = h + 'px';
-
-      import('./ai-constellation.js?v=11').then((mod) => {
-        const items = relatedResults.slice(0, 12);
-        const handle = mod.initConstellation(canvas, items, (result) => {
-          if (result && result.action) {
-            destroyAiConstellation();
-            result.action();
-          }
-        });
-        _constellationDestroy = handle ? handle.destroy : mod.destroyConstellation;
-      }).catch((err) => {
-        console.warn('[ai-constellation] Failed to load', err);
-      });
+  // Wire chip clicks
+  el.querySelectorAll('[data-chip-idx]').forEach(chip => {
+    const idx = parseInt(chip.dataset.chipIdx, 10);
+    const result = relatedResults[idx];
+    if (result && result.action) {
+      chip.addEventListener('click', () => { result.action(); });
     }
-  }
+  });
 
   document.getElementById('ai-answer-view').scrollTop = 0;
 }
@@ -361,8 +380,20 @@ export function navigateTo(level) {
 
 export function goBack() {
   track('back_navigation', { from: currentLevel });
-  // Clean up AI constellation if leaving ai-answer view
-  if (currentLevel === 'ai-answer') destroyAiConstellation();
+  // If navigating back and the previous history entry was ai-answer, restore it
+  if (currentLevel !== 'ai-answer' && navHistory.length > 0 && navHistory[navHistory.length - 1].level === 'ai-answer' && _lastAiAnswer) {
+    const prev = navHistory.pop();
+    currentLevel = 'ai-answer';
+    currentPlanet = prev.planet;
+    currentComponent = prev.component;
+    currentEntity = prev.entity;
+    renderAiAnswerView(_lastAiAnswer.question, _lastAiAnswer.answer, _lastAiAnswer.relatedResults);
+    setGalaxyCanvasVisible(false);
+    showView('ai-answer-view', 'out');
+    const base = PRODUCT_CONFIG.title || 'Product Explorer';
+    document.title = `AI Answer — ${base}`;
+    return;
+  }
   if (navHistory.length > 0) {
     const prev = navHistory.pop();
     if (prev.level === 'galaxy') navigateTo('galaxy');
@@ -373,7 +404,7 @@ export function goBack() {
       setHash(`#/${prev.planet}/${prev.component}`); updateDocumentTitle('core', prev.planet, prev.component);
     }
   } else {
-    if (currentLevel === 'ai-answer') navigateTo('galaxy');
+    if (currentLevel === 'ai-answer') { _lastAiAnswer = null; navigateTo('galaxy'); }
     else if (currentLevel === 'entity') navigateTo('core');
     else if (currentLevel === 'core') navigateTo('planet');
     else if (currentLevel === 'planet') navigateTo('galaxy');

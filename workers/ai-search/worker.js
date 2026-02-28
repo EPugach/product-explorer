@@ -43,9 +43,14 @@ export default {
       await env.CACHE.put(rateLimitKey, String(rateCount + 1), { expirationTtl: 120 });
 
       // Cache check
-      const cacheKey = `answer:${await sha256(q.toLowerCase())}`;
+      const qHash = await sha256(q.toLowerCase());
+      const cacheKey = `answer:${qHash}`;
       const cached = await env.CACHE.get(cacheKey);
       if (cached) {
+        // Log cached question for analytics (fire-and-forget)
+        const ipHash = (await sha256(ip)).substring(0, 8);
+        const ts = Date.now();
+        env.CACHE.put(`log:${ts}:${qHash.substring(0, 8)}`, JSON.stringify({ question: q, timestamp: ts, ipHash, cached: true }), { expirationTtl: 2592000 });
         return json({ answer: cached, cached: true }, 200, corsHeaders);
       }
 
@@ -79,6 +84,11 @@ export default {
 
       // Cache for 24 hours
       await env.CACHE.put(cacheKey, answer, { expirationTtl: 86400 });
+
+      // Log question for analytics
+      const ipHash = (await sha256(ip)).substring(0, 8);
+      const ts = Date.now();
+      await env.CACHE.put(`log:${ts}:${qHash.substring(0, 8)}`, JSON.stringify({ question: q, timestamp: ts, ipHash, cached: false }), { expirationTtl: 2592000 });
 
       return json({ answer, cached: false }, 200, corsHeaders);
     } catch (err) {
