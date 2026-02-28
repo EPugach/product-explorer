@@ -497,6 +497,8 @@ export function formatAiMarkdown(escaped) {
     .replace(/(?<!<\/?)\*(.+?)\*/g, '<em>$1</em>')
     // Inline code: `code`
     .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>')
+    // Links: [text](url) — only http/https to prevent javascript: URIs
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" class="ai-link" target="_blank" rel="noopener noreferrer">$1</a>')
     // Bullet lists: lines starting with "- " (after newline or start)
     .replace(/(^|\n)- (.+)/g, '$1<span class="ai-bullet">$2</span>')
     // Numbered lists: lines starting with "1. " etc.
