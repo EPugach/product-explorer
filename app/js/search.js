@@ -85,6 +85,7 @@ let _aiContext = '';
 let _aiDebounceTimer = null;
 const _aiSessionCache = new Map();
 const AI_CACHE_MAX = 20;
+const _aiInflight = new Map();
 
 export const setAiConfig = (endpoint, context) => {
   _aiEndpoint = endpoint || '';
@@ -575,44 +576,57 @@ export async function askAi(question) {
     return { answer: _aiSessionCache.get(cacheKey), cached: true };
   }
 
-  const searchMatches = searchProduct(question).slice(0, 5).map(r => ({
-    name: r.name, type: r.type, desc: r.desc.substring(0, 100)
-  }));
+  // Deduplicate in-flight requests for the same question
+  if (_aiInflight.has(cacheKey)) {
+    return _aiInflight.get(cacheKey);
+  }
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+  const promise = (async () => {
+    const searchMatches = searchProduct(question).slice(0, 5).map(r => ({
+      name: r.name, type: r.type, desc: r.desc.substring(0, 100)
+    }));
 
-    const res = await fetch(_aiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        question: question.trim(),
-        systemContext: _aiContext,
-        searchMatches
-      })
-    });
-    clearTimeout(timeout);
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      return { error: data.error || `HTTP ${res.status}` };
-    }
+      const res = await fetch(_aiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          question: question.trim(),
+          systemContext: _aiContext,
+          searchMatches
+        })
+      });
+      clearTimeout(timeout);
 
-    const data = await res.json();
-    if (data.answer) {
-      // Cache with size limit
-      if (_aiSessionCache.size >= AI_CACHE_MAX) {
-        const firstKey = _aiSessionCache.keys().next().value;
-        _aiSessionCache.delete(firstKey);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return { error: data.error || `HTTP ${res.status}` };
       }
-      _aiSessionCache.set(cacheKey, data.answer);
+
+      const data = await res.json();
+      if (data.answer) {
+        if (_aiSessionCache.size >= AI_CACHE_MAX) {
+          const firstKey = _aiSessionCache.keys().next().value;
+          _aiSessionCache.delete(firstKey);
+        }
+        _aiSessionCache.set(cacheKey, data.answer);
+      }
+      return data;
+    } catch (err) {
+      if (err.name === 'AbortError') return { error: 'Request timed out' };
+      return { error: 'Network error' };
     }
-    return data;
-  } catch (err) {
-    if (err.name === 'AbortError') return { error: 'Request timed out' };
-    return { error: 'Network error' };
+  })();
+
+  _aiInflight.set(cacheKey, promise);
+  try {
+    return await promise;
+  } finally {
+    _aiInflight.delete(cacheKey);
   }
 }
 
@@ -752,7 +766,7 @@ function renderSearchResults(results, query, aiState) {
       const safeAnswer = aiState.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const formattedAnswer = formatAiMarkdown(linkifyEntityNames(safeAnswer));
       aiHtml = `<div class="ai-section" id="ai-section">` +
-        `<div class="ai-header">AI ANSWER${buildFeedbackButtonsHtml()}<button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
+        `<div class="ai-header"><span class="ai-header-left">AI ANSWER${buildFeedbackButtonsHtml()}</span><button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
         buildFeedbackPanelHtml() +
         `<div class="ai-card ai-card-clickable" role="button" tabindex="0">` +
         `<div class="ai-icon">&#x2728;</div>` +
