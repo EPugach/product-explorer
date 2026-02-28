@@ -8,7 +8,7 @@ import { track, announce } from './utils.js';
 import { resetZoomPan, setGraphSettled, nodeMap } from './physics.js';
 import { pauseStarfield, resumeStarfield } from './starfield.js';
 import { domainSvg, entitySvg } from './icons.js';
-import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct } from './search.js';
+import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons } from './search.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -275,8 +275,10 @@ function renderSearchResultsPage(query, results, options = {}) {
   if (shouldAskAi) {
     html += `<div class="sr-ai-section" id="srAiSection">`;
     html += `<div class="sr-ai-header"><span class="sr-ai-label"><span class="sr-ai-label-icon">\u2728</span> AI Answer</span>`;
+    html += `<span class="sr-ai-header-actions">${options.aiAnswer ? buildFeedbackButtonsHtml() : ''}`;
     html += `<button class="ai-copy-btn" id="srAiCopyBtn" style="display:${options.aiAnswer ? '' : 'none'}" aria-label="Copy answer">Copy</button>`;
-    html += `</div>`;
+    html += `</span></div>`;
+    html += options.aiAnswer ? buildFeedbackPanelHtml() : '<div data-feedback-panel-slot></div>';
     if (options.aiAnswer) {
       const safeA = options.aiAnswer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
@@ -333,6 +335,12 @@ function renderSearchResultsPage(query, results, options = {}) {
   const copyBtn = document.getElementById('srAiCopyBtn');
   if (copyBtn && options.aiAnswer) {
     wireAiCopyButton(copyBtn, options.aiAnswer);
+  }
+
+  // Wire feedback buttons
+  const srAiSection = document.getElementById('srAiSection');
+  if (srAiSection && options.aiAnswer) {
+    wireFeedbackButtons(srAiSection, query);
   }
 
   // Wire search input for re-search
@@ -405,6 +413,19 @@ async function triggerAiFetch(query) {
     if (skeleton) {
       skeleton.outerHTML = `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div><div class="sr-ai-attribution">Based on ${productName} product data</div>`;
     }
+    // Inject feedback buttons + panel into header (they weren't rendered while loading)
+    const header = section.querySelector('.sr-ai-header');
+    const panelSlot = section.querySelector('[data-feedback-panel-slot]');
+    if (header) {
+      const actionsSpan = header.querySelector('.sr-ai-header-actions');
+      if (actionsSpan) {
+        actionsSpan.insertAdjacentHTML('afterbegin', buildFeedbackButtonsHtml());
+      }
+    }
+    if (panelSlot) {
+      panelSlot.outerHTML = buildFeedbackPanelHtml();
+    }
+    wireFeedbackButtons(section, query);
     const copyBtn = document.getElementById('srAiCopyBtn');
     if (copyBtn) {
       copyBtn.style.display = '';
