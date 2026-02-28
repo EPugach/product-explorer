@@ -1,0 +1,13 @@
+name = "npsp-ai-search"
+main = "worker.js"
+compatibility_date = "2024-12-01"
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = ""  # Set after `wrangler kv namespace create CACHE`
+
+[vars]
+ALLOWED_ORIGINS = "https://epugach.github.io,http://localhost:8000,http://localhost:3000"

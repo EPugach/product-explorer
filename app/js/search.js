@@ -69,6 +69,18 @@ let _packages = {};
 export const setProductData = (data, name) => { PRODUCT_DATA = data; if (name) _productName = name; };
 export const setPackages = (packages) => { _packages = packages || {}; };
 
+// ── AI search state ─────────────────────────────────────────
+let _aiEndpoint = '';
+let _aiContext = '';
+let _aiDebounceTimer = null;
+const _aiSessionCache = new Map();
+const AI_CACHE_MAX = 20;
+
+export const setAiConfig = (endpoint, context) => {
+  _aiEndpoint = endpoint || '';
+  _aiContext = context || '';
+};
+
 // ── Navigation callbacks (set after navigation.js loads) ────
 let _enterPlanet = null;
 let _navigateToCore = null;
@@ -387,6 +399,72 @@ function searchProduct(query) {
   return searchWithMiniSearch(query);
 }
 
+// ── AI question detection ────────────────────────────────────
+
+const QUESTION_WORDS = /^(what|how|why|does|is|are|can|will|could|should|would|explain|describe|tell|where|when|which|who)\b/i;
+
+function isQuestion(query) {
+  if (!query || query.trim().length < 5) return false;
+  const q = query.trim();
+  if (q.endsWith('?')) return true;
+  if (QUESTION_WORDS.test(q)) return true;
+  // 4+ words that aren't all-caps (not an API name like "NPSP_TDTM_HANDLER")
+  const words = q.split(/\s+/);
+  if (words.length >= 4 && q !== q.toUpperCase()) return true;
+  return false;
+}
+
+// ── AI answer fetching ───────────────────────────────────────
+
+async function askAi(question) {
+  if (!_aiEndpoint) return { error: 'AI not configured' };
+
+  const cacheKey = question.trim().toLowerCase();
+  if (_aiSessionCache.has(cacheKey)) {
+    return { answer: _aiSessionCache.get(cacheKey), cached: true };
+  }
+
+  const searchMatches = searchProduct(question).slice(0, 5).map(r => ({
+    name: r.name, type: r.type, desc: r.desc.substring(0, 100)
+  }));
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    const res = await fetch(_aiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        question: question.trim(),
+        systemContext: _aiContext,
+        searchMatches
+      })
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { error: data.error || `HTTP ${res.status}` };
+    }
+
+    const data = await res.json();
+    if (data.answer) {
+      // Cache with size limit
+      if (_aiSessionCache.size >= AI_CACHE_MAX) {
+        const firstKey = _aiSessionCache.keys().next().value;
+        _aiSessionCache.delete(firstKey);
+      }
+      _aiSessionCache.set(cacheKey, data.answer);
+    }
+    return data;
+  } catch (err) {
+    if (err.name === 'AbortError') return { error: 'Request timed out' };
+    return { error: 'Network error' };
+  }
+}
+
 // ── Highlight ────────────────────────────────────────────────
 
 function highlightMatch(text, query) {
@@ -407,10 +485,40 @@ function highlightMatch(text, query) {
 
 // NOTE: innerHTML usage is safe here. All search data comes from the trusted
 // NPSP data object (app-owned, not user input). The query is escaped via
-// highlightMatch's regex escaping.
-function renderSearchResults(results, query) {
+// highlightMatch's regex escaping. AI answers are from our own Worker.
+// aiState: null | { loading: true } | { answer: string } | { error: string }
+function renderSearchResults(results, query, aiState) {
   const el = document.getElementById('searchResults');
-  if (results.length === 0 && query.trim()) {
+
+  // Build AI section HTML
+  let aiHtml = '';
+  if (aiState) {
+    if (aiState.loading) {
+      aiHtml = `<div class="ai-section" id="ai-section">` +
+        `<div class="ai-header">AI ANSWER</div>` +
+        `<div class="ai-card">` +
+        `<div class="ai-icon">&#x2728;</div>` +
+        `<div class="ai-body">` +
+        `<div class="ai-skeleton"><div></div><div></div><div></div></div>` +
+        `</div></div></div>`;
+    } else if (aiState.answer) {
+      // Escape HTML in AI answer (AI-generated content, not app-owned)
+      const safeAnswer = aiState.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      aiHtml = `<div class="ai-section" id="ai-section">` +
+        `<div class="ai-header">AI ANSWER</div>` +
+        `<div class="ai-card">` +
+        `<div class="ai-icon">&#x2728;</div>` +
+        `<div class="ai-body">` +
+        `<div class="ai-answer">${safeAnswer}</div>` +
+        `<div class="ai-attribution">Based on ${_productName} product data</div>` +
+        `</div></div></div>`;
+    } else if (aiState.error) {
+      aiHtml = `<div class="ai-section" id="ai-section">` +
+        `<div class="ai-error">${aiState.error}</div></div>`;
+    }
+  }
+
+  if (results.length === 0 && !aiState && query.trim()) {
     el.textContent = '';
     const noResults = document.createElement('div');
     noResults.style.cssText = 'text-align:center;padding:24px;color:var(--text-dim);font-size:var(--text-sm)';
@@ -424,7 +532,6 @@ function renderSearchResults(results, query) {
     'class': '#4d8bff', object: '#22c55e', trigger: '#ef4444',
     lwc: '#a855f7', metadata: '#f59e0b'
   };
-  // Safe: all data is from trusted NPSP data object, not user input
   const resultsHtml = results.map((r, i) => {
     const typeColor = typeColors[r.type] || '#64748b';
     return `<div class="search-result${i === searchIndex ? ' active' : ''}" ` +
@@ -440,8 +547,14 @@ function renderSearchResults(results, query) {
       `<span class="sr-level">${r.type}</span></div>`;
   }).join('');
 
-  // Safe: innerHTML from trusted app-owned data only (see note above)
-  el.innerHTML = resultsHtml;
+  // Safe: innerHTML from trusted app-owned data + escaped AI answer
+  el.innerHTML = aiHtml + resultsHtml;
+
+  // Prevent mousedown on AI section from closing search overlay
+  const aiSection = el.querySelector('.ai-section');
+  if (aiSection) {
+    aiSection.addEventListener('mousedown', (e) => { e.preventDefault(); });
+  }
 
   // Attach event listeners for search results
   el.querySelectorAll('[data-search-result]').forEach((resultEl) => {
@@ -452,7 +565,6 @@ function renderSearchResults(results, query) {
       highlightActive();
     });
   });
-
 }
 
 export function highlightActive() {
@@ -492,6 +604,7 @@ export function closeSearch() {
   scrim.classList.remove('visible');
   searchResults = [];
   searchIndex = -1;
+  clearTimeout(_aiDebounceTimer);
   document.getElementById('searchInput').value = '';
   document.getElementById('searchInput').blur();
   document.getElementById('searchResults').textContent = '';
@@ -510,11 +623,32 @@ export function expandSearch(query) {
   scrim.classList.add('visible');
   searchResults = searchProduct(query);
   searchIndex = searchResults.length > 0 ? 0 : -1;
-  renderSearchResults(searchResults, query);
+
+  // Detect question and trigger AI search
+  const shouldAskAi = _aiEndpoint && isQuestion(query);
+  renderSearchResults(searchResults, query, shouldAskAi ? { loading: true } : null);
+
+  if (shouldAskAi) {
+    clearTimeout(_aiDebounceTimer);
+    _aiDebounceTimer = setTimeout(async () => {
+      const result = await askAi(query);
+      // Only update if search is still showing the same query
+      const currentInput = document.getElementById('searchInput');
+      if (currentInput && currentInput.value === query) {
+        if (result.answer) {
+          renderSearchResults(searchResults, query, { answer: result.answer });
+          announce('AI answer generated');
+        } else if (result.error) {
+          renderSearchResults(searchResults, query, { error: result.error });
+        }
+      }
+    }, 600);
+  }
+
   clearTimeout(_searchTrackTimer);
   if (query.length >= 2) {
     _searchTrackTimer = setTimeout(() => {
-      track('search_used', { query: query, result_count: searchResults.length });
+      track('search_used', { query: query, result_count: searchResults.length, ai: shouldAskAi });
     }, 800);
   }
   // B5: Debounced screen reader announcement for search results
@@ -522,7 +656,8 @@ export function expandSearch(query) {
   if (query.length >= 2) {
     _searchAnnounceTimer = setTimeout(() => {
       const count = searchResults.length;
-      announce(count === 0 ? 'No results found' : `${count} result${count !== 1 ? 's' : ''} found`);
+      const msg = count === 0 ? 'No results found' : `${count} result${count !== 1 ? 's' : ''} found`;
+      announce(shouldAskAi ? msg + '. Loading AI answer.' : msg);
     }, 500);
   }
 }
