@@ -38,7 +38,7 @@ import {
   cycleResult, activateResult,
   setProductData as setSearchData,
   setPackages as setSearchPackages,
-  setAiConfig
+  setAiConfig, setEntityLinks
 } from './search.js';
 import {
   initTours, advanceStop, exitTour, setTourAnimationCallbacks, toggleTourPicker,
@@ -65,8 +65,8 @@ let _prefixToPkg = {};
 async function loadProductData() {
   // Load config and data in parallel (required)
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=13`),
-    import(`${productsBase}/data.js?v=13`),
+    import(`${productsBase}/config.js?v=14`),
+    import(`${productsBase}/data.js?v=14`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
@@ -89,7 +89,7 @@ async function loadProductData() {
 
   // Load domain icons (required before canvas rendering)
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=13`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=14`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
@@ -97,7 +97,7 @@ async function loadProductData() {
 
   // Load tours (optional)
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=13`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=14`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     // Tours are optional; if not found, tour UI will be hidden
@@ -106,7 +106,7 @@ async function loadProductData() {
 
   // Load feedback module (optional)
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=13`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=14`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {
     // Feedback is optional
@@ -114,7 +114,7 @@ async function loadProductData() {
 
   // Load AI context (optional)
   try {
-    const aiContextMod = await import(`${productsBase}/ai-context.js?v=13`);
+    const aiContextMod = await import(`${productsBase}/ai-context.js?v=14`);
     const aiEndpoint = 'https://npsp-ai-search.epug.workers.dev';
     setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
   } catch (e) {
@@ -848,9 +848,24 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading (dynamic import, ES module) ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=13`);
+    const module = await import(`${productsBase}/entities.js?v=14`);
     _entityData = module.default;
     setEntitiesLoaded(true);
+
+    // Build entity name -> sourceUrl map before merging frees the raw data
+    const entityLinks = {};
+    for (const domainKey in _entityData) {
+      const domain = _entityData[domainKey];
+      for (const key of ENTITY_KEYS) {
+        for (const item of (domain[key] || [])) {
+          if (item.name && item.sourceUrl) {
+            entityLinks[item.name] = item.sourceUrl;
+          }
+        }
+      }
+    }
+    setEntityLinks(entityLinks);
+
     mergeEntities();
     _entityData = null; // Free memory after merge
     rebuildSearchIndex();

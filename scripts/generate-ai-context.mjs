@@ -5,8 +5,11 @@
 //  Output: products/<productId>/ai-context.js
 //
 //  Pulls from: config.js, data.js, entities.js
-//  Target: ~10-12K tokens of structured markdown for LLM ingestion
+//  Target: ~25-30K tokens of structured markdown for LLM ingestion
+//  Model: Llama 4 Scout 17B (131K context window)
 // ══════════════════════════════════════════════════════════════
+
+const EXPLORER_BASE = 'https://epugach.github.io/product-explorer';
 
 const productId = process.argv[2];
 if (!productId) {
@@ -31,6 +34,7 @@ try {
 
 const domainEntries = Object.entries(PRODUCT);
 const totalComponents = domainEntries.reduce((sum, [, d]) => sum + (d.components || []).length, 0);
+let totalFields = 0;
 
 // ── Helper: first N sentences of a string ──
 function firstSentences(text, n) {
@@ -39,12 +43,28 @@ function firstSentences(text, n) {
   return sentences.slice(0, n).join(' ').trim();
 }
 
+// ── Helper: truncate string to max length ──
+function truncate(text, max) {
+  if (!text || text.length <= max) return text || '';
+  return text.substring(0, max - 3) + '...';
+}
+
+// ── Token tracking ──
+const sectionTokens = {};
+let sectionStart = 0;
+function trackSection(name, ctx) {
+  const len = ctx.length - sectionStart;
+  sectionTokens[name] = Math.round(len / 4);
+  sectionStart = ctx.length;
+}
+
 // ══════════════════════════════════════════════════════════════
 //  BUILD CONTEXT
 // ══════════════════════════════════════════════════════════════
 
 let context = `You are an expert on Salesforce ${config.fullName || config.name} (${config.id.toUpperCase()}) ${config.version || ''}.
 Answer questions based ONLY on the following product knowledge. If the question is not about ${config.id.toUpperCase()} or you are unsure, say so clearly. Keep answers concise (2-4 sentences).
+When mentioning domains or components, include markdown links using the URLs from the Links section below.
 
 ## Domains (${domainEntries.length})
 `;
@@ -53,21 +73,20 @@ for (const [id, domain] of domainEntries) {
   const desc = firstSentences(domain.description, 2);
   context += `- **${domain.name}** (${id}): ${desc}\n`;
 }
+trackSection('Domains', context);
 
-// ── Components: full descriptions + execution flows ──
+// ── Components: full descriptions ──
 context += `\n## Key Components (${totalComponents})\n`;
 
 for (const [id, domain] of domainEntries) {
   for (const comp of (domain.components || [])) {
-    // Full description (up to 2 sentences)
     const desc = firstSentences(comp.desc, 2);
     context += `- **${comp.name}** [${domain.name}]: ${desc}\n`;
   }
 }
+trackSection('Components', context);
 
 // ── Apex Classes: two-tier approach ──
-// Tier 1 (>300 LOC): name + description + refs (these are the substantial classes)
-// Tier 2 (<=300 LOC): name-only list per domain (compact, but AI knows they exist)
 const KEY_CLASS_THRESHOLD = 500;
 
 if (entities) {
@@ -107,10 +126,11 @@ if (entities) {
     context += `\n## Other Apex Classes by Domain\n`;
     context += compactSections.join('\n') + '\n';
   }
+  trackSection('Apex Classes', context);
 
-  // ── Lightning Web Components: names grouped by domain ──
+  // ── Lightning Web Components: name + description ──
   let totalLWCs = 0;
-  const lwcSections = [];
+  const lwcLines = [];
 
   for (const [domainId, types] of Object.entries(entities)) {
     const lwcs = types.lwcs || [];
@@ -118,17 +138,22 @@ if (entities) {
     totalLWCs += lwcs.length;
 
     const domainName = PRODUCT[domainId]?.name || domainId;
-    lwcSections.push(`- ${domainName}: ${lwcs.map(l => l.name).join(', ')}`);
+    for (const lwc of lwcs) {
+      const desc = truncate(firstSentences(lwc.description, 1), 120);
+      lwcLines.push(`- ${lwc.name} [${domainName}]: ${desc}`);
+    }
   }
 
   if (totalLWCs > 0) {
     context += `\n## Lightning Web Components (${totalLWCs})\n`;
-    context += lwcSections.join('\n') + '\n';
+    context += lwcLines.join('\n') + '\n';
   }
+  trackSection('LWCs', context);
 
   // ── Custom Objects: name + label + short description ──
   let totalObjects = 0;
   const objLines = [];
+  const fieldSections = [];
 
   for (const [domainId, types] of Object.entries(entities)) {
     const objects = types.objects || [];
@@ -136,10 +161,20 @@ if (entities) {
     totalObjects += objects.length;
 
     for (const obj of objects) {
-      // Truncate description to ~80 chars
       let desc = firstSentences(obj.description, 1);
       if (desc.length > 80) desc = desc.substring(0, 77) + '...';
       objLines.push(`- ${obj.name} (${obj.label || ''}): ${desc}`);
+
+      // Collect fields for the fields section
+      const fields = obj.fields || [];
+      if (fields.length > 0) {
+        totalFields += fields.length;
+        const fieldLines = fields.map(f => {
+          const fdesc = truncate(f.desc, 40);
+          return `  - ${f.name} (${f.type || ''}): ${fdesc}`;
+        });
+        fieldSections.push(`### ${obj.name} (${fields.length} fields)\n${fieldLines.join('\n')}`);
+      }
     }
   }
 
@@ -147,6 +182,14 @@ if (entities) {
     context += `\n## Custom Objects (${totalObjects})\n`;
     context += objLines.join('\n') + '\n';
   }
+  trackSection('Objects', context);
+
+  // ── Object Fields ──
+  if (totalFields > 0) {
+    context += `\n## Custom Object Fields (${totalFields} fields across ${totalObjects} objects)\n`;
+    context += fieldSections.join('\n') + '\n';
+  }
+  trackSection('Object Fields', context);
 
   // ── Triggers ──
   let totalTriggers = 0;
@@ -168,6 +211,28 @@ if (entities) {
     context += `\n## Triggers (${totalTriggers})\n`;
     context += triggerLines.join('\n') + '\n';
   }
+  trackSection('Triggers', context);
+
+  // ── Custom Metadata Types ──
+  let totalMetadata = 0;
+  const metaLines = [];
+
+  for (const [domainId, types] of Object.entries(entities)) {
+    const metadata = types.metadata || [];
+    if (metadata.length === 0) continue;
+    totalMetadata += metadata.length;
+
+    for (const md of metadata) {
+      const desc = truncate(firstSentences(md.description, 1), 120);
+      metaLines.push(`- ${md.name} (${md.recordCount || 0} records): ${desc}`);
+    }
+  }
+
+  if (totalMetadata > 0) {
+    context += `\n## Custom Metadata Types (${totalMetadata})\n`;
+    context += metaLines.join('\n') + '\n';
+  }
+  trackSection('Metadata', context);
 }
 
 // ── Glossary ──
@@ -175,6 +240,7 @@ context += `
 ## Glossary
 TDTM = Table-Driven Trigger Management, GAU = General Accounting Unit, RD2 = Enhanced Recurring Donations v2, OCR = Opportunity Contact Role, CRLP = Customizable Rollups, BDI = Batch Data Import, BGE = Batch Gift Entry, NPSP = Nonprofit Success Pack, HH = Household, PMT = Payment, OPP = Opportunity, LWC = Lightning Web Component, ADDR = Address Management, AFFL = Affiliations, REL = Relationships, ERR = Error Handling, UTIL = Utilities, CMDT = Custom Metadata Type, DML = Data Manipulation Language, SOQL = Salesforce Object Query Language
 `;
+trackSection('Glossary', context);
 
 // ── Data Flow Connections ──
 context += `## Data Flow Connections\n`;
@@ -185,6 +251,19 @@ for (const [id, domain] of domainEntries) {
     context += `- ${domain.name} connects to: ${conns}\n`;
   }
 }
+trackSection('Data Flows', context);
+
+// ── Links Reference ──
+const explorerUrl = `${EXPLORER_BASE}/${productId}`;
+context += `\n## Links\nUse these URLs when mentioning domains or components:\n`;
+
+for (const [id, domain] of domainEntries) {
+  context += `- [${domain.name}](${explorerUrl}/#/${id})\n`;
+}
+if (config.repoUrl) {
+  context += `- [${config.id.toUpperCase()} Source Code](${config.repoUrl})\n`;
+}
+trackSection('Links', context);
 
 // ══════════════════════════════════════════════════════════════
 //  WRITE OUTPUT
@@ -206,19 +285,26 @@ const entityCounts = entities
       acc.lwcs += (types.lwcs || []).length;
       acc.objects += (types.objects || []).length;
       acc.triggers += (types.triggers || []).length;
+      acc.metadata += (types.metadata || []).length;
       return acc;
-    }, { classes: 0, lwcs: 0, objects: 0, triggers: 0 })
+    }, { classes: 0, lwcs: 0, objects: 0, triggers: 0, metadata: 0 })
   : null;
 
 console.log(`\nGenerated ${outputPath}`);
 console.log(`${domainEntries.length} domains, ${totalComponents} components`);
 if (entityCounts) {
-  console.log(`${entityCounts.classes} classes, ${entityCounts.lwcs} LWCs, ${entityCounts.objects} objects, ${entityCounts.triggers} triggers`);
+  console.log(`${entityCounts.classes} classes, ${entityCounts.lwcs} LWCs, ${entityCounts.objects} objects (${entityCounts.objects > 0 ? totalFields + ' fields' : '0 fields'}), ${entityCounts.triggers} triggers, ${entityCounts.metadata} metadata types`);
 }
-console.log(`~${context.length.toLocaleString()} chars, ~${tokens.toLocaleString()} tokens`);
 
-if (tokens > 16000) {
-  console.warn(`\n⚠️  Context exceeds 16K tokens. Consider condensing for optimal LLM quality.`);
-} else if (tokens > 12000) {
-  console.warn(`\n⚠️  Context is above 12K tokens. Monitor answer quality.`);
+console.log(`\nToken breakdown:`);
+for (const [name, count] of Object.entries(sectionTokens)) {
+  console.log(`  ${name.padEnd(20)} ${count.toLocaleString().padStart(6)}`);
+}
+console.log(`  ${'─'.repeat(26)}`);
+console.log(`  ${'Total'.padEnd(20)} ${tokens.toLocaleString().padStart(6)}`);
+
+if (tokens > 40000) {
+  console.warn(`\n⚠️  Context exceeds 40K tokens. Consider condensing.`);
+} else if (tokens > 30000) {
+  console.warn(`\n⚠️  Context is above 30K tokens. Monitor answer quality.`);
 }
