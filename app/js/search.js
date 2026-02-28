@@ -655,23 +655,34 @@ function highlightMatch(text, query) {
 export function linkifyEntityNames(escapedText) {
   if (!_entityLinkMap || !_entityLinkNames || _entityLinkNames.length === 0) return escapedText;
 
-  let result = escapedText;
-  const linked = new Set();
+  // Split into existing markdown links (preserved) and plain text (linkified)
+  const parts = [];
+  let lastIdx = 0;
+  const linkRe = /\[([^\]]+)\]\([^)]+\)/g;
+  let m;
+  while ((m = linkRe.exec(escapedText)) !== null) {
+    if (m.index > lastIdx) parts.push({ text: escapedText.slice(lastIdx, m.index), isLink: false });
+    parts.push({ text: m[0], isLink: true });
+    lastIdx = m.index + m[0].length;
+  }
+  if (lastIdx < escapedText.length) parts.push({ text: escapedText.slice(lastIdx), isLink: false });
 
+  // Only linkify entity names in non-link segments
+  const linked = new Set();
   for (const name of _entityLinkNames) {
     if (linked.has(name)) continue;
-    if (result.indexOf(name) === -1) continue;
-
     const url = _entityLinkMap[name];
-    // Word-boundary match, first occurrence only
     const re = new RegExp('\\b(' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')\\b');
-    const match = result.match(re);
-    if (match) {
-      result = result.replace(re, `[$1](${url})`);
-      linked.add(name);
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i].isLink || linked.has(name)) continue;
+      if (re.exec(parts[i].text)) {
+        parts[i].text = parts[i].text.replace(re, `[$1](${url})`);
+        linked.add(name);
+      }
     }
   }
-  return result;
+
+  return parts.map(p => p.text).join('');
 }
 
 // ── AI answer markdown formatting ─────────────────────────────

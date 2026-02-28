@@ -55,8 +55,9 @@ export default {
       const cached = await env.CACHE.get(cacheKey);
       if (cached) {
         const ipHash = (await sha256(ip)).substring(0, 8);
+        const queryHash = qHash.substring(0, 8);
         // Log to Google Sheets (fire-and-forget, non-blocking)
-        ctx.waitUntil(logToSheets(env, q, ipHash, true, cached.substring(0, 200)));
+        ctx.waitUntil(logToSheets(env, q, ipHash, true, cached, null, queryHash));
         return json({ answer: cached, cached: true }, 200, corsHeaders);
       }
 
@@ -94,7 +95,8 @@ export default {
 
       // Log to Google Sheets (fire-and-forget, non-blocking)
       const ipHash = (await sha256(ip)).substring(0, 8);
-      ctx.waitUntil(logToSheets(env, q, ipHash, false, answer.substring(0, 200)));
+      const queryHash = qHash.substring(0, 8);
+      ctx.waitUntil(logToSheets(env, q, ipHash, false, answer, null, queryHash));
 
       return json({ answer, cached: false }, 200, corsHeaders);
     } catch (err) {
@@ -128,6 +130,7 @@ async function handleFeedback(request, env, ctx, corsHeaders) {
 
     const ipHash = (await sha256(ip)).substring(0, 8);
     const q = question.trim().substring(0, 300);
+    const queryHash = (await sha256(q.toLowerCase())).substring(0, 8);
     const safeReason = (reason || '').substring(0, 100);
     const safeComment = (comment || '').substring(0, 500);
 
@@ -136,7 +139,7 @@ async function handleFeedback(request, env, ctx, corsHeaders) {
       rating,
       reason: safeReason,
       comment: safeComment
-    }));
+    }, queryHash));
 
     return json({ ok: true }, 200, corsHeaders);
   } catch (err) {
@@ -146,7 +149,7 @@ async function handleFeedback(request, env, ctx, corsHeaders) {
 }
 
 // Fire-and-forget POST to Google Sheets via Apps Script
-async function logToSheets(env, question, ipHash, cached, answerPreview, feedback) {
+async function logToSheets(env, question, ipHash, cached, answer, feedback, queryHash) {
   const url = env.SHEETS_LOG_URL;
   if (!url) return; // Skip if not configured
   try {
@@ -155,7 +158,8 @@ async function logToSheets(env, question, ipHash, cached, answerPreview, feedbac
       question,
       ipHash,
       cached,
-      answerPreview
+      answer: answer || '',
+      queryHash: queryHash || ''
     };
     if (feedback) {
       payload.type = feedback.type;

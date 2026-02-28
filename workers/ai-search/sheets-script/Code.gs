@@ -5,7 +5,7 @@
  *
  * Setup:
  * 1. Create a Google Sheet with headers in Row 1:
- *    Timestamp | Question | IP Hash | Cached | Answer Preview | Rating | Reason | Comment
+ *    Query Hash | Timestamp | Question | IP Hash | Cached | Answer | Rating | Reason | Comment
  * 2. Open Extensions > Apps Script
  * 3. Paste this code into Code.gs
  * 4. Deploy > New deployment > Web app
@@ -23,25 +23,46 @@ function doPost(e) {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
 
     if (data.type === 'feedback') {
-      // Feedback row: Timestamp, Question, IP Hash, (empty), (empty), Rating, Reason, Comment
-      sheet.appendRow([
-        data.timestamp || new Date().toISOString(),
-        data.question || '',
-        data.ipHash || '',
-        '',
-        '',
-        data.rating || '',
-        (data.reason || '').substring(0, 100),
-        (data.comment || '').substring(0, 500)
-      ]);
+      // Merge feedback into existing question row by Query Hash (column A)
+      var queryHash = data.queryHash || '';
+      var found = false;
+      if (queryHash) {
+        var dataRange = sheet.getDataRange();
+        var values = dataRange.getValues();
+        for (var i = values.length - 1; i >= 1; i--) {
+          if (values[i][0] === queryHash) {
+            // Update Rating (G), Reason (H), Comment (I) on existing row
+            sheet.getRange(i + 1, 7).setValue(data.rating || '');
+            sheet.getRange(i + 1, 8).setValue((data.reason || '').substring(0, 100));
+            sheet.getRange(i + 1, 9).setValue((data.comment || '').substring(0, 500));
+            found = true;
+            break;
+          }
+        }
+      }
+      if (!found) {
+        // Fallback: append as new row if question row not found
+        sheet.appendRow([
+          queryHash,
+          data.timestamp || new Date().toISOString(),
+          data.question || '',
+          data.ipHash || '',
+          '',
+          '',
+          data.rating || '',
+          (data.reason || '').substring(0, 100),
+          (data.comment || '').substring(0, 500)
+        ]);
+      }
     } else {
-      // Query log row: Timestamp, Question, IP Hash, Cached, Answer Preview, (empty), (empty), (empty)
+      // Query log row: Query Hash, Timestamp, Question, IP Hash, Cached, Answer
       sheet.appendRow([
+        data.queryHash || '',
         data.timestamp || new Date().toISOString(),
         data.question || '',
         data.ipHash || '',
         data.cached ? 'Yes' : 'No',
-        (data.answerPreview || '').substring(0, 200),
+        data.answer || '',
         '',
         '',
         ''
