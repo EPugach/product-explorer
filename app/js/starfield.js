@@ -17,7 +17,6 @@ let mouseY = -9999;
 let brightStars = [];
 let starfieldPaused = false;
 let starfieldAnimId = null;
-let starfieldFrame = 0;
 
 export function initStarfield() {
   starfieldCanvas = document.getElementById('starfield');
@@ -26,8 +25,8 @@ export function initStarfield() {
 
   // Regular stars with varied colors
   for (let i = 0; i < STAR_COUNT; i++) {
-    const x = Math.random() * starfieldCanvas.width;
-    const y = Math.random() * starfieldCanvas.height;
+    const x = Math.random() * innerWidth;
+    const y = Math.random() * innerHeight;
     // Vary colors: mostly cool blues/whites, some warm
     const hue = Math.random() < 0.85
       ? 210 + (Math.random() - 0.5) * 40  // Blue-white
@@ -77,7 +76,10 @@ export function initStarfield() {
 
 // Render a single static frame (no animation) for prefers-reduced-motion
 function renderStaticStarfield() {
-  starfieldCtx.clearRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  starfieldCtx.save();
+  starfieldCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  starfieldCtx.clearRect(0, 0, innerWidth, innerHeight);
   for (const star of stars) {
     starfieldCtx.beginPath();
     starfieldCtx.arc(star.baseX, star.baseY, star.sz, 0, Math.PI * 2);
@@ -98,13 +100,17 @@ function renderStaticStarfield() {
     starfieldCtx.lineTo(bs.x, bs.y + bs.flareLength * 0.5);
     starfieldCtx.stroke();
   }
+  starfieldCtx.restore();
 }
 
 // Animation loop — hoisted to module scope so pause/resume can access it
 function starfieldAnimate() {
   if (starfieldPaused || prefersReducedMotion) { starfieldAnimId = null; return; }
-  starfieldCtx.clearRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
-  starfieldFrame++;
+  const now = performance.now();
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  starfieldCtx.save();
+  starfieldCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  starfieldCtx.clearRect(0, 0, innerWidth, innerHeight);
 
   // Regular stars
   for (const star of stars) {
@@ -124,17 +130,17 @@ function starfieldAnimate() {
       star.y += (star.baseY - star.y) * RETURN_SPEED;
     }
 
-    const twinkle = Math.sin(starfieldFrame * star.tw) * 0.3 + 0.7;
+    // Delta-time twinkle (consistent across 60Hz and 120Hz)
+    const twinkle = Math.sin(now * star.tw * 0.06) * 0.3 + 0.7;
     starfieldCtx.beginPath();
     starfieldCtx.arc(star.x, star.y, star.sz, 0, Math.PI * 2);
     starfieldCtx.fillStyle = `hsla(${star.hue}, ${star.sat}%, ${star.light}%, ${star.op * twinkle})`;
     starfieldCtx.fill();
   }
 
-  // Bright stars with cross flares
+  // Bright stars with cross flares (delta-time based)
   for (const bs of brightStars) {
-    bs.twinklePhase += bs.twinkleSpeed;
-    const glow = 0.4 + Math.sin(bs.twinklePhase) * 0.3;
+    const glow = 0.4 + Math.sin(now * bs.twinkleSpeed * 0.06 + bs.twinklePhase) * 0.3;
     const fl = bs.flareLength * glow;
 
     // Core
@@ -154,6 +160,7 @@ function starfieldAnimate() {
     starfieldCtx.stroke();
   }
 
+  starfieldCtx.restore();
   starfieldAnimId = requestAnimationFrame(starfieldAnimate);
 }
 
@@ -172,15 +179,18 @@ export function resumeStarfield() {
 }
 
 export function resizeStarfield() {
-  starfieldCanvas.width = innerWidth;
-  starfieldCanvas.height = innerHeight;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  starfieldCanvas.width = innerWidth * dpr;
+  starfieldCanvas.height = innerHeight * dpr;
+  starfieldCanvas.style.width = innerWidth + 'px';
+  starfieldCanvas.style.height = innerHeight + 'px';
   for (const star of stars) {
-    if (star.baseX > starfieldCanvas.width) {
-      star.baseX = Math.random() * starfieldCanvas.width;
+    if (star.baseX > innerWidth) {
+      star.baseX = Math.random() * innerWidth;
       star.x = star.baseX;
     }
-    if (star.baseY > starfieldCanvas.height) {
-      star.baseY = Math.random() * starfieldCanvas.height;
+    if (star.baseY > innerHeight) {
+      star.baseY = Math.random() * innerHeight;
       star.y = star.baseY;
     }
   }

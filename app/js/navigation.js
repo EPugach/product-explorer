@@ -4,11 +4,12 @@
 //  trusted product data object (app-owned), not user input.
 // ══════════════════════════════════════════════════════════════
 
-import { track, announce } from './utils.js';
-import { resetZoomPan, setGraphSettled, nodeMap } from './physics.js';
+import { track, announce, lightenColor, darkenColor } from './utils.js';
+import { resetZoomPan, setGraphSettled, nodeMap, zoom, panX, panY, animateFlyIn, animateFlyOut } from './physics.js';
 import { pauseStarfield, resumeStarfield } from './starfield.js';
 import { domainSvg, entitySvg } from './icons.js';
 import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons } from './search.js';
+import { setFlyInState } from './renderer.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -26,7 +27,7 @@ function packageBadge(entity) {
 
 // Normalize singular entity type slugs (from old URLs / search) to plural data keys
 const ENTITY_TYPE_MAP = { class: 'classes', object: 'objects', trigger: 'triggers', lwc: 'lwcs' };
-import { setFocusedPlanetIndex, entitiesLoaded } from './state.js';
+import { setFocusedPlanetIndex, entitiesLoaded, prefersReducedMotion } from './state.js';
 
 let PLANET_META = {};
 export function rebuildPlanetMeta() {
@@ -43,6 +44,54 @@ let currentEntity = null;
 let currentEntityTab = null;
 let navHistory = [];
 let _lastSearchPage = null; // { query, results, aiAnswer }
+let _flyInAnimating = false;
+let _lastZoomedPlanet = null; // { id, screenX, screenY, screenR } for reverse fly-out
+export const isFlyInAnimating = () => _flyInAnimating;
+
+// ── Planet Implosion Circle (fly-out only) ──
+// On fly-out: full-viewport circle shrinks back to planet position
+let _implosionEl = null;
+let _implosionCleanupTimer = null;
+
+function _cleanupImplosion() {
+  if (_implosionCleanupTimer) { clearTimeout(_implosionCleanupTimer); _implosionCleanupTimer = null; }
+  if (_implosionEl) { _implosionEl.remove(); _implosionEl = null; }
+}
+
+function _triggerImplosion(color, screenX, screenY, screenR, durationMs) {
+  _cleanupImplosion();
+  const BASE = 2;
+  const diagPx = Math.sqrt(innerWidth * innerWidth + innerHeight * innerHeight);
+  const fillScale = (diagPx / BASE) * 1.15;
+  const planetScale = Math.max(1, (screenR * 2) / BASE);
+
+  const el = document.createElement('div');
+  el.id = 'planet-explosion';
+  el.style.cssText = [
+    'position:absolute',
+    `left:${screenX - BASE / 2}px`,
+    `top:${screenY - BASE / 2}px`,
+    `width:${BASE}px`, `height:${BASE}px`,
+    'border-radius:50%',
+    `background:radial-gradient(circle,${lightenColor(color, 40)} 0%,${color} 55%,${darkenColor(color, 30)} 100%)`,
+    `transform:scale(${fillScale})`,
+    'pointer-events:none',
+    'will-change:transform,opacity',
+    'opacity:1',
+    `--implosion-duration:${durationMs}ms`
+  ].join(';');
+  document.getElementById('stage').prepend(el);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (!el.isConnected) return;
+    el.classList.add('imploding');
+    el.style.transform = `scale(${planetScale})`;
+    el.style.opacity = '0';
+  }));
+
+  _implosionCleanupTimer = setTimeout(() => _cleanupImplosion(), durationMs + 100);
+  _implosionEl = el;
+}
 
 // Animation tick callbacks — set by main.js to avoid circular imports
 let _graphTick = null;
@@ -87,14 +136,46 @@ export const handleHashNavigation = () => {
       currentPlanet = null;
       currentComponent = null;
       currentEntity = null;
-      resetZoomPan();
-      setGalaxyCanvasVisible(true);
-      showViewDirect('galaxy-view');
-      setGraphSettled(false);
-      if (_graphTick) requestAnimationFrame(_graphTick);
-      if (_particleTick) requestAnimationFrame(_particleTick);
       updateBreadcrumb();
       updateDocumentTitle('galaxy');
+
+      if (_lastZoomedPlanet && !prefersReducedMotion) {
+        // Cinematic fly-out with implosion circle
+        const lzp = _lastZoomedPlanet;
+        if (lzp.screenX != null && lzp.color) {
+          _triggerImplosion(lzp.color, lzp.screenX, lzp.screenY, lzp.screenR, getTransitionMs());
+        }
+        setGalaxyCanvasVisible(true);
+        setFlyInState(lzp.id, 1);
+        resumeStarfield();
+        showView('galaxy-view', 'out');
+        const crossfadeMs = Math.min(getTransitionMs(), 300);
+        setTimeout(() => {
+          const flyDuration = Math.round(getTransitionMs() * 2.3);
+          animateFlyOut(flyDuration, (progress) => {
+            setFlyInState(lzp.id, Math.max(0, 1 - progress));
+          }, () => {
+            setFlyInState(null, 0);
+            _lastZoomedPlanet = null;
+            _cleanupImplosion();
+            setGraphSettled(false);
+            if (_graphTick) requestAnimationFrame(_graphTick);
+            if (_particleTick) requestAnimationFrame(_particleTick);
+          });
+        }, crossfadeMs);
+      } else {
+        // Instant transition
+        resetZoomPan();
+        _lastZoomedPlanet = null;
+        _flyInAnimating = false;
+        setFlyInState(null, 0);
+        setGalaxyCanvasVisible(true);
+        showViewDirect('galaxy-view');
+        setGraphSettled(false);
+        if (_graphTick) requestAnimationFrame(_graphTick);
+        if (_particleTick) requestAnimationFrame(_particleTick);
+        resumeStarfield();
+      }
     }
     return;
   }
@@ -187,18 +268,61 @@ function updateBreadcrumb() {
 }
 
 export function enterPlanet(id) {
+  if (_flyInAnimating) return; // guard against double-click during animation
   setFocusedPlanetIndex(-1);
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
   currentLevel = 'planet'; currentPlanet = id; currentComponent = null;
-  renderPlanetView(id); setGalaxyCanvasVisible(false); showView('planet-view', 'in');
+
+  // Pre-render the planet view (hidden behind canvas) so it's ready for crossfade
+  renderPlanetView(id);
   updateBreadcrumb(); setHash(`#/${id}`); updateDocumentTitle('planet', id);
-  pauseStarfield();
+
+  const node = nodeMap[id];
+  const flyDuration = Math.round(getTransitionMs() * 2.3);
+
+  if (!node || prefersReducedMotion) {
+    // Instant transition (reduced motion or missing node)
+    setGalaxyCanvasVisible(false); showView('planet-view', 'in');
+    pauseStarfield();
+  } else {
+    // Cinematic fly-in with seamless crossfade
+    _flyInAnimating = true;
+    let crossfadeStarted = false;
+    setFlyInState(id, 0);
+    animateFlyIn(node, flyDuration, (progress) => {
+      setFlyInState(id, progress);
+      // Start crossfade at 82% progress — the deep zoom already sells "entering the planet"
+      if (!crossfadeStarted && progress >= 0.82) {
+        crossfadeStarted = true;
+        // Snapshot screen position for reverse implosion on fly-out
+        const snapX = node.x * zoom + panX;
+        const snapY = node.y * zoom + panY;
+        const snapR = node.radius * zoom;
+        _lastZoomedPlanet = { id, color: node.color, screenX: snapX, screenY: snapY, screenR: snapR };
+
+        setGalaxyCanvasVisible(false);
+        pauseStarfield();
+        showView('planet-view', 'in');
+      }
+    }, () => {
+      // Fly-in complete: ensure crossfade started (safety for very short durations)
+      if (!crossfadeStarted) {
+        _lastZoomedPlanet = { id, color: node.color, screenX: null, screenY: null, screenR: null };
+        showView('planet-view', 'in');
+        setGalaxyCanvasVisible(false);
+        pauseStarfield();
+      }
+      setFlyInState(null, 0);
+      _flyInAnimating = false;
+    });
+  }
+
   const p = PRODUCT_DATA[id];
   if (p) announce(`Viewing ${p.name} domain, ${p.components.length} components`);
   setTimeout(() => {
     const heading = document.querySelector('#planet-content h2');
     if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
-  }, getTransitionMs() + 50);
+  }, (_flyInAnimating ? flyDuration : 0) + getTransitionMs() + 50);
 }
 
 export function enterCore(pid, cid) {
@@ -450,16 +574,55 @@ export function navigateToCore(pid, cid) {
 }
 
 export function navigateTo(level) {
-  if (level === currentLevel) return;
+  if (level === currentLevel || _flyInAnimating) return;
   if (level === 'galaxy') {
     currentLevel = 'galaxy'; currentPlanet = null; currentComponent = null;
-    resetZoomPan(); setGalaxyCanvasVisible(true); showView('galaxy-view', 'out');
-    setGraphSettled(false);
-    if (_graphTick) requestAnimationFrame(_graphTick);
-    if (_particleTick) requestAnimationFrame(_particleTick);
     setHash('#/'); updateDocumentTitle('galaxy');
-    resumeStarfield(); announce('Returned to galaxy overview');
-    setTimeout(() => { const canvas = document.getElementById('graph-canvas'); if (canvas) canvas.focus({ preventScroll: true }); }, getTransitionMs() + 50);
+    announce('Returned to galaxy overview');
+
+    if (_lastZoomedPlanet && !prefersReducedMotion) {
+      const lzp = _lastZoomedPlanet;
+      const durationMs = getTransitionMs();
+
+      // Implosion circle appears over the panel, shrinks to planet position
+      if (lzp.screenX != null && lzp.color) {
+        _triggerImplosion(lzp.color, lzp.screenX, lzp.screenY, lzp.screenR, durationMs);
+      }
+
+      // Panel fades out, then fly-out animation starts
+      showView('galaxy-view', 'out');
+      const crossfadeMs = Math.min(durationMs, 300);
+
+      setTimeout(() => {
+        // Reveal canvas and start fly-out
+        setGalaxyCanvasVisible(true);
+        setFlyInState(lzp.id, 1);
+        resumeStarfield();
+
+        const flyDuration = Math.round(durationMs * 2.3);
+        animateFlyOut(flyDuration, (progress) => {
+          setFlyInState(lzp.id, Math.max(0, 1 - progress));
+        }, () => {
+          setFlyInState(null, 0);
+          _lastZoomedPlanet = null;
+          _cleanupImplosion();
+          setGraphSettled(false);
+          if (_graphTick) requestAnimationFrame(_graphTick);
+          if (_particleTick) requestAnimationFrame(_particleTick);
+          const canvas = document.getElementById('graph-canvas');
+          if (canvas) canvas.focus({ preventScroll: true });
+        });
+      }, crossfadeMs);
+    } else {
+      // Instant transition (no previous fly-in or reduced motion)
+      resetZoomPan(); setGalaxyCanvasVisible(true); showView('galaxy-view', 'out');
+      setGraphSettled(false);
+      if (_graphTick) requestAnimationFrame(_graphTick);
+      if (_particleTick) requestAnimationFrame(_particleTick);
+      resumeStarfield();
+      _lastZoomedPlanet = null;
+      setTimeout(() => { const canvas = document.getElementById('graph-canvas'); if (canvas) canvas.focus({ preventScroll: true }); }, getTransitionMs() + 50);
+    }
   } else if (level === 'planet') {
     currentLevel = 'planet'; currentComponent = null;
     showView('planet-view', 'out'); setHash(`#/${currentPlanet}`); updateDocumentTitle('planet', currentPlanet);

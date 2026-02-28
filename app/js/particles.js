@@ -22,8 +22,9 @@ export function initParticles() {
 }
 
 export function resizeParticleCanvas() {
-  particleCanvas.width = innerWidth * devicePixelRatio;
-  particleCanvas.height = innerHeight * devicePixelRatio;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  particleCanvas.width = innerWidth * dpr;
+  particleCanvas.height = innerHeight * dpr;
   particleCanvas.style.width = innerWidth + 'px';
   particleCanvas.style.height = innerHeight + 'px';
 }
@@ -154,8 +155,9 @@ export function updateParticles() {
 }
 
 export function renderParticles() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
   particleCtx.save();
-  particleCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  particleCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   particleCtx.clearRect(0, 0, innerWidth, innerHeight);
 
   if (!particlesVisible) { particleCtx.restore(); return; }
