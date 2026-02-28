@@ -264,7 +264,7 @@ body {
   transition: max-width 0.4s var(--ease-out-expo);
 }
 .search-box:has(.search-shell.expanded) {
-  max-width: 600px;
+  max-width: clamp(480px, 55vw, 720px);
 }
 
 .search-shell {
@@ -286,8 +286,9 @@ body {
 .search-shell.expanded {
   border-color: rgba(77,139,255,0.5);
   background: rgba(8,10,24,0.97);
-  border-radius: 8px;
-  box-shadow: 0 0 20px rgba(77,139,255,0.12), 0 2px 8px rgba(0,0,0,0.3);
+  border-radius: 12px 12px 0 0;
+  border-bottom-color: transparent;
+  box-shadow: 0 0 20px rgba(77,139,255,0.12), -4px 0 12px rgba(0,0,0,0.3), 4px 0 12px rgba(0,0,0,0.3);
 }
 .search-shell .s-icon {
   position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
@@ -308,28 +309,23 @@ body {
 .search-shell.focused .s-kbd,
 .search-shell.expanded .s-kbd { opacity: 0; width: 0; padding: 0; overflow: hidden; }
 
-/* ── Search Dropdown (full-width overlay panel) ── */
+/* ── Search Dropdown (expands below search shell) ── */
 .search-drop {
-  position: fixed; top: 48px; left: 0; right: 0;
-  margin: 0 auto;
-  width: clamp(420px, 60vw, 720px);
+  position: absolute; top: 100%; left: 0; right: 0;
   z-index: 120;
   background: rgba(8,10,24,0.97);
-  border: 1px solid rgba(77,139,255,0.25);
-  border-top: 2px solid rgba(77,139,255,0.4);
+  border: 1px solid rgba(77,139,255,0.35);
+  border-top: none;
   border-radius: 0 0 14px 14px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 30px rgba(77,139,255,0.06);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 24px rgba(77,139,255,0.06),
+              -4px 0 12px rgba(0,0,0,0.3), 4px 0 12px rgba(0,0,0,0.3);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   max-height: 0; overflow: hidden; opacity: 0;
-  transform: translateY(-6px);
-  transition: max-height 0.4s var(--ease-out-expo),
-              opacity 0.2s ease,
-              transform 0.35s var(--ease-out-expo);
+  transition: max-height 0.4s var(--ease-out-expo), opacity 0.2s ease;
 }
 .search-drop.open {
   max-height: min(520px, 65vh);
   opacity: 1; overflow-y: auto;
-  transform: translateY(0);
 }
 .search-drop .search-hint {
   padding: 7px 20px; border-top: 1px solid rgba(100,140,255,0.12);
@@ -534,6 +530,16 @@ body {
 }
 .ai-answer-formatted .ai-bullet:has(.ai-bullet-num)::before {
   content: none;
+}
+.ai-answer-formatted a.ai-link {
+  color: var(--glow-accent);
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 212, 255, 0.3);
+  text-underline-offset: 2px;
+  transition: text-decoration-color var(--duration-fast);
+}
+.ai-answer-formatted a.ai-link:hover {
+  text-decoration-color: var(--glow-accent);
 }
 
 /* ── AI Card Clickable (search dropdown) ── */
@@ -1334,11 +1340,6 @@ body {
   #zoom-indicator { display: none; }
 
   .search-shell .s-kbd { display: none; }
-  .search-drop {
-    width: auto;
-    left: 12px; right: 12px;
-    margin: 0;
-  }
 
   /* Touch targets already set at 44px in base styles */
 
@@ -2005,8 +2006,8 @@ body.theme-light .search-shell.expanded .s-icon { color: #595959; }
 body.theme-light .search-drop {
   background: #ffffff;
   border-color: #c9c9c9;
-  border-top: 2px solid #0176d3;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.12), 0 0 20px rgba(1,118,211,0.06);
+  border-top: none;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 0 16px rgba(1,118,211,0.06);
 }
 body.theme-light .search-drop .search-hint {
   background: #f3f3f3;
@@ -2034,6 +2035,8 @@ body.theme-light .ai-copy-btn.copied { border-color: #2e844a; color: #2e844a; }
 body.theme-light .ai-answer-formatted .ai-inline-code { background: rgba(1,118,211,0.06); border-color: rgba(1,118,211,0.12); }
 body.theme-light .ai-answer-formatted .ai-bullet::before { color: #0176d3; }
 body.theme-light .ai-answer-formatted .ai-bullet .ai-bullet-num { color: #0176d3; }
+body.theme-light .ai-answer-formatted a.ai-link { color: #0176d3; text-decoration-color: rgba(1,118,211,0.3); }
+body.theme-light .ai-answer-formatted a.ai-link:hover { text-decoration-color: #0176d3; }
 body.theme-light .ai-explore-hint { color: #0176d3; }
 body.theme-light .ai-answer-icon { background: rgba(1, 118, 211, 0.08); border-color: rgba(1, 118, 211, 0.15); }
 body.theme-light .ai-related-chip { background: rgba(0, 0, 0, 0.03); border-color: #d9d9d9; }
