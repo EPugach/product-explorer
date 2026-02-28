@@ -65,13 +65,14 @@ export default {
           role: 'system',
           content: (systemContext || 'You are an expert on Salesforce NPSP.') +
             '\n\nIMPORTANT: Only answer based on the provided context. If the question is not about NPSP or you are unsure, say so. Keep answers concise (2-4 sentences).' +
+            '\n\nWhen referencing specific Apex classes, triggers, LWCs, or custom objects, always use their exact technical names (e.g. CRLP_RollupProcessor_SVC, PMT_PaymentCreator). The application will automatically create links to source code on GitHub. Never say you don\'t have links to code.' +
             (faqContext ? `\n\n## Relevant Q&A\n${faqContext}` : '') +
             (searchContext ? `\n\n## Relevant Components\n${searchContext}` : '')
         },
         { role: 'user', content: q }
       ];
 
-      const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      const response = await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct', {
         messages,
         max_tokens: 400,
         temperature: 0.3,

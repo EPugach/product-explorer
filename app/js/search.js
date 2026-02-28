@@ -69,6 +69,16 @@ let _packages = {};
 export const setProductData = (data, name) => { PRODUCT_DATA = data; if (name) _productName = name; };
 export const setPackages = (packages) => { _packages = packages || {}; };
 
+// ── Entity link map (injected by main.js after entities load) ─
+let _entityLinkMap = null;   // { name: sourceUrl } for all entities
+let _entityLinkNames = null; // sorted longest-first for replacement
+
+export const setEntityLinks = (map) => {
+  _entityLinkMap = map;
+  // Pre-sort names longest-first to prevent partial matches
+  _entityLinkNames = Object.keys(map).sort((a, b) => b.length - a.length);
+};
+
 // ── AI search state ─────────────────────────────────────────
 let _aiEndpoint = '';
 let _aiContext = '';
@@ -485,6 +495,32 @@ function highlightMatch(text, query) {
   return text.replace(termRe, '<span class="sr-match">$1</span>');
 }
 
+// ── Entity name linkification ─────────────────────────────────
+// Scans escaped text for known entity names and inserts markdown links
+// to their GitHub source URLs. Must be called BEFORE formatAiMarkdown()
+// so that [name](url) syntax is converted to <a> tags by the markdown parser.
+export function linkifyEntityNames(escapedText) {
+  if (!_entityLinkMap || !_entityLinkNames || _entityLinkNames.length === 0) return escapedText;
+
+  let result = escapedText;
+  const linked = new Set();
+
+  for (const name of _entityLinkNames) {
+    if (linked.has(name)) continue;
+    if (result.indexOf(name) === -1) continue;
+
+    const url = _entityLinkMap[name];
+    // Word-boundary match, first occurrence only
+    const re = new RegExp('\\b(' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')\\b');
+    const match = result.match(re);
+    if (match) {
+      result = result.replace(re, `[$1](${url})`);
+      linked.add(name);
+    }
+  }
+  return result;
+}
+
 // ── AI answer markdown formatting ─────────────────────────────
 // Lightweight parser for common markdown patterns in AI responses.
 // IMPORTANT: Must be called on ALREADY HTML-ESCAPED text to prevent XSS.
@@ -539,9 +575,10 @@ function renderSearchResults(results, query, aiState) {
         `<div class="ai-skeleton"><div></div><div></div><div></div></div>` +
         `</div></div></div>`;
     } else if (aiState.answer) {
-      // Escape HTML in AI answer (AI-generated content, not app-owned), then format markdown
+      // Escape HTML in AI answer (AI-generated content, not app-owned),
+      // linkify entity names, then format markdown
       const safeAnswer = aiState.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      const formattedAnswer = formatAiMarkdown(safeAnswer);
+      const formattedAnswer = formatAiMarkdown(linkifyEntityNames(safeAnswer));
       aiHtml = `<div class="ai-section" id="ai-section">` +
         `<div class="ai-header">AI ANSWER<button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
         `<div class="ai-card ai-card-clickable" role="button" tabindex="0">` +

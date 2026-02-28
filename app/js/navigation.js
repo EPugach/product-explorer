@@ -8,7 +8,7 @@ import { track, announce } from './utils.js';
 import { resetZoomPan, setGraphSettled, nodeMap } from './physics.js';
 import { pauseStarfield, resumeStarfield } from './starfield.js';
 import { domainSvg, entitySvg } from './icons.js';
-import { formatAiMarkdown } from './search.js';
+import { formatAiMarkdown, linkifyEntityNames } from './search.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -262,7 +262,7 @@ function renderAiAnswerView(question, answer, relatedResults) {
   const productName = PRODUCT_CONFIG.name || 'Product';
   const safeQ = question.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const safeA = answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const formattedA = formatAiMarkdown(safeA);
+  const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
 
   const typeColors = {
     domain: '#00d4ff', planet: '#00d4ff', component: '#4d8bff', class: '#4d8bff',
