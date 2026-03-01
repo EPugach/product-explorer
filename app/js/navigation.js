@@ -8,7 +8,7 @@ import { track, announce, lightenColor, darkenColor } from './utils.js';
 import { resetZoomPan, setGraphSettled, nodeMap, zoom, panX, panY, animateFlyIn, animateFlyOut } from './physics.js';
 import { pauseStarfield, resumeStarfield } from './starfield.js';
 import { domainSvg, entitySvg } from './icons.js';
-import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons } from './search.js';
+import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons, highlightMatch } from './search.js';
 import { setFlyInState } from './renderer.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
@@ -60,9 +60,11 @@ function _cleanupImplosion() {
 
 function _triggerImplosion(color, screenX, screenY, screenR, durationMs) {
   _cleanupImplosion();
-  const BASE = 2;
-  const diagPx = Math.sqrt(innerWidth * innerWidth + innerHeight * innerHeight);
-  const fillScale = (diagPx / BASE) * 1.15;
+  const BASE = 100;
+  const dx = Math.max(screenX, innerWidth - screenX);
+  const dy = Math.max(screenY, innerHeight - screenY);
+  const coverRadius = Math.hypot(dx, dy);
+  const fillScale = (coverRadius * 2) / BASE;
   const planetScale = Math.max(1, (screenR * 2) / BASE);
 
   const el = document.createElement('div');
@@ -423,11 +425,14 @@ function renderSearchResultsPage(query, results, options = {}) {
       const color = SR_TYPE_COLORS[r.type] || '#64748b';
       const icon = SR_TYPE_ICONS[r.type] || '\u{1F4C4}';
       const safeName = r.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      const safeDesc = r.desc ? r.desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+      const rawDesc = r.desc || '';
+      const safeDesc = rawDesc ? rawDesc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+      const snippetDesc = safeDesc ? safeDesc.substring(0, 120) + (safeDesc.length > 120 ? '...' : '') : '';
+      const highlightedDesc = snippetDesc ? highlightMatch(snippetDesc, query) : '';
       html += `<div class="sr-result-card" data-sr-idx="${i}" style="--card-accent:${color}" role="button" tabindex="0">`;
       html += `<div class="sr-result-icon" style="color:${color}">${icon}</div>`;
-      html += `<div class="sr-result-body"><div class="sr-result-name">${safeName}</div>`;
-      if (safeDesc) html += `<div class="sr-result-desc">${safeDesc}</div>`;
+      html += `<div class="sr-result-body"><div class="sr-result-name">${highlightMatch(safeName, query)}</div>`;
+      if (highlightedDesc) html += `<div class="sr-result-desc">${highlightedDesc}</div>`;
       html += `</div>`;
       html += `<div class="sr-result-badge" style="--card-accent:${color}">${r.type}</div>`;
       html += `</div>`;
@@ -751,6 +756,7 @@ function renderCoreView(pid, cid) {
   let tabBar = '';
   if(tabs.length>1) tabBar = `<div class="entity-tab-bar">${tabs.map(t=>`<button class="entity-tab${t.key==='overview'?' active':''}" data-tab="${t.key}" data-entity-tab-pid="${pid}" data-entity-tab-cid="${cid}">${t.label}${t.count!==null?` <span class="tab-count">${t.count}</span>`:''}</button>`).join('')}</div>`;
   else if(!entitiesLoaded) tabBar = `<div class="entity-loading-hint" style="padding:8px 0;font-size:12px;color:var(--text-dim,#64748b);opacity:0.7">Loading entity data\u2026</div>`;
+  // Safe: all template content is from trusted app-owned product data (no user input)
   el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${c.name}</span></div><div class="core-header"><span style="font-size:24px">${c.icon}</span><div><h2>${c.name}</h2><span class="badge">TRIGGER LEVEL</span></div></div>${tabBar}<div id="entity-tab-content">${renderOverviewTab(c)}</div>`;
   el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
   el.querySelectorAll('[data-nav="planet"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('planet'));});
@@ -768,6 +774,7 @@ function switchEntityTab(pid, cid, tabKey) {
   document.querySelectorAll('.entity-tab').forEach(t=>{t.classList.toggle('active',t.dataset.tab===tabKey);});
   const contentEl = document.getElementById('entity-tab-content');
   const p = PRODUCT_DATA[pid]; const c = p.components.find(x=>x.id===cid); if(!c)return;
+  // Safe: all template content is from trusted app-owned product data (no user input)
   if (tabKey === 'overview') { contentEl.innerHTML = renderOverviewTab(c); attachOverviewListeners(contentEl); }
   else { contentEl.innerHTML = renderEntityGrid(c, tabKey, pid); attachEntityGridListeners(contentEl); }
   document.getElementById('core-view').scrollTop = 0;

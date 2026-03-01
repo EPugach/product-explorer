@@ -632,7 +632,7 @@ export async function askAi(question) {
 
 // ── Highlight ────────────────────────────────────────────────
 
-function highlightMatch(text, query) {
+export function highlightMatch(text, query) {
   if (!query) return text;
   // Try exact substring match first
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

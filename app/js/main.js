@@ -65,8 +65,8 @@ let _prefixToPkg = {};
 async function loadProductData() {
   // Load config and data in parallel (required)
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=22`),
-    import(`${productsBase}/data.js?v=22`),
+    import(`${productsBase}/config.js?v=23`),
+    import(`${productsBase}/data.js?v=23`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
@@ -89,7 +89,7 @@ async function loadProductData() {
 
   // Load domain icons (required before canvas rendering)
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=22`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=23`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
@@ -97,7 +97,7 @@ async function loadProductData() {
 
   // Load tours (optional)
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=22`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=23`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     // Tours are optional; if not found, tour UI will be hidden
@@ -106,7 +106,7 @@ async function loadProductData() {
 
   // Load feedback module (optional)
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=22`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=23`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {
     // Feedback is optional
@@ -114,7 +114,7 @@ async function loadProductData() {
 
   // Load AI context (optional)
   try {
-    const aiContextMod = await import(`${productsBase}/ai-context.js?v=22`);
+    const aiContextMod = await import(`${productsBase}/ai-context.js?v=23`);
     const aiEndpoint = 'https://npsp-ai-search.epug.workers.dev';
     setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
     setFeedbackEndpoint(aiEndpoint + '/feedback');
@@ -739,6 +739,11 @@ function setupKeyboard() {
       openSearch();
       track('keyboard_shortcut', { key: '/' });
     }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      openSearch();
+      track('keyboard_shortcut', { key: 'Cmd+K' });
+    }
     if (e.key === 'Escape' && !isTyping()) {
       if (tourState.active) {
         exitTour();
@@ -759,19 +764,6 @@ function setupKeyboard() {
       advanceStop(e.key === 'ArrowRight' ? 1 : -1);
       track('keyboard_shortcut', { key: e.key, context: 'tour' });
       return;
-    }
-    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
-        document.activeElement.tagName !== 'INPUT' &&
-        currentLevel === 'core') {
-      const tabs = document.querySelectorAll('.entity-tab');
-      if (tabs.length > 1) {
-        const activeIdx = Array.from(tabs).findIndex((t) => t.classList.contains('active'));
-        if (e.key === 'ArrowLeft' && activeIdx > 0) {
-          tabs[activeIdx - 1].click();
-        } else if (e.key === 'ArrowRight' && activeIdx < tabs.length - 1) {
-          tabs[activeIdx + 1].click();
-        }
-      }
     }
   });
 }
@@ -834,7 +826,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading (dynamic import, ES module) ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=22`);
+    const module = await import(`${productsBase}/entities.js?v=23`);
     _entityData = module.default;
     setEntitiesLoaded(true);
 
