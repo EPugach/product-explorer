@@ -27,8 +27,5 @@
 !eda/
 !eda/index.html
 
-# CLAUDE.md for project instructions
-!CLAUDE.md
-
 # Package config
 !package.json
