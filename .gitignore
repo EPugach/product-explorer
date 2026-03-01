@@ -17,26 +17,18 @@
 !products/
 !products/**
 
-# Allow product bootstrap pages
+# Allow product bootstrap pages (HTML, favicon, og-image only — no js/css/fonts dupes)
 !npsp/
 !npsp/index.html
 !npsp/favicon.svg
-!npsp/fonts/
-!npsp/fonts/**
 !npsp/og-image.png
 
 # Allow future product bootstraps
 !eda/
 !eda/index.html
 
-# Allow docs
-!docs/
-!docs/**
+# CLAUDE.md for project instructions
+!CLAUDE.md
 
-# Allow scripts
-!scripts/
-!scripts/**
-
-# Allow workers
-!workers/
-!workers/**
+# Package config
+!package.json
