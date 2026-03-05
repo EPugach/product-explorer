@@ -8,7 +8,7 @@ import { track, announce, lightenColor, darkenColor } from './utils.js';
 import { resetZoomPan, setGraphSettled, nodeMap, zoom, panX, panY, animateFlyIn, animateFlyOut } from './physics.js';
 import { pauseStarfield, resumeStarfield } from './starfield.js';
 import { domainSvg, entitySvg } from './icons.js';
-import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons, highlightMatch } from './search.js';
+import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons, highlightMatch, renderPreview } from './search.js';
 import { setFlyInState } from './renderer.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
@@ -383,18 +383,20 @@ export function enterSearchResults(query, results, options = {}) {
   track('search_results_page', { query: query.substring(0, 50), resultCount: results.length });
 }
 
-// Safe innerHTML: all user/AI content is HTML-escaped before insertion.
-// Product name and type labels are app-owned trusted data.
+// All user/AI content is HTML-escaped before insertion.
+// Product name, type labels, and entity data are app-owned trusted data.
 function renderSearchResultsPage(query, results, options = {}) {
   const el = document.getElementById('search-results-content');
   const productName = PRODUCT_CONFIG.name || 'Product';
   const safeQ = query.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const shouldAskAi = isQuestion(query);
+  let _selectedIdx = results.length > 0 ? 0 : -1;
+  const isMobile = window.innerWidth < 768;
 
   // Breadcrumb
   let html = `<div class="bc"><span class="bc-link" data-nav="galaxy">${productName}</span><span class="bc-sep">&#x276F;</span><span class="bc-here">Search Results</span></div>`;
 
-  // Search input (value is HTML-escaped via safeQ)
+  // Search input (value HTML-escaped via safeQ)
   html += `<div class="sr-search-box"><span class="sr-search-icon">\u{1F50D}</span><input type="text" class="sr-search-input" id="srSearchInput" value="${safeQ}" autocomplete="off" spellcheck="false" placeholder="Search ${productName}..."></div>`;
 
   // AI answer section
@@ -410,40 +412,49 @@ function renderSearchResultsPage(query, results, options = {}) {
       const safeA = options.aiAnswer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
       html += `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div>`;
-      html += `<div class="sr-ai-attribution">Based on ${productName} product data</div>`;
+      html += `<div class="ai-attribution">Based on ${productName} product data</div>`;
     } else {
       html += `<div class="sr-ai-skeleton" id="srAiSkeleton"><div class="sr-ai-skeleton-line"></div><div class="sr-ai-skeleton-line"></div><div class="sr-ai-skeleton-line"></div><div class="sr-ai-skeleton-line"></div></div>`;
     }
     html += `</div>`;
   }
 
-  // Results (all content HTML-escaped, type labels are app-owned)
+  // Master-detail layout for results
   if (results.length > 0) {
     html += `<div class="sr-results-header">Search Results (${results.length})</div>`;
-    html += `<div class="sr-results-list">`;
+    html += `<div class="sr-master-detail-page" id="srMasterDetail">`;
+
+    // Master list
+    html += `<div class="sr-master-list" id="srMasterList">`;
     results.forEach((r, i) => {
       const color = SR_TYPE_COLORS[r.type] || '#64748b';
       const icon = SR_TYPE_ICONS[r.type] || '\u{1F4C4}';
       const safeName = r.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      const rawDesc = r.desc || '';
-      const safeDesc = rawDesc ? rawDesc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
-      const snippetDesc = safeDesc ? safeDesc.substring(0, 120) + (safeDesc.length > 120 ? '...' : '') : '';
-      const highlightedDesc = snippetDesc ? highlightMatch(snippetDesc, query) : '';
-      html += `<div class="sr-result-card" data-sr-idx="${i}" style="--card-accent:${color}" role="button" tabindex="0">`;
+      html += `<div class="sr-result-card${i === 0 ? ' sr-selected' : ''}" data-sr-idx="${i}" style="--card-accent:${color}" role="button" tabindex="0">`;
       html += `<div class="sr-result-icon" style="color:${color}">${icon}</div>`;
       html += `<div class="sr-result-body"><div class="sr-result-name">${highlightMatch(safeName, query)}</div>`;
-      if (highlightedDesc) html += `<div class="sr-result-desc">${highlightedDesc}</div>`;
+      html += `<div class="sr-result-path">${r.level || ''}</div>`;
       html += `</div>`;
       html += `<div class="sr-result-badge" style="--card-accent:${color}">${r.type}</div>`;
       html += `</div>`;
     });
     html += `</div>`;
+
+    // Preview pane (hidden on mobile via CSS)
+    html += `<div class="sr-preview-pane" id="srPreviewPane"></div>`;
+    html += `</div>`;
   } else {
     html += `<div class="sr-empty">No results found for "${safeQ}"</div>`;
   }
 
-  // Safe: all content above is HTML-escaped or app-owned
+  // Safe: all content HTML-escaped or app-owned
   el.innerHTML = html;
+
+  // Render initial preview for first result
+  const previewPane = document.getElementById('srPreviewPane');
+  if (previewPane && results.length > 0 && !isMobile) {
+    renderFullPreview(previewPane, results[0], query);
+  }
 
   // Wire breadcrumb
   el.querySelectorAll('[data-nav="galaxy"]').forEach(l => {
@@ -451,14 +462,40 @@ function renderSearchResultsPage(query, results, options = {}) {
     l.addEventListener('click', () => navigateTo('galaxy'));
   });
 
-  // Wire result card clicks
+  // Wire result card interactions
   el.querySelectorAll('[data-sr-idx]').forEach(card => {
     const idx = parseInt(card.dataset.srIdx, 10);
     const result = results[idx];
-    if (result && result.action) {
-      card.addEventListener('click', () => { result.action(); });
-      card.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); result.action(); } });
-    }
+    if (!result) return;
+
+    card.addEventListener('click', () => {
+      if (isMobile) {
+        if (result.action) result.action();
+      } else {
+        _selectedIdx = idx;
+        el.querySelectorAll('.sr-result-card').forEach(c => c.classList.remove('sr-selected'));
+        card.classList.add('sr-selected');
+        if (previewPane) renderFullPreview(previewPane, result, query);
+      }
+    });
+
+    card.addEventListener('dblclick', () => {
+      if (result.action) result.action();
+    });
+
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (card.classList.contains('sr-selected') || isMobile) {
+          if (result.action) result.action();
+        } else {
+          _selectedIdx = idx;
+          el.querySelectorAll('.sr-result-card').forEach(c => c.classList.remove('sr-selected'));
+          card.classList.add('sr-selected');
+          if (previewPane) renderFullPreview(previewPane, result, query);
+        }
+      }
+    });
   });
 
   // Wire copy button
@@ -485,10 +522,8 @@ function renderSearchResultsPage(query, results, options = {}) {
         const newResults = searchProduct(newQuery);
         _lastSearchPage = { query: newQuery, results: [...newResults], aiAnswer: null };
         renderSearchResultsPage(newQuery, newResults, {});
-        // Focus the input and restore cursor position
         const input = document.getElementById('srSearchInput');
         if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
-        // Trigger AI fetch if question
         if (isQuestion(newQuery)) {
           triggerAiFetch(newQuery);
         }
@@ -505,6 +540,71 @@ function renderSearchResultsPage(query, results, options = {}) {
   }
 
   document.getElementById('search-results-view').scrollTop = 0;
+}
+
+// Rich preview content for full results page (app-owned data only)
+function renderFullPreview(container, item, query) {
+  if (!item) {
+    container.innerHTML = '<div class="sp-empty">Select a result to preview</div>';
+    return;
+  }
+
+  const typeColor = ({
+    planet: '#4d8bff', component: '#4d8bff', tag: '#64748b',
+    'class': '#4d8bff', object: '#22c55e', trigger: '#ef4444',
+    lwc: '#a855f7', metadata: '#f59e0b'
+  })[item.type] || '#64748b';
+
+  let html = `<div class="sp-header">` +
+    `<span class="sp-type-badge" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${item.type}</span>` +
+    `<span class="sp-name" style="font-size:16px">${highlightMatch(item.name, query)}</span>` +
+    `</div>`;
+  html += `<div class="sp-domain">${item.level}</div>`;
+
+  if (item._linesOfCode) {
+    html += `<div class="sp-domain">${item._linesOfCode} lines of code</div>`;
+  }
+
+  if (item.desc) {
+    html += `<div class="sp-desc">${item.desc}</div>`;
+  }
+
+  if (item._keyMethods && item._keyMethods.length > 0) {
+    html += `<div class="sp-section-label">Key Methods</div>`;
+    html += `<div class="sp-pills">${item._keyMethods.map(m => `<span class="sp-pill">${m}</span>`).join('')}</div>`;
+  }
+
+  if (item._referencedObjects && item._referencedObjects.length > 0) {
+    html += `<div class="sp-section-label">Referenced Objects</div>`;
+    html += `<div class="sp-pills">${item._referencedObjects.map(o => `<span class="sp-pill">${o}</span>`).join('')}</div>`;
+  }
+
+  if (item._extends) {
+    html += `<div class="sp-section-label">Extends</div>`;
+    html += `<div class="sp-pills"><span class="sp-pill">${item._extends}</span></div>`;
+  }
+
+  if (item._implements) {
+    html += `<div class="sp-section-label">Implements</div>`;
+    html += `<div class="sp-pills"><span class="sp-pill">${item._implements}</span></div>`;
+  }
+
+  if (item._fields && item._fields.length > 0) {
+    html += `<div class="sp-section-label">Fields</div>`;
+    html += `<div class="sp-pills">${item._fields.map(f => `<span class="sp-pill">${f.name}</span>`).join('')}</div>`;
+  }
+
+  if (item.action) {
+    html += `<button class="sr-open-entity-btn" id="srOpenEntity">Open Entity</button>`;
+  }
+
+  // Safe: all app-owned data
+  container.innerHTML = html;
+
+  const openBtn = container.querySelector('#srOpenEntity');
+  if (openBtn && item.action) {
+    openBtn.addEventListener('click', () => item.action());
+  }
 }
 
 function wireAiCopyButton(btn, rawAnswer) {
@@ -541,7 +641,8 @@ async function triggerAiFetch(query) {
     const safeA = result.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
     if (skeleton) {
-      skeleton.outerHTML = `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div><div class="sr-ai-attribution">Based on ${productName} product data</div>`;
+      skeleton.outerHTML = `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div>` +
+        `<div class="ai-attribution">Based on ${productName} product data</div>`;
     }
     // Inject feedback buttons + panel into header (they weren't rendered while loading)
     const header = section.querySelector('.sr-ai-header');

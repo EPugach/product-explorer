@@ -396,6 +396,13 @@ function buildSearchIndex() {
               tags: entTags,
               docText: docParts.join(' '),
               level: `${planetName} > ${compName}`,
+              _keyMethods: entItem.keyMethods || [],
+              _referencedObjects: entItem.referencedObjects || [],
+              _extends: entItem.extends || null,
+              _implements: entItem.implements || null,
+              _linesOfCode: entItem.linesOfCode || null,
+              _entType: entItem.type || entItem._type || null,
+              _fields: (entType === 'object' && flds) ? flds.slice(0, 10) : null,
               action: () => {
                 if (_navigateToCore) _navigateToCore(planetId, compId);
                 setTimeout(() => {
@@ -753,46 +760,23 @@ function copyAiAnswer(btn, text) {
   }
 }
 
-// NOTE: innerHTML usage is safe here. All search data comes from the trusted
-// NPSP data object (app-owned, not user input). The query is escaped via
-// highlightMatch's regex escaping. AI answers are from our own Worker.
-// aiState: null | { loading: true } | { answer: string } | { error: string }
-function renderSearchResults(results, query, aiState) {
-  const el = document.getElementById('searchResults');
+let _previewIndex = -1;
 
-  // Build AI section HTML
-  let aiHtml = '';
-  if (aiState) {
-    if (aiState.loading) {
-      aiHtml = `<div class="ai-section" id="ai-section">` +
-        `<div class="ai-header">AI ANSWER</div>` +
-        `<div class="ai-card">` +
-        `<div class="ai-icon">&#x2728;</div>` +
-        `<div class="ai-body">` +
-        `<div class="ai-skeleton"><div></div><div></div><div></div></div>` +
-        `</div></div></div>`;
-    } else if (aiState.answer) {
-      // Escape HTML in AI answer (AI-generated content, not app-owned),
-      // linkify entity names, then format markdown
-      const safeAnswer = aiState.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      const formattedAnswer = formatAiMarkdown(linkifyEntityNames(safeAnswer));
-      aiHtml = `<div class="ai-section" id="ai-section">` +
-        `<div class="ai-header"><span class="ai-header-left">AI ANSWER${buildFeedbackButtonsHtml()}</span><button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
-        buildFeedbackPanelHtml() +
-        `<div class="ai-card ai-card-clickable" role="button" tabindex="0">` +
-        `<div class="ai-icon">&#x2728;</div>` +
-        `<div class="ai-body">` +
-        `<div class="ai-answer ai-answer-formatted">${formattedAnswer}</div>` +
-        `<div class="ai-explore-hint">Click to explore related architecture</div>` +
-        `<div class="ai-attribution">Based on ${_productName} product data</div>` +
-        `</div></div></div>`;
-    } else if (aiState.error) {
-      aiHtml = `<div class="ai-section" id="ai-section">` +
-        `<div class="ai-error">${aiState.error}</div></div>`;
-    }
-  }
+const TYPE_COLORS = {
+  planet: '#4d8bff', component: '#4d8bff', tag: '#64748b',
+  'class': '#4d8bff', object: '#22c55e', trigger: '#ef4444',
+  lwc: '#a855f7', metadata: '#f59e0b'
+};
 
-  if (results.length === 0 && !aiState && query.trim()) {
+// NOTE on innerHTML safety: All search data comes from the trusted product data
+// object (app-owned, not user input). The query is escaped via highlightMatch's
+// regex escaping. AI answers are HTML-escaped then formatted via formatAiMarkdown.
+
+// Render master list of results into #searchMaster
+function renderMasterList(results, query) {
+  const el = document.getElementById('searchMaster');
+
+  if (results.length === 0 && query.trim()) {
     el.textContent = '';
     const noResults = document.createElement('div');
     noResults.style.cssText = 'text-align:center;padding:24px;color:var(--text-dim);font-size:var(--text-sm)';
@@ -801,28 +785,75 @@ function renderSearchResults(results, query, aiState) {
     return;
   }
 
-  const typeColors = {
-    planet: '#4d8bff', component: '#4d8bff', tag: '#64748b',
-    'class': '#4d8bff', object: '#22c55e', trigger: '#ef4444',
-    lwc: '#a855f7', metadata: '#f59e0b'
-  };
   const resultsHtml = results.map((r, i) => {
-    const typeColor = typeColors[r.type] || '#64748b';
+    const typeColor = TYPE_COLORS[r.type] || '#64748b';
+    const stagger = i < 10 ? `style="--stagger-index: ${i}"` : '';
     return `<div class="search-result${i === searchIndex ? ' active' : ''}" ` +
-      `data-idx="${i}" data-search-result="${i}" ` +
+      `id="sr-opt-${i}" data-idx="${i}" data-search-result="${i}" ${stagger} ` +
       `role="option" aria-selected="${i === searchIndex}">` +
       `<div class="sr-icon" style="background:${r.color}22;border:1px solid ${r.color}44">${r.icon}</div>` +
       `<div class="sr-body">` +
       `<div class="sr-title">${highlightMatch(r.name, query)}</div>` +
       `<div class="sr-path">${r.level}</div>` +
-      `<div class="sr-desc">${highlightMatch(r.desc.substring(0, 100), query)}${r.desc.length > 100 ? '...' : ''}</div>` +
       `</div>` +
       `<span class="sr-type" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${r.type}</span>` +
-      `<span class="sr-level">${r.type}</span></div>`;
+      `</div>`;
   }).join('');
 
-  // Safe: innerHTML from trusted app-owned data + escaped AI answer
-  el.innerHTML = aiHtml + resultsHtml;
+  // Safe: app-owned data, query escaped via highlightMatch
+  el.innerHTML = resultsHtml;
+
+  // Attach event listeners for search results
+  el.querySelectorAll('[data-search-result]').forEach((resultEl) => {
+    const idx = parseInt(resultEl.dataset.searchResult, 10);
+    resultEl.addEventListener('click', () => activateResult(idx));
+    resultEl.addEventListener('mouseenter', () => {
+      searchIndex = idx;
+      _previewIndex = idx;
+      highlightActive();
+      renderPreview(searchResults[idx], document.getElementById('searchInput').value);
+    });
+  });
+}
+
+// Render AI answer section into #aiSection
+// aiState: null | { loading: true } | { answer: string } | { error: string }
+export function renderAiSection(query, aiState) {
+  const el = document.getElementById('aiSection');
+  if (!aiState) {
+    el.textContent = '';
+    return;
+  }
+
+  let html = '';
+  if (aiState.loading) {
+    html = `<div class="ai-section" id="ai-section">` +
+      `<div class="ai-header">AI ANSWER</div>` +
+      `<div class="ai-card">` +
+      `<div class="ai-icon">&#x2728;</div>` +
+      `<div class="ai-body">` +
+      `<div class="ai-skeleton"><div></div><div></div><div></div></div>` +
+      `</div></div></div>`;
+  } else if (aiState.answer) {
+    // Escape HTML in AI answer (AI-generated content), linkify, format markdown
+    const safeAnswer = aiState.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const formattedAnswer = formatAiMarkdown(linkifyEntityNames(safeAnswer));
+    html = `<div class="ai-section" id="ai-section">` +
+      `<div class="ai-header"><span class="ai-header-left">AI ANSWER${buildFeedbackButtonsHtml()}</span><button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
+      buildFeedbackPanelHtml() +
+      `<div class="ai-card ai-card-clickable" role="button" tabindex="0">` +
+      `<div class="ai-icon">&#x2728;</div>` +
+      `<div class="ai-body">` +
+      `<div class="ai-answer ai-answer-formatted">${formattedAnswer}</div>` +
+      `<div class="ai-attribution">Based on ${_productName} product data</div>` +
+      `</div></div></div>`;
+  } else if (aiState.error) {
+    html = `<div class="ai-section" id="ai-section">` +
+      `<div class="ai-error">${aiState.error}</div></div>`;
+  }
+
+  // Safe: app-owned data + escaped AI answer
+  el.innerHTML = html;
 
   // Prevent mousedown on AI section from closing search overlay
   const aiSection = el.querySelector('.ai-section');
@@ -830,7 +861,7 @@ function renderSearchResults(results, query, aiState) {
     aiSection.addEventListener('mousedown', (e) => { e.preventDefault(); });
   }
 
-  // Wire copy button on AI answer card
+  // Wire copy button
   const aiCopyBtn = el.querySelector('[data-ai-copy]');
   if (aiCopyBtn && aiState && aiState.answer) {
     const rawAnswer = aiState.answer;
@@ -838,7 +869,7 @@ function renderSearchResults(results, query, aiState) {
     aiCopyBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
   }
 
-  // Wire feedback buttons on AI answer card (reuse aiSection from above)
+  // Wire feedback buttons
   if (aiSection && aiState && aiState.answer) {
     wireFeedbackButtons(aiSection, query);
   }
@@ -848,8 +879,8 @@ function renderSearchResults(results, query, aiState) {
   if (aiClickable && _enterSearchResults) {
     const openResultsPage = () => {
       const currentQuery = query;
-      const currentAnswer = aiState && aiState.answer ? aiState.answer : null;
-      const currentResults = [...results];
+      const currentAnswer = aiState.answer;
+      const currentResults = [...searchResults];
       closeSearch();
       setTimeout(() => { _enterSearchResults(currentQuery, currentResults, { aiAnswer: currentAnswer }); }, 100);
     };
@@ -858,23 +889,70 @@ function renderSearchResults(results, query, aiState) {
       if (e.key === 'Enter') { e.preventDefault(); openResultsPage(); }
     });
   }
+}
 
-  // Attach event listeners for search results
-  el.querySelectorAll('[data-search-result]').forEach((resultEl) => {
-    const idx = parseInt(resultEl.dataset.searchResult, 10);
-    resultEl.addEventListener('click', () => activateResult(idx));
-    resultEl.addEventListener('mouseenter', () => {
-      searchIndex = idx;
-      highlightActive();
-    });
-  });
+// Render preview pane for a search result into #searchPreview
+// All data is app-owned (product data), query escaped via highlightMatch
+export function renderPreview(item, query) {
+  const el = document.getElementById('searchPreview');
+  if (!item) {
+    el.innerHTML = '<div class="sp-empty">Select a result to preview</div>';
+    return;
+  }
+
+  const typeColor = TYPE_COLORS[item.type] || '#64748b';
+  let html = `<div class="sp-header">` +
+    `<span class="sp-type-badge" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${item.type}</span>` +
+    `<span class="sp-name">${highlightMatch(item.name, query)}</span>` +
+    `</div>`;
+  html += `<div class="sp-domain">${item.level}</div>`;
+
+  if (item.desc) {
+    html += `<div class="sp-desc">${item.desc}</div>`;
+  }
+
+  if (item._keyMethods && item._keyMethods.length > 0) {
+    html += `<div class="sp-section-label">Key Methods</div>`;
+    html += `<div class="sp-pills">${item._keyMethods.map(m => `<span class="sp-pill">${m}</span>`).join('')}</div>`;
+  }
+
+  if (item._referencedObjects && item._referencedObjects.length > 0) {
+    html += `<div class="sp-section-label">Referenced Objects</div>`;
+    html += `<div class="sp-pills">${item._referencedObjects.map(o => `<span class="sp-pill">${o}</span>`).join('')}</div>`;
+  }
+
+  if (item._extends) {
+    html += `<div class="sp-section-label">Extends</div>`;
+    html += `<div class="sp-pills"><span class="sp-pill">${item._extends}</span></div>`;
+  }
+
+  if (item._implements) {
+    html += `<div class="sp-section-label">Implements</div>`;
+    html += `<div class="sp-pills"><span class="sp-pill">${item._implements}</span></div>`;
+  }
+
+  if (item._fields && item._fields.length > 0) {
+    html += `<div class="sp-section-label">Fields</div>`;
+    html += `<div class="sp-pills">${item._fields.map(f => `<span class="sp-pill">${f.name}</span>`).join('')}</div>`;
+  }
+
+  // Safe: app-owned data, query escaped via highlightMatch
+  el.innerHTML = html;
 }
 
 export function highlightActive() {
-  document.querySelectorAll('.search-result').forEach((el, i) => {
+  const master = document.getElementById('searchMaster');
+  if (!master) return;
+  master.querySelectorAll('.search-result').forEach((el, i) => {
     el.classList.toggle('active', i === searchIndex);
     el.setAttribute('aria-selected', i === searchIndex);
   });
+  // Update aria-activedescendant so screen readers track the focused option
+  if (searchIndex >= 0) {
+    master.setAttribute('aria-activedescendant', `sr-opt-${searchIndex}`);
+  } else {
+    master.removeAttribute('aria-activedescendant');
+  }
 }
 
 export function activateResult(idx) {
@@ -889,9 +967,14 @@ export function activateResult(idx) {
 export function cycleResult(dir) {
   if (searchResults.length === 0) return;
   searchIndex = (searchIndex + dir + searchResults.length) % searchResults.length;
+  _previewIndex = searchIndex;
   highlightActive();
-  const active = document.querySelector('.search-result.active');
-  if (active) active.scrollIntoView({ block: 'nearest' });
+  const master = document.getElementById('searchMaster');
+  if (master) {
+    const active = master.querySelector('.search-result.active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  }
+  renderPreview(searchResults[searchIndex], document.getElementById('searchInput').value);
 }
 
 export function openSearch() {
@@ -902,15 +985,20 @@ export function closeSearch() {
   const shell = document.getElementById('searchShell');
   const drop = document.getElementById('searchDrop');
   const scrim = document.getElementById('searchScrim');
-  shell.classList.remove('expanded', 'focused');
+  shell.classList.remove('focused', 'typing');
   drop.classList.remove('open');
   scrim.classList.remove('visible');
   searchResults = [];
   searchIndex = -1;
+  _previewIndex = -1;
   clearTimeout(_aiDebounceTimer);
   document.getElementById('searchInput').value = '';
   document.getElementById('searchInput').blur();
-  document.getElementById('searchResults').textContent = '';
+  const master = document.getElementById('searchMaster');
+  master.removeAttribute('aria-activedescendant');
+  master.textContent = '';
+  document.getElementById('searchPreview').textContent = '';
+  document.getElementById('aiSection').textContent = '';
 }
 
 let _searchTrackTimer = null;
@@ -921,15 +1009,25 @@ export function expandSearch(query) {
   const drop = document.getElementById('searchDrop');
   const scrim = document.getElementById('searchScrim');
   shell.classList.remove('focused');
-  shell.classList.add('expanded');
+  shell.classList.add('typing');
   drop.classList.add('open');
   scrim.classList.add('visible');
+  if (window.innerWidth > 480) {
+    const dropInner = document.querySelector('.search-drop-inner');
+    const shellRect = shell.getBoundingClientRect();
+    dropInner.style.marginTop = (shellRect.bottom + 8) + 'px';
+  }
   searchResults = searchProduct(query);
   searchIndex = searchResults.length > 0 ? 0 : -1;
+  _previewIndex = searchIndex;
 
   // Detect question and trigger AI search
   const shouldAskAi = _aiEndpoint && isQuestion(query);
-  renderSearchResults(searchResults, query, shouldAskAi ? { loading: true } : null);
+
+  // Render the three panels
+  renderMasterList(searchResults, query);
+  renderAiSection(query, shouldAskAi ? { loading: true } : null);
+  renderPreview(searchResults[searchIndex] || null, query);
 
   if (shouldAskAi) {
     clearTimeout(_aiDebounceTimer);
@@ -939,10 +1037,10 @@ export function expandSearch(query) {
       const currentInput = document.getElementById('searchInput');
       if (currentInput && currentInput.value === query) {
         if (result.answer) {
-          renderSearchResults(searchResults, query, { answer: result.answer });
+          renderAiSection(query, { answer: result.answer });
           announce('AI answer generated');
         } else if (result.error) {
-          renderSearchResults(searchResults, query, { error: result.error });
+          renderAiSection(query, { error: result.error });
         }
       }
     }, 600);
@@ -969,11 +1067,16 @@ export function collapseSearch() {
   const shell = document.getElementById('searchShell');
   const drop = document.getElementById('searchDrop');
   const scrim = document.getElementById('searchScrim');
-  shell.classList.remove('expanded');
+  shell.classList.remove('typing');
   shell.classList.add('focused');
   drop.classList.remove('open');
   scrim.classList.remove('visible');
   searchResults = [];
   searchIndex = -1;
-  document.getElementById('searchResults').textContent = '';
+  _previewIndex = -1;
+  const cMaster = document.getElementById('searchMaster');
+  cMaster.removeAttribute('aria-activedescendant');
+  cMaster.textContent = '';
+  document.getElementById('searchPreview').textContent = '';
+  document.getElementById('aiSection').textContent = '';
 }

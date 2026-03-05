@@ -24,7 +24,7 @@
   gtag('js', new Date());
   gtag('config', 'G-HJTE1NYP82');
 </script>
-<link rel="stylesheet" href="../app/css/galaxy.css?v=23">
+<link rel="stylesheet" href="../app/css/galaxy.css?v=24">
 </head>
 <body data-product="npsp">
 <a href="#stage" class="skip-link">Skip to content</a>
@@ -46,21 +46,6 @@
 <nav id="navbar" aria-label="Navigation">
   <div class="nav-brand" id="nav-brand" style="cursor:pointer" role="button" tabindex="0">NPSP EXPLORER</div>
   <button id="tour-btn" class="tour-btn" aria-label="Tour">Tour <span class="tour-btn-icon nav-icon-svg" id="tour-icon"></span></button>
-  <div class="search-box" id="searchBox">
-    <div class="search-shell" id="searchShell">
-      <span class="s-icon nav-icon-svg" aria-hidden="true" id="search-icon"></span>
-      <input type="text" id="searchInput" placeholder="Search components, triggers, objects..." autocomplete="off" spellcheck="false" aria-label="Search NPSP">
-      <span class="s-kbd">/</span>
-    </div>
-    <div class="search-drop" id="searchDrop">
-      <div id="searchResults" role="listbox" aria-label="Search results"></div>
-      <div class="search-hint">
-        <span><kbd>&#8593;&#8595;</kbd> navigate</span>
-        <span><kbd>Enter</kbd> search</span>
-        <span><kbd>Esc</kbd> close</span>
-      </div>
-    </div>
-  </div>
   <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme"><span class="nav-icon-svg" id="theme-icon"></span></button>
   <div id="zoom-indicator" aria-hidden="true">
     <span style="font-size:10px;margin-right:4px">ZOOM</span>
@@ -74,13 +59,41 @@
 <!-- Search scrim -->
 <div class="search-scrim" id="searchScrim"></div>
 
+<!-- Floating search dropdown (body-level for clean z-index) -->
+<div class="search-drop" id="searchDrop">
+  <div class="search-drop-inner">
+    <div id="aiSection"></div>
+    <div class="search-master-detail" id="searchMasterDetail">
+      <div class="search-master" id="searchMaster" role="listbox"
+           aria-label="Search results"></div>
+      <div class="search-preview" id="searchPreview"></div>
+    </div>
+    <div class="search-hint">
+      <span><kbd>&#8593;&#8595;</kbd> navigate</span>
+      <span><kbd>Enter</kbd> open</span>
+      <span><kbd>Esc</kbd> close</span>
+      <span class="search-hint-ai">&#x2728; AI-powered</span>
+    </div>
+  </div>
+</div>
+
 <!-- Stage -->
 <div id="stage">
   <!-- GALAXY VIEW (canvas-based, minimal DOM) -->
   <div id="galaxy-view" class="view-layer active">
     <div class="galaxy-title">
       <h1>NONPROFIT SUCCESS PACK</h1>
-      <p>The most widely adopted nonprofit technology on Salesforce</p>
+      <div class="search-box" id="searchBox">
+        <div class="search-shell" id="searchShell">
+          <span class="s-icon nav-icon-svg" aria-hidden="true" id="search-icon"></span>
+          <input type="text" id="searchInput"
+                 placeholder="Search or ask a question about NPSP..."
+                 autocomplete="off" spellcheck="false"
+                 aria-label="Search NPSP">
+          <span class="s-ai-badge" aria-hidden="true">&#x2728; AI</span>
+          <span class="s-kbd">/</span>
+        </div>
+      </div>
     </div>
     <div class="galaxy-stats">
       <div class="stat-item"><div class="stat-value" id="statClasses">843</div><div class="stat-label">Apex Classes</div></div>
@@ -137,6 +150,6 @@
 <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ES module entry point — loads shared engine which dynamically imports product data -->
-<script type="module" src="../app/js/main.js?v=23"></script>
+<script type="module" src="../app/js/main.js?v=24"></script>
 </body>
 </html>
