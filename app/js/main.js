@@ -65,8 +65,8 @@ let _prefixToPkg = {};
 async function loadProductData() {
   // Load config and data in parallel (required)
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=23`),
-    import(`${productsBase}/data.js?v=23`),
+    import(`${productsBase}/config.js?v=24`),
+    import(`${productsBase}/data.js?v=24`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
@@ -89,7 +89,7 @@ async function loadProductData() {
 
   // Load domain icons (required before canvas rendering)
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=23`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=24`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
@@ -97,7 +97,7 @@ async function loadProductData() {
 
   // Load tours (optional)
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=23`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=24`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     // Tours are optional; if not found, tour UI will be hidden
@@ -106,7 +106,7 @@ async function loadProductData() {
 
   // Load feedback module (optional)
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=23`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=24`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {
     // Feedback is optional
@@ -114,7 +114,7 @@ async function loadProductData() {
 
   // Load AI context (optional)
   try {
-    const aiContextMod = await import(`${productsBase}/ai-context.js?v=23`);
+    const aiContextMod = await import(`${productsBase}/ai-context.js?v=24`);
     const aiEndpoint = 'https://npsp-ai-search.epug.workers.dev';
     setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
     setFeedbackEndpoint(aiEndpoint + '/feedback');
@@ -826,7 +826,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading (dynamic import, ES module) ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=23`);
+    const module = await import(`${productsBase}/entities.js?v=24`);
     _entityData = module.default;
     setEntitiesLoaded(true);
 
@@ -891,8 +891,8 @@ async function init() {
     document.body.classList.add('theme-light');
   }
 
-  // Populate SVG icons in navbar
-  document.getElementById('search-icon').innerHTML = uiSvg('search', 16);
+  // Populate SVG icons in navbar (uiSvg returns trusted app-owned SVG strings)
+  document.getElementById('search-icon').innerHTML = uiSvg('search', 18);
   document.getElementById('tour-icon').innerHTML = uiSvg('tour', 16);
   document.getElementById('help-icon').innerHTML = uiSvg('help', 18);
   document.getElementById('feedback-icon').innerHTML = uiSvg('feedback', 18);
@@ -927,6 +927,7 @@ async function init() {
   document.getElementById('nav-brand').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateTo('galaxy'); }
   });
+
   document.getElementById('tour-btn').addEventListener('click', () => toggleTourPicker());
   document.getElementById('theme-toggle').addEventListener('click', () => toggleTheme());
 
