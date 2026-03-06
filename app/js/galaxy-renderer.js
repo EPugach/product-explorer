@@ -6,7 +6,8 @@
 
 import { lightenColor, darkenColor } from './utils.js';
 import { domainSvg } from './icons.js';
-import { zoom, panX, panY } from './physics.js';
+import { zoom, panX, panY, layoutW, layoutH } from './physics.js';
+import { prefersReducedMotion } from './state.js';
 
 let _container = null;
 let _edgesSvg = null;
@@ -202,6 +203,144 @@ export function setGalaxyVisible(visible) {
   if (particle) {
     particle.classList.toggle('hidden', !visible);
   }
+}
+
+// ── Fly-in: zoom galaxy container into a planet ──
+// Returns a promise that resolves when transition ends (or immediately for reduced motion)
+export function flyIntoPlanet(node, callback) {
+  if (!_container || !node) {
+    if (callback) callback();
+    return;
+  }
+
+  // Fade out particle canvas at start of fly-in
+  const particle = document.getElementById('particle-canvas');
+  if (particle) particle.style.opacity = '0';
+
+  if (prefersReducedMotion) {
+    _container.classList.add('hidden');
+    if (particle) { particle.classList.add('hidden'); particle.style.opacity = ''; }
+    if (callback) callback();
+    return;
+  }
+
+  // Calculate transform to center+scale so the planet fills ~60% of viewport
+  const targetScale = Math.min(layoutW, layoutH) / (node.radius * 2) * 0.6;
+  const scale = Math.min(targetScale, 8);
+  // Transform origin at 0,0 means we translate to center the planet, then scale
+  const tx = layoutW / 2 - node.x * scale;
+  const ty = layoutH / 2 - node.y * scale;
+
+  // Remove any leftover fly-out class, add fly-in transition class
+  _container.classList.remove('fly-out');
+  _container.classList.add('fly-in');
+
+  // Force a reflow so the transition triggers from current state
+  void _container.offsetHeight;
+
+  // Apply the zoom transform + fade to transparent
+  _container.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  _container.style.opacity = '0';
+
+  function onEnd(e) {
+    // Wait for the opacity transition (the last one to finish)
+    if (e.propertyName !== 'opacity') return;
+    _container.removeEventListener('transitionend', onEnd);
+    _container.classList.remove('fly-in');
+    _container.classList.add('hidden');
+    // Reset transform for clean state
+    _container.style.transform = '';
+    _container.style.opacity = '';
+    if (particle) { particle.classList.add('hidden'); particle.style.opacity = ''; }
+    if (callback) callback();
+  }
+
+  _container.addEventListener('transitionend', onEnd);
+
+  // Safety timeout in case transitionend doesn't fire
+  setTimeout(() => {
+    _container.removeEventListener('transitionend', onEnd);
+    if (_container.classList.contains('fly-in')) {
+      _container.classList.remove('fly-in');
+      _container.classList.add('hidden');
+      _container.style.transform = '';
+      _container.style.opacity = '';
+      if (particle) { particle.classList.add('hidden'); particle.style.opacity = ''; }
+      if (callback) callback();
+    }
+  }, 1500);
+}
+
+// ── Fly-out: zoom galaxy container back from a planet ──
+// storedTransform: { tx, ty, scale } from the fly-in
+export function flyOutFromPlanet(node, callback) {
+  if (!_container) {
+    if (callback) callback();
+    return;
+  }
+
+  const particle = document.getElementById('particle-canvas');
+
+  if (prefersReducedMotion || !node) {
+    _container.classList.remove('hidden');
+    _container.style.transform = '';
+    _container.style.opacity = '';
+    if (particle) {
+      particle.classList.remove('hidden');
+      particle.style.opacity = '';
+    }
+    if (callback) callback();
+    return;
+  }
+
+  // Position container at the zoomed-in state (matching where fly-in ended)
+  const targetScale = Math.min(layoutW, layoutH) / (node.radius * 2) * 0.6;
+  const scale = Math.min(targetScale, 8);
+  const tx = layoutW / 2 - node.x * scale;
+  const ty = layoutH / 2 - node.y * scale;
+
+  _container.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  _container.style.opacity = '0';
+  _container.classList.remove('hidden', 'fly-in');
+
+  // Show particle canvas (faded) so it fades in with the fly-out
+  if (particle) {
+    particle.classList.remove('hidden');
+    particle.style.opacity = '0';
+  }
+
+  // Force reflow
+  void _container.offsetHeight;
+
+  // Add fly-out transition class
+  _container.classList.add('fly-out');
+
+  // Transition back to identity transform
+  _container.style.transform = '';
+  _container.style.opacity = '';
+  if (particle) particle.style.opacity = '';
+
+  function onEnd(e) {
+    if (e.propertyName !== 'transform') return;
+    _container.removeEventListener('transitionend', onEnd);
+    _container.classList.remove('fly-out');
+    if (particle) particle.style.opacity = '';
+    if (callback) callback();
+  }
+
+  _container.addEventListener('transitionend', onEnd);
+
+  // Safety timeout
+  setTimeout(() => {
+    _container.removeEventListener('transitionend', onEnd);
+    if (_container.classList.contains('fly-out')) {
+      _container.classList.remove('fly-out');
+      _container.style.transform = '';
+      _container.style.opacity = '';
+      if (particle) particle.style.opacity = '';
+      if (callback) callback();
+    }
+  }, 1200);
 }
 
 // ── Get planet element (for focus) ──

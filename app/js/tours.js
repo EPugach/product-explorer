@@ -22,12 +22,10 @@ import {
 } from './navigation.js';
 import { setGalaxyVisible } from './galaxy-renderer.js';
 
-// Animation callbacks set by main.js to break circular dependency
-let _graphTick = null;
+// Animation callback set by main.js to break circular dependency
 let _particleTick = null;
 
-export const setTourAnimationCallbacks = (graphTickFn, particleTickFn) => {
-  _graphTick = graphTickFn;
+export const setTourAnimationCallbacks = (particleTickFn) => {
   _particleTick = particleTickFn;
 };
 

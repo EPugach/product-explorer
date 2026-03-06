@@ -398,8 +398,8 @@ function particleTick() {
 }
 
 // Wire animation callbacks to navigation.js and tours.js
-setAnimationCallbacks(null, particleTick);
-setTourAnimationCallbacks(null, particleTick);
+setAnimationCallbacks(particleTick);
+setTourAnimationCallbacks(particleTick);
 
 // ── Galaxy DOM Events ──
 function setupGalaxyEvents() {

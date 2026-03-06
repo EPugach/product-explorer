@@ -4,11 +4,11 @@
 //  trusted product data object (app-owned), not user input.
 // ══════════════════════════════════════════════════════════════
 
-import { track, announce, lightenColor, darkenColor } from './utils.js';
-import { resetZoomPan, nodeMap, zoom, panX, panY, animateFlyIn, animateFlyOut } from './physics.js';
+import { track, announce } from './utils.js';
+import { resetZoomPan, nodeMap } from './physics.js';
 import { domainSvg, entitySvg } from './icons.js';
 import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons, highlightMatch, renderPreview } from './search.js';
-import { setGalaxyVisible } from './galaxy-renderer.js';
+import { setGalaxyVisible, flyIntoPlanet, flyOutFromPlanet } from './galaxy-renderer.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -44,61 +44,12 @@ let currentEntityTab = null;
 let navHistory = [];
 let _lastSearchPage = null; // { query, results, aiAnswer }
 let _flyInAnimating = false;
-let _lastZoomedPlanet = null; // { id, screenX, screenY, screenR } for reverse fly-out
+let _lastZoomedPlanet = null; // node ref for reverse fly-out
 export const isFlyInAnimating = () => _flyInAnimating;
 
-// ── Planet Implosion Circle (fly-out only) ──
-// On fly-out: full-viewport circle shrinks back to planet position
-let _implosionEl = null;
-let _implosionCleanupTimer = null;
-
-function _cleanupImplosion() {
-  if (_implosionCleanupTimer) { clearTimeout(_implosionCleanupTimer); _implosionCleanupTimer = null; }
-  if (_implosionEl) { _implosionEl.remove(); _implosionEl = null; }
-}
-
-function _triggerImplosion(color, screenX, screenY, screenR, durationMs) {
-  _cleanupImplosion();
-  const BASE = 100;
-  const dx = Math.max(screenX, innerWidth - screenX);
-  const dy = Math.max(screenY, innerHeight - screenY);
-  const coverRadius = Math.hypot(dx, dy);
-  const fillScale = (coverRadius * 2) / BASE;
-  const planetScale = Math.max(1, (screenR * 2) / BASE);
-
-  const el = document.createElement('div');
-  el.id = 'planet-explosion';
-  el.style.cssText = [
-    'position:absolute',
-    `left:${screenX - BASE / 2}px`,
-    `top:${screenY - BASE / 2}px`,
-    `width:${BASE}px`, `height:${BASE}px`,
-    'border-radius:50%',
-    `background:radial-gradient(circle,${lightenColor(color, 40)} 0%,${color} 55%,${darkenColor(color, 30)} 100%)`,
-    `transform:scale(${fillScale})`,
-    'pointer-events:none',
-    'will-change:transform,opacity',
-    'opacity:1',
-    `--implosion-duration:${durationMs}ms`
-  ].join(';');
-  document.getElementById('stage').prepend(el);
-
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    if (!el.isConnected) return;
-    el.classList.add('imploding');
-    el.style.transform = `scale(${planetScale})`;
-    el.style.opacity = '0';
-  }));
-
-  _implosionCleanupTimer = setTimeout(() => _cleanupImplosion(), durationMs + 100);
-  _implosionEl = el;
-}
-
-// Animation tick callbacks — set by main.js to avoid circular imports
-let _graphTick = null;
+// Animation tick callback — set by main.js to avoid circular imports
 let _particleTick = null;
-export const setAnimationCallbacks = (graphTickFn, particleTickFn) => {
-  _graphTick = graphTickFn;
+export const setAnimationCallbacks = (particleTickFn) => {
   _particleTick = particleTickFn;
 };
 
@@ -140,42 +91,22 @@ export const handleHashNavigation = () => {
       updateBreadcrumb();
       updateDocumentTitle('galaxy');
 
-      if (_lastZoomedPlanet && !prefersReducedMotion) {
-        // Cinematic fly-out with implosion circle
+      if (_lastZoomedPlanet) {
+        // CSS fly-out: zoom galaxy container back from planet
         const lzp = _lastZoomedPlanet;
-        if (lzp.screenX != null && lzp.color) {
-          _triggerImplosion(lzp.color, lzp.screenX, lzp.screenY, lzp.screenR, getTransitionMs());
-        }
-        setGalaxyVisible(true);
-        // setFlyInState(lzp.id, 1);
-
         showView('galaxy-view', 'out');
-        const crossfadeMs = Math.min(getTransitionMs(), 300);
-        setTimeout(() => {
-          const flyDuration = Math.round(getTransitionMs() * 2.3);
-          animateFlyOut(flyDuration, (progress) => {
-            // setFlyInState(lzp.id, Math.max(0, 1 - progress));
-          }, () => {
-            // setFlyInState(null, 0);
-            _lastZoomedPlanet = null;
-            _cleanupImplosion();
-
-            if (_graphTick) requestAnimationFrame(_graphTick);
-            if (_particleTick) requestAnimationFrame(_particleTick);
-          });
-        }, crossfadeMs);
+        flyOutFromPlanet(lzp, () => {
+          _lastZoomedPlanet = null;
+          if (_particleTick) requestAnimationFrame(_particleTick);
+        });
       } else {
-        // Instant transition
+        // Instant transition (no previous fly-in or reduced motion)
         resetZoomPan();
         _lastZoomedPlanet = null;
         _flyInAnimating = false;
-        // setFlyInState(null, 0);
         setGalaxyVisible(true);
         showViewDirect('galaxy-view');
-
-        if (_graphTick) requestAnimationFrame(_graphTick);
         if (_particleTick) requestAnimationFrame(_particleTick);
-
       }
     }
     return;
@@ -269,56 +200,32 @@ export function enterPlanet(id) {
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
   currentLevel = 'planet'; currentPlanet = id; currentComponent = null;
 
-  // Pre-render the planet view (hidden behind canvas) so it's ready for crossfade
+  // Pre-render the planet view (hidden behind galaxy) so it's ready for crossfade
   renderPlanetView(id);
   updateBreadcrumb(); setHash(`#/${id}`); updateDocumentTitle('planet', id);
 
   const node = nodeMap[id];
-  const flyDuration = Math.round(getTransitionMs() * 2.3);
 
   if (!node || prefersReducedMotion) {
     // Instant transition (reduced motion or missing node)
     setGalaxyVisible(false); showView('planet-view', 'in');
-
   } else {
-    // Cinematic fly-in with seamless crossfade
+    // CSS fly-in: zoom galaxy container into the clicked planet
     _flyInAnimating = true;
-    let crossfadeStarted = false;
-    // setFlyInState(id, 0);
-    animateFlyIn(node, flyDuration, (progress) => {
-      // setFlyInState(id, progress);
-      // Start crossfade at 82% progress — the deep zoom already sells "entering the planet"
-      if (!crossfadeStarted && progress >= 0.82) {
-        crossfadeStarted = true;
-        // Snapshot screen position for reverse implosion on fly-out
-        const snapX = node.x * zoom + panX;
-        const snapY = node.y * zoom + panY;
-        const snapR = node.radius * zoom;
-        _lastZoomedPlanet = { id, color: node.color, screenX: snapX, screenY: snapY, screenR: snapR };
-
-        setGalaxyVisible(false);
-    
-        showView('planet-view', 'in');
-      }
-    }, () => {
-      // Fly-in complete: ensure crossfade started (safety for very short durations)
-      if (!crossfadeStarted) {
-        _lastZoomedPlanet = { id, color: node.color, screenX: null, screenY: null, screenR: null };
-        showView('planet-view', 'in');
-        setGalaxyVisible(false);
-    
-      }
-      // setFlyInState(null, 0);
+    _lastZoomedPlanet = node;
+    showView('planet-view', 'in');
+    flyIntoPlanet(node, () => {
       _flyInAnimating = false;
     });
   }
 
   const p = PRODUCT_DATA[id];
   if (p) announce(`Viewing ${p.name} domain, ${p.components.length} components`);
+  const focusDelay = (!node || prefersReducedMotion) ? getTransitionMs() + 50 : 1200;
   setTimeout(() => {
     const heading = document.querySelector('#planet-content h2');
     if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
-  }, (_flyInAnimating ? flyDuration : 0) + getTransitionMs() + 50);
+  }, focusDelay);
 }
 
 export function enterCore(pid, cid) {
@@ -679,48 +586,25 @@ export function navigateTo(level) {
     setHash('#/'); updateDocumentTitle('galaxy');
     announce('Returned to galaxy overview');
 
-    if (_lastZoomedPlanet && !prefersReducedMotion) {
+    if (_lastZoomedPlanet) {
+      // CSS fly-out: zoom galaxy container back from planet
       const lzp = _lastZoomedPlanet;
-      const durationMs = getTransitionMs();
-
-      // Implosion circle appears over the panel, shrinks to planet position
-      if (lzp.screenX != null && lzp.color) {
-        _triggerImplosion(lzp.color, lzp.screenX, lzp.screenY, lzp.screenR, durationMs);
-      }
-
-      // Panel fades out, then fly-out animation starts
       showView('galaxy-view', 'out');
-      const crossfadeMs = Math.min(durationMs, 300);
-
-      setTimeout(() => {
-        // Reveal canvas and start fly-out
-        setGalaxyVisible(true);
-        // setFlyInState(lzp.id, 1);
-
-
-        const flyDuration = Math.round(durationMs * 2.3);
-        animateFlyOut(flyDuration, (progress) => {
-          // setFlyInState(lzp.id, Math.max(0, 1 - progress));
-        }, () => {
-          // setFlyInState(null, 0);
-          _lastZoomedPlanet = null;
-          _cleanupImplosion();
-  
-          if (_graphTick) requestAnimationFrame(_graphTick);
-          if (_particleTick) requestAnimationFrame(_particleTick);
-          const canvas = document.getElementById('galaxyContainer');
-          if (canvas) canvas.focus({ preventScroll: true });
-        });
-      }, crossfadeMs);
+      flyOutFromPlanet(lzp, () => {
+        _lastZoomedPlanet = null;
+        if (_particleTick) requestAnimationFrame(_particleTick);
+        const container = document.getElementById('galaxyContainer');
+        if (container) container.focus({ preventScroll: true });
+      });
     } else {
       // Instant transition (no previous fly-in or reduced motion)
       resetZoomPan(); setGalaxyVisible(true); showView('galaxy-view', 'out');
-
-      if (_graphTick) requestAnimationFrame(_graphTick);
       if (_particleTick) requestAnimationFrame(_particleTick);
-
       _lastZoomedPlanet = null;
-      setTimeout(() => { const canvas = document.getElementById('galaxyContainer'); if (canvas) canvas.focus({ preventScroll: true }); }, getTransitionMs() + 50);
+      setTimeout(() => {
+        const container = document.getElementById('galaxyContainer');
+        if (container) container.focus({ preventScroll: true });
+      }, getTransitionMs() + 50);
     }
   } else if (level === 'planet') {
     currentLevel = 'planet'; currentComponent = null;
