@@ -1,28 +1,27 @@
 // ══════════════════════════════════════════════════════════════
-//  PARTICLES — Connection flow particles + ambient nebula
+//  PARTICLES — Directional connection flow along edge bezier paths
+//  Single canvas, single rAF loop (driven by main.js particleTick).
+//  Renders behind DOM planets (z-index 1 vs z-index 3).
 // ══════════════════════════════════════════════════════════════
 
 import { hexToRgba } from './utils.js';
 import { edges, nodeMap, zoom, panX, panY } from './physics.js';
+import { prefersReducedMotion } from './state.js';
 
 // Hover state set by main.js when a planet is hovered
 let hoveredNode = null;
 export const setHoveredNode = (node) => { hoveredNode = node; };
-import { prefersReducedMotion } from './state.js';
 
 let particleCanvas, particleCtx;
 let connectionParticles = [];
-let nebulaBlobs = [];
 let particlesVisible = true;
 const CONNECTION_PARTICLE_COUNT = 3; // per edge
-const NEBULA_BLOB_COUNT = 5;
 
 export function initParticles() {
   particleCanvas = document.getElementById('particle-canvas');
   particleCtx = particleCanvas.getContext('2d');
   resizeParticleCanvas();
   initConnectionParticles();
-  initNebulaBlobs();
 }
 
 export function resizeParticleCanvas() {
@@ -34,18 +33,17 @@ export function resizeParticleCanvas() {
 }
 
 // ── Connection Particles ──
-// Small luminous dots traveling along edge bezier paths
+// Small luminous dots traveling along edge bezier paths, source -> target
 function initConnectionParticles() {
   connectionParticles = [];
   for (const e of edges) {
     for (let i = 0; i < CONNECTION_PARTICLE_COUNT; i++) {
       connectionParticles.push({
         edge: e,
-        t: Math.random(), // position along path 0..1
+        t: Math.random(),               // position along path 0..1 (source..target)
         speed: 0.001 + Math.random() * 0.0015,
         size: 1 + Math.random() * 1.5,
-        opacity: 0.3 + Math.random() * 0.4,
-        direction: Math.random() < 0.5 ? 1 : -1
+        opacity: 0.3 + Math.random() * 0.4
       });
     }
   }
@@ -53,10 +51,16 @@ function initConnectionParticles() {
 
 function updateConnectionParticles() {
   for (const p of connectionParticles) {
-    p.t += p.speed * p.direction;
-    if (p.t > 1) { p.t -= 1; }
-    if (p.t < 0) { p.t += 1; }
+    p.t += p.speed;
+    if (p.t > 1) { p.t -= 1; }         // wrap: directional source -> target
   }
+}
+
+// Quadratic bezier control point — same math as galaxy-renderer.js edgeBezier()
+function edgeBezier(s, t) {
+  const mx = (s.x + t.x) / 2 + (-(t.y - s.y) * 0.1);
+  const my = (s.y + t.y) / 2 + ((t.x - s.x) * 0.1);
+  return { mx, my };
 }
 
 function renderConnectionParticles() {
@@ -68,22 +72,20 @@ function renderConnectionParticles() {
     const t = nodeMap[p.edge.target];
     if (!s || !t) continue;
 
-    // Quadratic bezier point at t
-    const mx = (s.x + t.x) / 2 + (-(t.y - s.y)) * 0.1;
-    const my = (s.y + t.y) / 2 + ((t.x - s.x)) * 0.1;
-
+    // Quadratic bezier point at parametric t
+    const { mx, my } = edgeBezier(s, t);
     const tt = p.t;
     const mt = 1 - tt;
     const x = mt * mt * s.x + 2 * mt * tt * mx + tt * tt * t.x;
     const y = mt * mt * s.y + 2 * mt * tt * my + tt * tt * t.y;
 
-    // Brighten if related to hovered node
+    // Hover: brighten connected edges (1.5x), dim others (0.3x)
     let alpha = p.opacity * hoverDim;
     if (hoveredNode && (p.edge.source === hoveredNode.id || p.edge.target === hoveredNode.id)) {
       alpha = p.opacity * 1.5;
     }
 
-    // Transform to screen coords
+    // Transform to screen coords (particle canvas is NOT inside .galaxy-container)
     const sx = x * zoom + panX;
     const sy = y * zoom + panY;
 
@@ -97,65 +99,10 @@ function renderConnectionParticles() {
   }
 }
 
-// ── Nebula Blobs ──
-// Large, soft, slow-moving colored washes creating depth
-export function initNebulaBlobs() {
-  nebulaBlobs = [];
-  const colors = document.body.classList.contains('theme-light')
-    ? ['#d8edff', '#cce4ff', '#b0d5f7', '#e0e0e0', '#d4e3f5']
-    : ['#1e3a8a', '#312e81', '#0c4a6e', '#1e1b4b', '#0f172a'];
-  for (let i = 0; i < NEBULA_BLOB_COUNT; i++) {
-    nebulaBlobs.push({
-      x: Math.random() * innerWidth,
-      y: Math.random() * innerHeight,
-      radius: 200 + Math.random() * 300,
-      color: colors[i % colors.length],
-      opacity: 0.03 + Math.random() * 0.03,
-      vx: (Math.random() - 0.5) * 0.15,
-      vy: (Math.random() - 0.5) * 0.1,
-      phase: Math.random() * Math.PI * 2,
-      breathSpeed: 0.003 + Math.random() * 0.005
-    });
-  }
-}
-
-function updateNebulaBlobs() {
-  for (const b of nebulaBlobs) {
-    b.x += b.vx;
-    b.y += b.vy;
-    b.phase += b.breathSpeed;
-
-    // Wrap around edges
-    if (b.x < -b.radius) b.x = innerWidth + b.radius;
-    if (b.x > innerWidth + b.radius) b.x = -b.radius;
-    if (b.y < -b.radius) b.y = innerHeight + b.radius;
-    if (b.y > innerHeight + b.radius) b.y = -b.radius;
-  }
-}
-
-function renderNebulaBlobs() {
-  const ctx = particleCtx;
-
-  for (const b of nebulaBlobs) {
-    const breathScale = 1 + Math.sin(b.phase) * 0.15;
-    const r = b.radius * breathScale;
-
-    const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
-    grad.addColorStop(0, hexToRgba(b.color, b.opacity));
-    grad.addColorStop(1, hexToRgba(b.color, 0));
-
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = grad;
-    ctx.fill();
-  }
-}
-
 // ── Combined update + render ──
 export function updateParticles() {
   if (!particlesVisible || prefersReducedMotion) return;
   updateConnectionParticles();
-  updateNebulaBlobs();
 }
 
 export function renderParticles() {
@@ -165,9 +112,6 @@ export function renderParticles() {
   particleCtx.clearRect(0, 0, innerWidth, innerHeight);
 
   if (!particlesVisible) { particleCtx.restore(); return; }
-
-  // Nebula behind everything (static blobs still render for ambiance)
-  renderNebulaBlobs();
 
   // Connection particles skipped in reduced motion
   if (!prefersReducedMotion) {
