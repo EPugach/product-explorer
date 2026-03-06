@@ -727,10 +727,11 @@ function setupKeyboard() {
   searchInput.addEventListener('blur', () => {
     setTimeout(() => {
       if (document.activeElement !== searchInput) {
-        const dropOpen = document.getElementById('searchDrop').classList.contains('open');
-        if (dropOpen) {
+        const drop = document.getElementById('searchDrop');
+        const dropOpen = drop.classList.contains('open');
+        if (dropOpen && !drop.contains(document.activeElement)) {
           closeSearch();
-        } else {
+        } else if (!dropOpen) {
           searchShell.classList.remove('focused');
         }
       }
