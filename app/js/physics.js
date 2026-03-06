@@ -274,7 +274,11 @@ export function animatePanTo(node, duration, targetZoomLevel, callback) {
   zoomAnimId = requestAnimationFrame(step);
 }
 
-export function resetZoomPan() {
+export function cancelPanAnimation() {
   if (zoomAnimId) { cancelAnimationFrame(zoomAnimId); zoomAnimId = null; }
+}
+
+export function resetZoomPan() {
+  cancelPanAnimation();
   zoom = 1; panX = 0; panY = 0;
 }

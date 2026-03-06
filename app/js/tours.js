@@ -11,7 +11,7 @@ let PRODUCT_DATA = {};
 export const setTourData = (tours) => { TOURS = tours || []; };
 export const setProductData = (data) => { PRODUCT_DATA = data; };
 import { safeLSGet, safeLSSet, track, announce } from './utils.js';
-import { resetZoomPan, nodeMap, setZoom, setPanX, setPanY, layoutW, layoutH } from './physics.js';
+import { resetZoomPan, cancelPanAnimation, animatePanTo, nodeMap, zoom as physZoom, panX as physPanX, panY as physPanY, setZoom, setPanX, setPanY, layoutW, layoutH } from './physics.js';
 import {
   tourState,
   setTourStopPlanets,
@@ -32,6 +32,36 @@ export const setTourAnimationCallbacks = (particleTickFn) => {
 
 function restartAnimation() {
   if (_particleTick) requestAnimationFrame(_particleTick);
+}
+
+// Animate zoom/pan back to identity (zoom=1, panX=0, panY=0) with
+// JS frame-by-frame position recalculation for crisp text.
+let _identityAnimId = null;
+function _animateToIdentity(duration) {
+  if (_identityAnimId) { cancelAnimationFrame(_identityAnimId); _identityAnimId = null; }
+  cancelPanAnimation(); // Cancel any running animatePanTo from tour stops
+
+  // Capture start values (live bindings)
+  const startZoom = physZoom, startPanX = physPanX, startPanY = physPanY;
+
+  if (prefersReducedMotion) {
+    resetZoomPan();
+    updateGalaxyTransform();
+    return;
+  }
+
+  const startTime = performance.now();
+  function step(now) {
+    const t = Math.min((now - startTime) / duration, 1);
+    const e = 1 - Math.pow(1 - t, 3); // ease-out cubic
+    setZoom(startZoom + (1 - startZoom) * e);
+    setPanX(startPanX + (0 - startPanX) * e);
+    setPanY(startPanY + (0 - startPanY) * e);
+    updateGalaxyTransform();
+    if (t < 1) { _identityAnimId = requestAnimationFrame(step); }
+    else { _identityAnimId = null; }
+  }
+  _identityAnimId = requestAnimationFrame(step);
 }
 
 export function initTours() {
@@ -225,42 +255,10 @@ function goToStop(index) {
   const stopPlanets = tourState._stopPlanets || null;
   applyTourDimming(stop.planet, stopPlanets, highlightedEdges);
 
-  // Animate camera to planet via CSS container transform
+  // Animate camera to planet via JS position recalculation (crisp at every frame)
   const node = nodeMap[stop.planet];
   if (node) {
-    const targetZoom = 1.4;
-    const targetPanX = layoutW / 2 - node.x * targetZoom;
-    const targetPanY = layoutH / 2 - node.y * targetZoom;
-
-    // Update physics zoom/pan state so particles align
-    setZoom(targetZoom);
-    setPanX(targetPanX);
-    setPanY(targetPanY);
-
-    const container = document.getElementById('galaxyContainer');
-    if (container) {
-      if (prefersReducedMotion) {
-        // Instant jump — no transition
-        container.classList.remove('tour-pan');
-        updateGalaxyTransform();
-      } else {
-        // Enable CSS transition, then set transform
-        container.classList.add('tour-pan');
-        updateGalaxyTransform();
-        // Remove transition class after animation completes
-        const onEnd = (e) => {
-          if (e.propertyName !== 'transform') return;
-          container.removeEventListener('transitionend', onEnd);
-          container.classList.remove('tour-pan');
-        };
-        container.addEventListener('transitionend', onEnd);
-        // Safety timeout
-        setTimeout(() => {
-          container.removeEventListener('transitionend', onEnd);
-          container.classList.remove('tour-pan');
-        }, 1000);
-      }
-    }
+    animatePanTo(node, 800, 1.4);
   }
 
   // Ensure particle rendering continues
@@ -324,28 +322,8 @@ export function exitTour() {
   const card = document.getElementById('tour-card');
   if (card) card.classList.remove('visible');
 
-  // Reset camera: transition container back to identity transform
-  resetZoomPan();
-  const container = document.getElementById('galaxyContainer');
-  if (container) {
-    if (prefersReducedMotion) {
-      container.classList.remove('tour-pan');
-      updateGalaxyTransform();
-    } else {
-      container.classList.add('tour-pan');
-      updateGalaxyTransform();
-      const onEnd = (e) => {
-        if (e.propertyName !== 'transform') return;
-        container.removeEventListener('transitionend', onEnd);
-        container.classList.remove('tour-pan');
-      };
-      container.addEventListener('transitionend', onEnd);
-      setTimeout(() => {
-        container.removeEventListener('transitionend', onEnd);
-        container.classList.remove('tour-pan');
-      }, 1000);
-    }
-  }
+  // Reset camera: animate back to identity zoom/pan (crisp at every frame)
+  _animateToIdentity(800);
 
   // Reset hash to galaxy view
   setHash('#/');

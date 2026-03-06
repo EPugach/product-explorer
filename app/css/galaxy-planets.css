@@ -7,7 +7,6 @@
   position: fixed; inset: 0;
   z-index: 3;
   transform-origin: 0 0;
-  will-change: transform;
   cursor: grab;
 }
 .galaxy-container.hidden { opacity: 0; pointer-events: none; }
@@ -89,13 +88,19 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
+/* Icon SVG scales with planet size (zoom-aware via --planet-r) */
+.planet-icon svg {
+  width: calc(var(--planet-r) * 0.9);
+  height: calc(var(--planet-r) * 0.9);
+}
+
 /* ── Planet Label ── */
 .planet-label {
   position: absolute;
   top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  font: 500 11px var(--font-display, -apple-system, BlinkMacSystemFont, sans-serif);
+  font: 500 calc(11px * var(--zoom, 1)) var(--font-display, -apple-system, BlinkMacSystemFont, sans-serif);
   color: var(--text-secondary, #94a3b8);
   white-space: nowrap;
   pointer-events: none;
@@ -120,15 +125,15 @@
 .galaxy-edge {
   fill: none;
   stroke: var(--glow-primary, rgba(100, 140, 255, 0.35));
-  stroke-width: 1.5;
-  stroke-dasharray: 6 5;
+  stroke-width: calc(1.5 * var(--zoom, 1));
+  stroke-dasharray: calc(6 * var(--zoom, 1)) calc(5 * var(--zoom, 1));
   opacity: 0.45;
   transition: opacity 0.2s ease, stroke-width 0.2s ease;
 }
 
 .galaxy-edge.edge-connected {
   opacity: 0.6;
-  stroke-width: 2;
+  stroke-width: calc(2 * var(--zoom, 1));
   stroke-dasharray: none;
 }
 
@@ -138,7 +143,7 @@
 
 .galaxy-edge.tour-edge {
   opacity: 0.8;
-  stroke-width: 3;
+  stroke-width: calc(3 * var(--zoom, 1));
   stroke-dasharray: none;
 }
 

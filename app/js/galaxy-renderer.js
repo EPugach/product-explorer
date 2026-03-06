@@ -38,7 +38,9 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
 
   // Clear any existing content
   _container.querySelectorAll('.planet-node').forEach(el => el.remove());
+  // Safe: clearing SVG children only (no user input)
   _edgesSvg.innerHTML = '';
+  _edgesSvg.style.setProperty('--zoom', zoom);
   _planetEls = {};
   _edgeEls = [];
 
@@ -51,7 +53,7 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
     path.classList.add('galaxy-edge');
     path.dataset.source = e.source;
     path.dataset.target = e.target;
-    _updateEdgePath(path, s, t);
+    _updateEdgePathZoomed(path, s, t);
     _edgesSvg.appendChild(path);
     _edgeEls.push({ el: path, source: e.source, target: e.target });
   }
@@ -66,12 +68,13 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
     div.setAttribute('tabindex', '0');
     div.setAttribute('aria-label', `${n.label}: ${n.desc.substring(0, 80)}`);
     div.style.setProperty('--planet-color', n.color);
-    div.style.setProperty('--planet-r', `${n.radius}px`);
+    div.style.setProperty('--planet-r', `${n.radius * zoom}px`);
+    div.style.setProperty('--zoom', zoom);
     div.style.setProperty('--planet-light', lightenColor(n.color, 40));
     div.style.setProperty('--planet-dark', darkenColor(n.color, 30));
     div.style.setProperty('--entrance-i', i);
-    div.style.left = `${n.x}px`;
-    div.style.top = `${n.y}px`;
+    div.style.left = `${n.x * zoom + panX}px`;
+    div.style.top = `${n.y * zoom + panY}px`;
 
     // Icon (safe: domainSvg returns trusted app-owned SVG from icons.js)
     const iconMarkup = domainSvg(n.id, Math.round(n.radius * 0.9));
@@ -98,24 +101,77 @@ function _updateEdgePath(pathEl, s, t) {
   pathEl.setAttribute('d', `M${s.x},${s.y} Q${mx},${my} ${t.x},${t.y}`);
 }
 
-// ── Transform ──
+// Zoomed variant: applies zoom + pan to edge path coordinates
+function _updateEdgePathZoomed(pathEl, s, t) {
+  const { mx, my } = edgeBezier(s, t);
+  const sx = s.x * zoom + panX, sy = s.y * zoom + panY;
+  const tx = t.x * zoom + panX, ty = t.y * zoom + panY;
+  const cmx = mx * zoom + panX, cmy = my * zoom + panY;
+  pathEl.setAttribute('d', `M${sx},${sy} Q${cmx},${cmy} ${tx},${ty}`);
+}
+
+// ── Transform (position-based zoom/pan for crisp text) ──
+// Instead of CSS scale() on the container (which rasterizes at 1x then
+// stretches the bitmap), we recalculate every planet's left/top/size and
+// every SVG edge path at the zoomed coordinates.  With ~18 planets and
+// ~50 edges this is trivially fast and keeps text/gradients sharp.
+//
+// CSS transform on .galaxy-container is reserved ONLY for animated
+// fly-in/fly-out transitions (where brief blur during 600ms is fine).
 export function updateGalaxyTransform() {
   if (!_container) return;
+
+  // Update planet positions, sizes, and zoom factor for text scaling
+  for (const [id, div] of Object.entries(_planetEls)) {
+    const node = _nodeMap[id];
+    if (!node) continue;
+    div.style.left = `${node.x * zoom + panX}px`;
+    div.style.top = `${node.y * zoom + panY}px`;
+    div.style.setProperty('--planet-r', `${node.radius * zoom}px`);
+    div.style.setProperty('--zoom', zoom);
+  }
+
+  // Update SVG edge paths with zoomed coordinates
+  for (const e of _edgeEls) {
+    const s = _nodeMap[e.source], t = _nodeMap[e.target];
+    if (s && t) _updateEdgePathZoomed(e.el, s, t);
+  }
+
+  // Scale SVG edge container to match zoom (stroke-width, dash patterns)
+  if (_edgesSvg) {
+    _edgesSvg.style.setProperty('--zoom', zoom);
+  }
+}
+
+// CSS-transform variant: used ONLY for animated transitions (tour-pan)
+// where we need the browser's CSS transition engine to interpolate.
+export function updateGalaxyTransformCSS() {
+  if (!_container) return;
   _container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+}
+
+// Sync positions after a CSS transition ends — call this to "bake" the
+// CSS transform back into individual positions and clear the transform.
+export function bakeTransformToPositions() {
+  if (!_container) return;
+  _container.style.transform = '';
+  updateGalaxyTransform();
 }
 
 // ── Position updates ──
 export function updatePlanetPosition(node) {
   const div = _planetEls[node.id];
   if (div) {
-    div.style.left = `${node.x}px`;
-    div.style.top = `${node.y}px`;
+    div.style.left = `${node.x * zoom + panX}px`;
+    div.style.top = `${node.y * zoom + panY}px`;
+    div.style.setProperty('--planet-r', `${node.radius * zoom}px`);
+    div.style.setProperty('--zoom', zoom);
   }
-  // Update connected edges
+  // Update connected edges with zoomed coordinates
   for (const e of _edgeEls) {
     if (e.source === node.id || e.target === node.id) {
       const s = _nodeMap[e.source], t = _nodeMap[e.target];
-      if (s && t) _updateEdgePath(e.el, s, t);
+      if (s && t) _updateEdgePathZoomed(e.el, s, t);
     }
   }
 }
@@ -124,14 +180,15 @@ export function updateAllPositions(nodes, edges) {
   for (const n of nodes) {
     const div = _planetEls[n.id];
     if (div) {
-      div.style.left = `${n.x}px`;
-      div.style.top = `${n.y}px`;
-      div.style.setProperty('--planet-r', `${n.radius}px`);
+      div.style.left = `${n.x * zoom + panX}px`;
+      div.style.top = `${n.y * zoom + panY}px`;
+      div.style.setProperty('--planet-r', `${n.radius * zoom}px`);
+      div.style.setProperty('--zoom', zoom);
     }
   }
   for (const e of _edgeEls) {
     const s = _nodeMap[e.source], t = _nodeMap[e.target];
-    if (s && t) _updateEdgePath(e.el, s, t);
+    if (s && t) _updateEdgePathZoomed(e.el, s, t);
   }
 }
 
@@ -283,11 +340,14 @@ export function flyIntoPlanet(node, callback) {
     particle.style.opacity = '0';
   }
 
-  // Calculate transform to center+scale so the planet fills ~60% of viewport
-  const targetScale = Math.min(layoutW, layoutH) / (node.radius * 2) * 0.6;
+  // Calculate CSS transform to center+scale so the planet fills ~60% of viewport.
+  // Positions are already baked with zoom/pan, so use screen coords for the planet.
+  const screenX = node.x * zoom + panX;
+  const screenY = node.y * zoom + panY;
+  const targetScale = Math.min(layoutW, layoutH) / (node.radius * zoom * 2) * 0.6;
   const scale = Math.min(targetScale, 8);
-  const tx = layoutW / 2 - node.x * scale;
-  const ty = layoutH / 2 - node.y * scale;
+  const tx = layoutW / 2 - screenX * scale;
+  const ty = layoutH / 2 - screenY * scale;
 
   // Ensure clean starting state (no leftover classes/styles)
   _container.classList.remove('fly-in', 'fly-out', 'hidden');
@@ -365,11 +425,14 @@ export function flyOutFromPlanet(node, callback) {
   if (_isTransitioning) resetGalaxyState();
   _isTransitioning = true;
 
-  // Position container at the zoomed-in state (matching where fly-in ended)
-  const targetScale = Math.min(layoutW, layoutH) / (node.radius * 2) * 0.6;
+  // Position container at the zoomed-in state (matching where fly-in ended).
+  // Positions are baked with zoom/pan, so use screen coords for the planet.
+  const screenX = node.x * zoom + panX;
+  const screenY = node.y * zoom + panY;
+  const targetScale = Math.min(layoutW, layoutH) / (node.radius * zoom * 2) * 0.6;
   const scale = Math.min(targetScale, 8);
-  const tx = layoutW / 2 - node.x * scale;
-  const ty = layoutH / 2 - node.y * scale;
+  const tx = layoutW / 2 - screenX * scale;
+  const ty = layoutH / 2 - screenY * scale;
 
   // Set starting position (zoomed-in, transparent)
   _container.classList.remove('hidden', 'fly-in', 'fly-out');
