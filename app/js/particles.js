@@ -15,7 +15,10 @@ export const setHoveredNode = (node) => { hoveredNode = node; };
 let particleCanvas, particleCtx;
 let connectionParticles = [];
 let particlesVisible = true;
+let lastFrameTime = 0;
 const CONNECTION_PARTICLE_COUNT = 3; // per edge
+const FRAME_BASELINE = 1000 / 60; // 16.67ms — speeds are calibrated for 60fps
+const MAX_DELTA = 33;             // clamp to ~30fps to prevent jumps after tab-backgrounding
 
 export function initParticles() {
   particleCanvas = document.getElementById('particle-canvas');
@@ -41,7 +44,7 @@ function initConnectionParticles() {
       connectionParticles.push({
         edge: e,
         t: Math.random(),               // position along path 0..1 (source..target)
-        speed: 0.001 + Math.random() * 0.0015,
+        speed: 0.00075 + Math.random() * 0.001125,  // 25% slower than original
         size: 1 + Math.random() * 1.5,
         opacity: 0.3 + Math.random() * 0.4
       });
@@ -49,9 +52,9 @@ function initConnectionParticles() {
   }
 }
 
-function updateConnectionParticles() {
+function updateConnectionParticles(dt) {
   for (const p of connectionParticles) {
-    p.t += p.speed;
+    p.t += p.speed * dt;
     if (p.t > 1) { p.t -= 1; }         // wrap: directional source -> target
   }
 }
@@ -102,7 +105,17 @@ function renderConnectionParticles() {
 // ── Combined update + render ──
 export function updateParticles() {
   if (!particlesVisible || prefersReducedMotion) return;
-  updateConnectionParticles();
+
+  const now = performance.now();
+  if (!lastFrameTime) { lastFrameTime = now; }
+  const rawDelta = now - lastFrameTime;
+  lastFrameTime = now;
+
+  // Normalise: dt = 1.0 at exactly 60fps (16.67ms), clamped to prevent
+  // large jumps when the tab is backgrounded or the browser throttles.
+  const dt = Math.min(rawDelta, MAX_DELTA) / FRAME_BASELINE;
+
+  updateConnectionParticles(dt);
 }
 
 export function renderParticles() {
