@@ -8,7 +8,7 @@ import { track, announce } from './utils.js';
 import { resetZoomPan, nodeMap } from './physics.js';
 import { domainSvg, entitySvg } from './icons.js';
 import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons, highlightMatch, renderPreview } from './search.js';
-import { setGalaxyVisible, flyIntoPlanet, flyOutFromPlanet, highlightPlanet } from './galaxy-renderer.js';
+import { setGalaxyVisible, flyIntoPlanet, flyOutFromPlanet, highlightPlanet, resetGalaxyState } from './galaxy-renderer.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -94,9 +94,10 @@ export const handleHashNavigation = () => {
       if (_lastZoomedPlanet) {
         // CSS fly-out: zoom galaxy container back from planet
         const lzp = _lastZoomedPlanet;
+        _lastZoomedPlanet = null;
+        _flyInAnimating = false;
         showView('galaxy-view', 'out');
         flyOutFromPlanet(lzp, () => {
-          _lastZoomedPlanet = null;
           if (_particleTick) requestAnimationFrame(_particleTick);
         });
       } else {
@@ -104,6 +105,7 @@ export const handleHashNavigation = () => {
         resetZoomPan();
         _lastZoomedPlanet = null;
         _flyInAnimating = false;
+        resetGalaxyState();
         setGalaxyVisible(true);
         showViewDirect('galaxy-view');
         if (_particleTick) requestAnimationFrame(_particleTick);
@@ -195,7 +197,11 @@ function updateBreadcrumb() {
 }
 
 export function enterPlanet(id) {
-  if (_flyInAnimating) return; // guard against double-click during animation
+  // If already transitioning, force-reset first so we can start the new navigation
+  if (_flyInAnimating) {
+    resetGalaxyState();
+    _flyInAnimating = false;
+  }
   setFocusedPlanetIndex(-1);
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
   currentLevel = 'planet'; currentPlanet = id; currentComponent = null;
@@ -224,7 +230,7 @@ export function enterPlanet(id) {
 
   const p = PRODUCT_DATA[id];
   if (p) announce(`Viewing ${p.name} domain, ${p.components.length} components`);
-  const focusDelay = (!node || prefersReducedMotion) ? getTransitionMs() + 50 : 1200;
+  const focusDelay = (!node || prefersReducedMotion) ? getTransitionMs() + 50 : 800;
   setTimeout(() => {
     const heading = document.querySelector('#planet-content h2');
     if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
@@ -583,7 +589,12 @@ export function navigateToCore(pid, cid) {
 }
 
 export function navigateTo(level) {
-  if (level === currentLevel || _flyInAnimating) return;
+  if (level === currentLevel) return;
+  // If transitioning, force-reset so we can proceed with the new navigation
+  if (_flyInAnimating) {
+    resetGalaxyState();
+    _flyInAnimating = false;
+  }
   if (level === 'galaxy') {
     currentLevel = 'galaxy'; currentPlanet = null; currentComponent = null;
     setHash('#/'); updateDocumentTitle('galaxy');
@@ -592,18 +603,21 @@ export function navigateTo(level) {
     if (_lastZoomedPlanet) {
       // CSS fly-out: zoom galaxy container back from planet
       const lzp = _lastZoomedPlanet;
+      _lastZoomedPlanet = null;
       showView('galaxy-view', 'out');
       flyOutFromPlanet(lzp, () => {
-        _lastZoomedPlanet = null;
         if (_particleTick) requestAnimationFrame(_particleTick);
         const container = document.getElementById('galaxyContainer');
         if (container) container.focus({ preventScroll: true });
       });
     } else {
       // Instant transition (no previous fly-in or reduced motion)
-      resetZoomPan(); setGalaxyVisible(true); showView('galaxy-view', 'out');
-      if (_particleTick) requestAnimationFrame(_particleTick);
+      resetZoomPan();
       _lastZoomedPlanet = null;
+      resetGalaxyState();
+      setGalaxyVisible(true);
+      showView('galaxy-view', 'out');
+      if (_particleTick) requestAnimationFrame(_particleTick);
       setTimeout(() => {
         const container = document.getElementById('galaxyContainer');
         if (container) container.focus({ preventScroll: true });
