@@ -410,6 +410,7 @@ function setupGalaxyEvents() {
   let _dragNode = null;
   let _isDragging = false;
   let _isPanning = false;
+  let _dragStart = { x: 0, y: 0 };
   let _lastMouse = { x: 0, y: 0 };
   let _hoveredId = null;
 
@@ -451,6 +452,7 @@ function setupGalaxyEvents() {
   container.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     const planetDiv = e.target.closest('.planet-node');
+    _dragStart = { x: e.clientX, y: e.clientY };
     _lastMouse = { x: e.clientX, y: e.clientY };
     _isDragging = false;
 
@@ -460,6 +462,7 @@ function setupGalaxyEvents() {
       if (_dragNode) {
         _dragNode.fx = _dragNode.x;
         _dragNode.fy = _dragNode.y;
+        planetDiv.style.willChange = 'left, top';
         container.classList.add('dragging');
       }
     } else {
@@ -473,7 +476,10 @@ function setupGalaxyEvents() {
     if (_dragNode) {
       const dx = e.clientX - _lastMouse.x;
       const dy = e.clientY - _lastMouse.y;
-      if (Math.abs(dx) + Math.abs(dy) > 3) _isDragging = true;
+      // Check total displacement from start to distinguish drag from click
+      const totalDx = e.clientX - _dragStart.x;
+      const totalDy = e.clientY - _dragStart.y;
+      if (Math.abs(totalDx) + Math.abs(totalDy) > 3) _isDragging = true;
       // Convert screen delta to graph space
       _dragNode.x += dx / zoom;
       _dragNode.y += dy / zoom;
@@ -493,6 +499,11 @@ function setupGalaxyEvents() {
   // ── Mouseup: end drag/pan, detect click ──
   window.addEventListener('mouseup', () => {
     container.classList.remove('dragging');
+    if (_dragNode) {
+      // Remove will-change hint from the dragged planet div
+      const dragDiv = getPlanetEl(_dragNode.id);
+      if (dragDiv) dragDiv.style.willChange = '';
+    }
     if (_dragNode && !_isDragging) {
       const node = _dragNode;
       _dragNode.fx = null; _dragNode.fy = null;
@@ -540,6 +551,8 @@ function setupGalaxyEvents() {
   let touchStartTime = 0;
   let touchStartPos = { x: 0, y: 0 };
   let lastTouchDist = 0;
+  let _touchDragNode = null;
+  let _touchIsDragging = false;
 
   container.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
@@ -547,9 +560,31 @@ function setupGalaxyEvents() {
       touchStartEl = e.target.closest('.planet-node');
       touchStartTime = Date.now();
       touchStartPos = { x: touch.clientX, y: touch.clientY };
-      if (touchStartEl) e.preventDefault();
       _lastMouse = { x: touch.clientX, y: touch.clientY };
+      _touchIsDragging = false;
+
+      if (touchStartEl) {
+        // Start potential planet drag
+        const id = touchStartEl.dataset.domain;
+        _touchDragNode = nodeMap[id] || null;
+        if (_touchDragNode) {
+          _touchDragNode.fx = _touchDragNode.x;
+          _touchDragNode.fy = _touchDragNode.y;
+          touchStartEl.style.willChange = 'left, top';
+        }
+        e.preventDefault();
+      } else {
+        _touchDragNode = null;
+      }
     } else if (e.touches.length === 2) {
+      // If we were dragging a planet, cancel it on pinch
+      if (_touchDragNode) {
+        const dragDiv = getPlanetEl(_touchDragNode.id);
+        if (dragDiv) dragDiv.style.willChange = '';
+        _touchDragNode.fx = null; _touchDragNode.fy = null;
+        _touchDragNode = null;
+        _touchIsDragging = false;
+      }
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       lastTouchDist = Math.sqrt(dx * dx + dy * dy);
@@ -559,13 +594,28 @@ function setupGalaxyEvents() {
   container.addEventListener('touchmove', (e) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
-      const dx = touch.clientX - touchStartPos.x;
-      const dy = touch.clientY - touchStartPos.y;
-      if (Math.abs(dx) + Math.abs(dy) > 10) {
-        touchStartEl = null;
-        setPanX(panX + touch.clientX - _lastMouse.x);
-        setPanY(panY + touch.clientY - _lastMouse.y);
-        updateGalaxyTransform();
+      const dx = touch.clientX - _lastMouse.x;
+      const dy = touch.clientY - _lastMouse.y;
+      const totalDx = touch.clientX - touchStartPos.x;
+      const totalDy = touch.clientY - touchStartPos.y;
+
+      if (_touchDragNode) {
+        // Dragging a planet
+        if (Math.abs(totalDx) + Math.abs(totalDy) > 10) _touchIsDragging = true;
+        _touchDragNode.x += dx / zoom;
+        _touchDragNode.y += dy / zoom;
+        _touchDragNode.fx = _touchDragNode.x;
+        _touchDragNode.fy = _touchDragNode.y;
+        updatePlanetPosition(_touchDragNode);
+        hideTooltip();
+      } else {
+        // Panning on empty space
+        if (Math.abs(totalDx) + Math.abs(totalDy) > 10) {
+          touchStartEl = null;
+          setPanX(panX + dx);
+          setPanY(panY + dy);
+          updateGalaxyTransform();
+        }
       }
       _lastMouse = { x: touch.clientX, y: touch.clientY };
       e.preventDefault();
@@ -591,10 +641,33 @@ function setupGalaxyEvents() {
   }, { passive: false });
 
   container.addEventListener('touchend', () => {
-    if (touchStartEl && Date.now() - touchStartTime < 300) {
+    if (_touchDragNode) {
+      const dragDiv = getPlanetEl(_touchDragNode.id);
+      if (dragDiv) dragDiv.style.willChange = '';
+
+      if (!_touchIsDragging) {
+        // Tap on planet (no significant drag) -> enter planet
+        const id = _touchDragNode.id;
+        _touchDragNode.fx = null; _touchDragNode.fy = null;
+        _touchDragNode = null;
+        _touchIsDragging = false;
+        touchStartEl = null;
+        lastTouchDist = 0;
+        if (tourState.active) return;
+        enterPlanet(id);
+        track('planet_click', { planet: id });
+        return;
+      } else {
+        track('planet_drag', { planet: _touchDragNode.id, method: 'touch' });
+        _touchDragNode.fx = null; _touchDragNode.fy = null;
+      }
+    } else if (touchStartEl && Date.now() - touchStartTime < 300) {
+      // Tap on planet without drag node (fallback)
       const id = touchStartEl.dataset.domain;
       touchStartEl = null;
       lastTouchDist = 0;
+      _touchDragNode = null;
+      _touchIsDragging = false;
       if (tourState.active) return;
       if (id) {
         enterPlanet(id);
@@ -604,6 +677,8 @@ function setupGalaxyEvents() {
     }
     touchStartEl = null;
     lastTouchDist = 0;
+    _touchDragNode = null;
+    _touchIsDragging = false;
   });
 
   // ── Keyboard planet navigation on container ──

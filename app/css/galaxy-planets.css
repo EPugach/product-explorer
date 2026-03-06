@@ -49,6 +49,11 @@
     0 0 calc(var(--planet-r) * 2.5) color-mix(in srgb, var(--planet-color) 20%, transparent);
 }
 
+/* Suppress hover scale during drag to prevent visual jumps */
+.galaxy-container.dragging .planet-node:hover {
+  transform: translate(-50%, -50%) scale(1);
+}
+
 .planet-node.dimmed {
   opacity: 0.15;
 }
