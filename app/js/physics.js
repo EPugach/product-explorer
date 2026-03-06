@@ -48,10 +48,10 @@ const DOMAIN_GROUPS = {
 };
 
 const GROUP_CENTERS = [
-  { x: 0.45, y: 0.38 },
-  { x: 0.25, y: 0.62 },
-  { x: 0.70, y: 0.62 },
-  { x: 0.75, y: 0.38 },
+  { x: 0.40, y: 0.30 },
+  { x: 0.18, y: 0.65 },
+  { x: 0.75, y: 0.68 },
+  { x: 0.82, y: 0.30 },
 ];
 
 const GROUP_GRAVITY = 0.20;
@@ -107,8 +107,8 @@ export function initGraph(w, h) {
 
   const keys = Object.keys(PRODUCT_DATA);
   const cx = layoutW / 2, cy = (200 + layoutH - 80) / 2;
-  const spreadX = layoutW * 0.38;
-  const spreadY = layoutH * 0.18;
+  const spreadX = layoutW * 0.42;
+  const spreadY = layoutH * 0.25;
   const tilt = -0.26;
 
   nodes = keys.map((key, i) => {
@@ -161,13 +161,14 @@ function simulate() {
   alpha *= 0.992;
 
   // N-body repulsion
+  const labelPad = 15; // half of ~30px label zone below each planet
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       const a = nodes[i], b = nodes[j];
       let dx = b.x - a.x, dy = b.y - a.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const minDist = a.radius + b.radius + 160;
-      const force = (minDist * minDist) / (dist * dist) * 2.0 * alpha;
+      const minDist = (a.radius + labelPad) + (b.radius + labelPad) + 220;
+      const force = (minDist * minDist) / (dist * dist) * 2.5 * alpha;
       const fx = (dx / dist) * force, fy = (dy / dist) * force;
       a.vx -= fx; a.vy -= fy;
       b.vx += fx; b.vy += fy;
@@ -190,8 +191,8 @@ function simulate() {
   // Anisotropic centering gravity
   const cx = layoutW / 2, cy = (200 + layoutH - 80) / 2;
   for (const n of nodes) {
-    n.vx += (cx - n.x) * 0.005 * alpha;
-    n.vy += (cy - n.y) * 0.015 * alpha;
+    n.vx += (cx - n.x) * 0.003 * alpha;
+    n.vy += (cy - n.y) * 0.010 * alpha;
   }
 
   // Group gravity
@@ -213,9 +214,10 @@ function simulate() {
     else { n.vy *= 0.6; n.y += n.vy; }
 
     const margin = n.radius + 20;
+    const bottomMargin = n.radius + 50; // extra 30px for label below planet
     const topBound = Math.max(margin, 200);
     n.x = Math.max(margin, Math.min(layoutW - margin, n.x));
-    n.y = Math.max(topBound, Math.min(layoutH - margin - 100, n.y));
+    n.y = Math.max(topBound, Math.min(layoutH - bottomMargin - 100, n.y));
   }
 }
 

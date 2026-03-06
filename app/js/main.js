@@ -335,12 +335,12 @@ function initCssStarfield() {
   for (let i = 0; i < 120; i++) {
     const x = Math.random() * innerWidth;
     const y = Math.random() * innerHeight;
-    const size = Math.random() * 1.5 + 0.3;
+    const size = Math.random() * 1.5 + 0.5;
     const isWarm = Math.random() > 0.85;
     const hue = isWarm ? 30 + Math.random() * 20 : 210 + (Math.random() - 0.5) * 40;
     const sat = Math.random() * 30;
     const light = 80 + Math.random() * 20;
-    const op = Math.random() * 0.5 + 0.2;
+    const op = Math.random() * 0.35 + 0.15;
     shadows.push(`${x}px ${y}px ${size}px hsla(${hue}, ${sat}%, ${light}%, ${op})`);
   }
   const el = document.getElementById('starfield');

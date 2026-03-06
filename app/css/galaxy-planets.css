@@ -127,7 +127,7 @@
   stroke: var(--glow-primary, rgba(100, 140, 255, 0.35));
   stroke-width: calc(1.5 * var(--zoom, 1));
   stroke-dasharray: calc(6 * var(--zoom, 1)) calc(5 * var(--zoom, 1));
-  opacity: 0.45;
+  opacity: 0.18;
   transition: opacity 0.2s ease, stroke-width 0.2s ease;
 }
 
@@ -207,6 +207,7 @@ body.theme-light .planet-node:hover .planet-label {
 }
 body.theme-light .galaxy-edge {
   stroke: rgba(1, 118, 211, 0.4);
+  opacity: 0.45;
 }
 body.theme-light .galaxy-edge.edge-connected {
   stroke: #0176d3;
