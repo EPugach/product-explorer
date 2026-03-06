@@ -11,16 +11,17 @@ let PRODUCT_DATA = {};
 export const setTourData = (tours) => { TOURS = tours || []; };
 export const setProductData = (data) => { PRODUCT_DATA = data; };
 import { safeLSGet, safeLSSet, track, announce } from './utils.js';
-import { animatePanTo, resetZoomPan, nodeMap } from './physics.js';
+import { resetZoomPan, nodeMap, setZoom, setPanX, setPanY, layoutW, layoutH } from './physics.js';
 import {
   tourState,
-  setTourFocusNode, setTourHighlightedEdges, setTourStopPlanets
+  setTourStopPlanets,
+  prefersReducedMotion
 } from './state.js';
 import {
   currentLevel, navigateTo,
   setHash, updateDocumentTitle
 } from './navigation.js';
-import { setGalaxyVisible } from './galaxy-renderer.js';
+import { setGalaxyVisible, applyTourDimming, clearTourDimming, updateGalaxyTransform } from './galaxy-renderer.js';
 
 // Animation callback set by main.js to break circular dependency
 let _particleTick = null;
@@ -155,6 +156,7 @@ function startTour(tourId) {
     stopPlanets.add(stop.planet);
   }
   setTourStopPlanets(stopPlanets);
+  tourState._stopPlanets = stopPlanets;
 
   // Set tour state
   tourState.active = true;
@@ -210,9 +212,6 @@ function goToStop(index) {
     });
   }
 
-  // Set tour focus node for dimming
-  setTourFocusNode(stop.planet);
-
   // Build highlighted edges set
   const highlightedEdges = new Set();
   if (stop.highlightEdges) {
@@ -221,15 +220,50 @@ function goToStop(index) {
       highlightedEdges.add(key);
     }
   }
-  setTourHighlightedEdges(highlightedEdges);
 
-  // Animate camera to planet
+  // Apply tour dimming via DOM classes (replaces canvas-based dimming)
+  const stopPlanets = tourState._stopPlanets || null;
+  applyTourDimming(stop.planet, stopPlanets, highlightedEdges);
+
+  // Animate camera to planet via CSS container transform
   const node = nodeMap[stop.planet];
   if (node) {
-    animatePanTo(node, 800, 1.4);
+    const targetZoom = 1.4;
+    const targetPanX = layoutW / 2 - node.x * targetZoom;
+    const targetPanY = layoutH / 2 - node.y * targetZoom;
+
+    // Update physics zoom/pan state so particles align
+    setZoom(targetZoom);
+    setPanX(targetPanX);
+    setPanY(targetPanY);
+
+    const container = document.getElementById('galaxyContainer');
+    if (container) {
+      if (prefersReducedMotion) {
+        // Instant jump — no transition
+        container.classList.remove('tour-pan');
+        updateGalaxyTransform();
+      } else {
+        // Enable CSS transition, then set transform
+        container.classList.add('tour-pan');
+        updateGalaxyTransform();
+        // Remove transition class after animation completes
+        const onEnd = (e) => {
+          if (e.propertyName !== 'transform') return;
+          container.removeEventListener('transitionend', onEnd);
+          container.classList.remove('tour-pan');
+        };
+        container.addEventListener('transitionend', onEnd);
+        // Safety timeout
+        setTimeout(() => {
+          container.removeEventListener('transitionend', onEnd);
+          container.classList.remove('tour-pan');
+        }, 1000);
+      }
+    }
   }
 
-  // Ensure rendering continues
+  // Ensure particle rendering continues
   restartAnimation();
 
   // Update narration card
@@ -277,10 +311,10 @@ export function exitTour() {
   tourState.stopIndex = 0;
   tourState.startTime = 0;
   tourState.stopStartTime = 0;
+  tourState._stopPlanets = null;
 
-  // Clear visual state
-  setTourHighlightedEdges(null);
-  setTourFocusNode(null);
+  // Clear visual state — remove DOM dimming classes
+  clearTourDimming();
   setTourStopPlanets(null);
 
   // Exit immersive mode: restore galaxy chrome
@@ -290,14 +324,34 @@ export function exitTour() {
   const card = document.getElementById('tour-card');
   if (card) card.classList.remove('visible');
 
-  // Reset camera
+  // Reset camera: transition container back to identity transform
   resetZoomPan();
+  const container = document.getElementById('galaxyContainer');
+  if (container) {
+    if (prefersReducedMotion) {
+      container.classList.remove('tour-pan');
+      updateGalaxyTransform();
+    } else {
+      container.classList.add('tour-pan');
+      updateGalaxyTransform();
+      const onEnd = (e) => {
+        if (e.propertyName !== 'transform') return;
+        container.removeEventListener('transitionend', onEnd);
+        container.classList.remove('tour-pan');
+      };
+      container.addEventListener('transitionend', onEnd);
+      setTimeout(() => {
+        container.removeEventListener('transitionend', onEnd);
+        container.classList.remove('tour-pan');
+      }, 1000);
+    }
+  }
 
   // Reset hash to galaxy view
   setHash('#/');
   updateDocumentTitle('galaxy');
 
-  // Force re-render to clear dimming
+  // Ensure particle rendering continues
   restartAnimation();
 
   track('tour_exit', {

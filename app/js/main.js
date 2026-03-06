@@ -21,8 +21,7 @@ import {
 import { initParticles, resizeParticleCanvas, updateParticles, renderParticles, setHoveredNode as setParticleHover } from './particles.js';
 import {
   initGalaxyDOM, updateGalaxyTransform, updateAllPositions, updatePlanetPosition,
-  applyHoverState, clearHoverState, setGalaxyVisible, getSortedPlanetEls, getPlanetEl,
-  highlightPlanet
+  applyHoverState, clearHoverState, setGalaxyVisible, getSortedPlanetEls, getPlanetEl
 } from './galaxy-renderer.js';
 import {
   currentLevel, currentPlanet, currentComponent,

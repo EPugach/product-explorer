@@ -8,7 +8,7 @@ import { track, announce } from './utils.js';
 import { resetZoomPan, nodeMap } from './physics.js';
 import { domainSvg, entitySvg } from './icons.js';
 import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons, highlightMatch, renderPreview } from './search.js';
-import { setGalaxyVisible, flyIntoPlanet, flyOutFromPlanet } from './galaxy-renderer.js';
+import { setGalaxyVisible, flyIntoPlanet, flyOutFromPlanet, highlightPlanet } from './galaxy-renderer.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -205,6 +205,9 @@ export function enterPlanet(id) {
   updateBreadcrumb(); setHash(`#/${id}`); updateDocumentTitle('planet', id);
 
   const node = nodeMap[id];
+
+  // Pulse-highlight the planet before entering (visible briefly during fly-in)
+  highlightPlanet(id);
 
   if (!node || prefersReducedMotion) {
     // Instant transition (reduced motion or missing node)
