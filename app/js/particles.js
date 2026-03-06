@@ -3,7 +3,11 @@
 // ══════════════════════════════════════════════════════════════
 
 import { hexToRgba } from './utils.js';
-import { edges, nodeMap, zoom, panX, panY, hoveredNode } from './physics.js';
+import { edges, nodeMap, zoom, panX, panY } from './physics.js';
+
+// Hover state set by main.js when a planet is hovered
+let hoveredNode = null;
+export const setHoveredNode = (node) => { hoveredNode = node; };
 import { prefersReducedMotion } from './state.js';
 
 let particleCanvas, particleCtx;

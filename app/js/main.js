@@ -6,23 +6,24 @@
 
 import { track, safeLSGet, safeLSSet, announce } from './utils.js';
 import {
-  tourState, focusedPlanetIndex, setFocusedPlanetIndex,
+  tourState,
   pageHidden, setPageHidden,
   entitiesLoaded, setEntitiesLoaded,
   setProductId, lsPrefix,
   prefersReducedMotion
 } from './state.js';
-import { initStarfield, pauseStarfield, resumeStarfield, resizeStarfield } from './starfield.js';
 import {
-  nodes, edges, nodeMap, graphCanvas, zoom, panX, panY,
-  hoveredNode, dragNode, isDragging, isPanning, lastMouse, alpha, graphSettled,
-  setZoom, setPanX, setPanY, setDragNode, setHoveredNode,
-  setIsDragging, setIsPanning, setLastMouse, setAlpha, setGraphSettled,
-  setRenderCallbacks, setProductData as setPhysicsData,
-  initGraph, simulate, screenToGraph, hitTest, onGraphResize, applyOrbitalDrift
+  nodes, edges, nodeMap, zoom, panX, panY,
+  setZoom, setPanX, setPanY,
+  setProductData as setPhysicsData, setTransformCallback,
+  initGraph, computeLayout, onGraphResize
 } from './physics.js';
-import { initRenderer, renderGraph } from './renderer.js';
-import { initParticles, resizeParticleCanvas, updateParticles, renderParticles, initNebulaBlobs } from './particles.js';
+import { initParticles, resizeParticleCanvas, updateParticles, renderParticles, setHoveredNode as setParticleHover } from './particles.js';
+import {
+  initGalaxyDOM, updateGalaxyTransform, updateAllPositions, updatePlanetPosition,
+  applyHoverState, clearHoverState, setGalaxyVisible, getSortedPlanetEls, getPlanetEl,
+  highlightPlanet
+} from './galaxy-renderer.js';
 import {
   currentLevel, currentPlanet, currentComponent,
   hashUpdateInProgress, handleHashNavigation,
@@ -44,16 +45,13 @@ import {
   initTours, advanceStop, exitTour, setTourAnimationCallbacks, toggleTourPicker,
   setTourData, setProductData as setToursProductData
 } from './tours.js';
-import { uiSvg, domainSvg, preloadCanvasIcons, setDomainPaths } from './icons.js';
+import { uiSvg, domainSvg, setDomainPaths } from './icons.js';
 
 // ── Resolve product ID from <body data-product="..."> ──
 const productId = document.body.dataset.product || 'npsp';
 setProductId(productId);
 
 // ── Resolve base path for product data imports ──
-// The bootstrap index.html is at /{productId}/index.html
-// Products data is at /products/{productId}/
-// So from app/js/main.js perspective: ../../products/{productId}/
 const productsBase = `../../products/${productId}`;
 
 // ── Dynamic product imports ──
@@ -63,7 +61,6 @@ let PRODUCT_PACKAGES = {};
 let _prefixToPkg = {};
 
 async function loadProductData() {
-  // Load config and data in parallel (required)
   const [configModule, dataModule] = await Promise.all([
     import(`${productsBase}/config.js?v=24`),
     import(`${productsBase}/data.js?v=24`),
@@ -73,12 +70,10 @@ async function loadProductData() {
   PRODUCT_DATA = dataModule.PRODUCT;
   PRODUCT_PACKAGES = configModule.PACKAGES || {};
 
-  // Build prefix-to-package lookup for entity derivation
   _prefixToPkg = Object.fromEntries(
     Object.entries(PRODUCT_PACKAGES).map(([key, pkg]) => [pkg.prefix, key])
   );
 
-  // Inject product data into all modules that need it
   setPhysicsData(PRODUCT_DATA);
   setNavData(PRODUCT_DATA);
   setNavConfig(PRODUCT_CONFIG);
@@ -87,7 +82,6 @@ async function loadProductData() {
   setSearchPackages(PRODUCT_PACKAGES);
   setToursProductData(PRODUCT_DATA);
 
-  // Load domain icons (required before canvas rendering)
   try {
     const iconsModule = await import(`${productsBase}/icons.js?v=24`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
@@ -95,43 +89,35 @@ async function loadProductData() {
     console.warn(`[${productId}] No domain icons found, using defaults`);
   }
 
-  // Load tours (optional)
   try {
     const tourModule = await import(`${productsBase}/tour-data.js?v=24`);
     setTourData(tourModule.TOURS);
   } catch (e) {
-    // Tours are optional; if not found, tour UI will be hidden
     setTourData([]);
   }
 
-  // Load feedback module (optional)
   try {
     const feedbackModule = await import(`${productsBase}/feedback.js?v=24`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
-  } catch (e) {
-    // Feedback is optional
-  }
+  } catch (e) {}
 
-  // Load AI context (optional)
   try {
     const aiContextMod = await import(`${productsBase}/ai-context.js?v=24`);
     const aiEndpoint = 'https://npsp-ai-search.epug.workers.dev';
     setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
     setFeedbackEndpoint(aiEndpoint + '/feedback');
-  } catch (e) {
-    // AI is optional
-  }
+  } catch (e) {}
 
-  // Build planet metadata for navigation after icons are set
   rebuildPlanetMeta();
 }
 
 // ── Wire cross-module callbacks ──
-// physics.js needs render functions from renderer.js and particles.js
-setRenderCallbacks(renderGraph, renderParticles);
-
-// search.js needs navigation functions
 setNavigationCallbacks(enterPlanet, navigateToCore, enterEntity, enterSearchResults);
+
+// Wire physics transform updates to DOM
+setTransformCallback(() => {
+  updateGalaxyTransform();
+});
 
 // ── Theme Toggle ──
 const isLightMode = () => document.body.classList.contains('theme-light');
@@ -140,26 +126,21 @@ function toggleTheme() {
   document.body.classList.toggle('theme-light');
   const light = isLightMode();
   safeLSSet(lsPrefix + 'theme', light ? 'light' : 'dark');
+  // NOTE: innerHTML safe — uiSvg returns trusted app-owned SVG strings
   document.getElementById('theme-icon').innerHTML = uiSvg(light ? 'sun' : 'moon', 18);
-  initNebulaBlobs();
-  renderGraph();
-  renderParticles();
   track('theme_change', { theme: light ? 'light' : 'dark' });
 }
 
 // ── Package derivation ──
-// Derive which managed package an entity belongs to based on name prefix
 function derivePackage(entityName) {
   for (const [prefix, pkgKey] of Object.entries(_prefixToPkg)) {
     if (entityName.startsWith(prefix)) return pkgKey;
   }
-  // Default: unnamespaced entities belong to the first package (Cumulus for NPSP)
   const keys = Object.keys(PRODUCT_PACKAGES);
   return keys.length > 0 ? keys[0] : null;
 }
 
 // ── Merge generated entities into product data ──
-// Two-pass matching + synthetic infrastructure component for orphans
 let _entityData = null;
 const ENTITY_KEYS = ['classes', 'objects', 'triggers', 'lwcs', 'metadata'];
 
@@ -173,7 +154,6 @@ function mergeEntities() {
     const entities = ENTITIES[domainKey];
     PRODUCT_DATA[domainKey]._entities = entities;
 
-    // Stamp _package on every entity based on namespace prefix
     if (Object.keys(PRODUCT_PACKAGES).length > 0) {
       for (const key of ENTITY_KEYS) {
         for (const item of (entities[key] || [])) {
@@ -182,7 +162,6 @@ function mergeEntities() {
       }
     }
 
-    // Track which entities are claimed across all passes
     const claimed = {};
     for (const key of ENTITY_KEYS) {
       claimed[key] = new Set();
@@ -190,8 +169,6 @@ function mergeEntities() {
 
     const components = PRODUCT_DATA[domainKey].components;
 
-    // ── Pass 1: Tag matching + LWC prefix matching ──
-    // Build LWC prefix map from explicitly tagged LWCs per component
     const compLwcPrefixes = new Map();
     for (const comp of components) {
       const tagSet = new Set((comp.tags || []).map((t) => t.toLowerCase()));
@@ -199,10 +176,8 @@ function mergeEntities() {
         .filter((l) => tagSet.has(l.name.toLowerCase()))
         .map((l) => l.name.toLowerCase());
       if (taggedLwcNames.length > 0) {
-        // Derive common prefixes (3+ chars) from tagged LWC names
         const prefixes = new Set();
         for (const name of taggedLwcNames) {
-          // Use full name as a prefix to match children (e.g. "rd2" matches "rd2Service")
           if (name.length >= 3) prefixes.add(name);
         }
         compLwcPrefixes.set(comp, prefixes);
@@ -251,7 +226,6 @@ function mergeEntities() {
       }
     }
 
-    // ── Pass 2: Orphan trigger matching via class-object references ──
     const orphanTriggers = (entities.triggers || []).filter((t) => !claimed.triggers.has(t.name));
     for (const trigger of orphanTriggers) {
       const objName = trigger.object;
@@ -288,7 +262,6 @@ function mergeEntities() {
       }
     }
 
-    // Also try to place orphan LWCs via broader prefix matching in Pass 2
     const orphanLwcs = (entities.lwcs || []).filter((l) => !claimed.lwcs.has(l.name));
     for (const lwc of orphanLwcs) {
       const lowerName = lwc.name.toLowerCase();
@@ -309,7 +282,6 @@ function mergeEntities() {
       }
     }
 
-    // ── Synthetic Infrastructure component for remaining orphans ──
     const infraEntities = {};
     let infraTotal = 0;
     for (const key of ENTITY_KEYS) {
@@ -338,7 +310,6 @@ function mergeEntities() {
       totalInfra += infraTotal;
     }
 
-    // Update physics node tooltip counts with actual entity data
     if (nodeMap[domainKey]) {
       nodeMap[domainKey].classCount = (entities.classes || []).length;
     }
@@ -357,6 +328,24 @@ function commonPrefix(a, b) {
   let i = 0;
   while (i < a.length && i < b.length && a[i] === b[i]) i++;
   return a.slice(0, i);
+}
+
+// ── CSS Starfield ──
+function initCssStarfield() {
+  const shadows = [];
+  for (let i = 0; i < 120; i++) {
+    const x = Math.random() * innerWidth;
+    const y = Math.random() * innerHeight;
+    const size = Math.random() * 1.5 + 0.3;
+    const isWarm = Math.random() > 0.85;
+    const hue = isWarm ? 30 + Math.random() * 20 : 210 + (Math.random() - 0.5) * 40;
+    const sat = Math.random() * 30;
+    const light = 80 + Math.random() * 20;
+    const op = Math.random() * 0.5 + 0.2;
+    shadows.push(`${x}px ${y}px ${size}px hsla(${hue}, ${sat}%, ${light}%, ${op})`);
+  }
+  const el = document.getElementById('starfield');
+  if (el) el.style.setProperty('--starfield-stars', shadows.join(','));
 }
 
 // ── Tooltip ──
@@ -392,32 +381,15 @@ function hideTooltip() {
   if (tooltipEl) tooltipEl.classList.remove('visible');
 }
 
-// ── Page Visibility — pause all animation when tab is hidden ──
+// ── Page Visibility ──
 document.addEventListener('visibilitychange', () => {
   setPageHidden(document.hidden);
-  if (document.hidden) {
-    pauseStarfield();
-  } else {
-    if (currentLevel === 'galaxy') {
-      resumeStarfield();
-    }
-    if (currentLevel === 'galaxy') {
-      setGraphSettled(false);
-      requestAnimationFrame(graphTick);
-      requestAnimationFrame(particleTick);
-    }
+  if (!document.hidden && currentLevel === 'galaxy') {
+    requestAnimationFrame(particleTick);
   }
 });
 
-// ── Animation Loops ──
-function graphTick() {
-  if (pageHidden || currentLevel !== 'galaxy') return;
-  simulate();
-  applyOrbitalDrift();
-  renderGraph();
-  requestAnimationFrame(graphTick);
-}
-
+// ── Single Animation Loop (particles only) ──
 function particleTick() {
   if (pageHidden || currentLevel !== 'galaxy') return;
   updateParticles();
@@ -426,131 +398,157 @@ function particleTick() {
 }
 
 // Wire animation callbacks to navigation.js and tours.js
-setAnimationCallbacks(graphTick, particleTick);
-setTourAnimationCallbacks(graphTick, particleTick);
+setAnimationCallbacks(null, particleTick);
+setTourAnimationCallbacks(null, particleTick);
 
-// ── Keyboard Planet Focus helpers ──
-const getSortedPlanets = () => [...nodes].sort((a, b) => a.x - b.x);
+// ── Galaxy DOM Events ──
+function setupGalaxyEvents() {
+  const container = document.getElementById('galaxyContainer');
+  if (!container) return;
 
-// ── Canvas Events (mouse) ──
-function setupCanvasEvents() {
-  const canvas = graphCanvas;
+  // Track drag state
+  let _dragNode = null;
+  let _isDragging = false;
+  let _isPanning = false;
+  let _lastMouse = { x: 0, y: 0 };
+  let _hoveredId = null;
 
-  canvas.addEventListener('mousedown', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-    const node = hitTest(sx, sy);
-    if (node && e.button === 0) {
-      setDragNode(node);
-      node.fx = node.x; node.fy = node.y;
-      setIsDragging(false);
-      setAlpha(Math.max(alpha, 0.3));
-      setGraphSettled(false);
-      canvas.classList.add('dragging');
-      requestAnimationFrame(graphTick);
-    } else if (e.button === 0) {
-      setIsPanning(true);
-      canvas.classList.add('dragging');
+  // ── Planet mouseenter/mouseleave for tooltip + dimming ──
+  container.addEventListener('mouseover', (e) => {
+    const planetDiv = e.target.closest('.planet-node');
+    if (!planetDiv || _dragNode || _isPanning) return;
+    const id = planetDiv.dataset.domain;
+    if (id === _hoveredId) return;
+    _hoveredId = id;
+    const node = nodeMap[id];
+    if (node) {
+      showTooltip(node, e.clientX, e.clientY);
+      applyHoverState(id);
+      setParticleHover(node);
     }
-    setLastMouse({ x: e.clientX, y: e.clientY });
   });
 
-  canvas.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-    if (dragNode) {
-      const dx = e.clientX - lastMouse.x, dy = e.clientY - lastMouse.y;
-      if (Math.abs(dx) + Math.abs(dy) > 3) setIsDragging(true);
-      const pt = screenToGraph(sx, sy);
-      dragNode.fx = pt.x; dragNode.fy = pt.y;
-      dragNode.x = pt.x; dragNode.y = pt.y;
-      hideTooltip();
-    } else if (isPanning) {
-      setPanX(panX + e.clientX - lastMouse.x);
-      setPanY(panY + e.clientY - lastMouse.y);
-      renderGraph();
-      hideTooltip();
-    } else {
-      const node = hitTest(sx, sy);
-      if (node !== hoveredNode) {
-        setHoveredNode(node);
-        canvas.style.cursor = node ? 'pointer' : 'grab';
-        if (node) {
-          showTooltip(node, e.clientX, e.clientY);
-        } else {
-          hideTooltip();
-        }
-        if (!graphSettled || hoveredNode) {
-          setGraphSettled(false);
-          requestAnimationFrame(graphTick);
-        }
-      } else if (node) {
-        showTooltip(node, e.clientX, e.clientY);
+  container.addEventListener('mouseout', (e) => {
+    const planetDiv = e.target.closest('.planet-node');
+    if (!planetDiv) return;
+    const related = e.relatedTarget;
+    if (related && planetDiv.contains(related)) return;
+    _hoveredId = null;
+    hideTooltip();
+    clearHoverState();
+    setParticleHover(null);
+  });
+
+  // Update tooltip position on mouse move over planet
+  container.addEventListener('mousemove', (e) => {
+    if (_hoveredId && !_dragNode && !_isPanning) {
+      const node = nodeMap[_hoveredId];
+      if (node) showTooltip(node, e.clientX, e.clientY);
+    }
+  });
+
+  // ── Mousedown: start drag or pan ──
+  container.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    const planetDiv = e.target.closest('.planet-node');
+    _lastMouse = { x: e.clientX, y: e.clientY };
+    _isDragging = false;
+
+    if (planetDiv) {
+      const id = planetDiv.dataset.domain;
+      _dragNode = nodeMap[id] || null;
+      if (_dragNode) {
+        _dragNode.fx = _dragNode.x;
+        _dragNode.fy = _dragNode.y;
+        container.classList.add('dragging');
       }
+    } else {
+      _isPanning = true;
+      container.classList.add('dragging');
     }
-    setLastMouse({ x: e.clientX, y: e.clientY });
   });
 
-  canvas.addEventListener('mouseup', () => {
-    canvas.classList.remove('dragging');
-    if (dragNode && !isDragging) {
-      const node = dragNode;
-      dragNode.fx = null; dragNode.fy = null;
-      setDragNode(null); setIsPanning(false);
+  // ── Mousemove: drag planet or pan ──
+  window.addEventListener('mousemove', (e) => {
+    if (_dragNode) {
+      const dx = e.clientX - _lastMouse.x;
+      const dy = e.clientY - _lastMouse.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) _isDragging = true;
+      // Convert screen delta to graph space
+      _dragNode.x += dx / zoom;
+      _dragNode.y += dy / zoom;
+      _dragNode.fx = _dragNode.x;
+      _dragNode.fy = _dragNode.y;
+      updatePlanetPosition(_dragNode);
+      hideTooltip();
+    } else if (_isPanning) {
+      setPanX(panX + e.clientX - _lastMouse.x);
+      setPanY(panY + e.clientY - _lastMouse.y);
+      updateGalaxyTransform();
+      hideTooltip();
+    }
+    _lastMouse = { x: e.clientX, y: e.clientY };
+  });
+
+  // ── Mouseup: end drag/pan, detect click ──
+  window.addEventListener('mouseup', () => {
+    container.classList.remove('dragging');
+    if (_dragNode && !_isDragging) {
+      const node = _dragNode;
+      _dragNode.fx = null; _dragNode.fy = null;
+      _dragNode = null; _isPanning = false;
       hideTooltip();
       if (tourState.active) return;
       enterPlanet(node.id);
       track('planet_click', { planet: node.id });
       return;
-    } else if (dragNode) {
-      track('planet_drag', { planet: dragNode.id });
-      dragNode.fx = null; dragNode.fy = null;
-      setAlpha(Math.max(alpha, 0.1));
-      setGraphSettled(false);
-      requestAnimationFrame(graphTick);
+    } else if (_dragNode) {
+      track('planet_drag', { planet: _dragNode.id });
+      _dragNode.fx = null; _dragNode.fy = null;
     }
-    setDragNode(null); setIsPanning(false);
+    _dragNode = null; _isPanning = false;
   });
 
-  canvas.addEventListener('mouseleave', () => {
-    if (hoveredNode) { setHoveredNode(null); renderGraph(); }
-    hideTooltip();
-    setIsPanning(false);
-    canvas.classList.remove('dragging');
-    if (dragNode) { dragNode.fx = null; dragNode.fy = null; setDragNode(null); }
+  // ── Mouseleave container ──
+  container.addEventListener('mouseleave', () => {
+    if (_hoveredId) {
+      _hoveredId = null;
+      hideTooltip();
+      clearHoverState();
+      setParticleHover(null);
+    }
+    if (_isPanning) {
+      _isPanning = false;
+      container.classList.remove('dragging');
+    }
   });
 
-  // Scroll to zoom
-  canvas.addEventListener('wheel', (e) => {
+  // ── Wheel zoom ──
+  container.addEventListener('wheel', (e) => {
     e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
     const oldZoom = zoom;
     let newZoom = zoom * (e.deltaY < 0 ? 1.1 : 0.9);
     newZoom = Math.max(0.3, Math.min(3, newZoom));
     setZoom(newZoom);
-    setPanX(sx - (sx - panX) * (newZoom / oldZoom));
-    setPanY(sy - (sy - panY) * (newZoom / oldZoom));
-    renderGraph();
-    renderParticles();
+    setPanX(e.clientX - (e.clientX - panX) * (newZoom / oldZoom));
+    setPanY(e.clientY - (e.clientY - panY) * (newZoom / oldZoom));
+    updateGalaxyTransform();
   }, { passive: false });
 
   // ── Touch events ──
-  let touchStartNode = null;
+  let touchStartEl = null;
   let touchStartTime = 0;
   let touchStartPos = { x: 0, y: 0 };
   let lastTouchDist = 0;
 
-  canvas.addEventListener('touchstart', (e) => {
+  container.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      const sx = touch.clientX - rect.left, sy = touch.clientY - rect.top;
-      touchStartNode = hitTest(sx, sy);
+      touchStartEl = e.target.closest('.planet-node');
       touchStartTime = Date.now();
       touchStartPos = { x: touch.clientX, y: touch.clientY };
-      if (touchStartNode) e.preventDefault();
-      setLastMouse({ x: touch.clientX, y: touch.clientY });
+      if (touchStartEl) e.preventDefault();
+      _lastMouse = { x: touch.clientX, y: touch.clientY };
     } else if (e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -558,19 +556,18 @@ function setupCanvasEvents() {
     }
   }, { passive: false });
 
-  canvas.addEventListener('touchmove', (e) => {
+  container.addEventListener('touchmove', (e) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       const dx = touch.clientX - touchStartPos.x;
       const dy = touch.clientY - touchStartPos.y;
       if (Math.abs(dx) + Math.abs(dy) > 10) {
-        touchStartNode = null;
-        setPanX(panX + touch.clientX - lastMouse.x);
-        setPanY(panY + touch.clientY - lastMouse.y);
-        renderGraph();
-        renderParticles();
+        touchStartEl = null;
+        setPanX(panX + touch.clientX - _lastMouse.x);
+        setPanY(panY + touch.clientY - _lastMouse.y);
+        updateGalaxyTransform();
       }
-      setLastMouse({ x: touch.clientX, y: touch.clientY });
+      _lastMouse = { x: touch.clientX, y: touch.clientY };
       e.preventDefault();
     } else if (e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -586,75 +583,74 @@ function setupCanvasEvents() {
         setZoom(newZoom);
         setPanX(cx - (cx - panX) * (newZoom / oldZoom));
         setPanY(cy - (cy - panY) * (newZoom / oldZoom));
-        renderGraph();
-        renderParticles();
+        updateGalaxyTransform();
       }
       lastTouchDist = dist;
       e.preventDefault();
     }
   }, { passive: false });
 
-  canvas.addEventListener('touchend', () => {
-    if (touchStartNode && Date.now() - touchStartTime < 300) {
-      const node = touchStartNode;
-      touchStartNode = null;
+  container.addEventListener('touchend', () => {
+    if (touchStartEl && Date.now() - touchStartTime < 300) {
+      const id = touchStartEl.dataset.domain;
+      touchStartEl = null;
       lastTouchDist = 0;
       if (tourState.active) return;
-      enterPlanet(node.id);
-      track('planet_click', { planet: node.id });
+      if (id) {
+        enterPlanet(id);
+        track('planet_click', { planet: id });
+      }
       return;
     }
-    touchStartNode = null;
+    touchStartEl = null;
     lastTouchDist = 0;
   });
 
-  // ── Keyboard planet selection ──
-  canvas.addEventListener('keydown', (e) => {
+  // ── Keyboard planet navigation on container ──
+  container.addEventListener('keydown', (e) => {
     if (currentLevel !== 'galaxy') return;
     if (tourState.active) return;
 
-    const sorted = getSortedPlanets();
+    const sorted = getSortedPlanetEls();
     if (!sorted.length) return;
+
+    const currentFocused = document.activeElement;
+    let currentIdx = sorted.findIndex(({ el }) => el === currentFocused);
 
     switch (e.key) {
       case 'ArrowRight':
       case 'ArrowDown':
         e.preventDefault();
-        setFocusedPlanetIndex((focusedPlanetIndex + 1) % sorted.length);
+        currentIdx = currentIdx < 0 ? 0 : (currentIdx + 1) % sorted.length;
+        sorted[currentIdx].el.focus();
         break;
       case 'ArrowLeft':
       case 'ArrowUp':
         e.preventDefault();
-        setFocusedPlanetIndex((focusedPlanetIndex - 1 + sorted.length) % sorted.length);
+        currentIdx = currentIdx < 0 ? sorted.length - 1 : (currentIdx - 1 + sorted.length) % sorted.length;
+        sorted[currentIdx].el.focus();
         break;
       case 'Enter':
       case ' ':
         e.preventDefault();
-        if (focusedPlanetIndex >= 0) {
-          const planet = sorted[focusedPlanetIndex];
-          setFocusedPlanetIndex(-1);
-          enterPlanet(planet.id);
-          track('planet_click', { planet: planet.id, method: 'keyboard' });
+        if (currentFocused && currentFocused.dataset && currentFocused.dataset.domain) {
+          enterPlanet(currentFocused.dataset.domain);
+          track('planet_click', { planet: currentFocused.dataset.domain, method: 'keyboard' });
         }
         return;
       case 'Escape':
         e.preventDefault();
-        setFocusedPlanetIndex(-1);
-        canvas.blur();
-        renderGraph();
+        currentFocused.blur();
         return;
       default:
         return;
     }
 
     // Announce the focused planet
-    if (focusedPlanetIndex >= 0) {
-      const planet = sorted[focusedPlanetIndex];
-      const desc = PRODUCT_DATA[planet.id] ? PRODUCT_DATA[planet.id].description.substring(0, 80) : '';
-      announce(`${planet.label}: ${desc}`);
-      setGraphSettled(false);
-      requestAnimationFrame(graphTick);
-    }
+    const focusedId = sorted[currentIdx].id;
+    const desc = PRODUCT_DATA[focusedId] ? PRODUCT_DATA[focusedId].description.substring(0, 80) : '';
+    const label = nodeMap[focusedId] ? nodeMap[focusedId].label : focusedId;
+    announce(`${label}: ${desc}`);
   });
 }
 
@@ -687,7 +683,7 @@ function setupKeyboard() {
   let _arrowUsed = false;
 
   searchInput.addEventListener('input', () => {
-    _arrowUsed = false; // Reset arrow tracking when input changes
+    _arrowUsed = false;
     const q = searchInput.value;
     if (q.length > 0) {
       expandSearch(q);
@@ -708,10 +704,8 @@ function setupKeyboard() {
       const query = searchInput.value.trim();
       if (!query) return;
       if (_arrowUsed && searchResults.length > 0 && searchIndex >= 0) {
-        // User arrowed to a specific result, activate it directly
         activateResult(searchIndex);
       } else {
-        // Open full search results page
         const currentResults = [...searchResults];
         closeSearch();
         setTimeout(() => { enterSearchResults(query, currentResults, {}); }, 100);
@@ -810,27 +804,24 @@ function buildStats() {
 // ── Resize Handler ──
 function onResize() {
   onGraphResize();
-  resizeStarfield();
+  updateAllPositions(nodes, edges);
   resizeParticleCanvas();
-  renderGraph();
-  renderParticles();
 }
 
-// ── Popstate handler (browser back/forward buttons) ──
+// ── Popstate handler ──
 window.addEventListener('popstate', () => {
   if (!hashUpdateInProgress) {
     handleHashNavigation();
   }
 });
 
-// ── Lazy Entity Loading (dynamic import, ES module) ──
+// ── Lazy Entity Loading ──
 const loadEntities = async () => {
   try {
     const module = await import(`${productsBase}/entities.js?v=24`);
     _entityData = module.default;
     setEntitiesLoaded(true);
 
-    // Build entity name -> sourceUrl map before merging frees the raw data
     const entityLinks = {};
     for (const domainKey in _entityData) {
       const domain = _entityData[domainKey];
@@ -845,7 +836,7 @@ const loadEntities = async () => {
     setEntityLinks(entityLinks);
 
     mergeEntities();
-    _entityData = null; // Free memory after merge
+    _entityData = null;
     rebuildSearchIndex();
     buildStats();
     refreshCurrentView();
@@ -882,47 +873,48 @@ function showOnboardingHint() {
 
 // ── Init ──
 async function init() {
-  // Load product data first (config, domains, icons, tours)
   await loadProductData();
 
-  // Restore saved theme
   const lightMode = safeLSGet(lsPrefix + 'theme') === 'light';
   if (lightMode) {
     document.body.classList.add('theme-light');
   }
 
-  // Populate SVG icons in navbar (uiSvg returns trusted app-owned SVG strings)
+  // NOTE: innerHTML safe — uiSvg returns trusted app-owned SVG strings
   document.getElementById('search-icon').innerHTML = uiSvg('search', 18);
   document.getElementById('tour-icon').innerHTML = uiSvg('tour', 16);
   document.getElementById('help-icon').innerHTML = uiSvg('help', 18);
   document.getElementById('feedback-icon').innerHTML = uiSvg('feedback', 18);
   document.getElementById('theme-icon').innerHTML = uiSvg(lightMode ? 'sun' : 'moon', 18);
 
-  // Help panel icons
   const helpTourIcon = document.querySelector('.help-tour-icon');
   if (helpTourIcon) helpTourIcon.innerHTML = uiSvg('tour', 14);
   const helpDragIcon = document.querySelector('.help-drag-icon');
   if (helpDragIcon) helpDragIcon.innerHTML = '&#x1F91A;';
 
-  // Pre-load domain icons for canvas rendering
-  await preloadCanvasIcons();
-
-  // Build initial state (entities not loaded yet, mergeEntities is no-op)
+  // Build initial state
   mergeEntities();
   rebuildSearchIndex();
   createTooltip();
-  initStarfield();
+  initCssStarfield();
+
+  // Init physics and compute layout to convergence
   initGraph();
-  initRenderer();
+  computeLayout();
+
+  // Create DOM planets and edges from settled positions
+  initGalaxyDOM(nodes, edges, nodeMap);
+
+  // Init particles (only remaining canvas)
   initParticles();
-  setupCanvasEvents();
+
+  setupGalaxyEvents();
   setupKeyboard();
   setupHelpButton();
   updateBreadcrumb();
   buildStats();
   initTours();
 
-  // Navbar event listeners
   document.getElementById('nav-brand').addEventListener('click', () => navigateTo('galaxy'));
   document.getElementById('nav-brand').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateTo('galaxy'); }
@@ -932,18 +924,14 @@ async function init() {
   document.getElementById('theme-toggle').addEventListener('click', () => toggleTheme());
 
   window.addEventListener('resize', onResize);
-  requestAnimationFrame(graphTick);
   requestAnimationFrame(particleTick);
 
-  // Show first-visit onboarding hint
   if (!safeLSGet(lsPrefix + 'visited')) {
     showOnboardingHint();
   }
 
-  // Lazy-load entity data after the galaxy is interactive
   requestAnimationFrame(() => loadEntities());
 
-  // Deep link: if URL has a hash, navigate to it after init
   if (window.location.hash && window.location.hash !== '#/' && window.location.hash !== '#') {
     handleHashNavigation();
   }

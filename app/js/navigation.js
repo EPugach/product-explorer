@@ -5,11 +5,10 @@
 // ══════════════════════════════════════════════════════════════
 
 import { track, announce, lightenColor, darkenColor } from './utils.js';
-import { resetZoomPan, setGraphSettled, nodeMap, zoom, panX, panY, animateFlyIn, animateFlyOut } from './physics.js';
-import { pauseStarfield, resumeStarfield } from './starfield.js';
+import { resetZoomPan, nodeMap, zoom, panX, panY, animateFlyIn, animateFlyOut } from './physics.js';
 import { domainSvg, entitySvg } from './icons.js';
 import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons, highlightMatch, renderPreview } from './search.js';
-import { setFlyInState } from './renderer.js';
+import { setGalaxyVisible } from './galaxy-renderer.js';
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -147,20 +146,20 @@ export const handleHashNavigation = () => {
         if (lzp.screenX != null && lzp.color) {
           _triggerImplosion(lzp.color, lzp.screenX, lzp.screenY, lzp.screenR, getTransitionMs());
         }
-        setGalaxyCanvasVisible(true);
-        setFlyInState(lzp.id, 1);
-        resumeStarfield();
+        setGalaxyVisible(true);
+        // setFlyInState(lzp.id, 1);
+
         showView('galaxy-view', 'out');
         const crossfadeMs = Math.min(getTransitionMs(), 300);
         setTimeout(() => {
           const flyDuration = Math.round(getTransitionMs() * 2.3);
           animateFlyOut(flyDuration, (progress) => {
-            setFlyInState(lzp.id, Math.max(0, 1 - progress));
+            // setFlyInState(lzp.id, Math.max(0, 1 - progress));
           }, () => {
-            setFlyInState(null, 0);
+            // setFlyInState(null, 0);
             _lastZoomedPlanet = null;
             _cleanupImplosion();
-            setGraphSettled(false);
+
             if (_graphTick) requestAnimationFrame(_graphTick);
             if (_particleTick) requestAnimationFrame(_particleTick);
           });
@@ -170,13 +169,13 @@ export const handleHashNavigation = () => {
         resetZoomPan();
         _lastZoomedPlanet = null;
         _flyInAnimating = false;
-        setFlyInState(null, 0);
-        setGalaxyCanvasVisible(true);
+        // setFlyInState(null, 0);
+        setGalaxyVisible(true);
         showViewDirect('galaxy-view');
-        setGraphSettled(false);
+
         if (_graphTick) requestAnimationFrame(_graphTick);
         if (_particleTick) requestAnimationFrame(_particleTick);
-        resumeStarfield();
+
       }
     }
     return;
@@ -187,7 +186,7 @@ export const handleHashNavigation = () => {
     if (!PRODUCT_DATA[domainId]) { setHash('#/'); handleHashNavigation(); return; }
     navHistory = [];
     currentLevel = 'planet'; currentPlanet = domainId; currentComponent = null; currentEntity = null;
-    renderPlanetView(domainId); setGalaxyCanvasVisible(false); showViewDirect('planet-view');
+    renderPlanetView(domainId); setGalaxyVisible(false); showViewDirect('planet-view');
     updateBreadcrumb(); updateDocumentTitle('planet', domainId);
   } else if (segments.length === 2) {
     const [domainId, componentId] = segments;
@@ -197,7 +196,7 @@ export const handleHashNavigation = () => {
     navHistory = [{ level: 'galaxy', planet: null, component: null }];
     currentLevel = 'core'; currentPlanet = domainId; currentComponent = componentId; currentEntity = null;
     renderPlanetView(domainId); renderCoreView(domainId, componentId);
-    setGalaxyCanvasVisible(false); showViewDirect('core-view');
+    setGalaxyVisible(false); showViewDirect('core-view');
     updateBreadcrumb(); updateDocumentTitle('core', domainId, componentId);
   } else if (segments.length >= 4) {
     const [domainId, componentId, rawEntityType, ...entityNameParts] = segments;
@@ -214,7 +213,7 @@ export const handleHashNavigation = () => {
     currentEntity = { type: entityType, name: entityName }; currentEntityTab = entityType;
     renderPlanetView(domainId); renderCoreView(domainId, componentId);
     renderEntityView(domainId, componentId, entityType, entityName);
-    setGalaxyCanvasVisible(false); showViewDirect('entity-view');
+    setGalaxyVisible(false); showViewDirect('entity-view');
     updateBreadcrumb(); updateDocumentTitle('entity', domainId, componentId, entityName);
   } else {
     setHash('#/'); handleHashNavigation();
@@ -250,12 +249,7 @@ function showViewDirect(id) {
   document.getElementById(id).classList.add('active');
 }
 
-export function setGalaxyCanvasVisible(visible) {
-  const graph = document.getElementById('graph-canvas');
-  const particle = document.getElementById('particle-canvas');
-  if (visible) { graph.classList.remove('hidden'); particle.classList.remove('hidden'); }
-  else { graph.classList.add('hidden'); particle.classList.add('hidden'); }
-}
+// setGalaxyVisible is now imported from galaxy-renderer.js
 
 function updateBreadcrumb() {
   const zoomIndicator = document.getElementById('zoom-indicator');
@@ -284,15 +278,15 @@ export function enterPlanet(id) {
 
   if (!node || prefersReducedMotion) {
     // Instant transition (reduced motion or missing node)
-    setGalaxyCanvasVisible(false); showView('planet-view', 'in');
-    pauseStarfield();
+    setGalaxyVisible(false); showView('planet-view', 'in');
+
   } else {
     // Cinematic fly-in with seamless crossfade
     _flyInAnimating = true;
     let crossfadeStarted = false;
-    setFlyInState(id, 0);
+    // setFlyInState(id, 0);
     animateFlyIn(node, flyDuration, (progress) => {
-      setFlyInState(id, progress);
+      // setFlyInState(id, progress);
       // Start crossfade at 82% progress — the deep zoom already sells "entering the planet"
       if (!crossfadeStarted && progress >= 0.82) {
         crossfadeStarted = true;
@@ -302,8 +296,8 @@ export function enterPlanet(id) {
         const snapR = node.radius * zoom;
         _lastZoomedPlanet = { id, color: node.color, screenX: snapX, screenY: snapY, screenR: snapR };
 
-        setGalaxyCanvasVisible(false);
-        pauseStarfield();
+        setGalaxyVisible(false);
+    
         showView('planet-view', 'in');
       }
     }, () => {
@@ -311,10 +305,10 @@ export function enterPlanet(id) {
       if (!crossfadeStarted) {
         _lastZoomedPlanet = { id, color: node.color, screenX: null, screenY: null, screenR: null };
         showView('planet-view', 'in');
-        setGalaxyCanvasVisible(false);
-        pauseStarfield();
+        setGalaxyVisible(false);
+    
       }
-      setFlyInState(null, 0);
+      // setFlyInState(null, 0);
       _flyInAnimating = false;
     });
   }
@@ -375,7 +369,7 @@ export function enterSearchResults(query, results, options = {}) {
   currentLevel = 'search-results';
   _lastSearchPage = { query, results: [...results], aiAnswer: options.aiAnswer || null };
   renderSearchResultsPage(query, results, options);
-  setGalaxyCanvasVisible(false);
+  setGalaxyVisible(false);
   showView('search-results-view', 'in');
   const base = PRODUCT_CONFIG.title || 'Product Explorer';
   document.title = `Search: ${query} \u2014 ${base}`;
@@ -673,10 +667,9 @@ async function triggerAiFetch(query) {
 export function navigateToCore(pid, cid) {
   navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
   currentLevel = 'core'; currentPlanet = pid; currentComponent = cid;
-  renderPlanetView(pid); renderCoreView(pid, cid); setGalaxyCanvasVisible(false);
+  renderPlanetView(pid); renderCoreView(pid, cid); setGalaxyVisible(false);
   showViewDirect('core-view'); updateBreadcrumb();
   setHash(`#/${pid}/${cid}`); updateDocumentTitle('core', pid, cid);
-  pauseStarfield();
 }
 
 export function navigateTo(level) {
@@ -701,33 +694,33 @@ export function navigateTo(level) {
 
       setTimeout(() => {
         // Reveal canvas and start fly-out
-        setGalaxyCanvasVisible(true);
-        setFlyInState(lzp.id, 1);
-        resumeStarfield();
+        setGalaxyVisible(true);
+        // setFlyInState(lzp.id, 1);
+
 
         const flyDuration = Math.round(durationMs * 2.3);
         animateFlyOut(flyDuration, (progress) => {
-          setFlyInState(lzp.id, Math.max(0, 1 - progress));
+          // setFlyInState(lzp.id, Math.max(0, 1 - progress));
         }, () => {
-          setFlyInState(null, 0);
+          // setFlyInState(null, 0);
           _lastZoomedPlanet = null;
           _cleanupImplosion();
-          setGraphSettled(false);
+  
           if (_graphTick) requestAnimationFrame(_graphTick);
           if (_particleTick) requestAnimationFrame(_particleTick);
-          const canvas = document.getElementById('graph-canvas');
+          const canvas = document.getElementById('galaxyContainer');
           if (canvas) canvas.focus({ preventScroll: true });
         });
       }, crossfadeMs);
     } else {
       // Instant transition (no previous fly-in or reduced motion)
-      resetZoomPan(); setGalaxyCanvasVisible(true); showView('galaxy-view', 'out');
-      setGraphSettled(false);
+      resetZoomPan(); setGalaxyVisible(true); showView('galaxy-view', 'out');
+
       if (_graphTick) requestAnimationFrame(_graphTick);
       if (_particleTick) requestAnimationFrame(_particleTick);
-      resumeStarfield();
+
       _lastZoomedPlanet = null;
-      setTimeout(() => { const canvas = document.getElementById('graph-canvas'); if (canvas) canvas.focus({ preventScroll: true }); }, getTransitionMs() + 50);
+      setTimeout(() => { const canvas = document.getElementById('galaxyContainer'); if (canvas) canvas.focus({ preventScroll: true }); }, getTransitionMs() + 50);
     }
   } else if (level === 'planet') {
     currentLevel = 'planet'; currentComponent = null;
@@ -755,7 +748,7 @@ export function goBack() {
     currentComponent = prev.component;
     currentEntity = prev.entity;
     renderSearchResultsPage(_lastSearchPage.query, _lastSearchPage.results, { aiAnswer: _lastSearchPage.aiAnswer });
-    setGalaxyCanvasVisible(false);
+    setGalaxyVisible(false);
     showView('search-results-view', 'out');
     const base = PRODUCT_CONFIG.title || 'Product Explorer';
     document.title = `Search: ${_lastSearchPage.query} \u2014 ${base}`;

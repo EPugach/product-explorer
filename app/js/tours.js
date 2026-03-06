@@ -11,15 +11,16 @@ let PRODUCT_DATA = {};
 export const setTourData = (tours) => { TOURS = tours || []; };
 export const setProductData = (data) => { PRODUCT_DATA = data; };
 import { safeLSGet, safeLSSet, track, announce } from './utils.js';
-import { animatePanTo, resetZoomPan, nodeMap, setGraphSettled } from './physics.js';
+import { animatePanTo, resetZoomPan, nodeMap } from './physics.js';
 import {
   tourState,
   setTourFocusNode, setTourHighlightedEdges, setTourStopPlanets
 } from './state.js';
 import {
-  currentLevel, navigateTo, setGalaxyCanvasVisible,
+  currentLevel, navigateTo,
   setHash, updateDocumentTitle
 } from './navigation.js';
+import { setGalaxyVisible } from './galaxy-renderer.js';
 
 // Animation callbacks set by main.js to break circular dependency
 let _graphTick = null;
@@ -31,8 +32,6 @@ export const setTourAnimationCallbacks = (graphTickFn, particleTickFn) => {
 };
 
 function restartAnimation() {
-  setGraphSettled(false);
-  if (_graphTick) requestAnimationFrame(_graphTick);
   if (_particleTick) requestAnimationFrame(_particleTick);
 }
 
@@ -150,7 +149,7 @@ function startTour(tourId) {
   }
 
   // Ensure galaxy canvas is visible
-  setGalaxyCanvasVisible(true);
+  setGalaxyVisible(true);
 
   // Build set of all planets in this tour
   const stopPlanets = new Set();
