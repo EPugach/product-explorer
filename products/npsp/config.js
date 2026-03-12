@@ -24,6 +24,7 @@ export default {
   repoUrl: 'https://github.com/SalesforceFoundation/NPSP',
   entityTypes: ['classes', 'objects', 'triggers', 'lwcs', 'metadata'],
   localStoragePrefix: 'npsp',
+  aiWorkerUrl: 'https://npsp-ai-search.epug.workers.dev',
   analytics: {
     gaId: 'G-HJTE1NYP82',
   },

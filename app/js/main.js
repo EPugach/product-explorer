@@ -103,9 +103,11 @@ async function loadProductData() {
 
   try {
     const aiContextMod = await import(`${productsBase}/ai-context.js?v=24`);
-    const aiEndpoint = 'https://npsp-ai-search.epug.workers.dev';
-    setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
-    setFeedbackEndpoint(aiEndpoint + '/feedback');
+    const aiEndpoint = PRODUCT_CONFIG.aiWorkerUrl;
+    if (aiEndpoint) {
+      setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
+      setFeedbackEndpoint(aiEndpoint + '/feedback');
+    }
   } catch (e) {}
 
   rebuildPlanetMeta();
