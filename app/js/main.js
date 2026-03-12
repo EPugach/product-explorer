@@ -21,7 +21,8 @@ import {
 import { initParticles, resizeParticleCanvas, updateParticles, renderParticles, setHoveredNode as setParticleHover } from './particles.js';
 import {
   initGalaxyDOM, updateGalaxyTransform, updateAllPositions, updatePlanetPosition,
-  applyHoverState, clearHoverState, setGalaxyVisible, getSortedPlanetEls, getPlanetEl
+  applyHoverState, clearHoverState, setGalaxyVisible, getSortedPlanetEls, getPlanetEl,
+  hideEdgeTooltip
 } from './galaxy-renderer.js';
 import {
   currentLevel, currentPlanet, currentComponent,
@@ -408,6 +409,7 @@ function setupGalaxyEvents() {
     _hoveredId = id;
     const node = nodeMap[id];
     if (node) {
+      hideEdgeTooltip();
       showTooltip(node, e.clientX, e.clientY);
       applyHoverState(id);
       setParticleHover(node);

@@ -7,7 +7,7 @@
 import { lightenColor, darkenColor } from './utils.js';
 import { domainSvg } from './icons.js';
 import { zoom, panX, panY, layoutW, layoutH } from './physics.js';
-import { prefersReducedMotion } from './state.js';
+import { prefersReducedMotion, tourState } from './state.js';
 
 let _container = null;
 let _edgesSvg = null;
@@ -55,8 +55,36 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
     path.dataset.target = e.target;
     _updateEdgePathZoomed(path, s, t);
     _edgesSvg.appendChild(path);
-    _edgeEls.push({ el: path, source: e.source, target: e.target });
+
+    // Invisible hit area for hover detection (wider stroke)
+    const hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    hitPath.classList.add('galaxy-edge-hit');
+    hitPath.dataset.source = e.source;
+    hitPath.dataset.target = e.target;
+    _updateEdgePathZoomed(hitPath, s, t);
+    _edgesSvg.appendChild(hitPath);
+
+    _edgeEls.push({ el: path, hitEl: hitPath, source: e.source, target: e.target, desc: e.label || '' });
   }
+
+  // Wire edge hover events
+  _edgesSvg.addEventListener('mouseover', (ev) => {
+    if (tourState.active) return;
+    const hit = ev.target.closest('.galaxy-edge-hit');
+    if (!hit) return;
+    const edge = _edgeEls.find(e => e.hitEl === hit);
+    if (edge && edge.desc) _showEdgeTooltip(edge, ev.clientX, ev.clientY);
+  });
+  _edgesSvg.addEventListener('mouseout', (ev) => {
+    const hit = ev.target.closest('.galaxy-edge-hit');
+    if (!hit) return;
+    _hideEdgeTooltip();
+  });
+  _edgesSvg.addEventListener('mousemove', (ev) => {
+    if (_edgeTooltip && _edgeTooltip.classList.contains('visible')) {
+      _positionEdgeTooltip(ev.clientX, ev.clientY);
+    }
+  });
 
   // Create planet divs
   for (let i = 0; i < nodes.length; i++) {
@@ -129,7 +157,10 @@ export function updateGalaxyTransform() {
   // Update SVG edge paths with zoomed coordinates
   for (const e of _edgeEls) {
     const s = _nodeMap[e.source], t = _nodeMap[e.target];
-    if (s && t) _updateEdgePathZoomed(e.el, s, t);
+    if (s && t) {
+      _updateEdgePathZoomed(e.el, s, t);
+      if (e.hitEl) _updateEdgePathZoomed(e.hitEl, s, t);
+    }
   }
 
   // Scale SVG edge container to match zoom (stroke-width, dash patterns)
@@ -166,7 +197,10 @@ export function updatePlanetPosition(node) {
   for (const e of _edgeEls) {
     if (e.source === node.id || e.target === node.id) {
       const s = _nodeMap[e.source], t = _nodeMap[e.target];
-      if (s && t) _updateEdgePathZoomed(e.el, s, t);
+      if (s && t) {
+        _updateEdgePathZoomed(e.el, s, t);
+        if (e.hitEl) _updateEdgePathZoomed(e.hitEl, s, t);
+      }
     }
   }
 }
@@ -183,7 +217,10 @@ export function updateAllPositions(nodes, edges) {
   }
   for (const e of _edgeEls) {
     const s = _nodeMap[e.source], t = _nodeMap[e.target];
-    if (s && t) _updateEdgePathZoomed(e.el, s, t);
+    if (s && t) {
+      _updateEdgePathZoomed(e.el, s, t);
+      if (e.hitEl) _updateEdgePathZoomed(e.hitEl, s, t);
+    }
   }
 }
 
@@ -219,6 +256,7 @@ export function clearHoverState() {
   for (const e of _edgeEls) {
     e.el.classList.remove('edge-connected', 'dimmed');
   }
+  _hideEdgeTooltip();
 }
 
 // ── Tour dimming ──
@@ -488,6 +526,46 @@ export function flyOutFromPlanet(node, callback) {
 
   // Fallback timeout in case transitionend doesn't fire
   _transitionTimer = setTimeout(completeFlyOut, FLY_OUT_FALLBACK_MS);
+}
+
+// ── Edge Tooltip ──
+let _edgeTooltip = null;
+
+function _createEdgeTooltip() {
+  _edgeTooltip = document.createElement('div');
+  _edgeTooltip.className = 'edge-tooltip';
+  _edgeTooltip.setAttribute('role', 'tooltip');
+  document.body.appendChild(_edgeTooltip);
+}
+
+// Safe: all content (node labels, colors, descriptions) from trusted product data, not user input
+function _showEdgeTooltip(edgeData, x, y) {
+  if (!_edgeTooltip) _createEdgeTooltip();
+  const sNode = _nodeMap[edgeData.source];
+  const tNode = _nodeMap[edgeData.target];
+  if (!sNode || !tNode) return;
+  // NOTE: innerHTML safe here, same pattern as planet tooltip. All data is app-owned.
+  _edgeTooltip.innerHTML =
+    `<div class="et-planets"><span style="color:${sNode.color}">${sNode.label}</span> <span class="et-arrow">\u2194</span> <span style="color:${tNode.color}">${tNode.label}</span></div>` +
+    `<div class="et-desc">${edgeData.desc}</div>`;
+  _edgeTooltip.classList.add('visible');
+  _positionEdgeTooltip(x, y);
+}
+
+export function hideEdgeTooltip() {
+  _hideEdgeTooltip();
+}
+
+function _hideEdgeTooltip() {
+  if (_edgeTooltip) _edgeTooltip.classList.remove('visible');
+}
+
+function _positionEdgeTooltip(x, y) {
+  if (!_edgeTooltip) return;
+  const tx = Math.min(x + 16, innerWidth - 280);
+  const ty = Math.min(y + 16, innerHeight - 80);
+  _edgeTooltip.style.left = `${tx}px`;
+  _edgeTooltip.style.top = `${ty}px`;
 }
 
 // ── Get planet element (for focus) ──
