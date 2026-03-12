@@ -2602,32 +2602,7 @@ body.theme-light .theme-toggle:hover {
   background: rgba(255,255,255,0.1);
 }
 
-/* ── Copy Link Buttons ── */
-.bc-copy-link {
-  margin-left: auto;
-  background: none;
-  border: 1px solid rgba(100,140,255,0.15);
-  color: var(--text-dim);
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
-  flex-shrink: 0;
-  padding: 0;
-}
-.bc-copy-link:hover {
-  color: var(--glow-accent);
-  border-color: var(--glow-accent);
-}
-.bc-copy-link.copied {
-  color: #22c55e;
-  border-color: #22c55e;
-  background: rgba(34,197,94,0.1);
-}
+/* ── Copy Link Button (Navbar) ── */
 .nav-copy-link {
   background: none;
   border: 1px solid rgba(100,140,255,0.15);
@@ -2651,14 +2626,6 @@ body.theme-light .theme-toggle:hover {
   color: #22c55e;
   border-color: #22c55e;
   background: rgba(34,197,94,0.1);
-}
-body.theme-light .bc-copy-link {
-  color: rgba(255,255,255,0.85);
-  border-color: rgba(255,255,255,0.3);
-}
-body.theme-light .bc-copy-link:hover {
-  color: #ffffff;
-  border-color: rgba(255,255,255,0.6);
 }
 body.theme-light .nav-copy-link {
   color: rgba(255,255,255,0.85);

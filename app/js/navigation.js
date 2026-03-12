@@ -52,14 +52,6 @@ export function copyCurrentLink(btn) {
   });
 }
 
-function copyLinkButtonHtml() {
-  return '<button class="bc-copy-link" aria-label="Copy link to this view" title="Copy link">' + uiSvg('link', 14) + '</button>';
-}
-
-function wireCopyLinks(el) {
-  el.querySelectorAll('.bc-copy-link').forEach(btn => btn.addEventListener('click', () => copyCurrentLink(btn)));
-}
-
 export let currentLevel = 'galaxy';
 export let currentPlanet = null;
 export let currentComponent = null;
@@ -747,9 +739,8 @@ function renderPlanetView(id) {
     domainPkgHtml = `<div class="domain-packages">${p.packages.map(pkgKey => {const pkg = PRODUCT_PACKAGES[pkgKey]; return pkg ? `<span class="package-badge" style="--pkg-color:${pkg.color}">${pkg.name}</span>` : ''}).join('')}</div>`;
   }
   const cardHtml = p.components.map((c,i) => renderComponentCard(c, i, id, p)).join('');
-  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-here">${p.name}</span>${copyLinkButtonHtml()}</div><div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}"><span class="icon-svg">${domainSvg(id, 28)}</span></div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p>${domainPkgHtml}</div></div>${domainStats}<div class="component-grid">${cardHtml}</div><div class="data-flow" style="animation-delay:${p.components.length*30+60}ms"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n,i)=>(i>0?`<span class="flow-arrow">\u2192</span>`:'')+`<span class="flow-node">${n}</span>`).join('')}</div></div><div class="connections-section" style="animation-delay:${p.components.length*30+120}ms"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map(c=>`<div class="connection-item" data-connection-planet="${c.planet}" role="button" tabindex="0"><div class="conn-planet" style="background:${PLANET_META[c.planet]?PLANET_META[c.planet].color:'#64748b'}"><span class="icon-svg">${PLANET_META[c.planet]?PLANET_META[c.planet].svg:''}</span></div><div><strong>${PRODUCT_DATA[c.planet]?PRODUCT_DATA[c.planet].name:c.planet}</strong><div style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px">${c.desc}</div></div></div>`).join('')}</div>`;
+  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-here">${p.name}</span></div><div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}"><span class="icon-svg">${domainSvg(id, 28)}</span></div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p>${domainPkgHtml}</div></div>${domainStats}<div class="component-grid">${cardHtml}</div><div class="data-flow" style="animation-delay:${p.components.length*30+60}ms"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n,i)=>(i>0?`<span class="flow-arrow">\u2192</span>`:'')+`<span class="flow-node">${n}</span>`).join('')}</div></div><div class="connections-section" style="animation-delay:${p.components.length*30+120}ms"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map(c=>`<div class="connection-item" data-connection-planet="${c.planet}" role="button" tabindex="0"><div class="conn-planet" style="background:${PLANET_META[c.planet]?PLANET_META[c.planet].color:'#64748b'}"><span class="icon-svg">${PLANET_META[c.planet]?PLANET_META[c.planet].svg:''}</span></div><div><strong>${PRODUCT_DATA[c.planet]?PRODUCT_DATA[c.planet].name:c.planet}</strong><div style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px">${c.desc}</div></div></div>`).join('')}</div>`;
   el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
-  wireCopyLinks(el);
   el.querySelectorAll('.component-card').forEach(card=>{const cid=card.dataset.component,pid2=card.dataset.planet;card.addEventListener('click',()=>enterCore(pid2,cid));card.addEventListener('keydown',e=>{if(e.key==='Enter')enterCore(pid2,cid);});});
   el.querySelectorAll('[data-connection-planet]').forEach(item=>{const planetId=item.dataset.connectionPlanet;item.addEventListener('click',()=>enterPlanet(planetId));item.addEventListener('keydown',e=>{if(e.key==='Enter')enterPlanet(planetId);});});
   document.getElementById('planet-view').scrollTop = 0;
@@ -777,10 +768,9 @@ function renderCoreView(pid, cid) {
   if(tabs.length>1) tabBar = `<div class="entity-tab-bar">${tabs.map(t=>`<button class="entity-tab${t.key==='overview'?' active':''}" data-tab="${t.key}" data-entity-tab-pid="${pid}" data-entity-tab-cid="${cid}">${t.label}${t.count!==null?` <span class="tab-count">${t.count}</span>`:''}</button>`).join('')}</div>`;
   else if(!entitiesLoaded) tabBar = `<div class="entity-loading-hint" style="padding:8px 0;font-size:12px;color:var(--text-dim,#64748b);opacity:0.7">Loading entity data\u2026</div>`;
   // Safe: all template content is from trusted app-owned product data (no user input)
-  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${c.name}</span>${copyLinkButtonHtml()}</div><div class="core-header"><span style="font-size:24px">${c.icon}</span><div><h2>${c.name}</h2><span class="badge">TRIGGER LEVEL</span></div></div>${tabBar}<div id="entity-tab-content">${renderOverviewTab(c)}</div>`;
+  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${c.name}</span></div><div class="core-header"><span style="font-size:24px">${c.icon}</span><div><h2>${c.name}</h2><span class="badge">TRIGGER LEVEL</span></div></div>${tabBar}<div id="entity-tab-content">${renderOverviewTab(c)}</div>`;
   el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
   el.querySelectorAll('[data-nav="planet"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('planet'));});
-  wireCopyLinks(el);
   el.querySelectorAll('.entity-tab').forEach(tab=>{tab.addEventListener('click',()=>switchEntityTab(tab.dataset.entityTabPid,tab.dataset.entityTabCid,tab.dataset.tab));});
   attachOverviewListeners(el);
   document.getElementById('core-view').scrollTop = 0;
@@ -925,7 +915,7 @@ function renderEntityView(pid, cid, rawType, entityName) {
     return;
   }
   const el = document.getElementById('entity-content');
-  let h = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="back">${c.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entity.name}</span>${copyLinkButtonHtml()}</div>`;
+  let h = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="back">${c.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entity.name}</span></div>`;
   if (entityType==='classes') h+=renderClassDetail(entity);
   else if (entityType==='objects') h+=renderObjectDetail(entity);
   else if (entityType==='triggers') h+=renderTriggerDetail(entity);
@@ -935,7 +925,6 @@ function renderEntityView(pid, cid, rawType, entityName) {
   el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
   el.querySelectorAll('[data-nav="planet"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('planet'));});
   el.querySelectorAll('[data-nav="back"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>goBack());});
-  wireCopyLinks(el);
   el.querySelectorAll('[data-entity-link]').forEach(l=>{const d=JSON.parse(l.dataset.entityLink);l.addEventListener('click',()=>enterEntity(d.pid,d.cid,d.type,d.name));});
   document.getElementById('entity-view').scrollTop = 0;
 }
