@@ -15,7 +15,8 @@ import { resetZoomPan, cancelPanAnimation, animatePanTo, nodeMap, zoom as physZo
 import {
   tourState,
   setTourStopPlanets,
-  prefersReducedMotion
+  prefersReducedMotion,
+  lsPrefix
 } from './state.js';
 import {
   currentLevel, navigateTo,
@@ -66,7 +67,7 @@ function _animateToIdentity(duration) {
 
 export function initTours() {
   // Restore mode preference
-  const saved = safeLSGet('npsp-tour-mode');
+  const saved = safeLSGet(lsPrefix + 'tour-mode');
   if (saved === 'dev' || saved === 'admin') tourState.mode = saved;
 
   // Create tour picker dropdown container
@@ -343,7 +344,7 @@ export function exitTour() {
 
 function setTourMode(mode) {
   tourState.mode = mode;
-  safeLSSet('npsp-tour-mode', mode);
+  safeLSSet(lsPrefix + 'tour-mode', mode);
 
   // Re-render current card content without camera movement
   if (tourState.active) {
