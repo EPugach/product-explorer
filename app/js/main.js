@@ -29,7 +29,8 @@ import {
   enterPlanet, enterEntity, enterSearchResults, navigateToCore, navigateTo, goBack,
   isFlyInAnimating, setAnimationCallbacks, refreshCurrentView, updateBreadcrumb,
   setProductData as setNavData, setProductConfig as setNavConfig,
-  setPackages as setNavPackages, rebuildPlanetMeta
+  setPackages as setNavPackages, rebuildPlanetMeta,
+  copyCurrentLink
 } from './navigation.js';
 import {
   setNavigationCallbacks, rebuildSearchIndex,
@@ -1005,6 +1006,17 @@ async function init() {
 
   document.getElementById('tour-btn').addEventListener('click', () => toggleTourPicker());
   document.getElementById('theme-toggle').addEventListener('click', () => toggleTheme());
+
+  // Copy link button in navbar (galaxy view sharing affordance)
+  const copyLinkBtn = document.createElement('button');
+  copyLinkBtn.className = 'nav-copy-link';
+  copyLinkBtn.setAttribute('aria-label', 'Copy link');
+  copyLinkBtn.setAttribute('title', 'Copy link');
+  // Safe: uiSvg returns trusted app-owned SVG strings (not user input)
+  copyLinkBtn.innerHTML = uiSvg('link', 16);
+  copyLinkBtn.addEventListener('click', () => copyCurrentLink(copyLinkBtn));
+  const zoomIndicator = document.getElementById('zoom-indicator');
+  zoomIndicator.parentNode.insertBefore(copyLinkBtn, zoomIndicator);
 
   window.addEventListener('resize', onResize);
   requestAnimationFrame(particleTick);
