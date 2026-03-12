@@ -835,8 +835,8 @@ function setupHelpButton() {
   const btn = document.getElementById('helpBtn');
   const stack = document.getElementById('helpStack');
   if (!btn || !stack) return;
-  const show = () => { stack.classList.add('visible'); btn.classList.add('pressed'); };
-  const hide = () => { stack.classList.remove('visible'); btn.classList.remove('pressed'); };
+  const show = () => { stack.classList.add('visible'); btn.classList.add('pressed'); btn.setAttribute('aria-expanded', 'true'); };
+  const hide = () => { stack.classList.remove('visible'); btn.classList.remove('pressed'); btn.setAttribute('aria-expanded', 'false'); };
   const toggle = () => { stack.classList.contains('visible') ? hide() : show(); };
   btn.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
   document.addEventListener('click', (e) => {

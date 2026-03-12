@@ -94,7 +94,12 @@
           <input type="text" id="searchInput"
                  placeholder="Search or ask a question about NPSP..."
                  autocomplete="off" spellcheck="false"
-                 aria-label="Search NPSP">
+                 role="combobox"
+                 aria-label="Search or ask a question about NPSP"
+                 aria-expanded="false"
+                 aria-autocomplete="list"
+                 aria-haspopup="listbox"
+                 aria-controls="searchMaster">
           <span class="s-ai-badge" aria-hidden="true">&#x2728; AI</span>
           <span class="s-kbd">/</span>
         </div>
@@ -137,8 +142,8 @@
 <button class="feedback-btn" id="feedbackBtn" aria-label="Send feedback"><span class="nav-icon-svg" id="feedback-icon"></span></button>
 
 <!-- Help button -->
-<button class="help-btn" id="helpBtn" aria-label="Keyboard shortcuts"><span class="nav-icon-svg" id="help-icon"></span></button>
-<div class="help-stack" id="helpStack" role="tooltip">
+<button class="help-btn" id="helpBtn" aria-label="Keyboard shortcuts" aria-expanded="false" aria-controls="helpStack"><span class="nav-icon-svg" id="help-icon"></span></button>
+<div class="help-stack" id="helpStack" role="dialog" aria-label="Keyboard shortcuts">
   <div class="help-row"><kbd>L</kbd><span>Theme</span></div>
   <div class="help-row"><kbd>/</kbd><kbd>&#8984;K</kbd><span>Search</span></div>
   <div class="help-row"><kbd>ESC</kbd><span>Back</span></div>

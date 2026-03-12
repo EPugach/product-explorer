@@ -992,8 +992,10 @@ export function closeSearch() {
   searchIndex = -1;
   _previewIndex = -1;
   clearTimeout(_aiDebounceTimer);
-  document.getElementById('searchInput').value = '';
-  document.getElementById('searchInput').blur();
+  const input = document.getElementById('searchInput');
+  input.value = '';
+  input.setAttribute('aria-expanded', 'false');
+  input.blur();
   const master = document.getElementById('searchMaster');
   master.removeAttribute('aria-activedescendant');
   master.textContent = '';
@@ -1012,6 +1014,7 @@ export function expandSearch(query) {
   shell.classList.add('typing');
   drop.classList.add('open');
   scrim.classList.add('visible');
+  document.getElementById('searchInput').setAttribute('aria-expanded', 'true');
   if (window.innerWidth > 480) {
     const dropInner = document.querySelector('.search-drop-inner');
     const shellRect = shell.getBoundingClientRect();
@@ -1071,6 +1074,7 @@ export function collapseSearch() {
   shell.classList.add('focused');
   drop.classList.remove('open');
   scrim.classList.remove('visible');
+  document.getElementById('searchInput').setAttribute('aria-expanded', 'false');
   searchResults = [];
   searchIndex = -1;
   _previewIndex = -1;
