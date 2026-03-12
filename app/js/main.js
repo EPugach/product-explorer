@@ -917,10 +917,20 @@ let _onboardingDismiss = null;
 function showOnboardingHint() {
   if (_onboardingDismiss) _onboardingDismiss();
 
+  const verb = window.matchMedia('(pointer: coarse)').matches ? 'Tap' : 'Click';
   const hint = document.createElement('div');
   hint.className = 'onboarding-hint';
-  hint.textContent = `Click any planet to explore the ${PRODUCT_CONFIG.name || 'product'} universe`;
   hint.setAttribute('role', 'status');
+
+  const primary = document.createElement('div');
+  primary.className = 'onboarding-primary';
+  primary.textContent = `${verb} any planet to explore the ${PRODUCT_CONFIG.name || 'product'} universe`;
+  const secondary = document.createElement('div');
+  secondary.className = 'onboarding-secondary';
+  secondary.textContent = 'or use the search bar to ask anything';
+  hint.appendChild(primary);
+  hint.appendChild(secondary);
+
   document.body.appendChild(hint);
 
   requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -941,7 +951,7 @@ function showOnboardingHint() {
   _onboardingDismiss = dismiss;
   document.addEventListener('click', dismiss, { once: true });
   document.addEventListener('keydown', dismiss, { once: true });
-  const autoHide = setTimeout(dismiss, 6000);
+  const autoHide = setTimeout(dismiss, 12000);
 }
 
 // ── Init ──
