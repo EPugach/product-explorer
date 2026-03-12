@@ -96,11 +96,6 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
   }
 }
 
-function _updateEdgePath(pathEl, s, t) {
-  const { mx, my } = edgeBezier(s, t);
-  pathEl.setAttribute('d', `M${s.x},${s.y} Q${mx},${my} ${t.x},${t.y}`);
-}
-
 // Zoomed variant: applies zoom + pan to edge path coordinates
 function _updateEdgePathZoomed(pathEl, s, t) {
   const { mx, my } = edgeBezier(s, t);
