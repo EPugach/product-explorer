@@ -623,6 +623,11 @@ function setupGalaxyEvents() {
   }, { passive: false });
 
   container.addEventListener('touchend', () => {
+    if (!_touchDragNode && !touchStartEl) {
+      _touchIsDragging = false;
+      lastTouchDist = 0;
+      return;
+    }
     if (_touchDragNode) {
       const dragDiv = getPlanetEl(_touchDragNode.id);
       if (dragDiv) dragDiv.style.willChange = '';
