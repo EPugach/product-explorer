@@ -8,7 +8,8 @@ import { prefersReducedMotion } from './state.js';
 
 // Product data is injected by main.js via setProductData()
 let PRODUCT_DATA = {};
-export const setProductData = (data) => { PRODUCT_DATA = data; };
+let _radiusCache = null;
+export const setProductData = (data) => { PRODUCT_DATA = data; _radiusCache = null; };
 
 // ── Exported mutable state ──
 export let nodes = [];
@@ -62,6 +63,14 @@ function getRadiusRange() {
   return small ? { min: 18, range: 16 } : { min: 28, range: 24 };
 }
 
+function _computeRadiusScale() {
+  const scores = Object.keys(PRODUCT_DATA).map((k) => {
+    const dd = PRODUCT_DATA[k];
+    return ((CODEBASE_WEIGHT[k] || 5) + dd.components.length * 10 + dd.connections.length * 3) * (FOUNDATIONAL[k] || 1.0);
+  });
+  _radiusCache = { mn: Math.min(...scores), mx: Math.max(...scores) };
+}
+
 export function calcRadius(key) {
   const d = PRODUCT_DATA[key];
   const cw = CODEBASE_WEIGHT[key] || 5;
@@ -70,11 +79,8 @@ export function calcRadius(key) {
   const mult = FOUNDATIONAL[key] || 1.0;
   const raw = (cw + compW + connW) * mult;
 
-  const scores = Object.keys(PRODUCT_DATA).map((k) => {
-    const dd = PRODUCT_DATA[k];
-    return ((CODEBASE_WEIGHT[k] || 5) + dd.components.length * 10 + dd.connections.length * 3) * (FOUNDATIONAL[k] || 1.0);
-  });
-  const mn = Math.min(...scores), mx = Math.max(...scores);
+  if (!_radiusCache) _computeRadiusScale();
+  const { mn, mx } = _radiusCache;
   const { min, range } = getRadiusRange();
   return min + ((raw - mn) / (mx - mn)) * range;
 }
