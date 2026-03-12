@@ -46,7 +46,7 @@ import {
   initTours, advanceStop, exitTour, setTourAnimationCallbacks, toggleTourPicker,
   setTourData, setProductData as setToursProductData
 } from './tours.js';
-import { initStarfield, resizeStarfield } from './starfield.js';
+import { initStarfield, resizeStarfield, pauseStarfield, resumeStarfield } from './starfield.js';
 import { uiSvg, domainSvg, setDomainPaths } from './icons.js';
 
 // ── Resolve product ID from <body data-product="..."> ──
@@ -983,6 +983,7 @@ async function init() {
   rebuildSearchIndex();
   createTooltip();
   initStarfield();
+  if (lightMode) pauseStarfield();
 
   // Init physics and compute layout to convergence
   initGraph();
