@@ -100,7 +100,7 @@
   top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  font: 500 calc(11px * var(--zoom, 1)) var(--font-display, -apple-system, BlinkMacSystemFont, sans-serif);
+  font: 500 clamp(10px, calc(12px * var(--zoom, 1)), 15px) var(--font-display, -apple-system, BlinkMacSystemFont, sans-serif);
   color: var(--text-secondary, #94a3b8);
   white-space: nowrap;
   pointer-events: none;
