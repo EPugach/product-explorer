@@ -519,7 +519,7 @@ body {
   color: var(--text-dim);
 }
 .sr-desc {
-  font-size: 11px; color: rgba(255,255,255,0.4);
+  font-size: 11px; color: rgba(255,255,255,0.65);
   margin-top: 2px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 300px;
@@ -2491,7 +2491,7 @@ body.theme-light .search-result:hover,
 body.theme-light .search-result.active {
   background: #f3f3f3;
 }
-body.theme-light .sr-desc { color: rgba(0,0,0,0.45); }
+body.theme-light .sr-desc { color: rgba(0,0,0,0.65); }
 body.theme-light #aiSection:not(:empty) {
   background: rgba(1, 118, 211, 0.03);
 }
