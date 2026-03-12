@@ -912,7 +912,11 @@ const loadEntities = async () => {
 };
 
 // ── First-Visit Onboarding Hint ──
+let _onboardingDismiss = null;
+
 function showOnboardingHint() {
+  if (_onboardingDismiss) _onboardingDismiss();
+
   const hint = document.createElement('div');
   hint.className = 'onboarding-hint';
   hint.textContent = `Click any planet to explore the ${PRODUCT_CONFIG.name || 'product'} universe`;
@@ -923,15 +927,18 @@ function showOnboardingHint() {
     hint.classList.add('visible');
   }));
 
+  let dismissed = false;
   const dismiss = () => {
+    if (dismissed) return;
+    dismissed = true;
+    _onboardingDismiss = null;
     hint.classList.remove('visible');
     safeLSSet(lsPrefix + 'visited', '1');
     setTimeout(() => { if (hint.parentNode) hint.parentNode.removeChild(hint); }, 500);
-    document.removeEventListener('click', dismiss);
-    document.removeEventListener('keydown', dismiss);
     clearTimeout(autoHide);
   };
 
+  _onboardingDismiss = dismiss;
   document.addEventListener('click', dismiss, { once: true });
   document.addEventListener('keydown', dismiss, { once: true });
   const autoHide = setTimeout(dismiss, 6000);
