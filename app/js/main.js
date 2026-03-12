@@ -64,8 +64,8 @@ let _prefixToPkg = {};
 
 async function loadProductData() {
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=24`),
-    import(`${productsBase}/data.js?v=24`),
+    import(`${productsBase}/config.js?v=25`),
+    import(`${productsBase}/data.js?v=25`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
@@ -85,26 +85,26 @@ async function loadProductData() {
   setToursProductData(PRODUCT_DATA);
 
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=24`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=25`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
   }
 
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=24`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=25`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     setTourData([]);
   }
 
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=24`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=25`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {}
 
   try {
-    const aiContextMod = await import(`${productsBase}/ai-context.js?v=24`);
+    const aiContextMod = await import(`${productsBase}/ai-context.js?v=25`);
     const aiEndpoint = PRODUCT_CONFIG.aiWorkerUrl;
     if (aiEndpoint) {
       setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
@@ -887,7 +887,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=24`);
+    const module = await import(`${productsBase}/entities.js?v=25`);
     _entityData = module.default;
     setEntitiesLoaded(true);
 
