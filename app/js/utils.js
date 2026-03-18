@@ -48,6 +48,27 @@ export function darkenColor(hex, pct) {
   return `rgb(${r},${g},${b})`;
 }
 
+// Toast notification — reusable pill at bottom-center
+let _toastEl = null;
+let _toastTimer = null;
+export function showToast(message) {
+  if (!_toastEl) {
+    _toastEl = document.createElement('div');
+    _toastEl.className = 'toast-notification';
+    _toastEl.setAttribute('role', 'status');
+    _toastEl.setAttribute('aria-live', 'polite');
+    document.body.appendChild(_toastEl);
+  }
+  clearTimeout(_toastTimer);
+  _toastEl.textContent = message;
+  _toastEl.classList.remove('toast-hide');
+  _toastEl.classList.add('toast-show');
+  _toastTimer = setTimeout(() => {
+    _toastEl.classList.remove('toast-show');
+    _toastEl.classList.add('toast-hide');
+  }, 1500);
+}
+
 // Hex to RGBA conversion (single source of truth, was duplicated in renderer.js and particles.js)
 export const hexToRgba = (hex, alpha = 1) => {
   if (!hex || hex[0] !== '#') return `rgba(77,139,255,${alpha})`;

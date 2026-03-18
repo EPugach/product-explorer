@@ -4,7 +4,7 @@
 //  CDN fallback: if MiniSearch fails to load, uses substring matching
 // ══════════════════════════════════════════════════════════════
 
-import { track, announce } from './utils.js';
+import { track, announce, showToast } from './utils.js';
 import { entitySvg, domainSvg } from './icons.js';
 
 // ── MiniSearch lazy CDN import with fallback ─────────────────
@@ -752,6 +752,7 @@ function copyAiAnswer(btn, text) {
     const prev = btn.textContent;
     btn.textContent = '\u2713 Copied';
     setTimeout(() => { btn.textContent = prev; btn.classList.remove('copied'); }, 1500);
+    showToast('Copied to clipboard');
   };
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(onSuccess).catch(() => onSuccess());
@@ -787,9 +788,9 @@ function renderMasterList(results, query) {
 
   const resultsHtml = results.map((r, i) => {
     const typeColor = TYPE_COLORS[r.type] || '#64748b';
-    const stagger = i < 10 ? `style="--stagger-index: ${i}"` : '';
+    const stagger = i < 10 ? `--stagger-index: ${i};` : '';
     return `<div class="search-result${i === searchIndex ? ' active' : ''}" ` +
-      `id="sr-opt-${i}" data-idx="${i}" data-search-result="${i}" ${stagger} ` +
+      `id="sr-opt-${i}" data-idx="${i}" data-search-result="${i}" style="${stagger}--type-color:${typeColor}" ` +
       `role="option" aria-selected="${i === searchIndex}">` +
       `<div class="sr-icon" style="background:${r.color}22;border:1px solid ${r.color}44">${r.icon}</div>` +
       `<div class="sr-body">` +

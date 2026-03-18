@@ -4,7 +4,7 @@
 //  trusted product data object (app-owned), not user input.
 // ══════════════════════════════════════════════════════════════
 
-import { track, announce } from './utils.js';
+import { track, announce, showToast } from './utils.js';
 import { resetZoomPan, nodeMap } from './physics.js';
 import { domainSvg, entitySvg, uiSvg } from './icons.js';
 import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons, highlightMatch, renderPreview } from './search.js';
@@ -43,6 +43,7 @@ export function copyCurrentLink(btn) {
     // NOTE: innerHTML safe — uiSvg returns trusted app-owned SVG strings
     btn.innerHTML = uiSvg('check', 14);
     announce('Link copied to clipboard');
+    showToast('Link copied to clipboard');
     track('copy_link', { level: currentLevel });
     setTimeout(() => {
       btn.classList.remove('copied');
@@ -547,6 +548,7 @@ function wireAiCopyButton(btn, rawAnswer) {
 function showCopied(btn) {
   btn.classList.add('copied');
   btn.textContent = '\u2713 Copied';
+  showToast('Copied to clipboard');
   setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
 }
 
@@ -773,6 +775,7 @@ function renderCoreView(pid, cid) {
   el.querySelectorAll('[data-nav="planet"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('planet'));});
   el.querySelectorAll('.entity-tab').forEach(tab=>{tab.addEventListener('click',()=>switchEntityTab(tab.dataset.entityTabPid,tab.dataset.entityTabCid,tab.dataset.tab));});
   attachOverviewListeners(el);
+  updateTabPill();
   document.getElementById('core-view').scrollTop = 0;
 }
 
@@ -780,9 +783,19 @@ function attachOverviewListeners(container) {
   container.querySelectorAll('[data-copy-code]').forEach(btn=>{btn.addEventListener('click',()=>copyCode(btn));});
 }
 
+function updateTabPill() {
+  const bar = document.querySelector('.entity-tab-bar');
+  const active = bar && bar.querySelector('.entity-tab.active');
+  if (bar && active) {
+    bar.style.setProperty('--pill-left', active.offsetLeft + 'px');
+    bar.style.setProperty('--pill-width', active.offsetWidth + 'px');
+  }
+}
+
 function switchEntityTab(pid, cid, tabKey) {
   track('tab_switch', { tab: tabKey });
   document.querySelectorAll('.entity-tab').forEach(t=>{t.classList.toggle('active',t.dataset.tab===tabKey);});
+  updateTabPill();
   const contentEl = document.getElementById('entity-tab-content');
   const p = PRODUCT_DATA[pid]; const c = p.components.find(x=>x.id===cid); if(!c)return;
   // Safe: all template content is from trusted app-owned product data (no user input)
@@ -793,7 +806,11 @@ function switchEntityTab(pid, cid, tabKey) {
 
 function renderEntityGrid(component, entityType, pid) {
   const entities = (component.entities&&component.entities[entityType])||[];
-  if(entities.length===0) return `<div class="trigger-section"><p style="color:var(--text-dim)">No ${entityType} found.</p></div>`;
+  if(entities.length===0) {
+    const typeNames = {lwcs:'Lightning Web Components',classes:'Apex Classes',triggers:'Triggers',objects:'Custom Objects',metadata:'Custom Metadata'};
+    const label = typeNames[entityType] || entityType;
+    return `<div class="entity-empty-state"><svg class="entity-empty-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9l6 6M15 9l-6 6"/></svg><p>No ${label} in this component</p></div>`;
+  }
   const typeConfig = {classes:{icon:entitySvg('class',14),color:'rgba(77,139,255,',badgeClass:'badge-class'},objects:{icon:entitySvg('object',14),color:'rgba(34,197,94,',badgeClass:'badge-object'},triggers:{icon:entitySvg('trigger',14),color:'rgba(239,68,68,',badgeClass:'badge-trigger'},lwcs:{icon:entitySvg('lwc',14),color:'rgba(168,85,247,',badgeClass:'badge-lwc'},metadata:{icon:entitySvg('metadata',14),color:'rgba(245,158,11,',badgeClass:'badge-metadata'}};
   const cfg = typeConfig[entityType]||typeConfig.classes;
 
