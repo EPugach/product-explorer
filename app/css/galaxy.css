@@ -3338,8 +3338,11 @@ body.theme-light .toast-notification {
   color: var(--text-dim);
   opacity: 0.5;
   letter-spacing: 0.5px;
-  pointer-events: none;
+  text-decoration: none;
   z-index: 1;
+}
+#version-indicator:hover {
+  text-decoration: underline;
 }
 body.tour-active #version-indicator {
   opacity: 0;

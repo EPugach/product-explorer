@@ -15,6 +15,7 @@ export default {
   version: "Spring '26",
   description: 'Low-code suite for building guided digital experiences with OmniScripts, FlexCards, Data Mappers, and Integration Procedures',
   color: '#8b5cf6',
+  docUrl: 'https://help.salesforce.com/s/articleView?id=xcloud.os_omnistudio_standard.htm&type=5',
   entityTypes: ['objects', 'metadata'],
   localStoragePrefix: 'omnistudio',
   aiWorkerUrl: 'https://npsp-ai-search.epug.workers.dev',

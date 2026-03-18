@@ -1006,6 +1006,20 @@ async function init() {
   setupHelpButton();
   updateBreadcrumb();
   buildStats();
+
+  // Upgrade version indicator to a clickable link if docUrl is configured
+  const versionEl = document.getElementById('version-indicator');
+  if (versionEl && PRODUCT_CONFIG.docUrl) {
+    const link = document.createElement('a');
+    link.id = versionEl.id;
+    link.href = PRODUCT_CONFIG.docUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.setAttribute('aria-label', versionEl.getAttribute('aria-label'));
+    link.textContent = versionEl.textContent;
+    versionEl.replaceWith(link);
+  }
+
   initTours();
 
   document.getElementById('nav-brand').addEventListener('click', () => navigateTo('galaxy'));

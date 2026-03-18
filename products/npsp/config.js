@@ -22,6 +22,7 @@ export default {
   description: 'The most widely adopted nonprofit technology on Salesforce',
   color: '#4d8bff',
   repoUrl: 'https://github.com/SalesforceFoundation/NPSP',
+  docUrl: 'https://help.salesforce.com/s/articleView?id=sfdo.NPSP_Documentation.htm&type=5',
   entityTypes: ['classes', 'objects', 'triggers', 'lwcs', 'metadata'],
   localStoragePrefix: 'npsp',
   aiWorkerUrl: 'https://npsp-ai-search.epug.workers.dev',

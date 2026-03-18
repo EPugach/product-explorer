@@ -16,6 +16,7 @@ export default {
   version: 'Spring \'26',
   description: 'End-to-end revenue lifecycle management on Salesforce',
   color: '#4d8bff',
+  docUrl: 'https://help.salesforce.com/s/articleView?id=ind.revenue_lifecycle_management.htm&type=5',
   entityTypes: ['objects'],
   localStoragePrefix: 'revenue',
   aiWorkerUrl: 'https://npsp-ai-search.epug.workers.dev',
