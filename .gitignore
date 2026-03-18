@@ -32,3 +32,5 @@
 
 # Package config
 !package.json
+!omnistudio/
+!omnistudio/index.html
