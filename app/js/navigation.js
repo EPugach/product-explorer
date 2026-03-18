@@ -575,7 +575,7 @@ async function triggerAiFetch(query) {
     const panelSlot = section.querySelector('[data-feedback-panel-slot]');
     if (header) {
       const labelGroup = header.querySelector('.sr-ai-label-group');
-      if (labelGroup) {
+      if (labelGroup && !labelGroup.querySelector('.ai-feedback-btns')) {
         labelGroup.insertAdjacentHTML('beforeend', buildFeedbackButtonsHtml());
       }
     }

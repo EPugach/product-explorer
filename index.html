@@ -59,7 +59,7 @@
 
   .hero-visual svg {
     width: 100%;
-    max-width: 660px;
+    max-width: 880px;
     height: auto;
   }
 
@@ -153,6 +153,11 @@
     text-decoration: none;
     color: inherit;
     transition: border-color 0.2s ease;
+    margin-bottom: 16px;
+  }
+
+  .product-card:last-child {
+    margin-bottom: 0;
   }
 
   .product-card:hover {
@@ -283,18 +288,18 @@
       <p>There's a gap between the people who build software and the people who need to understand it. Source code tells the whole story, but it's written in a language most stakeholders don't speak.</p>
 
       <!-- Infographic: visual breather between problem and solution -->
-      <div class="hero-visual" role="img" aria-label="Source code becomes documentation becomes an interactive map">
-        <svg viewBox="0 0 660 148" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <div class="hero-visual" role="img" aria-label="Source code becomes documentation becomes an interactive map with AI search">
+        <svg viewBox="0 0 880 148" fill="none" xmlns="http://www.w3.org/2000/svg">
 
           <!-- ── Circle 1: Source Code ── -->
-          <circle cx="60" cy="52" r="40" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
-          <path d="M48 40 L36 52 L48 64" stroke="#595959" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M72 40 L84 52 L72 64" stroke="#595959" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="64" y1="37" x2="56" y2="67" stroke="#595959" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="110" cy="52" r="40" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+          <path d="M98 40 L86 52 L98 64" stroke="#595959" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M122 40 L134 52 L122 64" stroke="#595959" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="114" y1="37" x2="106" y2="67" stroke="#595959" stroke-width="1.5" stroke-linecap="round"/>
 
           <!-- ── Connector 1 ── -->
-          <line x1="112" y1="52" x2="268" y2="52" stroke="#d4d4d4" stroke-width="1" stroke-dasharray="5 4"/>
-          <path d="M264 46 L274 52 L264 58" stroke="#c9c9c9" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="162" y1="52" x2="258" y2="52" stroke="#d4d4d4" stroke-width="1" stroke-dasharray="5 4"/>
+          <path d="M254 46 L264 52 L254 58" stroke="#c9c9c9" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 
           <!-- ── Circle 2: Documentation ── -->
           <circle cx="330" cy="52" r="40" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
@@ -309,36 +314,55 @@
           <line x1="333" y1="53" x2="340" y2="53" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
 
           <!-- ── Connector 2 ── -->
-          <line x1="382" y1="52" x2="538" y2="52" stroke="#d4d4d4" stroke-width="1" stroke-dasharray="5 4"/>
-          <path d="M534 46 L544 52 L534 58" stroke="#c9c9c9" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="382" y1="52" x2="478" y2="52" stroke="#d4d4d4" stroke-width="1" stroke-dasharray="5 4"/>
+          <path d="M474 46 L484 52 L474 58" stroke="#c9c9c9" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 
           <!-- ── Circle 3: Interactive Map ── -->
-          <circle cx="600" cy="52" r="40" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
-          <line x1="600" y1="49" x2="586" y2="40" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
-          <line x1="600" y1="49" x2="614" y2="41" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
-          <line x1="600" y1="49" x2="589" y2="61" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
-          <line x1="600" y1="49" x2="613" y2="59" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
-          <line x1="586" y1="40" x2="578" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
-          <line x1="614" y1="41" x2="621" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
-          <line x1="589" y1="61" x2="578" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
-          <line x1="613" y1="59" x2="621" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
-          <circle cx="600" cy="49" r="5" fill="#0176d3"/>
-          <circle cx="586" cy="40" r="3" fill="#0176d3" opacity="0.55"/>
-          <circle cx="614" cy="41" r="2.5" fill="#0176d3" opacity="0.45"/>
-          <circle cx="589" cy="61" r="2.5" fill="#0176d3" opacity="0.45"/>
-          <circle cx="613" cy="59" r="3" fill="#0176d3" opacity="0.35"/>
-          <circle cx="578" cy="52" r="2" fill="#0176d3" opacity="0.3"/>
-          <circle cx="621" cy="52" r="2" fill="#0176d3" opacity="0.25"/>
+          <circle cx="550" cy="52" r="40" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+          <line x1="550" y1="49" x2="536" y2="40" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
+          <line x1="550" y1="49" x2="564" y2="41" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
+          <line x1="550" y1="49" x2="539" y2="61" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
+          <line x1="550" y1="49" x2="563" y2="59" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/>
+          <line x1="536" y1="40" x2="528" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
+          <line x1="564" y1="41" x2="571" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
+          <line x1="539" y1="61" x2="528" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
+          <line x1="563" y1="59" x2="571" y2="52" stroke="#0176d3" stroke-width="0.5" opacity="0.2"/>
+          <circle cx="550" cy="49" r="5" fill="#0176d3"/>
+          <circle cx="536" cy="40" r="3" fill="#0176d3" opacity="0.55"/>
+          <circle cx="564" cy="41" r="2.5" fill="#0176d3" opacity="0.45"/>
+          <circle cx="539" cy="61" r="2.5" fill="#0176d3" opacity="0.45"/>
+          <circle cx="563" cy="59" r="3" fill="#0176d3" opacity="0.35"/>
+          <circle cx="528" cy="52" r="2" fill="#0176d3" opacity="0.3"/>
+          <circle cx="571" cy="52" r="2" fill="#0176d3" opacity="0.25"/>
+
+          <!-- ── Connector 3 ── -->
+          <line x1="602" y1="52" x2="698" y2="52" stroke="#d4d4d4" stroke-width="1" stroke-dasharray="5 4"/>
+          <path d="M694 46 L704 52 L694 58" stroke="#c9c9c9" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- ── Circle 4: AI Search — magnifying glass with sparkles ── -->
+          <circle cx="770" cy="52" r="40" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+          <!-- Magnifying glass -->
+          <circle cx="764" cy="50" r="10" stroke="#0176d3" stroke-width="1.5" fill="none"/>
+          <line x1="771" y1="57" x2="779" y2="65" stroke="#0176d3" stroke-width="2" stroke-linecap="round"/>
+          <!-- Large sparkle ✦ (top-right, 8px) -->
+          <path d="M781 40 L782.2 36 L783.4 40 L787 41.2 L783.4 42.4 L782.2 46 L781 42.4 L777 41.2z" fill="#0ea5e9"/>
+          <!-- Medium sparkle ✦ (upper-left, 6px) -->
+          <path d="M754 38 L755 35 L756 38 L759 39 L756 40 L755 43 L754 40 L751 39z" fill="#0ea5e9" opacity="0.75"/>
+          <!-- Small sparkle ✦ (right, 5px) -->
+          <path d="M784 54 L784.8 51.5 L785.6 54 L788 54.8 L785.6 55.6 L784.8 58 L784 55.6 L781.5 54.8z" fill="#0ea5e9" opacity="0.55"/>
 
           <!-- ── Labels ── -->
-          <text x="60" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#181818">Source Code</text>
-          <text x="60" y="128" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" fill="#595959">Your codebase</text>
+          <text x="110" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#181818">Source Code</text>
+          <text x="110" y="128" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" fill="#595959">Your codebase</text>
 
           <text x="330" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#0176d3">Documentation</text>
           <text x="330" y="128" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" fill="#595959">Analyzed and structured</text>
 
-          <text x="600" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#181818">Interactive Map</text>
-          <text x="600" y="128" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" fill="#595959">Navigate visually</text>
+          <text x="550" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#181818">Interactive Map</text>
+          <text x="550" y="128" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" fill="#595959">Navigate visually</text>
+
+          <text x="770" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#0176d3">AI Search</text>
+          <text x="770" y="128" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" fill="#595959">Ask anything</text>
 
         </svg>
       </div>
