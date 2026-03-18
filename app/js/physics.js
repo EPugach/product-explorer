@@ -11,6 +11,62 @@ let PRODUCT_DATA = {};
 let _radiusCache = null;
 export const setProductData = (data) => { PRODUCT_DATA = data; _radiusCache = null; };
 
+// ── Physics config: product-specific layout parameters ──
+// Injected by main.js via setPhysicsConfig(). Falls back to NPSP defaults.
+let _physicsConfig = null;
+export const setPhysicsConfig = (cfg) => { _physicsConfig = cfg || null; _radiusCache = null; };
+
+// NPSP defaults — used when no product-specific physics config is provided
+const _NPSP_DEFAULTS = {
+  weights: {
+    recurring: 89, rollups: 76, bdi: 66, settings: 64, donations: 50, batch: 45,
+    contacts: 39, allocations: 28, errors: 22, addresses: 20, giftentry: 19,
+    elevate: 14, engagement: 12, softcredits: 8, relationships: 6, levels: 6,
+    tdtm: 15, affiliations: 4
+  },
+  foundational: { tdtm: 2.5, settings: 1.3, errors: 1.2 },
+  groups: {
+    donations: 0, contacts: 0, recurring: 0, softcredits: 0,
+    rollups: 1, batch: 1, allocations: 1, levels: 1,
+    bdi: 2, giftentry: 2, elevate: 2,
+    tdtm: 3, settings: 3, errors: 3,
+    relationships: 3, addresses: 3, affiliations: 3, engagement: 3
+  },
+  groupCenters: [
+    { x: 0.40, y: 0.30 },
+    { x: 0.18, y: 0.65 },
+    { x: 0.75, y: 0.68 },
+    { x: 0.82, y: 0.30 },
+  ],
+  seeds: {
+    donations:     { angle:  0.00, ring: 0.45 },
+    contacts:      { angle:  0.50, ring: 0.50 },
+    recurring:     { angle:  0.25, ring: 0.65 },
+    softcredits:   { angle: -0.25, ring: 0.60 },
+    rollups:       { angle:  1.60, ring: 0.65 },
+    batch:         { angle:  2.00, ring: 0.70 },
+    allocations:   { angle:  1.80, ring: 0.80 },
+    levels:        { angle:  2.30, ring: 0.85 },
+    bdi:           { angle: -1.20, ring: 0.70 },
+    giftentry:     { angle: -1.50, ring: 0.75 },
+    elevate:       { angle: -1.00, ring: 0.80 },
+    tdtm:          { angle: -0.50, ring: 0.40 },
+    settings:      { angle: -0.70, ring: 0.45 },
+    errors:        { angle: -0.90, ring: 0.50 },
+    relationships: { angle:  0.80, ring: 0.85 },
+    addresses:     { angle: -2.30, ring: 0.75 },
+    affiliations:  { angle:  0.70, ring: 0.80 },
+    engagement:    { angle: -1.80, ring: 0.85 },
+  }
+};
+
+// Accessors that read from injected config or fall back to NPSP defaults
+function _weights() { return (_physicsConfig && _physicsConfig.weights) || _NPSP_DEFAULTS.weights; }
+function _foundational() { return (_physicsConfig && _physicsConfig.foundational) || _NPSP_DEFAULTS.foundational; }
+function _groups() { return (_physicsConfig && _physicsConfig.groups) || _NPSP_DEFAULTS.groups; }
+function _groupCenters() { return (_physicsConfig && _physicsConfig.groupCenters) || _NPSP_DEFAULTS.groupCenters; }
+function _seeds() { return (_physicsConfig && _physicsConfig.seeds) || _NPSP_DEFAULTS.seeds; }
+
 // ── Exported mutable state ──
 export let nodes = [];
 export let edges = [];
@@ -30,31 +86,6 @@ export const setTransformCallback = (fn) => { _onTransformUpdate = fn; };
 
 let alpha = 1.0;
 
-// Node sizing: weighted by codebase complexity
-const CODEBASE_WEIGHT = {
-  recurring: 89, rollups: 76, bdi: 66, settings: 64, donations: 50, batch: 45,
-  contacts: 39, allocations: 28, errors: 22, addresses: 20, giftentry: 19,
-  elevate: 14, engagement: 12, softcredits: 8, relationships: 6, levels: 6,
-  tdtm: 15, affiliations: 4
-};
-const FOUNDATIONAL = { tdtm: 2.5, settings: 1.3, errors: 1.2 };
-
-// ── Cluster layout: data-driven domain groupings ──
-const DOMAIN_GROUPS = {
-  donations: 0, contacts: 0, recurring: 0, softcredits: 0,
-  rollups: 1, batch: 1, allocations: 1, levels: 1,
-  bdi: 2, giftentry: 2, elevate: 2,
-  tdtm: 3, settings: 3, errors: 3,
-  relationships: 3, addresses: 3, affiliations: 3, engagement: 3
-};
-
-const GROUP_CENTERS = [
-  { x: 0.40, y: 0.30 },
-  { x: 0.18, y: 0.65 },
-  { x: 0.75, y: 0.68 },
-  { x: 0.82, y: 0.30 },
-];
-
 const GROUP_GRAVITY = 0.20;
 
 // Responsive radius range
@@ -64,19 +95,23 @@ function getRadiusRange() {
 }
 
 function _computeRadiusScale() {
+  const weights = _weights();
+  const foundational = _foundational();
   const scores = Object.keys(PRODUCT_DATA).map((k) => {
     const dd = PRODUCT_DATA[k];
-    return ((CODEBASE_WEIGHT[k] || 5) + dd.components.length * 10 + dd.connections.length * 3) * (FOUNDATIONAL[k] || 1.0);
+    return ((weights[k] || 5) + dd.components.length * 10 + dd.connections.length * 3) * (foundational[k] || 1.0);
   });
   _radiusCache = { mn: Math.min(...scores), mx: Math.max(...scores) };
 }
 
 export function calcRadius(key) {
   const d = PRODUCT_DATA[key];
-  const cw = CODEBASE_WEIGHT[key] || 5;
+  const weights = _weights();
+  const foundational = _foundational();
+  const cw = weights[key] || 5;
   const compW = d.components.length * 10;
   const connW = d.connections.length * 3;
-  const mult = FOUNDATIONAL[key] || 1.0;
+  const mult = foundational[key] || 1.0;
   const raw = (cw + compW + connW) * mult;
 
   if (!_radiusCache) _computeRadiusScale();
@@ -84,28 +119,6 @@ export function calcRadius(key) {
   const { min, range } = getRadiusRange();
   return min + ((raw - mn) / (mx - mn)) * range;
 }
-
-// Intentional initial layout: seed positions near group centers for faster convergence
-const LAYOUT_SEED = {
-  donations:     { angle:  0.00, ring: 0.45 },
-  contacts:      { angle:  0.50, ring: 0.50 },
-  recurring:     { angle:  0.25, ring: 0.65 },
-  softcredits:   { angle: -0.25, ring: 0.60 },
-  rollups:       { angle:  1.60, ring: 0.65 },
-  batch:         { angle:  2.00, ring: 0.70 },
-  allocations:   { angle:  1.80, ring: 0.80 },
-  levels:        { angle:  2.30, ring: 0.85 },
-  bdi:           { angle: -1.20, ring: 0.70 },
-  giftentry:     { angle: -1.50, ring: 0.75 },
-  elevate:       { angle: -1.00, ring: 0.80 },
-  tdtm:          { angle: -0.50, ring: 0.40 },
-  settings:      { angle: -0.70, ring: 0.45 },
-  errors:        { angle: -0.90, ring: 0.50 },
-  relationships: { angle:  0.80, ring: 0.85 },
-  addresses:     { angle: -2.30, ring: 0.75 },
-  affiliations:  { angle:  0.70, ring: 0.80 },
-  engagement:    { angle: -1.80, ring: 0.85 },
-};
 
 export function initGraph(w, h) {
   layoutW = w || innerWidth;
@@ -116,9 +129,11 @@ export function initGraph(w, h) {
   const spreadX = layoutW * 0.42;
   const spreadY = layoutH * 0.25;
   const tilt = -0.26;
+  const seeds = _seeds();
+  const weights = _weights();
 
   nodes = keys.map((key, i) => {
-    const seed = LAYOUT_SEED[key] || { angle: Math.random() * Math.PI * 2, ring: 0.7 };
+    const seed = seeds[key] || { angle: Math.random() * Math.PI * 2, ring: 0.7 };
     return {
       id: key,
       label: PRODUCT_DATA[key].name,
@@ -126,7 +141,7 @@ export function initGraph(w, h) {
       color: PRODUCT_DATA[key].color,
       desc: PRODUCT_DATA[key].description,
       componentCount: PRODUCT_DATA[key].components.length,
-      classCount: CODEBASE_WEIGHT[key] || 0,
+      classCount: weights[key] || 0,
       connectionCount: PRODUCT_DATA[key].connections.length,
       radius: calcRadius(key),
       x: cx + (Math.cos(seed.angle) * spreadX * seed.ring) * Math.cos(tilt)
@@ -202,10 +217,12 @@ function simulate() {
   }
 
   // Group gravity
+  const groups = _groups();
+  const groupCenters = _groupCenters();
   for (const n of nodes) {
-    const g = DOMAIN_GROUPS[n.id];
+    const g = groups[n.id];
     if (g === undefined) continue;
-    const center = GROUP_CENTERS[g];
+    const center = groupCenters[g];
     const targetX = center.x * layoutW;
     const targetY = center.y * layoutH;
     n.vx += (targetX - n.x) * GROUP_GRAVITY * alpha;

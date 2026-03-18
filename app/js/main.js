@@ -15,7 +15,7 @@ import {
 import {
   nodes, edges, nodeMap, zoom, panX, panY,
   setZoom, setPanX, setPanY,
-  setProductData as setPhysicsData, setTransformCallback,
+  setProductData as setPhysicsData, setPhysicsConfig, setTransformCallback,
   initGraph, computeLayout, onGraphResize
 } from './physics.js';
 import { initParticles, resizeParticleCanvas, updateParticles, renderParticles, setHoveredNode as setParticleHover } from './particles.js';
@@ -64,8 +64,8 @@ let _prefixToPkg = {};
 
 async function loadProductData() {
   const [configModule, dataModule] = await Promise.all([
-    import(`${productsBase}/config.js?v=25`),
-    import(`${productsBase}/data.js?v=25`),
+    import(`${productsBase}/config.js?v=26`),
+    import(`${productsBase}/data.js?v=26`),
   ]);
 
   PRODUCT_CONFIG = configModule.default;
@@ -76,6 +76,7 @@ async function loadProductData() {
     Object.entries(PRODUCT_PACKAGES).map(([key, pkg]) => [pkg.prefix, key])
   );
 
+  setPhysicsConfig(PRODUCT_CONFIG.physics);
   setPhysicsData(PRODUCT_DATA);
   setNavData(PRODUCT_DATA);
   setNavConfig(PRODUCT_CONFIG);
@@ -85,26 +86,26 @@ async function loadProductData() {
   setToursProductData(PRODUCT_DATA);
 
   try {
-    const iconsModule = await import(`${productsBase}/icons.js?v=25`);
+    const iconsModule = await import(`${productsBase}/icons.js?v=26`);
     setDomainPaths(iconsModule.DOMAIN_PATHS);
   } catch (e) {
     console.warn(`[${productId}] No domain icons found, using defaults`);
   }
 
   try {
-    const tourModule = await import(`${productsBase}/tour-data.js?v=25`);
+    const tourModule = await import(`${productsBase}/tour-data.js?v=26`);
     setTourData(tourModule.TOURS);
   } catch (e) {
     setTourData([]);
   }
 
   try {
-    const feedbackModule = await import(`${productsBase}/feedback.js?v=25`);
+    const feedbackModule = await import(`${productsBase}/feedback.js?v=26`);
     if (feedbackModule.initFeedback) feedbackModule.initFeedback();
   } catch (e) {}
 
   try {
-    const aiContextMod = await import(`${productsBase}/ai-context.js?v=25`);
+    const aiContextMod = await import(`${productsBase}/ai-context.js?v=26`);
     const aiEndpoint = PRODUCT_CONFIG.aiWorkerUrl;
     if (aiEndpoint) {
       setAiConfig(aiEndpoint, aiContextMod.AI_CONTEXT || '');
@@ -862,8 +863,10 @@ function buildStats() {
   }
 
   const cfg = PRODUCT_CONFIG.stats || {};
-  document.getElementById('statClasses').textContent = totalClasses || cfg.classes || '0';
-  document.getElementById('statTriggers').textContent = totalTriggers || cfg.triggers || '0';
+  const elClasses = document.getElementById('statClasses');
+  const elTriggers = document.getElementById('statTriggers');
+  if (elClasses) elClasses.textContent = totalClasses || cfg.classes || '0';
+  if (elTriggers) elTriggers.textContent = totalTriggers || cfg.triggers || '0';
   document.getElementById('statObjects').textContent = totalObjects || cfg.objects || '0';
   document.getElementById('statDomains').textContent = domains || cfg.domains || '0';
   document.getElementById('statComponents').textContent = totalComponents || cfg.components || '0';
@@ -887,7 +890,7 @@ window.addEventListener('popstate', () => {
 // ── Lazy Entity Loading ──
 const loadEntities = async () => {
   try {
-    const module = await import(`${productsBase}/entities.js?v=25`);
+    const module = await import(`${productsBase}/entities.js?v=26`);
     _entityData = module.default;
     setEntitiesLoaded(true);
 

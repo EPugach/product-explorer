@@ -24,6 +24,9 @@
 !npsp/og-image.png
 
 # Allow future product bootstraps
+!revenue/
+!revenue/index.html
+
 !eda/
 !eda/index.html
 
