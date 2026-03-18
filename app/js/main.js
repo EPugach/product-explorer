@@ -865,11 +865,14 @@ function buildStats() {
   const cfg = PRODUCT_CONFIG.stats || {};
   const elClasses = document.getElementById('statClasses');
   const elTriggers = document.getElementById('statTriggers');
+  const elObjects = document.getElementById('statObjects');
+  const elDomains = document.getElementById('statDomains');
+  const elComponents = document.getElementById('statComponents');
   if (elClasses) elClasses.textContent = totalClasses || cfg.classes || '0';
   if (elTriggers) elTriggers.textContent = totalTriggers || cfg.triggers || '0';
-  document.getElementById('statObjects').textContent = totalObjects || cfg.objects || '0';
-  document.getElementById('statDomains').textContent = domains || cfg.domains || '0';
-  document.getElementById('statComponents').textContent = totalComponents || cfg.components || '0';
+  if (elObjects) elObjects.textContent = totalObjects || cfg.objects || '0';
+  if (elDomains) elDomains.textContent = domains || cfg.domains || '0';
+  if (elComponents) elComponents.textContent = totalComponents || cfg.components || '0';
 }
 
 // ── Resize Handler ──
