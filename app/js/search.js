@@ -1025,8 +1025,8 @@ export function expandSearch(query) {
   searchIndex = searchResults.length > 0 ? 0 : -1;
   _previewIndex = searchIndex;
 
-  // Detect question and trigger AI search
-  const shouldAskAi = _aiEndpoint && isQuestion(query);
+  // Detect question and trigger AI search (min 15 chars to avoid partial queries)
+  const shouldAskAi = _aiEndpoint && query.trim().length >= 15 && isQuestion(query);
 
   // Render the three panels
   renderMasterList(searchResults, query);
@@ -1047,7 +1047,7 @@ export function expandSearch(query) {
           renderAiSection(query, { error: result.error });
         }
       }
-    }, 600);
+    }, 1000);
   }
 
   clearTimeout(_searchTrackTimer);
