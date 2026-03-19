@@ -381,9 +381,15 @@ function buildSearchIndex() {
             if (entItem.keyMethods) docParts.push(entItem.keyMethods.join(' '));
             if (entItem.referencedObjects) docParts.push(entItem.referencedObjects.join(' '));
             if (flds) {
-              docParts.push(flds.map((f) =>
-                `${f.name} ${f.label || ''} ${f.type || ''}`
-              ).join(' '));
+              if (Array.isArray(flds)) {
+                docParts.push(flds.map((f) =>
+                  `${f.name} ${f.label || ''} ${f.type || ''}`
+                ).join(' '));
+              } else {
+                docParts.push(Object.entries(flds).map(([k, v]) =>
+                  `${k} ${v}`
+                ).join(' '));
+              }
             }
 
             const entItemData = {
