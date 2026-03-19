@@ -365,8 +365,10 @@ function buildSearchIndex() {
               entTags = entTags.concat(entItem.imports);
             }
             if (entType === 'metadata' && flds) {
-              for (const f of flds) {
-                entTags.push(f.name);
+              if (Array.isArray(flds)) {
+                for (const f of flds) entTags.push(f.name);
+              } else {
+                for (const k of Object.keys(flds)) entTags.push(k);
               }
             }
 
