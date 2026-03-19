@@ -3339,7 +3339,8 @@ body.theme-light .toast-notification {
   opacity: 0.5;
   letter-spacing: 0.5px;
   text-decoration: none;
-  z-index: 1;
+  pointer-events: auto;
+  z-index: 5;
 }
 #version-indicator:hover {
   text-decoration: underline;
