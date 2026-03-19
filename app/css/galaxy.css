@@ -2657,6 +2657,35 @@ body.theme-light .nav-copy-link:hover {
   border-color: rgba(255,255,255,0.6);
 }
 
+/* ── Home Button (Navbar) ── */
+.nav-home-btn {
+  background: none;
+  border: 1px solid rgba(100,140,255,0.15);
+  color: var(--text-dim);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  flex-shrink: 0;
+  padding: 0;
+}
+.nav-home-btn:hover {
+  color: var(--glow-accent);
+  border-color: var(--glow-accent);
+}
+body.theme-light .nav-home-btn {
+  color: rgba(255,255,255,0.85);
+  border-color: rgba(255,255,255,0.3);
+}
+body.theme-light .nav-home-btn:hover {
+  color: #ffffff;
+  border-color: rgba(255,255,255,0.6);
+}
+
 /* ══════════════════════════════════════════════════════════════
    CONSTELLATION STORIES — Tour UI Components
    ══════════════════════════════════════════════════════════════ */

@@ -1041,6 +1041,16 @@ async function init() {
   const zoomIndicator = document.getElementById('zoom-indicator');
   zoomIndicator.parentNode.insertBefore(copyLinkBtn, zoomIndicator);
 
+  // Home button — navigates to product picker (landing page)
+  const homeBtn = document.createElement('button');
+  homeBtn.className = 'nav-home-btn';
+  homeBtn.setAttribute('aria-label', 'All Products');
+  homeBtn.setAttribute('title', 'All Products');
+  // Safe: uiSvg returns trusted app-owned SVG strings (not user input)
+  homeBtn.innerHTML = uiSvg('home', 16);
+  homeBtn.addEventListener('click', () => { window.location.href = '../'; });
+  zoomIndicator.parentNode.insertBefore(homeBtn, zoomIndicator);
+
   window.addEventListener('resize', onResize);
   requestAnimationFrame(particleTick);
 

@@ -46,6 +46,10 @@ const UI_PATHS = {
 
   check:
     '<polyline points="20 6 9 17 4 12"/>',
+
+  home:
+    '<path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>' +
+    '<polyline points="9 22 9 12 15 12 15 22"/>',
 };
 
 // ── Entity type badge paths ──
