@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Revenue Cloud Explorer</title>
-<meta name="description" content="Interactive galaxy-themed visualization of Salesforce Revenue Cloud. Explore 14 domains, 70 components, and 54 objects as an interconnected universe.">
-<meta property="og:title" content="Revenue Cloud Explorer">
-<meta property="og:description" content="Interactive galaxy-themed visualization of Salesforce Revenue Cloud. Explore 14 domains, 70 components, and 54 objects as an interconnected universe.">
+<title>Education Cloud Explorer</title>
+<meta name="description" content="Interactive galaxy-themed visualization of Salesforce Education Cloud. Explore domains, components, and entities as an interconnected universe.">
+<meta property="og:title" content="Education Cloud Explorer">
+<meta property="og:description" content="Interactive galaxy-themed visualization of Salesforce Education Cloud. Explore domains, components, and entities as an interconnected universe.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://epugach.github.io/product-explorer/revenue/">
-<meta property="og:site_name" content="Revenue Cloud Explorer">
+<meta property="og:url" content="https://epugach.github.io/product-explorer/educationcloud/">
+<meta property="og:site_name" content="Education Cloud Explorer">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Revenue Cloud Explorer">
-<meta name="twitter:description" content="Interactive galaxy-themed visualization of Salesforce Revenue Cloud. Explore 14 domains, 70 components, and 54 objects as an interconnected universe.">
+<meta name="twitter:title" content="Education Cloud Explorer">
+<meta name="twitter:description" content="Interactive galaxy-themed visualization of Salesforce Education Cloud. Explore domains, components, and entities as an interconnected universe.">
 <link rel="icon" type="image/svg+xml" href="../npsp/favicon.svg">
 <!-- Google tag (gtag.js) -->
 <link rel="preconnect" href="https://www.googletagmanager.com">
@@ -23,9 +23,9 @@
   gtag('js', new Date());
   gtag('config', 'G-HJTE1NYP82');
 </script>
-<link rel="stylesheet" href="../app/css/galaxy.css?v=26">
+<link rel="stylesheet" href="../app/css/galaxy.css?v=25">
 </head>
-<body data-product="revenue">
+<body data-product="educationcloud">
 <a href="#stage" class="skip-link">Skip to content</a>
 
 <!-- Background layers: canvas starfield (z0) > particles canvas (z1) > galaxy DOM (z3) -->
@@ -34,21 +34,21 @@
 
 <!-- Galaxy DOM layer: planets + edges (z3) -->
 <div class="galaxy-container" id="galaxyContainer"
-     role="img" aria-label="Interactive galaxy map of Revenue Cloud domains">
+     role="img" aria-label="Interactive galaxy map of Education Cloud domains">
   <svg class="galaxy-edges" id="galaxyEdges"></svg>
 </div>
 
 <noscript>
   <div style="padding:60px 40px;text-align:center;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#050510;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center">
-    <h1 style="font-size:2rem;margin-bottom:16px;letter-spacing:2px">Revenue Cloud Explorer</h1>
+    <h1 style="font-size:2rem;margin-bottom:16px;letter-spacing:2px">Education Cloud Explorer</h1>
     <p style="font-size:1.1rem;color:#94a3b8;margin-bottom:12px">This interactive visualization requires JavaScript to run.</p>
-    <p style="font-size:0.95rem;color:#64748b">Explore 14 domains, 70 components, and 54 objects from Salesforce Revenue Cloud.</p>
+    <p style="font-size:0.95rem;color:#64748b">Explore the domains, components, and entities of Salesforce Education Cloud.</p>
   </div>
 </noscript>
 
 <!-- Navbar -->
 <nav id="navbar" aria-label="Navigation">
-  <div class="nav-brand" id="nav-brand" style="cursor:pointer" role="button" tabindex="0">REVENUE CLOUD EXPLORER</div>
+  <div class="nav-brand" id="nav-brand" style="cursor:pointer" role="button" tabindex="0">EDUCATION CLOUD EXPLORER</div>
   <button id="tour-btn" class="tour-btn" aria-label="Tour">Tour <span class="tour-btn-icon nav-icon-svg" id="tour-icon"></span></button>
   <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme"><span class="nav-icon-svg" id="theme-icon"></span></button>
   <div id="zoom-indicator" aria-hidden="true">
@@ -83,18 +83,18 @@
 
 <!-- Stage -->
 <div id="stage">
-  <!-- GALAXY VIEW -->
+  <!-- GALAXY VIEW (canvas-based, minimal DOM) -->
   <div id="galaxy-view" class="view-layer active">
     <div class="galaxy-title">
-      <h1>SALESFORCE REVENUE CLOUD</h1>
+      <h1>SALESFORCE EDUCATION CLOUD</h1>
       <div class="search-box" id="searchBox">
         <div class="search-shell" id="searchShell">
           <span class="s-icon nav-icon-svg" aria-hidden="true" id="search-icon"></span>
           <input type="text" id="searchInput"
-                 placeholder="Search or ask a question about Revenue Cloud..."
+                 placeholder="Search or ask a question about Education Cloud..."
                  autocomplete="off" spellcheck="false"
                  role="combobox"
-                 aria-label="Search or ask a question about Revenue Cloud"
+                 aria-label="Search or ask a question about Education Cloud"
                  aria-expanded="false"
                  aria-autocomplete="list"
                  aria-haspopup="listbox"
@@ -107,7 +107,7 @@
     <div class="galaxy-stats">
       <div class="stat-item"><div class="stat-value" id="statObjects">54</div><div class="stat-label">Objects</div></div>
       <div class="stat-item"><div class="stat-value" id="statDomains">14</div><div class="stat-label">Domains</div></div>
-      <div class="stat-item"><div class="stat-value" id="statComponents">70</div><div class="stat-label">Components</div></div>
+      <div class="stat-item"><div class="stat-value" id="statComponents">68</div><div class="stat-label">Components</div></div>
     </div>
   </div>
 
@@ -126,14 +126,14 @@
     <div class="entity-content" id="entity-content"></div>
   </div>
 
-  <!-- SEARCH RESULTS VIEW (Level 5 - ephemeral) -->
+  <!-- SEARCH RESULTS VIEW (Level 5 - ephemeral, replaces AI answer view) -->
   <div id="search-results-view" class="view-layer">
     <div class="search-results-content" id="search-results-content"></div>
   </div>
 </div>
 
 <!-- Version indicator -->
-<div id="version-indicator" aria-label="Data version">Revenue Cloud Spring '26</div>
+<div id="version-indicator" aria-label="Data version">Education Cloud Spring '26</div>
 
 <!-- Feedback button -->
 <button class="feedback-btn" id="feedbackBtn" aria-label="Send feedback"><span class="nav-icon-svg" id="feedback-icon"></span></button>
@@ -156,7 +156,7 @@
 <!-- Screen reader announcements -->
 <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-<!-- ES module entry point -->
+<!-- ES module entry point — loads shared engine which dynamically imports product data -->
 <script type="module" src="../app/js/main.js?v=27"></script>
 </body>
 </html>
