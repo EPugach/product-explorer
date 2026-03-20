@@ -11,7 +11,7 @@ export default {
         "name": "Account",
         "type": "standard",
         "domain": "accounts_contacts",
-        "description": "Represents organizational entities in EDA using the Administrative Account model. Each Contact has a dedicated 1:1 Administrative Account. Additional Account record types include Educational Institution, University Department, Academic Program, Sports Organization, and Business Organization for modeling campus structures.",
+        "description": "Represents organizational entities in EDA using the Administrative Account model. Each Contact has a dedicated 1:1 Administrative Account. Additional Account record types include Educational Institution, University Department, Academic Program, Sports Organization, and Business Organization for modeling campus structures. Accounts are organized in hierarchies of parent and child records to model your institution's entities. The default account model determines the type of container Account created automatically for every new independent Contact, the naming convention for those Accounts, and your options for managing address data.",
         "fields": [
           { "name": "Name", "type": "Text", "description": "Account name; auto-generated for Administrative Accounts from the linked Contact name" },
           { "name": "RecordTypeId", "type": "Lookup", "description": "Distinguishes Administrative, Academic Program, Educational Institution, University Department, Business Organization, Sports Organization, and Household record types" },
@@ -30,7 +30,7 @@ export default {
         "name": "Contact",
         "type": "standard",
         "domain": "accounts_contacts",
-        "description": "The core person record in EDA representing students, faculty, staff, alumni, and other campus constituents. Each Contact is linked to a dedicated Administrative Account. Contact records serve as the hub for relationships, affiliations, program enrollments, course connections, and all SSH interactions.",
+        "description": "The core person record in EDA representing students, faculty, staff, alumni, and other campus constituents. Each Contact is linked to a dedicated Administrative Account. Contact records serve as the hub for relationships, affiliations, program enrollments, course connections, and all SSH interactions. EDA augments the standard Contact object with education-specific fields such as Financial Aid Applicant, Primary Language, preferred email and phone settings, FERPA and HIPAA compliance indicators, and multiple primary affiliation lookup fields mapped to organizational Accounts.",
         "fields": [
           { "name": "FirstName", "type": "Text", "description": "Contact's first name" },
           { "name": "LastName", "type": "Text", "description": "Contact's last name" },
@@ -60,7 +60,7 @@ export default {
         "name": "Address__c",
         "type": "custom",
         "domain": "accounts_contacts",
-        "description": "Multi-address support for Contacts and Accounts. Stores street, city, state, country, and zip with address type classification (Home, Work, Mailing, Seasonal, Other). Supports seasonal addresses with start/end month and default address designation that automatically syncs to the Contact's standard mailing fields through TDTM triggers.",
+        "description": "Multi-address support for Contacts and Accounts. Stores street, city, state, country, and zip with address type classification (Home, Work, Mailing, Seasonal, Other). Supports seasonal addresses with start/end month and default address designation that automatically syncs to the Contact's standard mailing fields through TDTM triggers. Each Address record uses approximately 2 kilobytes of data storage. EDA synchronizes address data across Address, Contact, and Account records, with special handling for Household Accounts where the Billing Address stays in sync with Contact Mailing Addresses.",
         "fields": [
           { "name": "MailingStreet__c", "type": "TextArea", "description": "Street address lines" },
           { "name": "MailingCity__c", "type": "Text", "description": "City name" },
@@ -90,7 +90,7 @@ export default {
         "name": "Relationship__c",
         "type": "custom",
         "domain": "relationships",
-        "description": "Tracks person-to-person connections between two Contact records with automatic reciprocal management. When a Relationship is created (e.g., Parent of Student), EDA's TDTM framework generates the inverse record (Student of Parent). Supports configurable relationship types, status tracking, and auto-creation from Contact lookup fields.",
+        "description": "Tracks person-to-person connections between two Contact records with automatic reciprocal management. When a Relationship is created (e.g., Parent of Student), EDA's TDTM framework generates the inverse record (Student of Parent). Supports configurable relationship types, status tracking, and auto-creation from Contact lookup fields. Two reciprocal methods are available: List Setting uses a preconfigured lookup table with gender-specific variants, while Value Inversion reverses the type string around a configurable delimiter.",
         "fields": [
           { "name": "Contact__c", "type": "Lookup", "description": "The source Contact in the relationship" },
           { "name": "RelatedContact__c", "type": "Lookup", "description": "The target Contact in the relationship" },
@@ -144,7 +144,7 @@ export default {
         "name": "Affiliation__c",
         "type": "custom",
         "domain": "affiliations",
-        "description": "Maps person-to-organization relationships by connecting a Contact to an Account. Supports primary affiliation designation per Account record type, auto-creation mappings based on Account record type, and bidirectional synchronization with Program Enrollment. Tracks role, status, dates, and department assignment across institutional entities.",
+        "description": "Maps person-to-organization relationships by connecting a Contact to an Account. Supports primary affiliation designation per Account record type, auto-creation mappings based on Account record type, and bidirectional synchronization with Program Enrollment. Tracks role, status, dates, and department assignment across institutional entities. Affiliations are essential for tracking involvement in activities and organizations, on or off campus, both in the present and in the past. The Academic Program record type is unique in having Auto-Enrollment settings that automatically create Program Enrollment records.",
         "fields": [
           { "name": "Contact__c", "type": "Lookup", "description": "The Contact affiliated with the organization" },
           { "name": "Account__c", "type": "Lookup", "description": "The organizational Account (Department, Program, Institution)" },
@@ -670,7 +670,7 @@ export default {
         "name": "Case",
         "type": "standard",
         "domain": "student_cases",
-        "description": "The standard Salesforce Case object repurposed as the Student Record Case in SSH. Each student has a primary Case that serves as the unified hub aggregating success plans, alerts, tasks, appointments, and notes. Case Team Members represent the student's Success Team with configurable role-based access. Also used for behavior incident tracking in the EDA Behavior & Conduct domain.",
+        "description": "The standard Salesforce Case object repurposed as the Student Record Case in SSH. Each student has a primary Case that serves as the unified hub aggregating success plans, alerts, tasks, appointments, and notes. Case Team Members represent the student's Success Team with configurable role-based access. Also used for behavior incident tracking in the EDA Behavior & Conduct domain. The Student Snapshot component on the Case page highlights essential details at a glance including student name, photo, primary program, and item counters for incomplete tasks, unresolved alerts, and upcoming appointments.",
         "fields": [
           { "name": "ContactId", "type": "Lookup", "description": "The student Contact this Case belongs to" },
           { "name": "AccountId", "type": "Lookup", "description": "The organizational Account associated with this Case" },
@@ -695,7 +695,7 @@ export default {
         "name": "Support_Pool__c",
         "type": "custom",
         "domain": "student_cases",
-        "description": "Represents unassigned departmental support groups in Student Success Hub. Support Pools model services like Career Center, Financial Aid Office, Tutoring Center, and Health Services. Students can request help from any available pool member without needing a specific advisor assignment. Pools are linked to Topics for appointment scheduling.",
+        "description": "Represents unassigned departmental support groups in Student Success Hub. Support Pools model services like Career Center, Financial Aid Office, Tutoring Center, and Health Services. Students can request help from any available pool member without needing a specific advisor assignment. Pools are linked to Topics for appointment scheduling. Each Support Pool is backed by a predefined case team, and the Case Team Name field must exactly match the predefined team's name for appointment scheduling to work in the portal.",
         "fields": [
           { "name": "Name", "type": "Text", "description": "Pool name (e.g., Career Center, Financial Aid Office, Academic Tutoring)" },
           { "name": "Description__c", "type": "LongTextArea", "description": "Description of the services provided by this support pool" },
@@ -716,7 +716,7 @@ export default {
         "name": "Success_Plan__c",
         "type": "custom",
         "domain": "success_plans",
-        "description": "Structured goal-setting and task management record for student advising. Each Success Plan has a type (Academic, Career, Financial Aid, Health, Housing, Attendance, Behavior), a status, and contains Tasks. Plans are created from templates or manually under a Student Record Case. Tracks open and overdue task counts for advisor dashboards.",
+        "description": "Structured goal-setting and task management record for student advising. Each Success Plan has a type (Academic, Career, Financial Aid, Health, Housing, Attendance, Behavior), a status, and contains Tasks. Plans are created from templates or manually under a Student Record Case. Tracks open and overdue task counts for advisor dashboards. Plans can be assigned to support staff or, in organizations with student user licenses, directly to students for self-tracking through the portal. Mass actions allow staff to create multiple plans for multiple students from selected Alerts.",
         "fields": [
           { "name": "Name", "type": "Text", "description": "Plan name describing the goal (e.g., Fall GPA Improvement Plan)" },
           { "name": "Case__c", "type": "Lookup", "description": "The Student Record Case this plan belongs to" },
@@ -801,7 +801,7 @@ export default {
         "name": "Alert__c",
         "type": "custom",
         "domain": "alerts",
-        "description": "Early warning records in Student Success Hub for flagging at-risk students. Support staff or automated processes create Alerts categorized by type (Academic, Career, Financial Aid, Health, Housing, Attendance, Behavior) with customizable reason picklists. Alerts are linked to Student Record Cases and support assignment rules, mass actions, and Slack integration through the Student Success Alerts app.",
+        "description": "Early warning records in Student Success Hub for flagging at-risk students. Support staff or automated processes create Alerts categorized by type (Academic, Career, Financial Aid, Health, Housing, Attendance, Behavior) with customizable reason picklists. Alerts are linked to Student Record Cases and support assignment rules, mass actions, and Slack integration through the Student Success Alerts app. Default record types must be assigned to the appropriate support staff and System Administrator profiles. Mass actions enable bulk operations including creating Cases and applying Success Plan templates from selected Alerts.",
         "fields": [
           { "name": "Contact__c", "type": "Lookup", "description": "The student Contact this alert is about" },
           { "name": "Case__c", "type": "Lookup", "description": "The Student Record Case this alert is linked to" },
@@ -829,7 +829,7 @@ export default {
         "name": "Event",
         "type": "standard",
         "domain": "appointments",
-        "description": "Standard Salesforce Event object used for appointment management in Student Success Hub. Event records represent scheduled appointments, walk-in visits, group sessions, and staff availability blocks. SSH extends Events with custom record types (Scheduled Availability, Walk-In Availability, Group Availability, Support Event) and additional fields for topic, location, and queue tracking.",
+        "description": "Standard Salesforce Event object used for appointment management in Student Success Hub. Event records represent scheduled appointments, walk-in visits, group sessions, and staff availability blocks. SSH extends Events with custom record types: Support Time represents staff availability blocks, Support Event represents actual scheduled appointments, and Non-Support Event represents calendar events unrelated to student support. Staff can sync their SSH appointments with Microsoft or Google work calendars using Einstein Activity Capture.",
         "fields": [
           { "name": "Subject", "type": "Text", "description": "Appointment subject or title" },
           { "name": "WhoId", "type": "Lookup", "description": "The student Contact this appointment is with" },
@@ -852,7 +852,7 @@ export default {
         "name": "Topic__c",
         "type": "custom",
         "domain": "appointments",
-        "description": "Hierarchical service categorization for SSH appointment scheduling. Top-level topics (Academic, Career, Financial Aid, Health) contain subtopics (Degree Planning, Resume Review, FAFSA Assistance). Topics control which services appear in the student portal scheduler and which staff are available for each service through Role, User, and Queue Topic Settings.",
+        "description": "Hierarchical service categorization for SSH appointment scheduling. Top-level topics (Academic, Career, Financial Aid, Health) contain subtopics (Degree Planning, Resume Review, FAFSA Assistance). Topics control which services appear in the student portal scheduler and which staff are available for each service through Role, User, and Queue Topic Settings. Topic configuration must be completed before assigning success team members to students in organizations that use appointments, as the three Topic objects combine to organize who is available to meet with students on which support topics.",
         "fields": [
           { "name": "Name", "type": "Text", "description": "Topic name (e.g., Academic Advising, Career Exploration)" },
           { "name": "Parent_Topic__c", "type": "Lookup", "description": "Parent topic for hierarchical nesting of service categories" },
