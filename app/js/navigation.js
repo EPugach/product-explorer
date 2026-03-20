@@ -752,7 +752,7 @@ function renderOverviewTab(c) {
   let h = `<div class="trigger-section" style="animation-delay:0ms"><h3>\u{1F4CB} Overview</h3><div class="trigger-desc">${c.desc}</div><div class="card-tags">${(c.tags||[]).map(t=>`<span class="card-tag">${t}</span>`).join('')}${(c.triggerTags||[]).map(t=>`<span class="card-tag trigger">${t}</span>`).join('')}</div></div>`;
   if (c.executionFlow) h += `<div class="trigger-section" style="animation-delay:60ms"><h3>\u26A1 Execution Flow</h3><div class="execution-flow">${c.executionFlow.map((s,i)=>`<div class="exec-step" style="animation-delay:${80+i*40}ms"><span class="step-num">${i+1}</span><span>${s}</span></div>`).join('')}</div></div>`;
   if (c.docs && c.docs.length > 0) {
-    h += `<div class="trigger-section doc-section" style="animation-delay:90ms"><h3>\u{1F4DA} Documentation</h3>${c.docs.map(p=>`<p class="doc-para">${p}</p>`).join('')}`;
+    h += `<div class="trigger-section doc-section" style="animation-delay:90ms"><h3>\u{1F4CB} Details</h3>${c.docs.map(p=>`<p class="doc-para">${p}</p>`).join('')}`;
     if (c.docUrl) h += `<a class="doc-source-link" href="${c.docUrl}" target="_blank" rel="noopener noreferrer">\u{1F517} View on Salesforce Help \u2197</a>`;
     h += `</div>`;
   }
