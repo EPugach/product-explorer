@@ -26,6 +26,8 @@
 # Allow future product bootstraps
 !revenue/
 !revenue/index.html
+!revenue/favicon.svg
+!revenue/og-image.png
 
 !eda/
 !eda/index.html
@@ -34,16 +36,26 @@
 !package.json
 !omnistudio/
 !omnistudio/index.html
+!omnistudio/favicon.svg
+!omnistudio/og-image.png
 .gh-token
 
 !educationcloud/
 !educationcloud/index.html
+!educationcloud/favicon.svg
+!educationcloud/og-image.png
 
 !nonprofitcloud/
 !nonprofitcloud/index.html
+!nonprofitcloud/favicon.svg
+!nonprofitcloud/og-image.png
 
 !edassh/
 !edassh/index.html
+!edassh/favicon.svg
+!edassh/og-image.png
 
 !accountingsubledger/
 !accountingsubledger/index.html
+!accountingsubledger/favicon.svg
+!accountingsubledger/og-image.png
