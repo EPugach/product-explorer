@@ -353,7 +353,7 @@ function showTooltip(node, sx, sy) {
     `<div class="tt-name" style="color:${node.color}"><span class="icon-svg">${domainSvg(node.id, 18)}</span> ${node.label}</div>` +
     `<div class="tt-desc">${node.desc.substring(0, 120)}${node.desc.length > 120 ? '...' : ''}</div>` +
     `<div class="tt-stats">` +
-      `<span><span class="tt-stat-val">${node.classCount}</span> classes</span>` +
+      (node.classCount > 0 ? `<span><span class="tt-stat-val">${node.classCount}</span> classes</span>` : '') +
       `<span><span class="tt-stat-val">${node.componentCount}</span> components</span>` +
       `<span><span class="tt-stat-val">${node.connectionCount}</span> connections</span>` +
     `</div>`;
