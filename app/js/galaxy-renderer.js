@@ -73,11 +73,16 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
     const hit = ev.target.closest('.galaxy-edge-hit');
     if (!hit) return;
     const edge = _edgeEls.find(e => e.hitEl === hit);
-    if (edge && edge.desc) _showEdgeTooltip(edge, ev.clientX, ev.clientY);
+    if (edge) {
+      edge.el.classList.add('edge-connected');
+      if (edge.desc) _showEdgeTooltip(edge, ev.clientX, ev.clientY);
+    }
   });
   _edgesSvg.addEventListener('mouseout', (ev) => {
     const hit = ev.target.closest('.galaxy-edge-hit');
     if (!hit) return;
+    const edge = _edgeEls.find(e => e.hitEl === hit);
+    if (edge) edge.el.classList.remove('edge-connected');
     _hideEdgeTooltip();
   });
   _edgesSvg.addEventListener('mousemove', (ev) => {
