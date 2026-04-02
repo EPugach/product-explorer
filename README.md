@@ -37,6 +37,12 @@ The Salesforce Nonprofit Success Pack powers thousands of nonprofit organization
 
 Entity data extracted from the Cumulus repository and enriched with AI-generated descriptions covering purpose, behavior, and architectural role.
 
+### Life Sciences Cloud
+
+> **[Launch the Life Sciences Cloud Explorer](https://epugach.github.io/product-explorer/lifesciencescloud/)**
+
+Salesforce Life Sciences Cloud brings customer, clinical, and patient engagement together on a connected platform. This explorer maps 15 domains across Customer Engagement, Clinical Engagement, Patient Engagement, MedTech Commercial, and Agentforce with 95 components, 104 objects, 13 metadata types, and 4 guided tours.
+
 ## Navigation
 
 | Action | How |
