@@ -43,6 +43,12 @@ Entity data extracted from the Cumulus repository and enriched with AI-generated
 
 Salesforce Life Sciences Cloud brings customer, clinical, and patient engagement together on a connected platform. This explorer maps 15 domains across Customer Engagement, Clinical Engagement, Patient Engagement, MedTech Commercial, and Agentforce with 95 components, 104 objects, 13 metadata types, and 4 guided tours.
 
+### Public Sector Solutions
+
+> **[Launch the Public Sector Solutions Explorer](https://epugach.github.io/product-explorer/publicsectorsolutions/)**
+
+Salesforce Public Sector Solutions transforms delivery of government services with flexible, secure e-government tools. This explorer maps 18 domains across Licensing & Permitting, Inspections, Benefit Management, Social Insurance, Investigative Cases, Talent Recruitment, Grantmaking, and Agentforce with 92 components, 138 objects, and 4 guided tours.
+
 ## Navigation
 
 | Action | How |
