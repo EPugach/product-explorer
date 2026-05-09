@@ -32,6 +32,14 @@
 !eda/
 !eda/index.html
 
+# Allow tests
+!tests/
+!tests/**
+
+# Allow docs
+!docs/
+!docs/**
+
 # Package config
 !package.json
 !omnistudio/

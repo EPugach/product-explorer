@@ -4,29 +4,61 @@
 //  trusted product data object (app-owned), not user input.
 // ══════════════════════════════════════════════════════════════
 
-import { track, announce, showToast } from './utils.js';
-import { resetZoomPan, nodeMap } from './physics.js';
-import { domainSvg, entitySvg, uiSvg } from './icons.js';
-import { formatAiMarkdown, linkifyEntityNames, askAi, isQuestion, searchProduct, buildFeedbackButtonsHtml, buildFeedbackPanelHtml, wireFeedbackButtons, highlightMatch, renderPreview } from './search.js';
-import { setGalaxyVisible, flyIntoPlanet, flyOutFromPlanet, highlightPlanet, resetGalaxyState } from './galaxy-renderer.js';
+import { track, announce, showToast } from "./utils.js";
+import { resetZoomPan, nodeMap } from "./physics.js";
+import { domainSvg, entitySvg, uiSvg } from "./icons.js";
+import {
+  formatAiMarkdown,
+  linkifyEntityNames,
+  askAi,
+  isQuestion,
+  searchProduct,
+  buildFeedbackButtonsHtml,
+  buildFeedbackPanelHtml,
+  wireFeedbackButtons,
+  highlightMatch,
+  renderPreview,
+} from "./search.js";
+import {
+  setGalaxyVisible,
+  flyIntoPlanet,
+  flyOutFromPlanet,
+  highlightPlanet,
+  resetGalaxyState,
+} from "./galaxy-renderer.js";
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
 let PRODUCT_CONFIG = {};
 let PRODUCT_PACKAGES = {};
-export const setProductData = (data) => { PRODUCT_DATA = data; };
-export const setProductConfig = (config) => { PRODUCT_CONFIG = config; };
-export const setPackages = (packages) => { PRODUCT_PACKAGES = packages || {}; };
+export const setProductData = (data) => {
+  PRODUCT_DATA = data;
+};
+export const setProductConfig = (config) => {
+  PRODUCT_CONFIG = config;
+};
+export const setPackages = (packages) => {
+  PRODUCT_PACKAGES = packages || {};
+};
 
 function packageBadge(entity) {
   const pkg = PRODUCT_PACKAGES[entity._package];
-  if (!pkg) return '';
+  if (!pkg) return "";
   return `<span class="package-badge" style="--pkg-color:${pkg.color}">${pkg.abbr}</span>`;
 }
 
 // Normalize singular entity type slugs (from old URLs / search) to plural data keys
-const ENTITY_TYPE_MAP = { class: 'classes', object: 'objects', trigger: 'triggers', lwc: 'lwcs' };
-import { setFocusedPlanetIndex, entitiesLoaded, prefersReducedMotion } from './state.js';
+const ENTITY_TYPE_MAP = {
+  class: "classes",
+  object: "objects",
+  trigger: "triggers",
+  lwc: "lwcs",
+};
+import {
+  setFocusedPlanetIndex,
+  entitiesLoaded,
+  prefersReducedMotion,
+} from "./state.js";
 
 let PLANET_META = {};
 export function rebuildPlanetMeta() {
@@ -39,21 +71,21 @@ export function rebuildPlanetMeta() {
 // ── Copy current URL to clipboard ──
 export function copyCurrentLink(btn) {
   navigator.clipboard.writeText(window.location.href).then(() => {
-    btn.classList.add('copied');
+    btn.classList.add("copied");
     // NOTE: innerHTML safe — uiSvg returns trusted app-owned SVG strings
-    btn.innerHTML = uiSvg('check', 14);
-    announce('Link copied to clipboard');
-    showToast('Link copied to clipboard');
-    track('copy_link', { level: currentLevel });
+    btn.innerHTML = uiSvg("check", 14);
+    announce("Link copied to clipboard");
+    showToast("Link copied to clipboard");
+    track("copy_link", { level: currentLevel });
     setTimeout(() => {
-      btn.classList.remove('copied');
+      btn.classList.remove("copied");
       // NOTE: innerHTML safe — uiSvg returns trusted app-owned SVG strings
-      btn.innerHTML = uiSvg('link', 14);
+      btn.innerHTML = uiSvg("link", 14);
     }, 1500);
   });
 }
 
-export let currentLevel = 'galaxy';
+export let currentLevel = "galaxy";
 export let currentPlanet = null;
 export let currentComponent = null;
 let currentEntity = null;
@@ -75,45 +107,61 @@ export let hashUpdateInProgress = false;
 
 export const setHash = (hash) => {
   hashUpdateInProgress = true;
-  history.pushState(null, '', hash);
+  history.pushState(null, "", hash);
   hashUpdateInProgress = false;
 };
 
-export const updateDocumentTitle = (level, domainId, componentId, entityName) => {
-  const base = PRODUCT_CONFIG.title || 'Product Explorer';
-  if (level === 'galaxy' || !domainId) { document.title = base; return; }
+export const updateDocumentTitle = (
+  level,
+  domainId,
+  componentId,
+  entityName,
+) => {
+  const base = PRODUCT_CONFIG.title || "Product Explorer";
+  if (level === "galaxy" || !domainId) {
+    document.title = base;
+    return;
+  }
   const domain = PRODUCT_DATA[domainId];
   const domainName = domain ? domain.name : domainId;
-  if (level === 'planet') { document.title = `${domainName} \u2014 ${base}`; return; }
-  if (level === 'core' && componentId) {
-    const comp = domain ? domain.components.find((c) => c.id === componentId) : null;
+  if (level === "planet") {
+    document.title = `${domainName} \u2014 ${base}`;
+    return;
+  }
+  if (level === "core" && componentId) {
+    const comp = domain
+      ? domain.components.find((c) => c.id === componentId)
+      : null;
     const compName = comp ? comp.name : componentId;
     document.title = `${compName} \u2014 ${domainName} \u2014 ${base}`;
     return;
   }
-  if (level === 'entity' && entityName) { document.title = `${entityName} \u2014 ${base}`; return; }
+  if (level === "entity" && entityName) {
+    document.title = `${entityName} \u2014 ${base}`;
+    return;
+  }
   document.title = base;
 };
 
 export const handleHashNavigation = () => {
-  const hash = window.location.hash || '#/';
-  const path = hash.replace(/^#\/?/, '');
+  const hash = window.location.hash || "#/";
+  const path = hash.replace(/^#\/?/, "");
   if (!path) {
-    if (currentLevel !== 'galaxy') {
+    if (currentLevel !== "galaxy") {
       navHistory = [];
-      currentLevel = 'galaxy';
+      currentLevel = "galaxy";
       currentPlanet = null;
       currentComponent = null;
       currentEntity = null;
       updateBreadcrumb();
-      updateDocumentTitle('galaxy');
+      updateDocumentTitle("galaxy");
 
       if (_lastZoomedPlanet) {
         // CSS fly-out: zoom galaxy container back from planet
         const lzp = _lastZoomedPlanet;
         _lastZoomedPlanet = null;
         _flyInAnimating = false;
-        showView('galaxy-view', 'out');
+        showView("galaxy-view", "out");
         flyOutFromPlanet(lzp, () => {
           if (_particleTick) requestAnimationFrame(_particleTick);
         });
@@ -124,93 +172,149 @@ export const handleHashNavigation = () => {
         _flyInAnimating = false;
         resetGalaxyState();
         setGalaxyVisible(true);
-        showViewDirect('galaxy-view');
+        showViewDirect("galaxy-view");
         if (_particleTick) requestAnimationFrame(_particleTick);
       }
     }
     return;
   }
-  const segments = path.split('/');
+  const segments = path.split("/");
   if (segments.length === 1) {
     const domainId = segments[0];
-    if (!PRODUCT_DATA[domainId]) { setHash('#/'); handleHashNavigation(); return; }
+    if (!PRODUCT_DATA[domainId]) {
+      setHash("#/");
+      handleHashNavigation();
+      return;
+    }
     navHistory = [];
-    currentLevel = 'planet'; currentPlanet = domainId; currentComponent = null; currentEntity = null;
-    renderPlanetView(domainId); setGalaxyVisible(false); showViewDirect('planet-view');
-    updateBreadcrumb(); updateDocumentTitle('planet', domainId);
+    currentLevel = "planet";
+    currentPlanet = domainId;
+    currentComponent = null;
+    currentEntity = null;
+    renderPlanetView(domainId);
+    setGalaxyVisible(false);
+    showViewDirect("planet-view");
+    updateBreadcrumb();
+    updateDocumentTitle("planet", domainId);
   } else if (segments.length === 2) {
     const [domainId, componentId] = segments;
-    if (!PRODUCT_DATA[domainId]) { setHash('#/'); handleHashNavigation(); return; }
-    const comp = PRODUCT_DATA[domainId].components.find((c) => c.id === componentId);
-    if (!comp) { setHash(`#/${domainId}`); handleHashNavigation(); return; }
-    navHistory = [{ level: 'galaxy', planet: null, component: null }];
-    currentLevel = 'core'; currentPlanet = domainId; currentComponent = componentId; currentEntity = null;
-    renderPlanetView(domainId); renderCoreView(domainId, componentId);
-    setGalaxyVisible(false); showViewDirect('core-view');
-    updateBreadcrumb(); updateDocumentTitle('core', domainId, componentId);
+    if (!PRODUCT_DATA[domainId]) {
+      setHash("#/");
+      handleHashNavigation();
+      return;
+    }
+    const comp = PRODUCT_DATA[domainId].components.find(
+      (c) => c.id === componentId,
+    );
+    if (!comp) {
+      setHash(`#/${domainId}`);
+      handleHashNavigation();
+      return;
+    }
+    navHistory = [{ level: "galaxy", planet: null, component: null }];
+    currentLevel = "core";
+    currentPlanet = domainId;
+    currentComponent = componentId;
+    currentEntity = null;
+    renderPlanetView(domainId);
+    renderCoreView(domainId, componentId);
+    setGalaxyVisible(false);
+    showViewDirect("core-view");
+    updateBreadcrumb();
+    updateDocumentTitle("core", domainId, componentId);
   } else if (segments.length >= 4) {
     const [domainId, componentId, rawEntityType, ...entityNameParts] = segments;
     const entityType = ENTITY_TYPE_MAP[rawEntityType] || rawEntityType;
-    const entityName = decodeURIComponent(entityNameParts.join('/'));
-    if (!PRODUCT_DATA[domainId]) { setHash('#/'); handleHashNavigation(); return; }
-    const comp = PRODUCT_DATA[domainId].components.find((c) => c.id === componentId);
-    if (!comp) { setHash(`#/${domainId}`); handleHashNavigation(); return; }
+    const entityName = decodeURIComponent(entityNameParts.join("/"));
+    if (!PRODUCT_DATA[domainId]) {
+      setHash("#/");
+      handleHashNavigation();
+      return;
+    }
+    const comp = PRODUCT_DATA[domainId].components.find(
+      (c) => c.id === componentId,
+    );
+    if (!comp) {
+      setHash(`#/${domainId}`);
+      handleHashNavigation();
+      return;
+    }
     navHistory = [
-      { level: 'galaxy', planet: null, component: null },
-      { level: 'planet', planet: domainId, component: null }
+      { level: "galaxy", planet: null, component: null },
+      { level: "planet", planet: domainId, component: null },
     ];
-    currentLevel = 'entity'; currentPlanet = domainId; currentComponent = componentId;
-    currentEntity = { type: entityType, name: entityName }; currentEntityTab = entityType;
-    renderPlanetView(domainId); renderCoreView(domainId, componentId);
+    currentLevel = "entity";
+    currentPlanet = domainId;
+    currentComponent = componentId;
+    currentEntity = { type: entityType, name: entityName };
+    currentEntityTab = entityType;
+    renderPlanetView(domainId);
+    renderCoreView(domainId, componentId);
     renderEntityView(domainId, componentId, entityType, entityName);
-    setGalaxyVisible(false); showViewDirect('entity-view');
-    updateBreadcrumb(); updateDocumentTitle('entity', domainId, componentId, entityName);
+    setGalaxyVisible(false);
+    showViewDirect("entity-view");
+    updateBreadcrumb();
+    updateDocumentTitle("entity", domainId, componentId, entityName);
   } else {
-    setHash('#/'); handleHashNavigation();
+    setHash("#/");
+    handleHashNavigation();
   }
 };
 
 function getTransitionMs() {
-  const val = getComputedStyle(document.documentElement).getPropertyValue('--transition-duration').trim();
+  const val = getComputedStyle(document.documentElement)
+    .getPropertyValue("--transition-duration")
+    .trim();
   return parseInt(val) || 700;
 }
 
 function showView(id, dir) {
-  document.querySelectorAll('.view-layer').forEach((v) => {
-    if (v.classList.contains('active')) {
-      v.classList.remove('active');
-      v.classList.add(dir === 'in' ? 'zoom-out' : 'zoom-in');
-      setTimeout(() => v.classList.remove('zoom-out', 'zoom-in'), getTransitionMs());
+  document.querySelectorAll(".view-layer").forEach((v) => {
+    if (v.classList.contains("active")) {
+      v.classList.remove("active");
+      v.classList.add(dir === "in" ? "zoom-out" : "zoom-in");
+      setTimeout(
+        () => v.classList.remove("zoom-out", "zoom-in"),
+        getTransitionMs(),
+      );
     }
   });
   const t = document.getElementById(id);
-  t.classList.remove('zoom-out', 'zoom-in');
-  t.classList.add(dir === 'in' ? 'zoom-in' : 'zoom-out');
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    t.classList.remove('zoom-out', 'zoom-in');
-    t.classList.add('active');
-  }));
+  t.classList.remove("zoom-out", "zoom-in");
+  t.classList.add(dir === "in" ? "zoom-in" : "zoom-out");
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      t.classList.remove("zoom-out", "zoom-in");
+      t.classList.add("active");
+    }),
+  );
 }
 
 function showViewDirect(id) {
-  document.querySelectorAll('.view-layer').forEach((v) => {
-    v.classList.remove('active', 'zoom-out', 'zoom-in');
+  document.querySelectorAll(".view-layer").forEach((v) => {
+    v.classList.remove("active", "zoom-out", "zoom-in");
   });
-  document.getElementById(id).classList.add('active');
+  document.getElementById(id).classList.add("active");
 }
 
 // setGalaxyVisible is now imported from galaxy-renderer.js
 
 function updateBreadcrumb() {
-  const zoomIndicator = document.getElementById('zoom-indicator');
-  if (zoomIndicator) zoomIndicator.style.display = currentLevel === 'search-results' ? 'none' : '';
-  document.querySelectorAll('.zoom-dot').forEach((d, i) => {
-    d.classList.toggle('active',
-      (i === 0 && currentLevel === 'galaxy') || (i === 1 && currentLevel === 'planet') ||
-      (i === 2 && currentLevel === 'core') || (i === 3 && currentLevel === 'entity'));
+  const zoomIndicator = document.getElementById("zoom-indicator");
+  if (zoomIndicator)
+    zoomIndicator.style.display =
+      currentLevel === "search-results" ? "none" : "";
+  document.querySelectorAll(".zoom-dot").forEach((d, i) => {
+    d.classList.toggle(
+      "active",
+      (i === 0 && currentLevel === "galaxy") ||
+        (i === 1 && currentLevel === "planet") ||
+        (i === 2 && currentLevel === "core") ||
+        (i === 3 && currentLevel === "entity"),
+    );
   });
-  const stats = document.querySelector('.galaxy-stats');
-  if (stats) stats.style.display = currentLevel === 'galaxy' ? 'flex' : 'none';
+  const stats = document.querySelector(".galaxy-stats");
+  if (stats) stats.style.display = currentLevel === "galaxy" ? "flex" : "none";
 }
 
 export function enterPlanet(id) {
@@ -220,12 +324,20 @@ export function enterPlanet(id) {
     _flyInAnimating = false;
   }
   setFocusedPlanetIndex(-1);
-  navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
-  currentLevel = 'planet'; currentPlanet = id; currentComponent = null;
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+  });
+  currentLevel = "planet";
+  currentPlanet = id;
+  currentComponent = null;
 
   // Pre-render the planet view (hidden behind galaxy) so it's ready for crossfade
   renderPlanetView(id);
-  updateBreadcrumb(); setHash(`#/${id}`); updateDocumentTitle('planet', id);
+  updateBreadcrumb();
+  setHash(`#/${id}`);
+  updateDocumentTitle("planet", id);
 
   const node = nodeMap[id];
 
@@ -234,51 +346,81 @@ export function enterPlanet(id) {
 
   if (!node || prefersReducedMotion) {
     // Instant transition (reduced motion or missing node)
-    setGalaxyVisible(false); showView('planet-view', 'in');
+    setGalaxyVisible(false);
+    showView("planet-view", "in");
   } else {
     // CSS fly-in: zoom galaxy container into the clicked planet
     _flyInAnimating = true;
     _lastZoomedPlanet = node;
-    showView('planet-view', 'in');
+    showView("planet-view", "in");
     flyIntoPlanet(node, () => {
       _flyInAnimating = false;
     });
   }
 
   const p = PRODUCT_DATA[id];
-  if (p) announce(`Viewing ${p.name} domain, ${p.components.length} components`);
-  const focusDelay = (!node || prefersReducedMotion) ? getTransitionMs() + 50 : 800;
+  if (p)
+    announce(`Viewing ${p.name} domain, ${p.components.length} components`);
+  const focusDelay =
+    !node || prefersReducedMotion ? getTransitionMs() + 50 : 800;
   setTimeout(() => {
-    const heading = document.querySelector('#planet-content h2');
-    if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
+    const heading = document.querySelector("#planet-content h2");
+    if (heading) {
+      heading.setAttribute("tabindex", "-1");
+      heading.focus({ preventScroll: true });
+    }
   }, focusDelay);
 }
 
 export function enterCore(pid, cid) {
-  navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
-  currentLevel = 'core'; currentComponent = cid;
-  renderCoreView(pid, cid); showView('core-view', 'in'); updateBreadcrumb();
-  setHash(`#/${pid}/${cid}`); updateDocumentTitle('core', pid, cid);
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+  });
+  currentLevel = "core";
+  currentComponent = cid;
+  renderCoreView(pid, cid);
+  showView("core-view", "in");
+  updateBreadcrumb();
+  setHash(`#/${pid}/${cid}`);
+  updateDocumentTitle("core", pid, cid);
   const pData = PRODUCT_DATA[pid];
   const cData = pData ? pData.components.find((x) => x.id === cid) : null;
   if (cData) announce(`Viewing ${cData.name} in ${pData.name}`);
   setTimeout(() => {
-    const heading = document.querySelector('#core-content h2');
-    if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
+    const heading = document.querySelector("#core-content h2");
+    if (heading) {
+      heading.setAttribute("tabindex", "-1");
+      heading.focus({ preventScroll: true });
+    }
   }, getTransitionMs() + 50);
 }
 
 export function enterEntity(pid, cid, entityType, entityName) {
-  navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent, entity: currentEntity, entityTab: currentEntityTab });
-  currentLevel = 'entity'; currentEntity = { type: entityType, name: entityName }; currentEntityTab = entityType;
-  renderEntityView(pid, cid, entityType, entityName); showView('entity-view', 'in'); updateBreadcrumb();
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+    entity: currentEntity,
+    entityTab: currentEntityTab,
+  });
+  currentLevel = "entity";
+  currentEntity = { type: entityType, name: entityName };
+  currentEntityTab = entityType;
+  renderEntityView(pid, cid, entityType, entityName);
+  showView("entity-view", "in");
+  updateBreadcrumb();
   setHash(`#/${pid}/${cid}/${entityType}/${encodeURIComponent(entityName)}`);
-  updateDocumentTitle('entity', pid, cid, entityName);
-  track('entity_view', { type: entityType, name: entityName });
+  updateDocumentTitle("entity", pid, cid, entityName);
+  track("entity_view", { type: entityType, name: entityName });
   announce(`Viewing ${entityType}: ${entityName}`);
   setTimeout(() => {
-    const heading = document.querySelector('#entity-content h2');
-    if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
+    const heading = document.querySelector("#entity-content h2");
+    if (heading) {
+      heading.setAttribute("tabindex", "-1");
+      heading.focus({ preventScroll: true });
+    }
   }, getTransitionMs() + 50);
 }
 
@@ -288,34 +430,64 @@ export function enterEntity(pid, cid, entityType, entityName) {
 // Type labels, icons, and product name are app-owned trusted data.
 
 const SR_TYPE_COLORS = {
-  domain: '#00d4ff', planet: '#00d4ff', component: '#4d8bff', class: '#4d8bff',
-  object: '#22c55e', trigger: '#ef4444', lwc: '#a855f7', metadata: '#f59e0b', tag: '#64748b'
+  domain: "#00d4ff",
+  planet: "#00d4ff",
+  component: "#4d8bff",
+  class: "#4d8bff",
+  object: "#22c55e",
+  trigger: "#ef4444",
+  lwc: "#a855f7",
+  metadata: "#f59e0b",
+  tag: "#64748b",
 };
 
 const SR_TYPE_ICONS = {
-  domain: '\u{1F30C}', planet: '\u{1F30C}', component: '\u2699\uFE0F', class: '\u{1F4D8}',
-  object: '\u{1F4E6}', trigger: '\u26A1', lwc: '\u{1F528}', metadata: '\u{1F4CB}', tag: '\u{1F3F7}\uFE0F'
+  domain: "\u{1F30C}",
+  planet: "\u{1F30C}",
+  component: "\u2699\uFE0F",
+  class: "\u{1F4D8}",
+  object: "\u{1F4E6}",
+  trigger: "\u26A1",
+  lwc: "\u{1F528}",
+  metadata: "\u{1F4CB}",
+  tag: "\u{1F3F7}\uFE0F",
 };
 
 export function enterSearchResults(query, results, options = {}) {
-  navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent, entity: currentEntity, entityTab: currentEntityTab });
-  currentLevel = 'search-results';
-  _lastSearchPage = { query, results: [...results], aiAnswer: options.aiAnswer || null };
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+    entity: currentEntity,
+    entityTab: currentEntityTab,
+  });
+  currentLevel = "search-results";
+  _lastSearchPage = {
+    query,
+    results: [...results],
+    aiAnswer: options.aiAnswer || null,
+  };
   renderSearchResultsPage(query, results, options);
   setGalaxyVisible(false);
-  showView('search-results-view', 'in');
-  const base = PRODUCT_CONFIG.title || 'Product Explorer';
+  showView("search-results-view", "in");
+  const base = PRODUCT_CONFIG.title || "Product Explorer";
   document.title = `Search: ${query} \u2014 ${base}`;
-  announce('Search results page opened');
-  track('search_results_page', { query: query.substring(0, 50), resultCount: results.length });
+  announce("Search results page opened");
+  track("search_results_page", {
+    query: query.substring(0, 50),
+    resultCount: results.length,
+  });
 }
 
 // All user/AI content is HTML-escaped before insertion.
 // Product name, type labels, and entity data are app-owned trusted data.
 function renderSearchResultsPage(query, results, options = {}) {
-  const el = document.getElementById('search-results-content');
-  const productName = PRODUCT_CONFIG.name || 'Product';
-  const safeQ = query.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const el = document.getElementById("search-results-content");
+  const productName = PRODUCT_CONFIG.name || "Product";
+  const safeQ = query
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
   const shouldAskAi = isQuestion(query);
   let _selectedIdx = results.length > 0 ? 0 : -1;
   const isMobile = window.innerWidth < 768;
@@ -330,13 +502,18 @@ function renderSearchResultsPage(query, results, options = {}) {
   if (shouldAskAi) {
     html += `<div class="sr-ai-section" id="srAiSection">`;
     html += `<div class="sr-ai-header"><span class="sr-ai-label-group"><span class="sr-ai-label"><span class="sr-ai-label-icon">\u2728</span> AI Answer</span>`;
-    html += `${options.aiAnswer ? buildFeedbackButtonsHtml() : ''}</span>`;
+    html += `${options.aiAnswer ? buildFeedbackButtonsHtml() : ""}</span>`;
     html += `<span class="sr-ai-header-actions">`;
-    html += `<button class="ai-copy-btn" id="srAiCopyBtn" style="display:${options.aiAnswer ? '' : 'none'}" aria-label="Copy answer">Copy</button>`;
+    html += `<button class="ai-copy-btn" id="srAiCopyBtn" style="display:${options.aiAnswer ? "" : "none"}" aria-label="Copy answer">Copy</button>`;
     html += `</span></div>`;
-    html += options.aiAnswer ? buildFeedbackPanelHtml() : '<div data-feedback-panel-slot></div>';
+    html += options.aiAnswer
+      ? buildFeedbackPanelHtml()
+      : "<div data-feedback-panel-slot></div>";
     if (options.aiAnswer) {
-      const safeA = options.aiAnswer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const safeA = options.aiAnswer
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
       const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
       html += `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div>`;
       html += `<div class="ai-attribution">Based on ${productName} product data</div>`;
@@ -354,13 +531,16 @@ function renderSearchResultsPage(query, results, options = {}) {
     // Master list
     html += `<div class="sr-master-list" id="srMasterList">`;
     results.forEach((r, i) => {
-      const color = SR_TYPE_COLORS[r.type] || '#64748b';
-      const icon = SR_TYPE_ICONS[r.type] || '\u{1F4C4}';
-      const safeName = r.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      html += `<div class="sr-result-card${i === 0 ? ' sr-selected' : ''}" data-sr-idx="${i}" style="--card-accent:${color}" role="button" tabindex="0">`;
+      const color = SR_TYPE_COLORS[r.type] || "#64748b";
+      const icon = SR_TYPE_ICONS[r.type] || "\u{1F4C4}";
+      const safeName = r.name
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      html += `<div class="sr-result-card${i === 0 ? " sr-selected" : ""}" data-sr-idx="${i}" style="--card-accent:${color}" role="button" tabindex="0">`;
       html += `<div class="sr-result-icon" style="color:${color}">${icon}</div>`;
       html += `<div class="sr-result-body"><div class="sr-result-name">${highlightMatch(safeName, query)}</div>`;
-      html += `<div class="sr-result-path">${r.level || ''}</div>`;
+      html += `<div class="sr-result-path">${r.level || ""}</div>`;
       html += `</div>`;
       html += `<div class="sr-result-badge" style="--card-accent:${color}">${r.type}</div>`;
       html += `</div>`;
@@ -378,47 +558,51 @@ function renderSearchResultsPage(query, results, options = {}) {
   el.innerHTML = html;
 
   // Render initial preview for first result
-  const previewPane = document.getElementById('srPreviewPane');
+  const previewPane = document.getElementById("srPreviewPane");
   if (previewPane && results.length > 0 && !isMobile) {
     renderFullPreview(previewPane, results[0], query);
   }
 
   // Wire breadcrumb
-  el.querySelectorAll('[data-nav="galaxy"]').forEach(l => {
-    l.style.cursor = 'pointer';
-    l.addEventListener('click', () => navigateTo('galaxy'));
+  el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
+    l.style.cursor = "pointer";
+    l.addEventListener("click", () => navigateTo("galaxy"));
   });
 
   // Wire result card interactions
-  el.querySelectorAll('[data-sr-idx]').forEach(card => {
+  el.querySelectorAll("[data-sr-idx]").forEach((card) => {
     const idx = parseInt(card.dataset.srIdx, 10);
     const result = results[idx];
     if (!result) return;
 
-    card.addEventListener('click', () => {
+    card.addEventListener("click", () => {
       if (isMobile) {
         if (result.action) result.action();
       } else {
         _selectedIdx = idx;
-        el.querySelectorAll('.sr-result-card').forEach(c => c.classList.remove('sr-selected'));
-        card.classList.add('sr-selected');
+        el.querySelectorAll(".sr-result-card").forEach((c) =>
+          c.classList.remove("sr-selected"),
+        );
+        card.classList.add("sr-selected");
         if (previewPane) renderFullPreview(previewPane, result, query);
       }
     });
 
-    card.addEventListener('dblclick', () => {
+    card.addEventListener("dblclick", () => {
       if (result.action) result.action();
     });
 
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
         e.preventDefault();
-        if (card.classList.contains('sr-selected') || isMobile) {
+        if (card.classList.contains("sr-selected") || isMobile) {
           if (result.action) result.action();
         } else {
           _selectedIdx = idx;
-          el.querySelectorAll('.sr-result-card').forEach(c => c.classList.remove('sr-selected'));
-          card.classList.add('sr-selected');
+          el.querySelectorAll(".sr-result-card").forEach((c) =>
+            c.classList.remove("sr-selected"),
+          );
+          card.classList.add("sr-selected");
           if (previewPane) renderFullPreview(previewPane, result, query);
         }
       }
@@ -426,38 +610,48 @@ function renderSearchResultsPage(query, results, options = {}) {
   });
 
   // Wire copy button
-  const copyBtn = document.getElementById('srAiCopyBtn');
+  const copyBtn = document.getElementById("srAiCopyBtn");
   if (copyBtn && options.aiAnswer) {
     wireAiCopyButton(copyBtn, options.aiAnswer);
   }
 
   // Wire feedback buttons
-  const srAiSection = document.getElementById('srAiSection');
+  const srAiSection = document.getElementById("srAiSection");
   if (srAiSection && options.aiAnswer) {
     wireFeedbackButtons(srAiSection, query);
   }
 
   // Wire search input for re-search
-  const srInput = document.getElementById('srSearchInput');
+  const srInput = document.getElementById("srSearchInput");
   if (srInput) {
     let reSearchTimer = null;
-    srInput.addEventListener('input', () => {
+    srInput.addEventListener("input", () => {
       clearTimeout(reSearchTimer);
       reSearchTimer = setTimeout(() => {
         const newQuery = srInput.value.trim();
         if (!newQuery) return;
         const newResults = searchProduct(newQuery);
-        _lastSearchPage = { query: newQuery, results: [...newResults], aiAnswer: null };
+        _lastSearchPage = {
+          query: newQuery,
+          results: [...newResults],
+          aiAnswer: null,
+        };
         renderSearchResultsPage(newQuery, newResults, {});
-        const input = document.getElementById('srSearchInput');
-        if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+        const input = document.getElementById("srSearchInput");
+        if (input) {
+          input.focus();
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
         if (isQuestion(newQuery)) {
           triggerAiFetch(newQuery);
         }
       }, 300);
     });
-    srInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); goBack(); }
+    srInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        goBack();
+      }
     });
   }
 
@@ -466,23 +660,31 @@ function renderSearchResultsPage(query, results, options = {}) {
     triggerAiFetch(query);
   }
 
-  document.getElementById('search-results-view').scrollTop = 0;
+  document.getElementById("search-results-view").scrollTop = 0;
 }
 
 // Rich preview content for full results page (app-owned data only)
 function renderFullPreview(container, item, query) {
   if (!item) {
-    container.innerHTML = '<div class="sp-empty">Select a result to preview</div>';
+    container.innerHTML =
+      '<div class="sp-empty">Select a result to preview</div>';
     return;
   }
 
-  const typeColor = ({
-    planet: '#4d8bff', component: '#4d8bff', tag: '#64748b',
-    'class': '#4d8bff', object: '#22c55e', trigger: '#ef4444',
-    lwc: '#a855f7', metadata: '#f59e0b'
-  })[item.type] || '#64748b';
+  const typeColor =
+    {
+      planet: "#4d8bff",
+      component: "#4d8bff",
+      tag: "#64748b",
+      class: "#4d8bff",
+      object: "#22c55e",
+      trigger: "#ef4444",
+      lwc: "#a855f7",
+      metadata: "#f59e0b",
+    }[item.type] || "#64748b";
 
-  let html = `<div class="sp-header">` +
+  let html =
+    `<div class="sp-header">` +
     `<span class="sp-type-badge" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${item.type}</span>` +
     `<span class="sp-name" style="font-size:16px">${highlightMatch(item.name, query)}</span>` +
     `</div>`;
@@ -498,12 +700,12 @@ function renderFullPreview(container, item, query) {
 
   if (item._keyMethods && item._keyMethods.length > 0) {
     html += `<div class="sp-section-label">Key Methods</div>`;
-    html += `<div class="sp-pills">${item._keyMethods.map(m => `<span class="sp-pill">${m}</span>`).join('')}</div>`;
+    html += `<div class="sp-pills">${item._keyMethods.map((m) => `<span class="sp-pill">${m}</span>`).join("")}</div>`;
   }
 
   if (item._referencedObjects && item._referencedObjects.length > 0) {
     html += `<div class="sp-section-label">Referenced Objects</div>`;
-    html += `<div class="sp-pills">${item._referencedObjects.map(o => `<span class="sp-pill">${o}</span>`).join('')}</div>`;
+    html += `<div class="sp-pills">${item._referencedObjects.map((o) => `<span class="sp-pill">${o}</span>`).join("")}</div>`;
   }
 
   if (item._extends) {
@@ -518,7 +720,7 @@ function renderFullPreview(container, item, query) {
 
   if (item._fields && item._fields.length > 0) {
     html += `<div class="sp-section-label">Fields</div>`;
-    html += `<div class="sp-pills">${item._fields.map(f => `<span class="sp-pill">${f.name}</span>`).join('')}</div>`;
+    html += `<div class="sp-pills">${item._fields.map((f) => `<span class="sp-pill">${f.name}</span>`).join("")}</div>`;
   }
 
   if (item.action) {
@@ -528,17 +730,20 @@ function renderFullPreview(container, item, query) {
   // Safe: all app-owned data
   container.innerHTML = html;
 
-  const openBtn = container.querySelector('#srOpenEntity');
+  const openBtn = container.querySelector("#srOpenEntity");
   if (openBtn && item.action) {
-    openBtn.addEventListener('click', () => item.action());
+    openBtn.addEventListener("click", () => item.action());
   }
 }
 
 function wireAiCopyButton(btn, rawAnswer) {
-  btn.addEventListener('click', (e) => {
+  btn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(rawAnswer).then(() => showCopied(btn)).catch(() => showCopied(btn));
+      navigator.clipboard
+        .writeText(rawAnswer)
+        .then(() => showCopied(btn))
+        .catch(() => showCopied(btn));
     } else {
       showCopied(btn);
     }
@@ -546,48 +751,60 @@ function wireAiCopyButton(btn, rawAnswer) {
 }
 
 function showCopied(btn) {
-  btn.classList.add('copied');
-  btn.textContent = '\u2713 Copied';
-  showToast('Copied to clipboard');
-  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  btn.classList.add("copied");
+  btn.textContent = "\u2713 Copied";
+  showToast("Copied to clipboard");
+  setTimeout(() => {
+    btn.textContent = "Copy";
+    btn.classList.remove("copied");
+  }, 1500);
 }
 
 async function triggerAiFetch(query) {
   const result = await askAi(query);
   // Check we're still on the search results page with the same query
-  if (currentLevel !== 'search-results' || !_lastSearchPage || _lastSearchPage.query !== query) return;
+  if (
+    currentLevel !== "search-results" ||
+    !_lastSearchPage ||
+    _lastSearchPage.query !== query
+  )
+    return;
 
-  const section = document.getElementById('srAiSection');
+  const section = document.getElementById("srAiSection");
   if (!section) return;
 
-  const skeleton = document.getElementById('srAiSkeleton');
-  const productName = PRODUCT_CONFIG.name || 'Product';
+  const skeleton = document.getElementById("srAiSkeleton");
+  const productName = PRODUCT_CONFIG.name || "Product";
 
   if (result.answer) {
     _lastSearchPage.aiAnswer = result.answer;
     // Safe: AI content is escaped then formatted via formatAiMarkdown (XSS-safe pattern)
-    const safeA = result.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safeA = result.answer
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
     const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
     if (skeleton) {
-      skeleton.outerHTML = `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div>` +
+      skeleton.outerHTML =
+        `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div>` +
         `<div class="ai-attribution">Based on ${productName} product data</div>`;
     }
     // Inject feedback buttons + panel into header (they weren't rendered while loading)
-    const header = section.querySelector('.sr-ai-header');
-    const panelSlot = section.querySelector('[data-feedback-panel-slot]');
+    const header = section.querySelector(".sr-ai-header");
+    const panelSlot = section.querySelector("[data-feedback-panel-slot]");
     if (header) {
-      const labelGroup = header.querySelector('.sr-ai-label-group');
-      if (labelGroup && !labelGroup.querySelector('.ai-feedback-btns')) {
-        labelGroup.insertAdjacentHTML('beforeend', buildFeedbackButtonsHtml());
+      const labelGroup = header.querySelector(".sr-ai-label-group");
+      if (labelGroup && !labelGroup.querySelector(".ai-feedback-btns")) {
+        labelGroup.insertAdjacentHTML("beforeend", buildFeedbackButtonsHtml());
       }
     }
     if (panelSlot) {
       panelSlot.outerHTML = buildFeedbackPanelHtml();
     }
     wireFeedbackButtons(section, query);
-    const copyBtn = document.getElementById('srAiCopyBtn');
+    const copyBtn = document.getElementById("srAiCopyBtn");
     if (copyBtn) {
-      copyBtn.style.display = '';
+      copyBtn.style.display = "";
       wireAiCopyButton(copyBtn, result.answer);
     }
   } else if (result.error) {
@@ -599,11 +816,21 @@ async function triggerAiFetch(query) {
 }
 
 export function navigateToCore(pid, cid) {
-  navHistory.push({ level: currentLevel, planet: currentPlanet, component: currentComponent });
-  currentLevel = 'core'; currentPlanet = pid; currentComponent = cid;
-  renderPlanetView(pid); renderCoreView(pid, cid); setGalaxyVisible(false);
-  showViewDirect('core-view'); updateBreadcrumb();
-  setHash(`#/${pid}/${cid}`); updateDocumentTitle('core', pid, cid);
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+  });
+  currentLevel = "core";
+  currentPlanet = pid;
+  currentComponent = cid;
+  renderPlanetView(pid);
+  renderCoreView(pid, cid);
+  setGalaxyVisible(false);
+  showViewDirect("core-view");
+  updateBreadcrumb();
+  setHash(`#/${pid}/${cid}`);
+  updateDocumentTitle("core", pid, cid);
 }
 
 export function navigateTo(level) {
@@ -613,19 +840,22 @@ export function navigateTo(level) {
     resetGalaxyState();
     _flyInAnimating = false;
   }
-  if (level === 'galaxy') {
-    currentLevel = 'galaxy'; currentPlanet = null; currentComponent = null;
-    setHash('#/'); updateDocumentTitle('galaxy');
-    announce('Returned to galaxy overview');
+  if (level === "galaxy") {
+    currentLevel = "galaxy";
+    currentPlanet = null;
+    currentComponent = null;
+    setHash("#/");
+    updateDocumentTitle("galaxy");
+    announce("Returned to galaxy overview");
 
     if (_lastZoomedPlanet) {
       // CSS fly-out: zoom galaxy container back from planet
       const lzp = _lastZoomedPlanet;
       _lastZoomedPlanet = null;
-      showView('galaxy-view', 'out');
+      showView("galaxy-view", "out");
       flyOutFromPlanet(lzp, () => {
         if (_particleTick) requestAnimationFrame(_particleTick);
-        const container = document.getElementById('galaxyContainer');
+        const container = document.getElementById("galaxyContainer");
         if (container) container.focus({ preventScroll: true });
       });
     } else {
@@ -634,69 +864,115 @@ export function navigateTo(level) {
       _lastZoomedPlanet = null;
       resetGalaxyState();
       setGalaxyVisible(true);
-      showView('galaxy-view', 'out');
+      showView("galaxy-view", "out");
       if (_particleTick) requestAnimationFrame(_particleTick);
       setTimeout(() => {
-        const container = document.getElementById('galaxyContainer');
+        const container = document.getElementById("galaxyContainer");
         if (container) container.focus({ preventScroll: true });
       }, getTransitionMs() + 50);
     }
-  } else if (level === 'planet') {
-    currentLevel = 'planet'; currentComponent = null;
-    showView('planet-view', 'out'); setHash(`#/${currentPlanet}`); updateDocumentTitle('planet', currentPlanet);
-    const pName = currentPlanet && PRODUCT_DATA[currentPlanet] ? PRODUCT_DATA[currentPlanet].name : 'domain';
+  } else if (level === "planet") {
+    currentLevel = "planet";
+    currentComponent = null;
+    showView("planet-view", "out");
+    setHash(`#/${currentPlanet}`);
+    updateDocumentTitle("planet", currentPlanet);
+    const pName =
+      currentPlanet && PRODUCT_DATA[currentPlanet]
+        ? PRODUCT_DATA[currentPlanet].name
+        : "domain";
     announce(`Returned to ${pName} domain`);
-    setTimeout(() => { const heading = document.querySelector('#planet-content h2'); if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); } }, getTransitionMs() + 50);
-  } else if (level === 'core') {
-    currentLevel = 'core'; currentEntity = null;
-    showView('core-view', 'out'); setHash(`#/${currentPlanet}/${currentComponent}`);
-    updateDocumentTitle('core', currentPlanet, currentComponent);
-    announce('Returned to component view');
-    setTimeout(() => { const heading = document.querySelector('#core-content h2'); if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); } }, getTransitionMs() + 50);
+    setTimeout(() => {
+      const heading = document.querySelector("#planet-content h2");
+      if (heading) {
+        heading.setAttribute("tabindex", "-1");
+        heading.focus({ preventScroll: true });
+      }
+    }, getTransitionMs() + 50);
+  } else if (level === "core") {
+    currentLevel = "core";
+    currentEntity = null;
+    showView("core-view", "out");
+    setHash(`#/${currentPlanet}/${currentComponent}`);
+    updateDocumentTitle("core", currentPlanet, currentComponent);
+    announce("Returned to component view");
+    setTimeout(() => {
+      const heading = document.querySelector("#core-content h2");
+      if (heading) {
+        heading.setAttribute("tabindex", "-1");
+        heading.focus({ preventScroll: true });
+      }
+    }, getTransitionMs() + 50);
   }
   updateBreadcrumb();
 }
 
 export function goBack() {
-  track('back_navigation', { from: currentLevel });
+  track("back_navigation", { from: currentLevel });
   // If navigating back and the previous history entry was search-results, restore it
-  if (currentLevel !== 'search-results' && navHistory.length > 0 && navHistory[navHistory.length - 1].level === 'search-results' && _lastSearchPage) {
+  if (
+    currentLevel !== "search-results" &&
+    navHistory.length > 0 &&
+    navHistory[navHistory.length - 1].level === "search-results" &&
+    _lastSearchPage
+  ) {
     const prev = navHistory.pop();
-    currentLevel = 'search-results';
+    currentLevel = "search-results";
     currentPlanet = prev.planet;
     currentComponent = prev.component;
     currentEntity = prev.entity;
-    renderSearchResultsPage(_lastSearchPage.query, _lastSearchPage.results, { aiAnswer: _lastSearchPage.aiAnswer });
+    renderSearchResultsPage(_lastSearchPage.query, _lastSearchPage.results, {
+      aiAnswer: _lastSearchPage.aiAnswer,
+    });
     setGalaxyVisible(false);
-    showView('search-results-view', 'out');
-    const base = PRODUCT_CONFIG.title || 'Product Explorer';
+    showView("search-results-view", "out");
+    const base = PRODUCT_CONFIG.title || "Product Explorer";
     document.title = `Search: ${_lastSearchPage.query} \u2014 ${base}`;
     return;
   }
   if (navHistory.length > 0) {
     const prev = navHistory.pop();
-    if (prev.level === 'galaxy') navigateTo('galaxy');
-    else if (prev.level === 'planet') { currentPlanet = prev.planet; navigateTo('planet'); }
-    else if (prev.level === 'core') {
-      currentLevel = 'core'; currentPlanet = prev.planet; currentComponent = prev.component; currentEntity = null;
-      showView('core-view', 'out'); updateBreadcrumb();
-      setHash(`#/${prev.planet}/${prev.component}`); updateDocumentTitle('core', prev.planet, prev.component);
+    if (prev.level === "galaxy") navigateTo("galaxy");
+    else if (prev.level === "planet") {
+      currentPlanet = prev.planet;
+      navigateTo("planet");
+    } else if (prev.level === "core") {
+      currentLevel = "core";
+      currentPlanet = prev.planet;
+      currentComponent = prev.component;
+      currentEntity = null;
+      showView("core-view", "out");
+      updateBreadcrumb();
+      setHash(`#/${prev.planet}/${prev.component}`);
+      updateDocumentTitle("core", prev.planet, prev.component);
     }
   } else {
-    if (currentLevel === 'search-results') { _lastSearchPage = null; navigateTo('galaxy'); }
-    else if (currentLevel === 'entity') navigateTo('core');
-    else if (currentLevel === 'core') navigateTo('planet');
-    else if (currentLevel === 'planet') navigateTo('galaxy');
+    if (currentLevel === "search-results") {
+      _lastSearchPage = null;
+      navigateTo("galaxy");
+    } else if (currentLevel === "entity") navigateTo("core");
+    else if (currentLevel === "core") navigateTo("planet");
+    else if (currentLevel === "planet") navigateTo("galaxy");
   }
 }
 
 // Refresh current view after entities load (called by main.js)
 export function refreshCurrentView() {
-  if (currentLevel === 'entity' && currentPlanet && currentComponent && currentEntity) {
-    renderEntityView(currentPlanet, currentComponent, currentEntity.type, currentEntity.name);
-  } else if (currentLevel === 'planet' && currentPlanet) {
+  if (
+    currentLevel === "entity" &&
+    currentPlanet &&
+    currentComponent &&
+    currentEntity
+  ) {
+    renderEntityView(
+      currentPlanet,
+      currentComponent,
+      currentEntity.type,
+      currentEntity.name,
+    );
+  } else if (currentLevel === "planet" && currentPlanet) {
     renderPlanetView(currentPlanet);
-  } else if (currentLevel === 'core' && currentPlanet && currentComponent) {
+  } else if (currentLevel === "core" && currentPlanet && currentComponent) {
     renderCoreView(currentPlanet, currentComponent);
   }
 }
@@ -708,144 +984,292 @@ export { updateBreadcrumb };
 // No user input is rendered. This is safe and documented.
 
 function renderComponentCard(c, i, id, p) {
-  let eb = '';
+  let eb = "";
   if (c.entities) {
     const cn = [];
-    if (c.entities.classes && c.entities.classes.length > 0) cn.push(`<span class="entity-badge badge-class"><span class="icon-svg">${entitySvg('class',12)}</span> ${c.entities.classes.length}</span>`);
-    if (c.entities.objects && c.entities.objects.length > 0) cn.push(`<span class="entity-badge badge-object"><span class="icon-svg">${entitySvg('object',12)}</span> ${c.entities.objects.length}</span>`);
-    if (c.entities.triggers && c.entities.triggers.length > 0) cn.push(`<span class="entity-badge badge-trigger"><span class="icon-svg">${entitySvg('trigger',12)}</span> ${c.entities.triggers.length}</span>`);
-    if (c.entities.lwcs && c.entities.lwcs.length > 0) cn.push(`<span class="entity-badge badge-lwc"><span class="icon-svg">${entitySvg('lwc',12)}</span> ${c.entities.lwcs.length}</span>`);
-    if (cn.length > 0) eb = `<div class="entity-badges">${cn.join('')}</div>`;
+    if (c.entities.classes && c.entities.classes.length > 0)
+      cn.push(
+        `<span class="entity-badge badge-class"><span class="icon-svg">${entitySvg("class", 12)}</span> ${c.entities.classes.length}</span>`,
+      );
+    if (c.entities.objects && c.entities.objects.length > 0)
+      cn.push(
+        `<span class="entity-badge badge-object"><span class="icon-svg">${entitySvg("object", 12)}</span> ${c.entities.objects.length}</span>`,
+      );
+    if (c.entities.triggers && c.entities.triggers.length > 0)
+      cn.push(
+        `<span class="entity-badge badge-trigger"><span class="icon-svg">${entitySvg("trigger", 12)}</span> ${c.entities.triggers.length}</span>`,
+      );
+    if (c.entities.lwcs && c.entities.lwcs.length > 0)
+      cn.push(
+        `<span class="entity-badge badge-lwc"><span class="icon-svg">${entitySvg("lwc", 12)}</span> ${c.entities.lwcs.length}</span>`,
+      );
+    if (cn.length > 0) eb = `<div class="entity-badges">${cn.join("")}</div>`;
   }
 
   if (c._synthetic) {
-    return `<div class="component-card component-card--synthetic" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i*30,1500)}ms" role="button" tabindex="0"><div class="infra-badge">Infrastructure</div><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div>${eb}</div>`;
+    return `<div class="component-card component-card--synthetic" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i * 30, 1500)}ms" role="button" tabindex="0"><div class="infra-badge">Infrastructure</div><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div>${eb}</div>`;
   }
 
-  return `<div class="component-card" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i*30,1500)}ms" role="button" tabindex="0"><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div><div class="card-tags">${(c.tags||[]).map(t=>`<span class="card-tag">${t}</span>`).join('')}${(c.triggerTags||[]).map(t=>`<span class="card-tag trigger">${t}</span>`).join('')}</div>${eb}</div>`;
+  return `<div class="component-card" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i * 30, 1500)}ms" role="button" tabindex="0"><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div><div class="card-tags">${(c.tags || []).map((t) => `<span class="card-tag">${t}</span>`).join("")}${(c.triggerTags || []).map((t) => `<span class="card-tag trigger">${t}</span>`).join("")}</div>${eb}</div>`;
 }
 
 function renderPlanetView(id) {
-  const p = PRODUCT_DATA[id]; const el = document.getElementById('planet-content');
-  let domainStats = '';
+  const p = PRODUCT_DATA[id];
+  const el = document.getElementById("planet-content");
+  let domainStats = "";
   if (p._entities) {
-    const dc = (p._entities.classes||[]).length, do_ = (p._entities.objects||[]).length;
-    const dt = (p._entities.triggers||[]).length, dl = (p._entities.lwcs||[]).length;
+    const dc = (p._entities.classes || []).length,
+      do_ = (p._entities.objects || []).length;
+    const dt = (p._entities.triggers || []).length,
+      dl = (p._entities.lwcs || []).length;
     const parts = [];
-    if (dc) parts.push(dc+' classes'); if (do_) parts.push(do_+' objects');
-    if (dt) parts.push(dt+' triggers'); if (dl) parts.push(dl+' LWCs');
-    if (parts.length > 0) domainStats = `<div class="domain-entity-stats">${p.components.length} groups \u00B7 ${parts.join(' \u00B7 ')}</div>`;
+    if (dc) parts.push(dc + " classes");
+    if (do_) parts.push(do_ + " objects");
+    if (dt) parts.push(dt + " triggers");
+    if (dl) parts.push(dl + " LWCs");
+    if (parts.length > 0)
+      domainStats = `<div class="domain-entity-stats">${p.components.length} groups \u00B7 ${parts.join(" \u00B7 ")}</div>`;
   }
-  let domainPkgHtml = '';
-  if (p.packages && p.packages.length > 0 && Object.keys(PRODUCT_PACKAGES).length > 0) {
-    domainPkgHtml = `<div class="domain-packages">${p.packages.map(pkgKey => {const pkg = PRODUCT_PACKAGES[pkgKey]; return pkg ? `<span class="package-badge" style="--pkg-color:${pkg.color}">${pkg.name}</span>` : ''}).join('')}</div>`;
+  let domainPkgHtml = "";
+  if (
+    p.packages &&
+    p.packages.length > 0 &&
+    Object.keys(PRODUCT_PACKAGES).length > 0
+  ) {
+    domainPkgHtml = `<div class="domain-packages">${p.packages
+      .map((pkgKey) => {
+        const pkg = PRODUCT_PACKAGES[pkgKey];
+        return pkg
+          ? `<span class="package-badge" style="--pkg-color:${pkg.color}">${pkg.name}</span>`
+          : "";
+      })
+      .join("")}</div>`;
   }
-  const cardHtml = p.components.map((c,i) => renderComponentCard(c, i, id, p)).join('');
-  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-here">${p.name}</span></div><div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}"><span class="icon-svg">${domainSvg(id, 28)}</span></div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p>${domainPkgHtml}</div></div>${domainStats}<div class="component-grid">${cardHtml}</div><div class="data-flow" style="animation-delay:${p.components.length*30+60}ms"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n,i)=>(i>0?`<span class="flow-arrow">\u2192</span>`:'')+`<span class="flow-node">${n}</span>`).join('')}</div></div><div class="connections-section" style="animation-delay:${p.components.length*30+120}ms"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map(c=>`<div class="connection-item" data-connection-planet="${c.planet}" role="button" tabindex="0"><div class="conn-planet" style="background:${PLANET_META[c.planet]?PLANET_META[c.planet].color:'#64748b'}"><span class="icon-svg">${PLANET_META[c.planet]?PLANET_META[c.planet].svg:''}</span></div><div><strong>${PRODUCT_DATA[c.planet]?PRODUCT_DATA[c.planet].name:c.planet}</strong><div style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px">${c.desc}</div></div></div>`).join('')}</div>`;
-  el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
-  el.querySelectorAll('.component-card').forEach(card=>{const cid=card.dataset.component,pid2=card.dataset.planet;card.addEventListener('click',()=>enterCore(pid2,cid));card.addEventListener('keydown',e=>{if(e.key==='Enter')enterCore(pid2,cid);});});
-  el.querySelectorAll('[data-connection-planet]').forEach(item=>{const planetId=item.dataset.connectionPlanet;item.addEventListener('click',()=>enterPlanet(planetId));item.addEventListener('keydown',e=>{if(e.key==='Enter')enterPlanet(planetId);});});
-  document.getElementById('planet-view').scrollTop = 0;
+  const cardHtml = p.components
+    .map((c, i) => renderComponentCard(c, i, id, p))
+    .join("");
+  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || "Home"}</span><span class="bc-sep">\u276F</span><span class="bc-here">${p.name}</span></div><div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}"><span class="icon-svg">${domainSvg(id, 28)}</span></div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p>${domainPkgHtml}</div></div>${domainStats}<div class="component-grid">${cardHtml}</div><div class="data-flow" style="animation-delay:${p.components.length * 30 + 60}ms"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n, i) => (i > 0 ? `<span class="flow-arrow">\u2192</span>` : "") + `<span class="flow-node">${n}</span>`).join("")}</div></div><div class="connections-section" style="animation-delay:${p.components.length * 30 + 120}ms"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map((c) => `<div class="connection-item" data-connection-planet="${c.planet}" role="button" tabindex="0"><div class="conn-planet" style="background:${PLANET_META[c.planet] ? PLANET_META[c.planet].color : "#64748b"}"><span class="icon-svg">${PLANET_META[c.planet] ? PLANET_META[c.planet].svg : ""}</span></div><div><strong>${PRODUCT_DATA[c.planet] ? PRODUCT_DATA[c.planet].name : c.planet}</strong><div style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px">${c.desc}</div></div></div>`).join("")}</div>`;
+  el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
+    l.style.cursor = "pointer";
+    l.addEventListener("click", () => navigateTo("galaxy"));
+  });
+  el.querySelectorAll(".component-card").forEach((card) => {
+    const cid = card.dataset.component,
+      pid2 = card.dataset.planet;
+    card.addEventListener("click", () => enterCore(pid2, cid));
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") enterCore(pid2, cid);
+    });
+  });
+  el.querySelectorAll("[data-connection-planet]").forEach((item) => {
+    const planetId = item.dataset.connectionPlanet;
+    item.addEventListener("click", () => enterPlanet(planetId));
+    item.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") enterPlanet(planetId);
+    });
+  });
+  document.getElementById("planet-view").scrollTop = 0;
 }
 
 function renderOverviewTab(c) {
-  let h = `<div class="trigger-section" style="animation-delay:0ms"><h3>\u{1F4CB} Overview</h3><div class="trigger-desc">${c.desc}</div><div class="card-tags">${(c.tags||[]).map(t=>`<span class="card-tag">${t}</span>`).join('')}${(c.triggerTags||[]).map(t=>`<span class="card-tag trigger">${t}</span>`).join('')}</div></div>`;
-  if (c.executionFlow) h += `<div class="trigger-section" style="animation-delay:60ms"><h3>\u26A1 Execution Flow</h3><div class="execution-flow">${c.executionFlow.map((s,i)=>`<div class="exec-step" style="animation-delay:${80+i*40}ms"><span class="step-num">${i+1}</span><span>${s}</span></div>`).join('')}</div></div>`;
+  let h = `<div class="trigger-section" style="animation-delay:0ms"><h3>\u{1F4CB} Overview</h3><div class="trigger-desc">${c.desc}</div><div class="card-tags">${(c.tags || []).map((t) => `<span class="card-tag">${t}</span>`).join("")}${(c.triggerTags || []).map((t) => `<span class="card-tag trigger">${t}</span>`).join("")}</div></div>`;
+  if (c.executionFlow)
+    h += `<div class="trigger-section" style="animation-delay:60ms"><h3>\u26A1 Execution Flow</h3><div class="execution-flow">${c.executionFlow.map((s, i) => `<div class="exec-step" style="animation-delay:${80 + i * 40}ms"><span class="step-num">${i + 1}</span><span>${s}</span></div>`).join("")}</div></div>`;
   if (c.docs && c.docs.length > 0) {
-    h += `<div class="trigger-section doc-section" style="animation-delay:90ms"><h3>\u{1F4CB} Details</h3>${c.docs.map(p=>`<p class="doc-para">${p}</p>`).join('')}`;
-    if (c.docUrl) h += `<a class="doc-source-link" href="${c.docUrl}" target="_blank" rel="noopener noreferrer">\u{1F517} View on Salesforce Help \u2197</a>`;
+    h += `<div class="trigger-section doc-section" style="animation-delay:90ms"><h3>\u{1F4CB} Details</h3>${c.docs.map((p) => `<p class="doc-para">${p}</p>`).join("")}`;
+    if (c.docUrl)
+      h += `<a class="doc-source-link" href="${c.docUrl}" target="_blank" rel="noopener noreferrer">\u{1F517} View on Salesforce Help \u2197</a>`;
     h += `</div>`;
   }
-  if (c.code) h += `<div class="trigger-section" style="animation-delay:120ms"><h3>\u{1F4BB} Source Code Pattern</h3><div class="code-block"><div class="code-header"><span class="lang">${c.code.lang}</span><span>${c.code.title}</span><button class="copy-btn" data-copy-code aria-label="Copy code">Copy</button></div><div class="code-body"><pre>${c.code.body}</pre></div></div></div>`;
-  // Code Lab section removed (generic, not component-specific). labPatterns retained for future use.
+  if (c.code)
+    h += `<div class="trigger-section" style="animation-delay:120ms"><h3>\u{1F4BB} Source Code Pattern</h3><div class="code-block"><div class="code-header"><span class="lang">${c.code.lang}</span><span>${c.code.title}</span><button class="copy-btn" data-copy-code aria-label="Copy code">Copy</button></div><div class="code-body"><pre>${c.code.body}</pre></div></div></div>`;
   return h;
 }
 
 function renderCoreView(pid, cid) {
-  const p = PRODUCT_DATA[pid]; const c = p.components.find(x=>x.id===cid); if(!c)return;
-  const el = document.getElementById('core-content');
-  const tabs = [{key:'overview',label:'Overview',count:null}];
-  if(c.entities){if(c.entities.classes&&c.entities.classes.length>0)tabs.push({key:'classes',label:'Classes',count:c.entities.classes.length});if(c.entities.objects&&c.entities.objects.length>0)tabs.push({key:'objects',label:'Objects',count:c.entities.objects.length});if(c.entities.triggers&&c.entities.triggers.length>0)tabs.push({key:'triggers',label:'Triggers',count:c.entities.triggers.length});if(c.entities.lwcs&&c.entities.lwcs.length>0)tabs.push({key:'lwcs',label:'LWCs',count:c.entities.lwcs.length});if(c.entities.metadata&&c.entities.metadata.length>0)tabs.push({key:'metadata',label:'Metadata',count:c.entities.metadata.length});}
-  let tabBar = '';
-  if(tabs.length>1) tabBar = `<div class="entity-tab-bar">${tabs.map(t=>`<button class="entity-tab${t.key==='overview'?' active':''}" data-tab="${t.key}" data-entity-tab-pid="${pid}" data-entity-tab-cid="${cid}">${t.label}${t.count!==null?` <span class="tab-count">${t.count}</span>`:''}</button>`).join('')}</div>`;
-  else if(!entitiesLoaded) tabBar = `<div class="entity-loading-hint" style="padding:8px 0;font-size:12px;color:var(--text-dim,#64748b);opacity:0.7">Loading entity data\u2026</div>`;
+  const p = PRODUCT_DATA[pid];
+  const c = p.components.find((x) => x.id === cid);
+  if (!c) return;
+  const el = document.getElementById("core-content");
+  const tabs = [{ key: "overview", label: "Overview", count: null }];
+  if (c.entities) {
+    if (c.entities.classes && c.entities.classes.length > 0)
+      tabs.push({
+        key: "classes",
+        label: "Classes",
+        count: c.entities.classes.length,
+      });
+    if (c.entities.objects && c.entities.objects.length > 0)
+      tabs.push({
+        key: "objects",
+        label: "Objects",
+        count: c.entities.objects.length,
+      });
+    if (c.entities.triggers && c.entities.triggers.length > 0)
+      tabs.push({
+        key: "triggers",
+        label: "Triggers",
+        count: c.entities.triggers.length,
+      });
+    if (c.entities.lwcs && c.entities.lwcs.length > 0)
+      tabs.push({ key: "lwcs", label: "LWCs", count: c.entities.lwcs.length });
+    if (c.entities.metadata && c.entities.metadata.length > 0)
+      tabs.push({
+        key: "metadata",
+        label: "Metadata",
+        count: c.entities.metadata.length,
+      });
+  }
+  let tabBar = "";
+  if (tabs.length > 1)
+    tabBar = `<div class="entity-tab-bar">${tabs.map((t) => `<button class="entity-tab${t.key === "overview" ? " active" : ""}" data-tab="${t.key}" data-entity-tab-pid="${pid}" data-entity-tab-cid="${cid}">${t.label}${t.count !== null ? ` <span class="tab-count">${t.count}</span>` : ""}</button>`).join("")}</div>`;
+  else if (!entitiesLoaded)
+    tabBar = `<div class="entity-loading-hint" style="padding:8px 0;font-size:12px;color:var(--text-dim,#64748b);opacity:0.7">Loading entity data\u2026</div>`;
   // Safe: all template content is from trusted app-owned product data (no user input)
-  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${c.name}</span></div><div class="core-header"><span style="font-size:24px">${c.icon}</span><div><h2>${c.name}</h2><span class="badge">TRIGGER LEVEL</span></div></div>${tabBar}<div id="entity-tab-content">${renderOverviewTab(c)}</div>`;
-  el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
-  el.querySelectorAll('[data-nav="planet"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('planet'));});
-  el.querySelectorAll('.entity-tab').forEach(tab=>{tab.addEventListener('click',()=>switchEntityTab(tab.dataset.entityTabPid,tab.dataset.entityTabCid,tab.dataset.tab));});
+  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || "Home"}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${c.name}</span></div><div class="core-header"><span style="font-size:24px">${c.icon}</span><div><h2>${c.name}</h2><span class="badge">TRIGGER LEVEL</span></div></div>${tabBar}<div id="entity-tab-content">${renderOverviewTab(c)}</div>`;
+  el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
+    l.style.cursor = "pointer";
+    l.addEventListener("click", () => navigateTo("galaxy"));
+  });
+  el.querySelectorAll('[data-nav="planet"]').forEach((l) => {
+    l.style.cursor = "pointer";
+    l.addEventListener("click", () => navigateTo("planet"));
+  });
+  el.querySelectorAll(".entity-tab").forEach((tab) => {
+    tab.addEventListener("click", () =>
+      switchEntityTab(
+        tab.dataset.entityTabPid,
+        tab.dataset.entityTabCid,
+        tab.dataset.tab,
+      ),
+    );
+  });
   attachOverviewListeners(el);
   updateTabPill();
-  document.getElementById('core-view').scrollTop = 0;
+  document.getElementById("core-view").scrollTop = 0;
 }
 
 function attachOverviewListeners(container) {
-  container.querySelectorAll('[data-copy-code]').forEach(btn=>{btn.addEventListener('click',()=>copyCode(btn));});
+  container.querySelectorAll("[data-copy-code]").forEach((btn) => {
+    btn.addEventListener("click", () => copyCode(btn));
+  });
 }
 
 function updateTabPill() {
-  const bar = document.querySelector('.entity-tab-bar');
-  const active = bar && bar.querySelector('.entity-tab.active');
+  const bar = document.querySelector(".entity-tab-bar");
+  const active = bar && bar.querySelector(".entity-tab.active");
   if (bar && active) {
-    bar.style.setProperty('--pill-left', active.offsetLeft + 'px');
-    bar.style.setProperty('--pill-width', active.offsetWidth + 'px');
+    bar.style.setProperty("--pill-left", active.offsetLeft + "px");
+    bar.style.setProperty("--pill-width", active.offsetWidth + "px");
   }
 }
 
 function switchEntityTab(pid, cid, tabKey) {
-  track('tab_switch', { tab: tabKey });
-  document.querySelectorAll('.entity-tab').forEach(t=>{t.classList.toggle('active',t.dataset.tab===tabKey);});
+  track("tab_switch", { tab: tabKey });
+  document.querySelectorAll(".entity-tab").forEach((t) => {
+    t.classList.toggle("active", t.dataset.tab === tabKey);
+  });
   updateTabPill();
-  const contentEl = document.getElementById('entity-tab-content');
-  const p = PRODUCT_DATA[pid]; const c = p.components.find(x=>x.id===cid); if(!c)return;
+  const contentEl = document.getElementById("entity-tab-content");
+  const p = PRODUCT_DATA[pid];
+  const c = p.components.find((x) => x.id === cid);
+  if (!c) return;
   // Safe: all template content is from trusted app-owned product data (no user input)
-  if (tabKey === 'overview') { contentEl.innerHTML = renderOverviewTab(c); attachOverviewListeners(contentEl); }
-  else { contentEl.innerHTML = renderEntityGrid(c, tabKey, pid); attachEntityGridListeners(contentEl); }
-  document.getElementById('core-view').scrollTop = 0;
+  if (tabKey === "overview") {
+    contentEl.innerHTML = renderOverviewTab(c);
+    attachOverviewListeners(contentEl);
+  } else {
+    contentEl.innerHTML = renderEntityGrid(c, tabKey, pid);
+    attachEntityGridListeners(contentEl);
+  }
+  document.getElementById("core-view").scrollTop = 0;
 }
 
 function renderEntityGrid(component, entityType, pid) {
-  const entities = (component.entities&&component.entities[entityType])||[];
-  if(entities.length===0) {
-    const typeNames = {lwcs:'Lightning Web Components',classes:'Apex Classes',triggers:'Triggers',objects:'Custom Objects',metadata:'Custom Metadata'};
+  const entities = (component.entities && component.entities[entityType]) || [];
+  if (entities.length === 0) {
+    const typeNames = {
+      lwcs: "Lightning Web Components",
+      classes: "Apex Classes",
+      triggers: "Triggers",
+      objects: "Custom Objects",
+      metadata: "Custom Metadata",
+    };
     const label = typeNames[entityType] || entityType;
     return `<div class="entity-empty-state"><svg class="entity-empty-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9l6 6M15 9l-6 6"/></svg><p>No ${label} in this component</p></div>`;
   }
-  const typeConfig = {classes:{icon:entitySvg('class',14),color:'rgba(77,139,255,',badgeClass:'badge-class'},objects:{icon:entitySvg('object',14),color:'rgba(34,197,94,',badgeClass:'badge-object'},triggers:{icon:entitySvg('trigger',14),color:'rgba(239,68,68,',badgeClass:'badge-trigger'},lwcs:{icon:entitySvg('lwc',14),color:'rgba(168,85,247,',badgeClass:'badge-lwc'},metadata:{icon:entitySvg('metadata',14),color:'rgba(245,158,11,',badgeClass:'badge-metadata'}};
-  const cfg = typeConfig[entityType]||typeConfig.classes;
+  const typeConfig = {
+    classes: {
+      icon: entitySvg("class", 14),
+      color: "rgba(77,139,255,",
+      badgeClass: "badge-class",
+    },
+    objects: {
+      icon: entitySvg("object", 14),
+      color: "rgba(34,197,94,",
+      badgeClass: "badge-object",
+    },
+    triggers: {
+      icon: entitySvg("trigger", 14),
+      color: "rgba(239,68,68,",
+      badgeClass: "badge-trigger",
+    },
+    lwcs: {
+      icon: entitySvg("lwc", 14),
+      color: "rgba(168,85,247,",
+      badgeClass: "badge-lwc",
+    },
+    metadata: {
+      icon: entitySvg("metadata", 14),
+      color: "rgba(245,158,11,",
+      badgeClass: "badge-metadata",
+    },
+  };
+  const cfg = typeConfig[entityType] || typeConfig.classes;
 
   // Group headers for large collections (>30 items) in synthetic components
-  const useGroups = component._synthetic && entities.length > 30 && entityType === 'classes';
+  const useGroups =
+    component._synthetic && entities.length > 30 && entityType === "classes";
   if (useGroups) {
     const groups = {};
     for (const e of entities) {
       let prefix;
-      if (e.name.startsWith('UTIL_')) prefix = 'Utility Classes';
-      else if (e.name.startsWith('STG_Panel')) prefix = 'Settings Panels';
-      else if (e.name.endsWith('_TEST') || e.name.includes('_TEST_')) prefix = 'Test Classes';
-      else if (e.name.startsWith('BDI_')) prefix = 'BDI Framework';
-      else if (e.name.startsWith('CMT_')) prefix = 'Custom Metadata';
-      else prefix = 'Other';
+      if (e.name.startsWith("UTIL_")) prefix = "Utility Classes";
+      else if (e.name.startsWith("STG_Panel")) prefix = "Settings Panels";
+      else if (e.name.endsWith("_TEST") || e.name.includes("_TEST_"))
+        prefix = "Test Classes";
+      else if (e.name.startsWith("BDI_")) prefix = "BDI Framework";
+      else if (e.name.startsWith("CMT_")) prefix = "Custom Metadata";
+      else prefix = "Other";
       if (!groups[prefix]) groups[prefix] = [];
       groups[prefix].push(e);
     }
     // Sort groups: named groups first alphabetically, Other last
-    const groupOrder = Object.keys(groups).sort((a,b) => {
-      if (a === 'Other') return 1;
-      if (b === 'Other') return -1;
+    const groupOrder = Object.keys(groups).sort((a, b) => {
+      if (a === "Other") return 1;
+      if (b === "Other") return -1;
       return a.localeCompare(b);
     });
     // Package filter pills for grouped grids
-    const domainPkgs2 = PRODUCT_DATA[pid] && PRODUCT_DATA[pid].packages || [];
-    let html = '';
+    const domainPkgs2 = (PRODUCT_DATA[pid] && PRODUCT_DATA[pid].packages) || [];
+    let html = "";
     if (domainPkgs2.length > 1 && Object.keys(PRODUCT_PACKAGES).length > 0) {
       const counts = {};
-      entities.forEach(e => { const p = e._package || ''; if (p) counts[p] = (counts[p] || 0) + 1; });
-      const pills = domainPkgs2.filter(k => counts[k]).map(pkgKey => {
-        const pkg = PRODUCT_PACKAGES[pkgKey];
-        return pkg ? `<button class="pkg-pill" data-pkg="${pkgKey}" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>` : '';
-      }).join('');
-      if (pills) html += `<div class="package-filter"><button class="pkg-pill active" data-pkg="all" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
+      entities.forEach((e) => {
+        const p = e._package || "";
+        if (p) counts[p] = (counts[p] || 0) + 1;
+      });
+      const pills = domainPkgs2
+        .filter((k) => counts[k])
+        .map((pkgKey) => {
+          const pkg = PRODUCT_PACKAGES[pkgKey];
+          return pkg
+            ? `<button class="pkg-pill" data-pkg="${pkgKey}" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>`
+            : "";
+        })
+        .join("");
+      if (pills)
+        html += `<div class="package-filter"><button class="pkg-pill active" data-pkg="all" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
     }
     let idx = 0;
     for (const groupName of groupOrder) {
@@ -853,7 +1277,7 @@ function renderEntityGrid(component, entityType, pid) {
       html += `<div class="entity-grid">`;
       for (const e of groups[groupName]) {
         const delay = Math.min(idx * 30, 1500);
-        html += `<div class="entity-card" style="animation-delay:${delay}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g,'&quot;')}" data-entity-pkg="${e._package||''}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type?`<span class="entity-type-label">${e.type.replace('_',' ')}</span>`:''}<div class="entity-desc">${(e.description||'No description available.').substring(0,150)}${e.description&&e.description.length>150?'...':''}</div>${e.linesOfCode?`<span class="entity-loc">${e.linesOfCode} lines</span>`:''}${(e.fields||e.keyFields)?.length?`<span class="entity-loc">${(e.fields||e.keyFields).length} fields</span>`:e.fieldCount?`<span class="entity-loc">${e.fieldCount} fields</span>`:''}</div>`;
+        html += `<div class="entity-card" style="animation-delay:${delay}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g, "&quot;")}" data-entity-pkg="${e._package || ""}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type ? `<span class="entity-type-label">${e.type.replace("_", " ")}</span>` : ""}<div class="entity-desc">${(e.description || "No description available.").substring(0, 150)}${e.description && e.description.length > 150 ? "..." : ""}</div>${e.linesOfCode ? `<span class="entity-loc">${e.linesOfCode} lines</span>` : ""}${(e.fields || e.keyFields)?.length ? `<span class="entity-loc">${(e.fields || e.keyFields).length} fields</span>` : e.fieldCount ? `<span class="entity-loc">${e.fieldCount} fields</span>` : ""}</div>`;
         idx++;
       }
       html += `</div>`;
@@ -862,34 +1286,56 @@ function renderEntityGrid(component, entityType, pid) {
   }
 
   // Package filter pills (only for multi-package domains)
-  const domainPkgs = PRODUCT_DATA[pid] && PRODUCT_DATA[pid].packages || [];
-  let filterHtml = '';
+  const domainPkgs = (PRODUCT_DATA[pid] && PRODUCT_DATA[pid].packages) || [];
+  let filterHtml = "";
   if (domainPkgs.length > 1 && Object.keys(PRODUCT_PACKAGES).length > 0) {
     const counts = {};
-    entities.forEach(e => { const p = e._package || ''; if (p) counts[p] = (counts[p] || 0) + 1; });
-    const pills = domainPkgs.filter(k => counts[k]).map(pkgKey => {
-      const pkg = PRODUCT_PACKAGES[pkgKey];
-      return pkg ? `<button class="pkg-pill" data-pkg="${pkgKey}" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>` : '';
-    }).join('');
-    if (pills) filterHtml = `<div class="package-filter"><button class="pkg-pill active" data-pkg="all" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
+    entities.forEach((e) => {
+      const p = e._package || "";
+      if (p) counts[p] = (counts[p] || 0) + 1;
+    });
+    const pills = domainPkgs
+      .filter((k) => counts[k])
+      .map((pkgKey) => {
+        const pkg = PRODUCT_PACKAGES[pkgKey];
+        return pkg
+          ? `<button class="pkg-pill" data-pkg="${pkgKey}" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>`
+          : "";
+      })
+      .join("");
+    if (pills)
+      filterHtml = `<div class="package-filter"><button class="pkg-pill active" data-pkg="all" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
   }
-  return filterHtml + `<div class="entity-grid">${entities.map((e,i)=>`<div class="entity-card" style="animation-delay:${Math.min(i*30,1500)}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g,'&quot;')}" data-entity-pkg="${e._package||''}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type?`<span class="entity-type-label">${e.type.replace('_',' ')}</span>`:''}<div class="entity-desc">${(e.description||'No description available.').substring(0,150)}${e.description&&e.description.length>150?'...':''}</div>${e.linesOfCode?`<span class="entity-loc">${e.linesOfCode} lines</span>`:''}${(e.fields||e.keyFields)?.length?`<span class="entity-loc">${(e.fields||e.keyFields).length} fields</span>`:e.fieldCount?`<span class="entity-loc">${e.fieldCount} fields</span>`:''}</div>`).join('')}</div>`;
+  return (
+    filterHtml +
+    `<div class="entity-grid">${entities.map((e, i) => `<div class="entity-card" style="animation-delay:${Math.min(i * 30, 1500)}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g, "&quot;")}" data-entity-pkg="${e._package || ""}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type ? `<span class="entity-type-label">${e.type.replace("_", " ")}</span>` : ""}<div class="entity-desc">${(e.description || "No description available.").substring(0, 150)}${e.description && e.description.length > 150 ? "..." : ""}</div>${e.linesOfCode ? `<span class="entity-loc">${e.linesOfCode} lines</span>` : ""}${(e.fields || e.keyFields)?.length ? `<span class="entity-loc">${(e.fields || e.keyFields).length} fields</span>` : e.fieldCount ? `<span class="entity-loc">${e.fieldCount} fields</span>` : ""}</div>`).join("")}</div>`
+  );
 }
 
 function attachEntityGridListeners(container) {
-  container.querySelectorAll('.entity-card').forEach(card=>{
-    const {entityPid:pid,entityCid:cid,entityType:type,entityName:name}=card.dataset;
-    card.addEventListener('click',()=>enterEntity(pid,cid,type,name));
-    card.addEventListener('keydown',e=>{if(e.key==='Enter')enterEntity(pid,cid,type,name);});
+  container.querySelectorAll(".entity-card").forEach((card) => {
+    const {
+      entityPid: pid,
+      entityCid: cid,
+      entityType: type,
+      entityName: name,
+    } = card.dataset;
+    card.addEventListener("click", () => enterEntity(pid, cid, type, name));
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") enterEntity(pid, cid, type, name);
+    });
   });
   // Package filter pill click handlers
-  container.querySelectorAll('.pkg-pill').forEach(pill=>{
-    pill.addEventListener('click',()=>{
+  container.querySelectorAll(".pkg-pill").forEach((pill) => {
+    pill.addEventListener("click", () => {
       const pkg = pill.dataset.pkg;
-      container.querySelectorAll('.pkg-pill').forEach(p=>p.classList.remove('active'));
-      pill.classList.add('active');
-      container.querySelectorAll('.entity-card').forEach(card=>{
-        card.style.display = (pkg === 'all' || card.dataset.entityPkg === pkg) ? '' : 'none';
+      container
+        .querySelectorAll(".pkg-pill")
+        .forEach((p) => p.classList.remove("active"));
+      pill.classList.add("active");
+      container.querySelectorAll(".entity-card").forEach((card) => {
+        card.style.display =
+          pkg === "all" || card.dataset.entityPkg === pkg ? "" : "none";
       });
     });
   });
@@ -901,7 +1347,9 @@ function findEntityAcrossDomains(entityName, entityType) {
     for (let ci = 0; ci < domain.components.length; ci++) {
       const comp = domain.components[ci];
       if (comp.entities && comp.entities[entityType]) {
-        const match = comp.entities[entityType].find(e=>e.name===entityName);
+        const match = comp.entities[entityType].find(
+          (e) => e.name === entityName,
+        );
         if (match) return { pid, cid: comp.id, entity: match };
       }
     }
@@ -911,110 +1359,207 @@ function findEntityAcrossDomains(entityName, entityType) {
 
 function renderEntityView(pid, cid, rawType, entityName) {
   const entityType = ENTITY_TYPE_MAP[rawType] || rawType;
-  const p = PRODUCT_DATA[pid]; const c = p.components.find(x=>x.id===cid);
-  if (!c||!c.entities) {
+  const p = PRODUCT_DATA[pid];
+  const c = p.components.find((x) => x.id === cid);
+  if (!c || !c.entities) {
     // Entities not loaded yet: show loading indicator
     if (!entitiesLoaded) {
-      const el = document.getElementById('entity-content');
-      el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p ? p.name : pid}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entityName}</span></div><div class="entity-loading"><div class="entity-loading-spinner"></div><div class="entity-loading-text">Loading entity data\u2026</div></div>`;
-      el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
-      el.querySelectorAll('[data-nav="planet"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('planet'));});
+      const el = document.getElementById("entity-content");
+      el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || "Home"}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p ? p.name : pid}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entityName}</span></div><div class="entity-loading"><div class="entity-loading-spinner"></div><div class="entity-loading-text">Loading entity data\u2026</div></div>`;
+      el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
+        l.style.cursor = "pointer";
+        l.addEventListener("click", () => navigateTo("galaxy"));
+      });
+      el.querySelectorAll('[data-nav="planet"]').forEach((l) => {
+        l.style.cursor = "pointer";
+        l.addEventListener("click", () => navigateTo("planet"));
+      });
     }
     return;
   }
-  const entity = (c.entities[entityType]||[]).find(e=>e.name===entityName);
+  const entity = (c.entities[entityType] || []).find(
+    (e) => e.name === entityName,
+  );
   if (!entity) {
-    const el = document.getElementById('entity-content');
-    el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="back">${c.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entityName}</span></div><div class="entity-not-found"><div class="entity-not-found-icon">\u{1F50D}</div><div class="entity-not-found-text">${entityName} not found in ${entityType}</div><button class="entity-not-found-back" data-nav="back">\u2190 Back to ${c.name}</button></div>`;
-    el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
-    el.querySelectorAll('[data-nav="planet"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('planet'));});
-    el.querySelectorAll('[data-nav="back"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>goBack());});
+    const el = document.getElementById("entity-content");
+    el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || "Home"}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="back">${c.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entityName}</span></div><div class="entity-not-found"><div class="entity-not-found-icon">\u{1F50D}</div><div class="entity-not-found-text">${entityName} not found in ${entityType}</div><button class="entity-not-found-back" data-nav="back">\u2190 Back to ${c.name}</button></div>`;
+    el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
+      l.style.cursor = "pointer";
+      l.addEventListener("click", () => navigateTo("galaxy"));
+    });
+    el.querySelectorAll('[data-nav="planet"]').forEach((l) => {
+      l.style.cursor = "pointer";
+      l.addEventListener("click", () => navigateTo("planet"));
+    });
+    el.querySelectorAll('[data-nav="back"]').forEach((l) => {
+      l.style.cursor = "pointer";
+      l.addEventListener("click", () => goBack());
+    });
     return;
   }
-  const el = document.getElementById('entity-content');
-  let h = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || 'Home'}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="back">${c.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entity.name}</span></div>`;
-  if (entityType==='classes') h+=renderClassDetail(entity);
-  else if (entityType==='objects') h+=renderObjectDetail(entity);
-  else if (entityType==='triggers') h+=renderTriggerDetail(entity);
-  else if (entityType==='lwcs') h+=renderLwcDetail(entity);
-  else if (entityType==='metadata') h+=renderMetadataDetail(entity);
+  const el = document.getElementById("entity-content");
+  let h = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || "Home"}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="back">${c.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entity.name}</span></div>`;
+  if (entityType === "classes") h += renderClassDetail(entity);
+  else if (entityType === "objects") h += renderObjectDetail(entity);
+  else if (entityType === "triggers") h += renderTriggerDetail(entity);
+  else if (entityType === "lwcs") h += renderLwcDetail(entity);
+  else if (entityType === "metadata") h += renderMetadataDetail(entity);
   el.innerHTML = h;
-  el.querySelectorAll('[data-nav="galaxy"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('galaxy'));});
-  el.querySelectorAll('[data-nav="planet"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>navigateTo('planet'));});
-  el.querySelectorAll('[data-nav="back"]').forEach(l=>{l.style.cursor='pointer';l.addEventListener('click',()=>goBack());});
-  el.querySelectorAll('[data-entity-link]').forEach(l=>{const d=JSON.parse(l.dataset.entityLink);l.addEventListener('click',()=>enterEntity(d.pid,d.cid,d.type,d.name));});
-  document.getElementById('entity-view').scrollTop = 0;
+  el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
+    l.style.cursor = "pointer";
+    l.addEventListener("click", () => navigateTo("galaxy"));
+  });
+  el.querySelectorAll('[data-nav="planet"]').forEach((l) => {
+    l.style.cursor = "pointer";
+    l.addEventListener("click", () => navigateTo("planet"));
+  });
+  el.querySelectorAll('[data-nav="back"]').forEach((l) => {
+    l.style.cursor = "pointer";
+    l.addEventListener("click", () => goBack());
+  });
+  el.querySelectorAll("[data-entity-link]").forEach((l) => {
+    const d = JSON.parse(l.dataset.entityLink);
+    l.addEventListener("click", () =>
+      enterEntity(d.pid, d.cid, d.type, d.name),
+    );
+  });
+  document.getElementById("entity-view").scrollTop = 0;
 }
 
 function renderClassDetail(entity) {
-  const typeColors = {tdtm_handler:{bg:'rgba(239,68,68,0.1)',color:'#ef4444',label:'TDTM Handler'},batch:{bg:'rgba(168,85,247,0.1)',color:'#a855f7',label:'Batch Job'},service:{bg:'rgba(34,197,94,0.1)',color:'#22c55e',label:'Service'},utility:{bg:'rgba(245,158,11,0.1)',color:'#f59e0b',label:'Utility'},controller:{bg:'rgba(6,182,212,0.1)',color:'#06b6d4',label:'Controller'},scheduled:{bg:'rgba(124,58,237,0.1)',color:'#7c3aed',label:'Scheduled'},'class':{bg:'rgba(77,139,255,0.1)',color:'#4d8bff',label:'Class'}};
-  const tc = typeColors[entity.type]||typeColors['class'];
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-class"><span class="icon-svg">${entitySvg('class',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:${tc.bg};color:${tc.color}">${tc.label}</span>${packageBadge(entity)}${entity.linesOfCode?`<span class="entity-detail-meta">${entity.linesOfCode} lines of code</span>`:''}</div></div>`;
-  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description||'No description available.'}</p></div>`;
-  if (entity.type==='tdtm_handler'&&entity.object) h += `<div class="entity-detail-section"><h3>\u26A1 Trigger Context</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Object:</span><span>${entity.object}</span></div>${entity.triggerActions?`<div class="edt-row"><span class="edt-label">Events:</span><span>${entity.triggerActions.map(a=>`<span class="card-tag trigger">${a}</span>`).join(' ')}</span></div>`:''}${entity.loadOrder?`<div class="edt-row"><span class="edt-label">Load Order:</span><span>${entity.loadOrder}</span></div>`:''}</div></div>`;
-  if (entity.extends) h += `<div class="entity-detail-section"><h3>Inheritance</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Extends:</span><span class="entity-detail-code">${entity.extends}</span></div>${entity.implements?`<div class="edt-row"><span class="edt-label">Implements:</span><span class="entity-detail-code">${entity.implements}</span></div>`:''}</div></div>`;
-  if (entity.keyMethods&&entity.keyMethods.length>0) h += `<div class="entity-detail-section"><h3>Key Methods</h3><div class="entity-methods">${entity.keyMethods.map(m=>`<span class="entity-method">${m}</span>`).join('')}</div></div>`;
-  if (entity.referencedObjects&&entity.referencedObjects.length>0) h += `<div class="entity-detail-section"><h3>\u{1F517} Referenced Objects</h3><div class="entity-refs">${entity.referencedObjects.map(refName=>{const found=findEntityAcrossDomains(refName,'objects');if(found)return `<span class="entity-ref badge-object entity-link" data-entity-link='${JSON.stringify({pid:found.pid,cid:found.cid,type:'objects',name:refName})}' role="button" tabindex="0">${refName} \u2197</span>`;return `<span class="entity-ref badge-object">${refName}</span>`;}).join('')}</div></div>`;
-  if (entity.sourceUrl) h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View Source on GitHub \u2197</a></div>`;
+  const typeColors = {
+    tdtm_handler: {
+      bg: "rgba(239,68,68,0.1)",
+      color: "#ef4444",
+      label: "TDTM Handler",
+    },
+    batch: { bg: "rgba(168,85,247,0.1)", color: "#a855f7", label: "Batch Job" },
+    service: { bg: "rgba(34,197,94,0.1)", color: "#22c55e", label: "Service" },
+    utility: { bg: "rgba(245,158,11,0.1)", color: "#f59e0b", label: "Utility" },
+    controller: {
+      bg: "rgba(6,182,212,0.1)",
+      color: "#06b6d4",
+      label: "Controller",
+    },
+    scheduled: {
+      bg: "rgba(124,58,237,0.1)",
+      color: "#7c3aed",
+      label: "Scheduled",
+    },
+    class: { bg: "rgba(77,139,255,0.1)", color: "#4d8bff", label: "Class" },
+  };
+  const tc = typeColors[entity.type] || typeColors["class"];
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-class"><span class="icon-svg">${entitySvg("class", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:${tc.bg};color:${tc.color}">${tc.label}</span>${packageBadge(entity)}${entity.linesOfCode ? `<span class="entity-detail-meta">${entity.linesOfCode} lines of code</span>` : ""}</div></div>`;
+  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "No description available."}</p></div>`;
+  if (entity.type === "tdtm_handler" && entity.object)
+    h += `<div class="entity-detail-section"><h3>\u26A1 Trigger Context</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Object:</span><span>${entity.object}</span></div>${entity.triggerActions ? `<div class="edt-row"><span class="edt-label">Events:</span><span>${entity.triggerActions.map((a) => `<span class="card-tag trigger">${a}</span>`).join(" ")}</span></div>` : ""}${entity.loadOrder ? `<div class="edt-row"><span class="edt-label">Load Order:</span><span>${entity.loadOrder}</span></div>` : ""}</div></div>`;
+  if (entity.extends)
+    h += `<div class="entity-detail-section"><h3>Inheritance</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Extends:</span><span class="entity-detail-code">${entity.extends}</span></div>${entity.implements ? `<div class="edt-row"><span class="edt-label">Implements:</span><span class="entity-detail-code">${entity.implements}</span></div>` : ""}</div></div>`;
+  if (entity.keyMethods && entity.keyMethods.length > 0)
+    h += `<div class="entity-detail-section"><h3>Key Methods</h3><div class="entity-methods">${entity.keyMethods.map((m) => `<span class="entity-method">${m}</span>`).join("")}</div></div>`;
+  if (entity.referencedObjects && entity.referencedObjects.length > 0)
+    h += `<div class="entity-detail-section"><h3>\u{1F517} Referenced Objects</h3><div class="entity-refs">${entity.referencedObjects
+      .map((refName) => {
+        const found = findEntityAcrossDomains(refName, "objects");
+        if (found)
+          return `<span class="entity-ref badge-object entity-link" data-entity-link='${JSON.stringify({ pid: found.pid, cid: found.cid, type: "objects", name: refName })}' role="button" tabindex="0">${refName} \u2197</span>`;
+        return `<span class="entity-ref badge-object">${refName}</span>`;
+      })
+      .join("")}</div></div>`;
+  if (entity.sourceUrl)
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View Source on GitHub \u2197</a></div>`;
   return h;
 }
 
 function renderObjectDetail(entity) {
-  const flds = entity.fields||entity.keyFields||[];
-  const fldCount = flds.length||entity.fieldCount||0;
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-object"><span class="icon-svg">${entitySvg('object',18)}</span></div><div><h2 class="entity-detail-name">${entity.label||entity.name}</h2><span class="entity-detail-meta" style="display:block;margin-top:2px">${entity.name}</span>${packageBadge(entity)}<span class="entity-detail-meta">${fldCount} fields</span></div></div>`;
-  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description||'Custom object in the managed package.'}</p></div>`;
-  if (entity.relationships&&entity.relationships.length>0) h += `<div class="entity-detail-section"><h3>\u{1F517} Relationships</h3><div class="entity-detail-table">${entity.relationships.map(r=>`<div class="edt-row"><span class="edt-label">${r.type}:</span><span>${r.field ? `<span class="entity-detail-code">${r.field}</span>` : (r.description || r.type)} \u2192 ${r.target}</span></div>`).join('')}</div></div>`;
-  if (flds.length>0) h += `<div class="entity-detail-section"><h3>Fields (${flds.length})</h3><div class="entity-fields-table"><div class="eft-header"><span>Field</span><span>Type</span><span>Description</span></div>${flds.map(f=>`<div class="eft-row"><span class="entity-detail-code">${f.name}</span><span class="eft-type">${f.type}</span><span class="eft-desc">${f.desc||f.label||''}</span></div>`).join('')}</div></div>`;
-  if (entity.sourceUrl) h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View on GitHub \u2197</a></div>`;
+  const flds = entity.fields || entity.keyFields || [];
+  const fldCount = flds.length || entity.fieldCount || 0;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-object"><span class="icon-svg">${entitySvg("object", 18)}</span></div><div><h2 class="entity-detail-name">${entity.label || entity.name}</h2><span class="entity-detail-meta" style="display:block;margin-top:2px">${entity.name}</span>${packageBadge(entity)}<span class="entity-detail-meta">${fldCount} fields</span></div></div>`;
+  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "Custom object in the managed package."}</p></div>`;
+  if (entity.relationships && entity.relationships.length > 0)
+    h += `<div class="entity-detail-section"><h3>\u{1F517} Relationships</h3><div class="entity-detail-table">${entity.relationships.map((r) => `<div class="edt-row"><span class="edt-label">${r.type}:</span><span>${r.field ? `<span class="entity-detail-code">${r.field}</span>` : r.description || r.type} \u2192 ${r.target}</span></div>`).join("")}</div></div>`;
+  if (flds.length > 0)
+    h += `<div class="entity-detail-section"><h3>Fields (${flds.length})</h3><div class="entity-fields-table"><div class="eft-header"><span>Field</span><span>Type</span><span>Description</span></div>${flds.map((f) => `<div class="eft-row"><span class="entity-detail-code">${f.name}</span><span class="eft-type">${f.type}</span><span class="eft-desc">${f.desc || f.label || ""}</span></div>`).join("")}</div></div>`;
+  if (entity.sourceUrl)
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View on GitHub \u2197</a></div>`;
   return h;
 }
 
 function renderTriggerDetail(entity) {
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-trigger"><span class="icon-svg">${entitySvg('trigger',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2>${packageBadge(entity)}<span class="entity-detail-meta">Trigger on ${entity.object}</span></div></div>`;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-trigger"><span class="icon-svg">${entitySvg("trigger", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2>${packageBadge(entity)}<span class="entity-detail-meta">Trigger on ${entity.object}</span></div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>Trigger for the ${entity.object} object. Dispatches to registered handler classes via the trigger framework.</p></div>`;
-  if (entity.events&&entity.events.length>0) h += `<div class="entity-detail-section"><h3>\u26A1 Registered Events</h3><div class="entity-methods">${entity.events.map(e=>`<span class="card-tag trigger">${e}</span>`).join('')}</div></div>`;
-  if (entity.handlers&&entity.handlers.length>0) h += `<div class="entity-detail-section"><h3>\u{1F517} Handler Chain</h3><p style="margin-bottom:8px;font-size:var(--text-xs);color:var(--text-dim)">Handlers execute in Load_Order__c sequence:</p><div class="trigger-handler-chain">${entity.handlers.map((handler,i)=>{const found=findEntityAcrossDomains(handler,'classes');const hh=found?`<span class="entity-detail-code entity-link" data-entity-link='${JSON.stringify({pid:found.pid,cid:found.cid,type:'classes',name:handler})}' role="button" tabindex="0">${handler} \u2197</span>`:`<span class="entity-detail-code">${handler}</span>`;return `<div class="handler-chain-item"><span class="handler-order">${i+1}</span>${hh}</div>`;}).join('')}</div></div>`;
-  if (entity.sourceUrl) h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View Source on GitHub \u2197</a></div>`;
+  if (entity.events && entity.events.length > 0)
+    h += `<div class="entity-detail-section"><h3>\u26A1 Registered Events</h3><div class="entity-methods">${entity.events.map((e) => `<span class="card-tag trigger">${e}</span>`).join("")}</div></div>`;
+  if (entity.handlers && entity.handlers.length > 0)
+    h += `<div class="entity-detail-section"><h3>\u{1F517} Handler Chain</h3><p style="margin-bottom:8px;font-size:var(--text-xs);color:var(--text-dim)">Handlers execute in Load_Order__c sequence:</p><div class="trigger-handler-chain">${entity.handlers
+      .map((handler, i) => {
+        const found = findEntityAcrossDomains(handler, "classes");
+        const hh = found
+          ? `<span class="entity-detail-code entity-link" data-entity-link='${JSON.stringify({ pid: found.pid, cid: found.cid, type: "classes", name: handler })}' role="button" tabindex="0">${handler} \u2197</span>`
+          : `<span class="entity-detail-code">${handler}</span>`;
+        return `<div class="handler-chain-item"><span class="handler-order">${i + 1}</span>${hh}</div>`;
+      })
+      .join("")}</div></div>`;
+  if (entity.sourceUrl)
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View Source on GitHub \u2197</a></div>`;
   return h;
 }
 
 function renderLwcDetail(entity) {
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-lwc"><span class="icon-svg">${entitySvg('lwc',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:rgba(168,85,247,0.1);color:#a855f7">Lightning Web Component</span>${packageBadge(entity)}</div></div>`;
-  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description||'Lightning Web Component in the managed package.'}</p></div>`;
-  if (entity.imports&&entity.imports.length>0) h += `<div class="entity-detail-section"><h3>Imports</h3><div class="entity-methods">${entity.imports.map(imp=>`<span class="entity-method">${imp}</span>`).join('')}</div></div>`;
-  if (entity.sourceUrl) h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View on GitHub \u2197</a></div>`;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-lwc"><span class="icon-svg">${entitySvg("lwc", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:rgba(168,85,247,0.1);color:#a855f7">Lightning Web Component</span>${packageBadge(entity)}</div></div>`;
+  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "Lightning Web Component in the managed package."}</p></div>`;
+  if (entity.imports && entity.imports.length > 0)
+    h += `<div class="entity-detail-section"><h3>Imports</h3><div class="entity-methods">${entity.imports.map((imp) => `<span class="entity-method">${imp}</span>`).join("")}</div></div>`;
+  if (entity.sourceUrl)
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View on GitHub \u2197</a></div>`;
   return h;
 }
 
 function renderMetadataDetail(entity) {
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-metadata"><span class="icon-svg">${entitySvg('metadata',18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:rgba(245,158,11,0.1);color:#f59e0b">Custom Metadata Type</span>${packageBadge(entity)}${entity.recordCount?`<span class="entity-detail-meta">${entity.recordCount} records</span>`:''}</div></div>`;
-  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description||'Custom Metadata Type used for configuration.'}</p></div>`;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-metadata"><span class="icon-svg">${entitySvg("metadata", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:rgba(245,158,11,0.1);color:#f59e0b">Custom Metadata Type</span>${packageBadge(entity)}${entity.recordCount ? `<span class="entity-detail-meta">${entity.recordCount} records</span>` : ""}</div></div>`;
+  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "Custom Metadata Type used for configuration."}</p></div>`;
   return h;
 }
 
-const labPatterns = {
-  pattern:{title:'TDTM Handler Pattern',code:'<span class="cm">// Create a custom TDTM handler</span>\n<span class="kw">public class</span> <span class="ty">MyCustomHandler</span>\n  <span class="kw">extends</span> <span class="ty">TDTM_Runnable</span> {\n\n  <span class="kw">public override</span> <span class="ty">DmlWrapper</span> <span class="fn">run</span>(\n    <span class="ty">List&lt;SObject&gt;</span> newList,\n    <span class="ty">List&lt;SObject&gt;</span> oldList,\n    <span class="ty">TDTM_Runnable.Action</span> triggerAction,\n    <span class="ty">Schema.DescribeSObjectResult</span> objResult\n  ) {\n    <span class="kw">if</span> (triggerAction == <span class="ty">Action</span>.AfterInsert) {\n      <span class="kw">for</span> (<span class="ty">SObject</span> record : newList) {\n        <span class="cm">// Custom logic here</span>\n      }\n    }\n    <span class="kw">return null</span>;\n  }\n}\n\n<span class="cm">// Or extend TDTM_RunnableMutable for</span>\n<span class="cm">// handlers that need to mutate records</span>'},
-  testing:{title:'Test Pattern for TDTM Handlers',code:'<span class="an">@isTest</span>\n<span class="kw">private class</span> <span class="ty">MyHandler_TEST</span> {\n\n  <span class="an">@testSetup</span>\n  <span class="kw">static void</span> <span class="fn">setup</span>() {\n    <span class="ty">UTIL_UnitTestData_TEST</span>\n      .<span class="fn">createDefaultSettings</span>();\n  }\n\n  <span class="an">@isTest</span>\n  <span class="kw">static void</span> <span class="fn">testHandler</span>() {\n    <span class="ty">Contact</span> c = <span class="ty">UTIL_UnitTestData_TEST</span>\n      .<span class="fn">createTestContact</span>();\n\n    <span class="ty">Test</span>.startTest();\n    <span class="ty">Opportunity</span> opp = <span class="kw">new</span> <span class="ty">Opportunity</span>(\n      ContactId = c.Id,\n      Amount = <span class="nu">100</span>,\n      CloseDate = <span class="ty">Date</span>.today(),\n      StageName = <span class="st">\\\'Closed Won\\\'</span>,\n      Name = <span class="st">\\\'Test\\\'</span>\n    );\n    <span class="kw">insert</span> opp;\n    <span class="ty">Test</span>.stopTest();\n\n    opp = [<span class="kw">SELECT</span> Name <span class="kw">FROM</span> <span class="ty">Opportunity</span>\n           <span class="kw">WHERE</span> Id = :opp.Id];\n    <span class="ty">System</span>.assertNotEquals(\n      <span class="st">\\\'Test\\\'</span>, opp.Name);\n  }\n}'},
-  extension:{title:'Extension Point: Custom Logic',code:'<span class="cm">// Extend NPSP without modifying its code</span>\n\n<span class="cm">// Option 1: Custom TDTM handler (recommended)</span>\n<span class="ty">npsp__Trigger_Handler__c</span> handler =\n  <span class="kw">new</span> <span class="ty">npsp__Trigger_Handler__c</span>(\n    npsp__Class__c = <span class="st">\\\'MyCustomHandler\\\'</span>,\n    npsp__Object__c = <span class="st">\\\'Opportunity\\\'</span>,\n    npsp__Trigger_Action__c =\n      <span class="st">\\\'AfterInsert;AfterUpdate\\\'</span>,\n    npsp__Load_Order__c = <span class="nu">99</span>,\n    npsp__Active__c = <span class="kw">true</span>,\n    npsp__User_Managed__c = <span class="kw">true</span>\n      <span class="cm">// Prevents NPSP from overwriting</span>\n  );\n<span class="kw">insert</span> handler;\n\n<span class="cm">// Option 2: Flow / Process Builder</span>\n<span class="cm">// Runs after all TDTM handlers</span>\n\n<span class="cm">// Option 3: Custom Rollup (CMDT)</span>\n<span class="cm">// Via NPSP Settings UI, no code</span>'}
-};
-
-function switchTab(tab, type) {
-  tab.parentElement.querySelectorAll('.lab-tab').forEach(t=>{t.classList.remove('active');});
-  tab.classList.add('active');
-  const p = labPatterns[type];
-  const labContent = document.getElementById('lab-content');
-  labContent.innerHTML = `<div class="code-block"><div class="code-header"><span class="lang">Apex</span><span>${p.title}</span><button class="copy-btn" data-copy-code aria-label="Copy code">Copy</button></div><div class="code-body"><pre>${p.code}</pre></div></div>`;
-  labContent.querySelectorAll('[data-copy-code]').forEach(btn=>{btn.addEventListener('click',()=>copyCode(btn));});
-}
-
 function copyCode(btn) {
-  const pre = btn.closest('.code-block').querySelector('pre');
+  const pre = btn.closest(".code-block").querySelector("pre");
   const text = pre.textContent;
-  const onSuccess = () => { btn.textContent = '\u2713 Copied'; btn.classList.add('copied'); setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},1500); };
+  const onSuccess = () => {
+    btn.textContent = "\u2713 Copied";
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.textContent = "Copy";
+      btn.classList.remove("copied");
+    }, 1500);
+  };
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(onSuccess).catch(()=>{try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);onSuccess();}catch(e){}});
+    navigator.clipboard
+      .writeText(text)
+      .then(onSuccess)
+      .catch(() => {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          onSuccess();
+        } catch (e) {}
+      });
   } else {
-    try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);onSuccess();}catch(e){}
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      onSuccess();
+    } catch (e) {}
   }
 }

@@ -1,640 +1,751 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Product Explorer</title>
-<meta name="description" content="See the architecture. Skip the source code. Interactive visual explorations of product architectures for admins, consultants, developers, and architects.">
-<link rel="icon" type="image/svg+xml" href="npsp/favicon.svg">
-<style>
-  @font-face {
-    font-family: 'Bricolage Grotesque';
-    src: url('app/fonts/BricolageGrotesque-latin.woff2') format('woff2');
-    font-weight: 100 900;
-    font-display: swap;
-  }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Explorer</title>
+    <meta
+      name="description"
+      content="See the architecture. Skip the source code. Interactive visual explorations of product architectures for admins, consultants, developers, and architects."
+    />
+    <link rel="icon" type="image/svg+xml" href="npsp/favicon.svg" />
+    <style>
+      @font-face {
+        font-family: "Bricolage Grotesque";
+        src: url("app/fonts/BricolageGrotesque-latin.woff2") format("woff2");
+        font-weight: 100 900;
+        font-display: swap;
+      }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-  body {
-    background: #f3f3f3;
-    color: #181818;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-  }
+      body {
+        background: #f3f3f3;
+        color: #181818;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
 
-  .page {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
+      .page {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
 
-  /* ── Hero ── */
-  .hero {
-    padding: 72px 0 48px;
-    text-align: center;
-  }
+      /* ── Hero ── */
+      .hero {
+        padding: 72px 0 48px;
+        text-align: center;
+      }
 
-  .hero-title {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 700;
-    color: #181818;
-    margin-bottom: 12px;
-  }
+      .hero-title {
+        font-family: "Bricolage Grotesque", sans-serif;
+        font-size: clamp(2rem, 5vw, 3rem);
+        font-weight: 700;
+        color: #181818;
+        margin-bottom: 12px;
+      }
 
-  .hero-subtitle {
-    font-size: clamp(1rem, 2.5vw, 1.25rem);
-    color: #0176d3;
-    font-weight: 500;
-    margin-bottom: 32px;
-  }
+      .hero-subtitle {
+        font-size: clamp(1rem, 2.5vw, 1.25rem);
+        color: #0176d3;
+        font-weight: 500;
+        margin-bottom: 32px;
+      }
 
-  .hero-stepper {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 0;
-    margin: 32px 0;
-    padding: 0 16px;
-  }
+      .hero-stepper {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 0;
+        margin: 32px 0;
+        padding: 0 16px;
+      }
 
-  .hero-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    flex: 0 0 auto;
-    width: 140px;
-  }
+      .hero-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        flex: 0 0 auto;
+        width: 140px;
+      }
 
-  .hero-step-circle {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    border: 1px solid #c9c9c9;
-    background: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    flex-shrink: 0;
-  }
+      .hero-step-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        border: 1px solid #c9c9c9;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+        flex-shrink: 0;
+      }
 
-  .hero-step-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #181818;
-    margin-bottom: 2px;
-  }
+      .hero-step-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #181818;
+        margin-bottom: 2px;
+      }
 
-  .hero-step-label--accent {
-    color: #0176d3;
-  }
+      .hero-step-label--accent {
+        color: #0176d3;
+      }
 
-  .hero-step-sub {
-    font-size: 11px;
-    color: #595959;
-  }
+      .hero-step-sub {
+        font-size: 11px;
+        color: #595959;
+      }
 
-  .hero-step-connector {
-    flex: 1;
-    max-width: 80px;
-    min-width: 24px;
-    height: 1px;
-    border-top: 1px dashed #d4d4d4;
-    margin-top: 32px;
-    position: relative;
-  }
+      .hero-step-connector {
+        flex: 1;
+        max-width: 80px;
+        min-width: 24px;
+        height: 1px;
+        border-top: 1px dashed #d4d4d4;
+        margin-top: 32px;
+        position: relative;
+      }
 
-  .hero-step-connector::after {
-    content: '';
-    position: absolute;
-    right: -3px;
-    top: -4px;
-    width: 0;
-    height: 0;
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-    border-left: 6px solid #c9c9c9;
-  }
+      .hero-step-connector::after {
+        content: "";
+        position: absolute;
+        right: -3px;
+        top: -4px;
+        width: 0;
+        height: 0;
+        border-top: 4px solid transparent;
+        border-bottom: 4px solid transparent;
+        border-left: 6px solid #c9c9c9;
+      }
 
-  .hero-hook {
-    text-align: left;
-  }
+      .hero-hook {
+        text-align: left;
+      }
 
-  .hero-hook p {
-    font-size: 1.05rem;
-    color: #444444;
-    line-height: 1.7;
-    margin-bottom: 16px;
-  }
+      .hero-hook p {
+        font-size: 1.05rem;
+        color: #444444;
+        line-height: 1.7;
+        margin-bottom: 16px;
+      }
 
-  .hero-hook p:last-child {
-    margin-bottom: 0;
-  }
+      .hero-hook p:last-child {
+        margin-bottom: 0;
+      }
 
-  /* ── Value Props ── */
-  .value-props {
-    padding-bottom: 48px;
-  }
+      /* ── Value Props ── */
+      .value-props {
+        padding-bottom: 48px;
+      }
 
-  .props-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-  }
+      .props-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
 
-  .prop-card {
-    background: #ffffff;
-    border: 1px solid rgba(201, 201, 201, 0.6);
-    border-radius: 12px;
-    padding: 32px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
-  }
+      .prop-card {
+        background: #ffffff;
+        border: 1px solid rgba(201, 201, 201, 0.6);
+        border-radius: 12px;
+        padding: 32px;
+        box-shadow:
+          0 1px 2px rgba(0, 0, 0, 0.06),
+          0 4px 12px rgba(0, 0, 0, 0.04);
+      }
 
-  .prop-card h2 {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: 1.15rem;
-    font-weight: 600;
-    color: #181818;
-    margin-bottom: 16px;
-  }
+      .prop-card h2 {
+        font-family: "Bricolage Grotesque", sans-serif;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #181818;
+        margin-bottom: 16px;
+      }
 
-  .prop-card ul {
-    list-style: none;
-    padding: 0;
-  }
+      .prop-card ul {
+        list-style: none;
+        padding: 0;
+      }
 
-  .prop-card li {
-    font-size: 0.95rem;
-    color: #444444;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(201, 201, 201, 0.3);
-    line-height: 1.5;
-  }
+      .prop-card li {
+        font-size: 0.95rem;
+        color: #444444;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(201, 201, 201, 0.3);
+        line-height: 1.5;
+      }
 
-  .prop-card li:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
+      .prop-card li:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
 
-  .prop-label {
-    font-weight: 600;
-    color: #181818;
-  }
+      .prop-label {
+        font-weight: 600;
+        color: #181818;
+      }
 
-  /* ── Products ── */
-  .products {
-    padding-bottom: 48px;
-  }
+      /* ── Products ── */
+      .products {
+        padding-bottom: 48px;
+      }
 
-  .products-heading {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #181818;
-    margin-bottom: 24px;
-    text-align: center;
-  }
+      .products-heading {
+        font-family: "Bricolage Grotesque", sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #181818;
+        margin-bottom: 24px;
+        text-align: center;
+      }
 
-  #productGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 16px;
-  }
+      #productGrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 16px;
+      }
 
-  .product-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    background: #ffffff;
-    border: 1px solid rgba(201, 201, 201, 0.6);
-    border-radius: 12px;
-    padding: 24px 32px;
-    text-decoration: none;
-    color: inherit;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
-  }
+      .product-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        background: #ffffff;
+        border: 1px solid rgba(201, 201, 201, 0.6);
+        border-radius: 12px;
+        padding: 24px 32px;
+        text-decoration: none;
+        color: inherit;
+        transition:
+          border-color 0.2s ease,
+          box-shadow 0.2s ease,
+          transform 0.2s ease;
+        box-shadow:
+          0 1px 2px rgba(0, 0, 0, 0.06),
+          0 4px 12px rgba(0, 0, 0, 0.04);
+      }
 
-  .product-card:hover {
-    border-color: #0176d3;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06);
-    transform: translateY(-2px);
-  }
+      .product-card:hover {
+        border-color: #0176d3;
+        box-shadow:
+          0 2px 4px rgba(0, 0, 0, 0.08),
+          0 8px 24px rgba(0, 0, 0, 0.06);
+        transform: translateY(-2px);
+      }
 
-  .product-info {
-    flex: 1;
-    min-width: 0;
-  }
+      .product-info {
+        flex: 1;
+        min-width: 0;
+      }
 
-  .product-name {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #181818;
-    margin-bottom: 2px;
-  }
+      .product-name {
+        font-family: "Bricolage Grotesque", sans-serif;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #181818;
+        margin-bottom: 2px;
+      }
 
-  .product-fullname {
-    font-size: 0.85rem;
-    color: #595959;
-    margin-bottom: 12px;
-  }
+      .product-fullname {
+        font-size: 0.85rem;
+        color: #595959;
+        margin-bottom: 12px;
+      }
 
-  .product-stats {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
+      .product-stats {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
 
-  .product-stat {
-    font-size: 0.8rem;
-    color: #595959;
-  }
+      .product-stat {
+        font-size: 0.8rem;
+        color: #595959;
+      }
 
-  .product-stat strong {
-    color: #181818;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
+      .product-stat strong {
+        color: #181818;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
 
-  .product-cta {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #0176d3;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
+      .product-cta {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #0176d3;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
 
-  /* ── Footer ── */
-  .footer {
-    padding: 32px 0;
-    text-align: center;
-    border-top: 1px solid rgba(201, 201, 201, 0.6);
-  }
+      /* ── Footer ── */
+      .footer {
+        padding: 32px 0;
+        text-align: center;
+        border-top: 1px solid rgba(201, 201, 201, 0.6);
+      }
 
-  .footer-tech {
-    font-size: 0.85rem;
-    color: #595959;
-    margin-bottom: 8px;
-  }
+      .footer-tech {
+        font-size: 0.85rem;
+        color: #595959;
+        margin-bottom: 8px;
+      }
 
-  .footer-brand {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #999999;
-    letter-spacing: 0.5px;
-  }
+      .footer-brand {
+        font-family: "Bricolage Grotesque", sans-serif;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #999999;
+        letter-spacing: 0.5px;
+      }
 
-  /* ── Mobile ── */
-  @media (max-width: 600px) {
-    .hero {
-      padding: 48px 0 36px;
-    }
+      /* ── Mobile ── */
+      @media (max-width: 600px) {
+        .hero {
+          padding: 48px 0 36px;
+        }
 
-    .hero-subtitle {
-      margin-bottom: 24px;
-    }
+        .hero-subtitle {
+          margin-bottom: 24px;
+        }
 
-    .hero-stepper {
-      flex-direction: column;
-      align-items: center;
-      gap: 0;
-      margin: 24px 0;
-      padding: 0;
-    }
+        .hero-stepper {
+          flex-direction: column;
+          align-items: center;
+          gap: 0;
+          margin: 24px 0;
+          padding: 0;
+        }
 
-    .hero-step {
-      width: auto;
-    }
+        .hero-step {
+          width: auto;
+        }
 
-    .hero-step-circle {
-      width: 56px;
-      height: 56px;
-    }
+        .hero-step-circle {
+          width: 56px;
+          height: 56px;
+        }
 
-    .hero-step-label {
-      font-size: 14px;
-    }
+        .hero-step-label {
+          font-size: 14px;
+        }
 
-    .hero-step-sub {
-      font-size: 12px;
-    }
+        .hero-step-sub {
+          font-size: 12px;
+        }
 
-    .hero-step-connector {
-      width: 1px;
-      height: 24px;
-      min-width: auto;
-      max-width: none;
-      border-top: none;
-      border-left: 1px dashed #d4d4d4;
-      margin-top: 0;
-      margin: 4px 0;
-    }
+        .hero-step-connector {
+          width: 1px;
+          height: 24px;
+          min-width: auto;
+          max-width: none;
+          border-top: none;
+          border-left: 1px dashed #d4d4d4;
+          margin-top: 0;
+          margin: 4px 0;
+        }
 
-    .hero-step-connector::after {
-      right: auto;
-      top: auto;
-      bottom: -3px;
-      left: -4px;
-      border-left: 4px solid transparent;
-      border-right: 4px solid transparent;
-      border-top: 6px solid #c9c9c9;
-    }
+        .hero-step-connector::after {
+          right: auto;
+          top: auto;
+          bottom: -3px;
+          left: -4px;
+          border-left: 4px solid transparent;
+          border-right: 4px solid transparent;
+          border-top: 6px solid #c9c9c9;
+        }
 
-    .props-grid {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
+        .props-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
 
-    .prop-card {
-      padding: 24px;
-    }
+        .prop-card {
+          padding: 24px;
+        }
 
-    .value-props {
-      padding-bottom: 36px;
-    }
+        .value-props {
+          padding-bottom: 36px;
+        }
 
-    .products {
-      padding-bottom: 36px;
-    }
+        .products {
+          padding-bottom: 36px;
+        }
 
-    .product-card {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 24px;
-    }
+        .product-card {
+          flex-direction: column;
+          align-items: flex-start;
+          padding: 24px;
+        }
 
-    .product-cta {
-      align-self: flex-end;
-    }
+        .product-cta {
+          align-self: flex-end;
+        }
 
-    .footer {
-      padding: 24px 0;
-    }
-  }
-</style>
-</head>
-<body>
+        .footer {
+          padding: 24px 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <!-- Hero -->
+      <section class="hero">
+        <h1 class="hero-title">Product Explorer</h1>
+        <p class="hero-subtitle">See the architecture. Skip the source code.</p>
 
-<div class="page">
+        <div class="hero-hook">
+          <p>
+            There's a gap between the people who build software and the people
+            who need to understand it. Source code tells the whole story, but
+            it's written in a language most stakeholders don't speak.
+          </p>
 
-  <!-- Hero -->
-  <section class="hero">
-    <h1 class="hero-title">Product Explorer</h1>
-    <p class="hero-subtitle">See the architecture. Skip the source code.</p>
-
-    <div class="hero-hook">
-      <p>There's a gap between the people who build software and the people who need to understand it. Source code tells the whole story, but it's written in a language most stakeholders don't speak.</p>
-
-      <!-- Infographic: visual breather between problem and solution -->
-      <div class="hero-stepper" role="img" aria-label="Source code becomes documentation becomes an interactive map with AI search">
-        <div class="hero-step">
-          <div class="hero-step-circle">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M10 6 L4 14 L10 22" stroke="#595959" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 6 L24 14 L18 22" stroke="#595959" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="15.5" y1="4" x2="12.5" y2="24" stroke="#595959" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <!-- Infographic: visual breather between problem and solution -->
+          <div
+            class="hero-stepper"
+            role="img"
+            aria-label="Source code becomes documentation becomes an interactive map with AI search"
+          >
+            <div class="hero-step">
+              <div class="hero-step-circle">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <path
+                    d="M10 6 L4 14 L10 22"
+                    stroke="#595959"
+                    stroke-width="2"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M18 6 L24 14 L18 22"
+                    stroke="#595959"
+                    stroke-width="2"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <line
+                    x1="15.5"
+                    y1="4"
+                    x2="12.5"
+                    y2="24"
+                    stroke="#595959"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </div>
+              <div class="hero-step-label">Source Code</div>
+              <div class="hero-step-sub">Your codebase</div>
+            </div>
+            <div class="hero-step-connector" aria-hidden="true"></div>
+            <div class="hero-step">
+              <div class="hero-step-circle hero-step-circle--accent">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <path
+                    d="M14 4 C10 4 5 5.5 5 7.5 L5 22 C5 20.5 10 19 14 19.5"
+                    stroke="#0176d3"
+                    stroke-width="1.5"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M14 4 C18 4 23 5.5 23 7.5 L23 22 C23 20.5 18 19 14 19.5"
+                    stroke="#0176d3"
+                    stroke-width="1.5"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <line
+                    x1="14"
+                    y1="4"
+                    x2="14"
+                    y2="19.5"
+                    stroke="#0176d3"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="8"
+                    y1="9"
+                    x2="12"
+                    y2="9"
+                    stroke="#0176d3"
+                    stroke-width="1"
+                    opacity="0.4"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="8"
+                    y1="12"
+                    x2="11"
+                    y2="12"
+                    stroke="#0176d3"
+                    stroke-width="1"
+                    opacity="0.4"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="16"
+                    y1="9"
+                    x2="20"
+                    y2="9"
+                    stroke="#0176d3"
+                    stroke-width="1"
+                    opacity="0.4"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="16"
+                    y1="12"
+                    x2="19"
+                    y2="12"
+                    stroke="#0176d3"
+                    stroke-width="1"
+                    opacity="0.4"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </div>
+              <div class="hero-step-label hero-step-label--accent">
+                Documentation
+              </div>
+              <div class="hero-step-sub">Analyzed and structured</div>
+            </div>
+            <div class="hero-step-connector" aria-hidden="true"></div>
+            <div class="hero-step">
+              <div class="hero-step-circle">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="12" r="4" fill="#0176d3" />
+                  <circle cx="7" cy="7" r="2.5" fill="#0176d3" opacity="0.55" />
+                  <circle cx="21" cy="8" r="2" fill="#0176d3" opacity="0.45" />
+                  <circle cx="8" cy="20" r="2" fill="#0176d3" opacity="0.45" />
+                  <circle
+                    cx="21"
+                    cy="19"
+                    r="2.5"
+                    fill="#0176d3"
+                    opacity="0.35"
+                  />
+                  <line
+                    x1="14"
+                    y1="12"
+                    x2="7"
+                    y2="7"
+                    stroke="#0176d3"
+                    stroke-width="0.75"
+                    opacity="0.35"
+                  />
+                  <line
+                    x1="14"
+                    y1="12"
+                    x2="21"
+                    y2="8"
+                    stroke="#0176d3"
+                    stroke-width="0.75"
+                    opacity="0.35"
+                  />
+                  <line
+                    x1="14"
+                    y1="12"
+                    x2="8"
+                    y2="20"
+                    stroke="#0176d3"
+                    stroke-width="0.75"
+                    opacity="0.35"
+                  />
+                  <line
+                    x1="14"
+                    y1="12"
+                    x2="21"
+                    y2="19"
+                    stroke="#0176d3"
+                    stroke-width="0.75"
+                    opacity="0.35"
+                  />
+                </svg>
+              </div>
+              <div class="hero-step-label">Interactive Map</div>
+              <div class="hero-step-sub">Navigate visually</div>
+            </div>
+            <div class="hero-step-connector" aria-hidden="true"></div>
+            <div class="hero-step">
+              <div class="hero-step-circle hero-step-circle--accent">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="6"
+                    stroke="#0176d3"
+                    stroke-width="1.5"
+                    fill="none"
+                  />
+                  <line
+                    x1="16.2"
+                    y1="16.2"
+                    x2="22"
+                    y2="22"
+                    stroke="#0176d3"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M21 5 L21.8 2.5 L22.6 5 L25 5.8 L22.6 6.6 L21.8 9 L21 6.6 L18.5 5.8z"
+                    fill="#0ea5e9"
+                  />
+                  <path
+                    d="M5 5 L5.6 3.2 L6.2 5 L8 5.6 L6.2 6.2 L5.6 8 L5 6.2 L3.2 5.6z"
+                    fill="#0ea5e9"
+                    opacity="0.7"
+                  />
+                  <path
+                    d="M22 16 L22.5 14.5 L23 16 L24.5 16.5 L23 17 L22.5 18.5 L22 17 L20.5 16.5z"
+                    fill="#0ea5e9"
+                    opacity="0.5"
+                  />
+                </svg>
+              </div>
+              <div class="hero-step-label hero-step-label--accent">
+                AI Search
+              </div>
+              <div class="hero-step-sub">Ask anything</div>
+            </div>
           </div>
-          <div class="hero-step-label">Source Code</div>
-          <div class="hero-step-sub">Your codebase</div>
-        </div>
-        <div class="hero-step-connector" aria-hidden="true"></div>
-        <div class="hero-step">
-          <div class="hero-step-circle hero-step-circle--accent">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 4 C10 4 5 5.5 5 7.5 L5 22 C5 20.5 10 19 14 19.5" stroke="#0176d3" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 4 C18 4 23 5.5 23 7.5 L23 22 C23 20.5 18 19 14 19.5" stroke="#0176d3" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="14" y1="4" x2="14" y2="19.5" stroke="#0176d3" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="9" x2="12" y2="9" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/><line x1="8" y1="12" x2="11" y2="12" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/><line x1="16" y1="9" x2="20" y2="9" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/><line x1="16" y1="12" x2="19" y2="12" stroke="#0176d3" stroke-width="1" opacity="0.4" stroke-linecap="round"/></svg>
-          </div>
-          <div class="hero-step-label hero-step-label--accent">Documentation</div>
-          <div class="hero-step-sub">Analyzed and structured</div>
-        </div>
-        <div class="hero-step-connector" aria-hidden="true"></div>
-        <div class="hero-step">
-          <div class="hero-step-circle">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="12" r="4" fill="#0176d3"/><circle cx="7" cy="7" r="2.5" fill="#0176d3" opacity="0.55"/><circle cx="21" cy="8" r="2" fill="#0176d3" opacity="0.45"/><circle cx="8" cy="20" r="2" fill="#0176d3" opacity="0.45"/><circle cx="21" cy="19" r="2.5" fill="#0176d3" opacity="0.35"/><line x1="14" y1="12" x2="7" y2="7" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/><line x1="14" y1="12" x2="21" y2="8" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/><line x1="14" y1="12" x2="8" y2="20" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/><line x1="14" y1="12" x2="21" y2="19" stroke="#0176d3" stroke-width="0.75" opacity="0.35"/></svg>
-          </div>
-          <div class="hero-step-label">Interactive Map</div>
-          <div class="hero-step-sub">Navigate visually</div>
-        </div>
-        <div class="hero-step-connector" aria-hidden="true"></div>
-        <div class="hero-step">
-          <div class="hero-step-circle hero-step-circle--accent">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="12" cy="12" r="6" stroke="#0176d3" stroke-width="1.5" fill="none"/><line x1="16.2" y1="16.2" x2="22" y2="22" stroke="#0176d3" stroke-width="2" stroke-linecap="round"/><path d="M21 5 L21.8 2.5 L22.6 5 L25 5.8 L22.6 6.6 L21.8 9 L21 6.6 L18.5 5.8z" fill="#0ea5e9"/><path d="M5 5 L5.6 3.2 L6.2 5 L8 5.6 L6.2 6.2 L5.6 8 L5 6.2 L3.2 5.6z" fill="#0ea5e9" opacity="0.7"/><path d="M22 16 L22.5 14.5 L23 16 L24.5 16.5 L23 17 L22.5 18.5 L22 17 L20.5 16.5z" fill="#0ea5e9" opacity="0.5"/></svg>
-          </div>
-          <div class="hero-step-label hero-step-label--accent">AI Search</div>
-          <div class="hero-step-sub">Ask anything</div>
-        </div>
-      </div>
 
-      <p>Product Explorer closes that gap. It reads the codebase, layers in available documentation, and renders it as an interactive visual system. Navigate, search, and explore without reading a single line of code.</p>
+          <p>
+            Product Explorer closes that gap. It reads the codebase, layers in
+            available documentation, and renders it as an interactive visual
+            system. Navigate, search, and explore without reading a single line
+            of code.
+          </p>
+        </div>
+      </section>
+
+      <!-- Value Props -->
+      <section class="value-props">
+        <div class="props-grid">
+          <div class="prop-card">
+            <h2>For Admins &amp; Consultants</h2>
+            <ul>
+              <li>
+                <span class="prop-label">Feature connections.</span> See how
+                components relate across the product
+              </li>
+              <li>
+                <span class="prop-label">Dependencies.</span> Understand what
+                relies on what before making changes
+              </li>
+              <li>
+                <span class="prop-label">Guided tours.</span> Walk through key
+                workflows with narrated constellation stories
+              </li>
+              <li>
+                <span class="prop-label">Universal search.</span> Find any
+                component, entity, or domain instantly
+              </li>
+            </ul>
+          </div>
+          <div class="prop-card">
+            <h2>For Developers &amp; Architects</h2>
+            <ul>
+              <li>
+                <span class="prop-label">Execution flows.</span> Trace how data
+                moves through triggers, classes, and handlers
+              </li>
+              <li>
+                <span class="prop-label">Entity data.</span> Inspect classes,
+                objects, triggers, and LWCs per component
+              </li>
+              <li>
+                <span class="prop-label">Connection maps.</span> Visualize
+                cross-domain dependencies and data flows
+              </li>
+              <li>
+                <span class="prop-label">AI descriptions.</span> Every component
+                and entity annotated with plain-language summaries
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Products -->
+      <section class="products">
+        <h2 class="products-heading">Explore</h2>
+        <div id="productGrid"></div>
+      </section>
     </div>
-  </section>
 
-  <!-- Value Props -->
-  <section class="value-props">
-    <div class="props-grid">
-      <div class="prop-card">
-        <h2>For Admins &amp; Consultants</h2>
-        <ul>
-          <li><span class="prop-label">Feature connections.</span> See how components relate across the product</li>
-          <li><span class="prop-label">Dependencies.</span> Understand what relies on what before making changes</li>
-          <li><span class="prop-label">Guided tours.</span> Walk through key workflows with narrated constellation stories</li>
-          <li><span class="prop-label">Universal search.</span> Find any component, entity, or domain instantly</li>
-        </ul>
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="page">
+        <p class="footer-tech">
+          No build step. No dependencies. No frameworks. Pure HTML, CSS, and ES
+          modules.
+        </p>
+        <p class="footer-brand">Product Explorer</p>
       </div>
-      <div class="prop-card">
-        <h2>For Developers &amp; Architects</h2>
-        <ul>
-          <li><span class="prop-label">Execution flows.</span> Trace how data moves through triggers, classes, and handlers</li>
-          <li><span class="prop-label">Entity data.</span> Inspect classes, objects, triggers, and LWCs per component</li>
-          <li><span class="prop-label">Connection maps.</span> Visualize cross-domain dependencies and data flows</li>
-          <li><span class="prop-label">AI descriptions.</span> Every component and entity annotated with plain-language summaries</li>
-        </ul>
-      </div>
-    </div>
-  </section>
+    </footer>
 
-  <!-- Products -->
-  <section class="products">
-    <h2 class="products-heading">Explore</h2>
-    <div id="productGrid"></div>
-  </section>
+    <script type="module">
+      import { PRODUCTS } from "./products/manifest.js";
 
-</div>
+      const grid = document.getElementById("productGrid");
+      for (const p of PRODUCTS) {
+        const card = document.createElement("a");
+        card.href = p.id + "/";
+        card.className = "product-card";
 
-<!-- Footer -->
-<footer class="footer">
-  <div class="page">
-    <p class="footer-tech">No build step. No dependencies. No frameworks. Pure HTML, CSS, and ES modules.</p>
-    <p class="footer-brand">Product Explorer</p>
-  </div>
-</footer>
+        const info = document.createElement("div");
+        info.className = "product-info";
 
-<script>
-  const PRODUCTS = [
-    {
-      id: 'npsp',
-      name: 'NPSP',
-      fullName: 'Nonprofit Success Pack',
-      stats: [
-        ['Apex Classes', 534],
-        ['Triggers', 26],
-        ['Custom Objects', 64],
-        ['Domains', 18],
-        ['Components', 65],
-        ['Tours', 9]
-      ]
-    },
-    {
-      id: 'revenue',
-      name: 'Revenue Cloud',
-      fullName: 'Salesforce Revenue Cloud',
-      stats: [
-        ['Objects', 54],
-        ['Domains', 14],
-        ['Components', 70],
-        ['Tours', 5]
-      ]
-    },
-    {
-      id: 'omnistudio',
-      name: 'OmniStudio',
-      fullName: 'Salesforce OmniStudio',
-      stats: [
-        ['Objects', 12],
-        ['Domains', 12],
-        ['Components', 51],
-        ['Tours', 4]
-      ]
-    },
-    {
-      id: 'educationcloud',
-      name: 'Education Cloud',
-      fullName: 'Salesforce Education Cloud',
-      stats: [
-        ['Objects', 54],
-        ['Metadata', 6],
-        ['Domains', 14],
-        ['Components', 68],
-        ['Tours', 4]
-      ]
-    },
-    {
-      id: 'nonprofitcloud',
-      name: 'Nonprofit Cloud',
-      fullName: 'Salesforce Nonprofit Cloud',
-      stats: [
-        ['Objects', 73],
-        ['Metadata', 4],
-        ['Domains', 20],
-        ['Components', 78],
-        ['Tours', 5]
-      ]
-    },
-    {
-      id: 'edassh',
-      name: 'EDA & SSH',
-      fullName: 'Salesforce EDA & Student Success Hub',
-      stats: [
-        ['Objects', 45],
-        ['Metadata', 4],
-        ['Domains', 15],
-        ['Components', 63],
-        ['Tours', 5]
-      ]
-    },
-    {
-      id: 'accountingsubledger',
-      name: 'Accounting Subledger',
-      fullName: 'Salesforce Accounting Subledger',
-      stats: [
-        ['Objects', 6],
-        ['Metadata', 9],
-        ['Domains', 9],
-        ['Components', 35],
-        ['Tours', 4]
-      ]
-    },
-    {
-      id: 'consumergoods',
-      name: 'Consumer Goods Cloud',
-      fullName: 'Salesforce Consumer Goods Cloud',
-      stats: [
-        ['Objects', 154],
-        ['Metadata', 1],
-        ['Domains', 16],
-        ['Components', 87],
-        ['Tours', 5]
-      ]
-    },
-    {
-      id: 'lifesciencescloud',
-      name: 'Life Sciences Cloud',
-      fullName: 'Salesforce Life Sciences Cloud',
-      stats: [
-        ['Objects', 104],
-        ['Metadata', 13],
-        ['Domains', 15],
-        ['Components', 95],
-        ['Tours', 4]
-      ]
-    },
-    {
-      id: 'publicsectorsolutions',
-      name: 'Public Sector Solutions',
-      fullName: 'Salesforce Public Sector Solutions',
-      stats: [
-        ['Objects', 138],
-        ['Domains', 18],
-        ['Components', 92],
-        ['Tours', 4]
-      ]
-    }
-  ];
+        const name = document.createElement("div");
+        name.className = "product-name";
+        name.textContent = p.name;
 
-  const grid = document.getElementById('productGrid');
-  for (const p of PRODUCTS) {
-    const card = document.createElement('a');
-    card.href = p.id + '/';
-    card.className = 'product-card';
+        const full = document.createElement("div");
+        full.className = "product-fullname";
+        full.textContent = p.fullName;
 
-    const info = document.createElement('div');
-    info.className = 'product-info';
+        const stats = document.createElement("div");
+        stats.className = "product-stats";
 
-    const name = document.createElement('div');
-    name.className = 'product-name';
-    name.textContent = p.name;
+        for (const [label, value] of p.stats) {
+          const span = document.createElement("span");
+          span.className = "product-stat";
+          const strong = document.createElement("strong");
+          strong.textContent = value;
+          span.appendChild(strong);
+          span.appendChild(document.createTextNode(" " + label));
+          stats.appendChild(span);
+        }
 
-    const full = document.createElement('div');
-    full.className = 'product-fullname';
-    full.textContent = p.fullName;
+        info.appendChild(name);
+        info.appendChild(full);
+        info.appendChild(stats);
 
-    const stats = document.createElement('div');
-    stats.className = 'product-stats';
+        const cta = document.createElement("span");
+        cta.className = "product-cta";
+        cta.textContent = "Launch Explorer \u2192";
 
-    for (const [label, value] of p.stats) {
-      const span = document.createElement('span');
-      span.className = 'product-stat';
-      const strong = document.createElement('strong');
-      strong.textContent = value;
-      span.appendChild(strong);
-      span.appendChild(document.createTextNode(' ' + label));
-      stats.appendChild(span);
-    }
-
-    info.appendChild(name);
-    info.appendChild(full);
-    info.appendChild(stats);
-
-    const cta = document.createElement('span');
-    cta.className = 'product-cta';
-    cta.textContent = 'Launch Explorer \u2192';
-
-    card.appendChild(info);
-    card.appendChild(cta);
-    grid.appendChild(card);
-  }
-</script>
-</body>
+        card.appendChild(info);
+        card.appendChild(cta);
+        grid.appendChild(card);
+      }
+    </script>
+  </body>
 </html>

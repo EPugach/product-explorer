@@ -4,8 +4,8 @@
 //  CDN fallback: if MiniSearch fails to load, uses substring matching
 // ══════════════════════════════════════════════════════════════
 
-import { track, announce, showToast } from './utils.js';
-import { entitySvg, domainSvg } from './icons.js';
+import { track, announce, showToast } from "./utils.js";
+import { entitySvg, domainSvg } from "./icons.js";
 
 // ── MiniSearch lazy CDN import with fallback ─────────────────
 // Loaded lazily in rebuildSearchIndex() to avoid top-level await
@@ -18,29 +18,37 @@ async function ensureMiniSearch() {
   if (_miniSearchLoaded) return;
   _miniSearchLoaded = true;
   try {
-    const mod = await import('https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/es/index.min.js');
+    const mod = await import("../vendor/minisearch.7.2.0.js");
     MiniSearch = mod.default;
   } catch {
-    console.warn('[search] MiniSearch CDN unavailable, using fallback substring search');
-    _useFallback = true;
+    try {
+      const mod =
+        await import("https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/es/index.min.js");
+      MiniSearch = mod.default;
+    } catch {
+      console.warn(
+        "[search] MiniSearch unavailable, using fallback substring search",
+      );
+      _useFallback = true;
+    }
   }
 }
 
 // ── Salesforce synonym map ───────────────────────────────────
 const SYNONYMS = {
-  tdtm:  'table driven trigger management',
-  gau:   'general accounting unit',
-  rd:    'recurring donation',
-  rd2:   'enhanced recurring donation',
-  ocr:   'opportunity contact role',
-  crlp:  'customizable rollup',
-  bdi:   'batch data import',
-  bge:   'batch gift entry',
-  npsp:  'nonprofit success pack',
-  hh:    'household',
-  pmt:   'payment',
-  opp:   'opportunity',
-  lwc:   'lightning web component'
+  tdtm: "table driven trigger management",
+  gau: "general accounting unit",
+  rd: "recurring donation",
+  rd2: "enhanced recurring donation",
+  ocr: "opportunity contact role",
+  crlp: "customizable rollup",
+  bdi: "batch data import",
+  bge: "batch gift entry",
+  npsp: "nonprofit success pack",
+  hh: "household",
+  pmt: "payment",
+  opp: "opportunity",
+  lwc: "lightning web component",
 };
 
 // Build reverse map (full term -> abbreviation) for synonym text on documents
@@ -59,18 +67,23 @@ function expandSynonyms(text) {
   for (const [full, abbrs] of Object.entries(REVERSE_SYNONYMS)) {
     if (lower.includes(full)) expansions.push(...abbrs);
   }
-  return expansions.join(' ');
+  return expansions.join(" ");
 }
 
 // ── Product data (injected by main.js) ──────────────────────
 let PRODUCT_DATA = {};
-let _productName = 'Product';
+let _productName = "Product";
 let _packages = {};
-export const setProductData = (data, name) => { PRODUCT_DATA = data; if (name) _productName = name; };
-export const setPackages = (packages) => { _packages = packages || {}; };
+export const setProductData = (data, name) => {
+  PRODUCT_DATA = data;
+  if (name) _productName = name;
+};
+export const setPackages = (packages) => {
+  _packages = packages || {};
+};
 
 // ── Entity link map (injected by main.js after entities load) ─
-let _entityLinkMap = null;   // { name: sourceUrl } for all entities
+let _entityLinkMap = null; // { name: sourceUrl } for all entities
 let _entityLinkNames = null; // sorted longest-first for replacement
 
 export const setEntityLinks = (map) => {
@@ -80,44 +93,51 @@ export const setEntityLinks = (map) => {
 };
 
 // ── AI search state ─────────────────────────────────────────
-let _aiEndpoint = '';
-let _aiContext = '';
+let _aiEndpoint = "";
+let _aiContext = "";
 let _aiDebounceTimer = null;
 const _aiSessionCache = new Map();
 const AI_CACHE_MAX = 20;
 const _aiInflight = new Map();
 
 export const setAiConfig = (endpoint, context) => {
-  _aiEndpoint = endpoint || '';
-  _aiContext = context || '';
+  _aiEndpoint = endpoint || "";
+  _aiContext = context || "";
 };
 
 // ── AI feedback state ───────────────────────────────────────
-let _feedbackEndpoint = '';
+let _feedbackEndpoint = "";
 const _votedQuestions = new Set(); // prevents double-voting per session
 
-export const setFeedbackEndpoint = (url) => { _feedbackEndpoint = url || ''; };
+export const setFeedbackEndpoint = (url) => {
+  _feedbackEndpoint = url || "";
+};
 
 // SVG thumb icons (outline, 14px)
-export const THUMB_UP_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22V11l5-9 1.5.5c.8.3 1.5 1.2 1.5 2.1V8h5.5a2 2 0 0 1 2 2.3l-1.6 8A2 2 0 0 1 19.4 20H7z"/><rect x="1" y="11" width="6" height="11" rx="1"/></svg>';
-export const THUMB_DOWN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2v11l-5 9-1.5-.5c-.8-.3-1.5-1.2-1.5-2.1V16H3.5a2 2 0 0 1-2-2.3l1.6-8A2 2 0 0 1 5.1 4H17z"/><rect x="17" y="2" width="6" height="11" rx="1"/></svg>';
+export const THUMB_UP_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22V11l5-9 1.5.5c.8.3 1.5 1.2 1.5 2.1V8h5.5a2 2 0 0 1 2 2.3l-1.6 8A2 2 0 0 1 19.4 20H7z"/><rect x="1" y="11" width="6" height="11" rx="1"/></svg>';
+export const THUMB_DOWN_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2v11l-5 9-1.5-.5c-.8-.3-1.5-1.2-1.5-2.1V16H3.5a2 2 0 0 1-2-2.3l1.6-8A2 2 0 0 1 5.1 4H17z"/><rect x="17" y="2" width="6" height="11" rx="1"/></svg>';
 
-const FEEDBACK_REASONS = ['Inaccurate', 'Not helpful', 'Outdated', 'Too vague'];
+const FEEDBACK_REASONS = ["Inaccurate", "Not helpful", "Outdated", "Too vague"];
 
 // Build feedback buttons HTML (reused by overlay and full results page)
 export function buildFeedbackButtonsHtml() {
-  return `<span class="ai-feedback-btns">` +
+  return (
+    `<span class="ai-feedback-btns">` +
     `<button class="ai-feedback-btn" data-feedback="up" aria-label="Good answer" title="Good answer">${THUMB_UP_SVG}</button>` +
     `<button class="ai-feedback-btn" data-feedback="down" aria-label="Bad answer" title="Bad answer">${THUMB_DOWN_SVG}</button>` +
-    `</span>`;
+    `</span>`
+  );
 }
 
 // Build feedback panel HTML (inserted after header, hidden by default)
 export function buildFeedbackPanelHtml() {
-  const chips = FEEDBACK_REASONS.map(r =>
-    `<button class="ai-feedback-chip" data-reason="${r}">${r}</button>`
-  ).join('');
-  return `<div class="ai-feedback-panel" data-feedback-panel>` +
+  const chips = FEEDBACK_REASONS.map(
+    (r) => `<button class="ai-feedback-chip" data-reason="${r}">${r}</button>`,
+  ).join("");
+  return (
+    `<div class="ai-feedback-panel" data-feedback-panel>` +
     `<div class="ai-feedback-label">What went wrong?</div>` +
     `<div class="ai-feedback-chips">${chips}</div>` +
     `<div class="ai-feedback-row">` +
@@ -125,7 +145,8 @@ export function buildFeedbackPanelHtml() {
     `<button class="ai-feedback-submit" data-feedback-submit>Submit</button>` +
     `</div>` +
     `<div class="ai-feedback-thanks" data-feedback-thanks>Thanks for your feedback!</div>` +
-    `</div>`;
+    `</div>`
+  );
 }
 
 // Wire feedback buttons inside a container element
@@ -133,85 +154,109 @@ export function wireFeedbackButtons(container, question) {
   if (!container) return;
   const upBtn = container.querySelector('[data-feedback="up"]');
   const downBtn = container.querySelector('[data-feedback="down"]');
-  const panel = container.querySelector('[data-feedback-panel]');
+  const panel = container.querySelector("[data-feedback-panel]");
   if (!upBtn || !downBtn) return;
 
   // Already voted on this question
   if (_votedQuestions.has(question.trim().toLowerCase())) {
-    upBtn.classList.add('disabled');
-    downBtn.classList.add('disabled');
+    upBtn.classList.add("disabled");
+    downBtn.classList.add("disabled");
     return;
   }
 
-  upBtn.addEventListener('click', (e) => {
+  upBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
-    upBtn.classList.add('active-up');
-    downBtn.classList.add('disabled');
-    upBtn.classList.add('disabled');
+    upBtn.classList.add("active-up");
+    downBtn.classList.add("disabled");
+    upBtn.classList.add("disabled");
     _votedQuestions.add(question.trim().toLowerCase());
-    sendFeedback(question, 'up');
+    sendFeedback(question, "up");
     // Show brief thanks
-    const thanks = container.querySelector('[data-feedback-thanks]');
+    const thanks = container.querySelector("[data-feedback-thanks]");
     if (thanks) {
-      thanks.classList.add('visible');
-      setTimeout(() => thanks.classList.remove('visible'), 2000);
+      thanks.classList.add("visible");
+      setTimeout(() => thanks.classList.remove("visible"), 2000);
     }
   });
 
-  upBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
-
-  downBtn.addEventListener('click', (e) => {
+  upBtn.addEventListener("mousedown", (e) => {
     e.stopPropagation();
     e.preventDefault();
-    downBtn.classList.add('active-down');
-    upBtn.classList.add('disabled');
-    if (panel) panel.classList.add('open');
   });
 
-  downBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
+  downBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    downBtn.classList.add("active-down");
+    upBtn.classList.add("disabled");
+    if (panel) panel.classList.add("open");
+  });
+
+  downBtn.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+  });
 
   // Wire chips and submit inside the panel
   if (panel) {
-    let selectedReason = '';
-    panel.querySelectorAll('[data-reason]').forEach(chip => {
-      chip.addEventListener('click', (e) => {
+    let selectedReason = "";
+    panel.querySelectorAll("[data-reason]").forEach((chip) => {
+      chip.addEventListener("click", (e) => {
         e.stopPropagation();
-        panel.querySelectorAll('[data-reason]').forEach(c => c.classList.remove('selected'));
-        chip.classList.add('selected');
+        panel
+          .querySelectorAll("[data-reason]")
+          .forEach((c) => c.classList.remove("selected"));
+        chip.classList.add("selected");
         selectedReason = chip.dataset.reason;
       });
-      chip.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
+      chip.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      });
     });
 
-    const submitBtn = panel.querySelector('[data-feedback-submit]');
-    const textInput = panel.querySelector('[data-feedback-text]');
+    const submitBtn = panel.querySelector("[data-feedback-submit]");
+    const textInput = panel.querySelector("[data-feedback-text]");
     if (textInput) {
-      textInput.addEventListener('mousedown', (e) => { e.stopPropagation(); });
-      textInput.addEventListener('click', (e) => { e.stopPropagation(); });
-      textInput.addEventListener('keydown', (e) => {
+      textInput.addEventListener("mousedown", (e) => {
         e.stopPropagation();
-        if (e.key === 'Enter') { e.preventDefault(); doSubmit(); }
+      });
+      textInput.addEventListener("click", (e) => {
+        e.stopPropagation();
+      });
+      textInput.addEventListener("keydown", (e) => {
+        e.stopPropagation();
+        if (e.key === "Enter") {
+          e.preventDefault();
+          doSubmit();
+        }
       });
     }
 
     const doSubmit = () => {
-      const comment = textInput ? textInput.value.trim() : '';
+      const comment = textInput ? textInput.value.trim() : "";
       if (!selectedReason && !comment) return; // need at least a reason or comment
-      downBtn.classList.add('disabled');
+      downBtn.classList.add("disabled");
       _votedQuestions.add(question.trim().toLowerCase());
-      sendFeedback(question, 'down', selectedReason, comment);
-      panel.classList.remove('open');
-      const thanks = container.querySelector('[data-feedback-thanks]');
+      sendFeedback(question, "down", selectedReason, comment);
+      panel.classList.remove("open");
+      const thanks = container.querySelector("[data-feedback-thanks]");
       if (thanks) {
-        thanks.classList.add('visible');
-        setTimeout(() => thanks.classList.remove('visible'), 3000);
+        thanks.classList.add("visible");
+        setTimeout(() => thanks.classList.remove("visible"), 3000);
       }
     };
 
     if (submitBtn) {
-      submitBtn.addEventListener('click', (e) => { e.stopPropagation(); doSubmit(); });
-      submitBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
+      submitBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        doSubmit();
+      });
+      submitBtn.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      });
     }
   }
 }
@@ -220,14 +265,14 @@ export function wireFeedbackButtons(container, question) {
 function sendFeedback(question, rating, reason, comment) {
   if (!_feedbackEndpoint) return;
   fetch(_feedbackEndpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       question: question.trim().substring(0, 300),
       rating,
-      reason: reason || '',
-      comment: comment || ''
-    })
+      reason: reason || "",
+      comment: comment || "",
+    }),
   }).catch(() => {}); // silent fail
 }
 
@@ -237,7 +282,12 @@ let _navigateToCore = null;
 let _enterEntity = null;
 let _enterSearchResults = null;
 
-export const setNavigationCallbacks = (enterPlanetFn, navigateToCoreFn, enterEntityFn, enterSearchResultsFn) => {
+export const setNavigationCallbacks = (
+  enterPlanetFn,
+  navigateToCoreFn,
+  enterEntityFn,
+  enterSearchResultsFn,
+) => {
   _enterPlanet = enterPlanetFn;
   _navigateToCore = navigateToCoreFn;
   _enterEntity = enterEntityFn;
@@ -247,14 +297,16 @@ export const setNavigationCallbacks = (enterPlanetFn, navigateToCoreFn, enterEnt
 export let searchResults = [];
 export let searchIndex = -1;
 
-export const setSearchIndex = (val) => { searchIndex = val; };
+export const setSearchIndex = (val) => {
+  searchIndex = val;
+};
 
 // ── Index data structures ────────────────────────────────────
-let _miniSearch = null;       // MiniSearch instance
-let _itemsById = new Map();   // numeric id -> {action, icon, color, level, type, planetId, componentId, name, desc}
+let _miniSearch = null; // MiniSearch instance
+let _itemsById = new Map(); // numeric id -> {action, icon, color, level, type, planetId, componentId, name, desc}
 let _nextId = 0;
-let _fallbackIndex = [];      // flat array for substring fallback
-let _pendingDocs = [];        // docs waiting for MiniSearch to load
+let _fallbackIndex = []; // flat array for substring fallback
+let _pendingDocs = []; // docs waiting for MiniSearch to load
 
 function buildSearchIndex() {
   const docs = [];
@@ -264,62 +316,90 @@ function buildSearchIndex() {
 
   for (const [pid, planet] of Object.entries(PRODUCT_DATA)) {
     const baseItem = {
-      type: 'planet', id: pid, name: planet.name, desc: planet.description,
-      icon: domainSvg(pid, 20), color: planet.color, tags: [], level: _productName || 'Product',
-      action: () => { if (_enterPlanet) _enterPlanet(pid); }
+      type: "planet",
+      id: pid,
+      name: planet.name,
+      desc: planet.description,
+      icon: domainSvg(pid, 20),
+      color: planet.color,
+      tags: [],
+      level: _productName || "Product",
+      action: () => {
+        if (_enterPlanet) _enterPlanet(pid);
+      },
     };
     const docId = _nextId++;
     _itemsById.set(docId, baseItem);
     docs.push({
       _id: docId,
       name: planet.name,
-      tagsText: '',
-      desc: planet.description || '',
-      docText: '',
-      synonymText: expandSynonyms(planet.name + ' ' + (planet.description || ''))
+      tagsText: "",
+      desc: planet.description || "",
+      docText: "",
+      synonymText: expandSynonyms(
+        planet.name + " " + (planet.description || ""),
+      ),
     });
     fallbackIdx.push(baseItem);
 
     for (const comp of planet.components) {
       const allTags = [...(comp.tags || []), ...(comp.triggerTags || [])];
       const compItem = {
-        type: 'component', id: comp.id, planetId: pid,
-        name: comp.name, desc: comp.desc, icon: comp.icon, color: planet.color,
+        type: "component",
+        id: comp.id,
+        planetId: pid,
+        name: comp.name,
+        desc: comp.desc,
+        icon: comp.icon,
+        color: planet.color,
         tags: allTags,
-        docText: (comp.docs || []).join(' '),
+        docText: (comp.docs || []).join(" "),
         level: planet.name,
-        action: () => { if (_navigateToCore) _navigateToCore(pid, comp.id); }
+        action: () => {
+          if (_navigateToCore) _navigateToCore(pid, comp.id);
+        },
       };
       const compDocId = _nextId++;
       _itemsById.set(compDocId, compItem);
-      const tagsText = allTags.join(' ');
-      const compDocText = (comp.docs || []).join(' ');
+      const tagsText = allTags.join(" ");
+      const compDocText = (comp.docs || []).join(" ");
       docs.push({
         _id: compDocId,
         name: comp.name,
         tagsText,
-        desc: comp.desc || '',
+        desc: comp.desc || "",
         docText: compDocText,
-        synonymText: expandSynonyms(comp.name + ' ' + tagsText + ' ' + (comp.desc || ''))
+        synonymText: expandSynonyms(
+          comp.name + " " + tagsText + " " + (comp.desc || ""),
+        ),
       });
       fallbackIdx.push(compItem);
 
       for (const tag of allTags) {
         const tagItem = {
-          type: 'tag', id: tag, planetId: pid, componentId: comp.id,
-          name: tag, desc: comp.desc, icon: comp.icon, color: planet.color,
-          tags: [], level: `${planet.name} > ${comp.name}`,
-          action: () => { if (_navigateToCore) _navigateToCore(pid, comp.id); }
+          type: "tag",
+          id: tag,
+          planetId: pid,
+          componentId: comp.id,
+          name: tag,
+          desc: comp.desc,
+          icon: comp.icon,
+          color: planet.color,
+          tags: [],
+          level: `${planet.name} > ${comp.name}`,
+          action: () => {
+            if (_navigateToCore) _navigateToCore(pid, comp.id);
+          },
         };
         const tagDocId = _nextId++;
         _itemsById.set(tagDocId, tagItem);
         docs.push({
           _id: tagDocId,
           name: tag,
-          tagsText: '',
-          desc: comp.desc || '',
-          docText: '',
-          synonymText: expandSynonyms(tag)
+          tagsText: "",
+          desc: comp.desc || "",
+          docText: "",
+          synonymText: expandSynonyms(tag),
         });
         fallbackIdx.push(tagItem);
       }
@@ -328,11 +408,36 @@ function buildSearchIndex() {
       const ents = comp.entities;
       if (ents) {
         const entityTypes = [
-          { key: 'classes', type: 'class', icon: entitySvg('class', 14), color: '#4d8bff' },
-          { key: 'objects', type: 'object', icon: entitySvg('object', 14), color: '#22c55e' },
-          { key: 'triggers', type: 'trigger', icon: entitySvg('trigger', 14), color: '#ef4444' },
-          { key: 'lwcs', type: 'lwc', icon: entitySvg('lwc', 14), color: '#a855f7' },
-          { key: 'metadata', type: 'metadata', icon: entitySvg('metadata', 14), color: '#f59e0b' }
+          {
+            key: "classes",
+            type: "class",
+            icon: entitySvg("class", 14),
+            color: "#4d8bff",
+          },
+          {
+            key: "objects",
+            type: "object",
+            icon: entitySvg("object", 14),
+            color: "#22c55e",
+          },
+          {
+            key: "triggers",
+            type: "trigger",
+            icon: entitySvg("trigger", 14),
+            color: "#ef4444",
+          },
+          {
+            key: "lwcs",
+            type: "lwc",
+            icon: entitySvg("lwc", 14),
+            color: "#a855f7",
+          },
+          {
+            key: "metadata",
+            type: "metadata",
+            icon: entitySvg("metadata", 14),
+            color: "#f59e0b",
+          },
         ];
         for (const et of entityTypes) {
           const arr = ents[et.key] || [];
@@ -344,27 +449,29 @@ function buildSearchIndex() {
             const compName = comp.name;
 
             let entTags = [];
-            if (entType === 'class') {
-              if (entItem.keyMethods) entTags = entTags.concat(entItem.keyMethods);
-              if (entItem.referencedObjects) entTags = entTags.concat(entItem.referencedObjects);
+            if (entType === "class") {
+              if (entItem.keyMethods)
+                entTags = entTags.concat(entItem.keyMethods);
+              if (entItem.referencedObjects)
+                entTags = entTags.concat(entItem.referencedObjects);
               if (entItem.extends) entTags.push(entItem.extends);
               if (entItem.implements) entTags.push(entItem.implements);
             }
             const flds = entItem.fields || entItem.keyFields;
-            if (entType === 'object' && flds) {
+            if (entType === "object" && flds) {
               for (const f of flds) {
                 entTags.push(f.name);
                 if (f.label) entTags.push(f.label);
               }
             }
-            if (entType === 'trigger') {
+            if (entType === "trigger") {
               if (entItem.object) entTags.push(entItem.object);
               if (entItem.events) entTags = entTags.concat(entItem.events);
             }
-            if (entType === 'lwc' && entItem.imports) {
+            if (entType === "lwc" && entItem.imports) {
               entTags = entTags.concat(entItem.imports);
             }
-            if (entType === 'metadata' && flds) {
+            if (entType === "metadata" && flds) {
               if (Array.isArray(flds)) {
                 for (const f of flds) entTags.push(f.name);
               } else {
@@ -372,23 +479,29 @@ function buildSearchIndex() {
               }
             }
 
-            const docParts = [entItem.description || ''];
+            const docParts = [entItem.description || ""];
             if (entItem._package && _packages[entItem._package]) {
               docParts.push(_packages[entItem._package].name);
             }
-            if (entItem.extends) docParts.push('extends ' + entItem.extends);
-            if (entItem.implements) docParts.push('implements ' + entItem.implements);
-            if (entItem.keyMethods) docParts.push(entItem.keyMethods.join(' '));
-            if (entItem.referencedObjects) docParts.push(entItem.referencedObjects.join(' '));
+            if (entItem.extends) docParts.push("extends " + entItem.extends);
+            if (entItem.implements)
+              docParts.push("implements " + entItem.implements);
+            if (entItem.keyMethods) docParts.push(entItem.keyMethods.join(" "));
+            if (entItem.referencedObjects)
+              docParts.push(entItem.referencedObjects.join(" "));
             if (flds) {
               if (Array.isArray(flds)) {
-                docParts.push(flds.map((f) =>
-                  `${f.name} ${f.label || ''} ${f.type || ''}`
-                ).join(' '));
+                docParts.push(
+                  flds
+                    .map((f) => `${f.name} ${f.label || ""} ${f.type || ""}`)
+                    .join(" "),
+                );
               } else {
-                docParts.push(Object.entries(flds).map(([k, v]) =>
-                  `${k} ${v}`
-                ).join(' '));
+                docParts.push(
+                  Object.entries(flds)
+                    .map(([k, v]) => `${k} ${v}`)
+                    .join(" "),
+                );
               }
             }
 
@@ -398,11 +511,11 @@ function buildSearchIndex() {
               planetId,
               componentId: compId,
               name: entItem.name,
-              desc: entItem.description || '',
+              desc: entItem.description || "",
               icon: et.icon,
               color: et.color,
               tags: entTags,
-              docText: docParts.join(' '),
+              docText: docParts.join(" "),
               level: `${planetName} > ${compName}`,
               _keyMethods: entItem.keyMethods || [],
               _referencedObjects: entItem.referencedObjects || [],
@@ -410,26 +523,33 @@ function buildSearchIndex() {
               _implements: entItem.implements || null,
               _linesOfCode: entItem.linesOfCode || null,
               _entType: entItem.type || entItem._type || null,
-              _fields: (entType === 'object' && flds) ? flds.slice(0, 10) : null,
+              _fields: entType === "object" && flds ? flds.slice(0, 10) : null,
               action: () => {
                 if (_navigateToCore) _navigateToCore(planetId, compId);
                 setTimeout(() => {
-                  if (_enterEntity) _enterEntity(planetId, compId, et.key, entItem.name);
+                  if (_enterEntity)
+                    _enterEntity(planetId, compId, et.key, entItem.name);
                 }, 100);
-              }
+              },
             };
 
             const entDocId = _nextId++;
             _itemsById.set(entDocId, entItemData);
-            const entTagsText = entTags.join(' ');
-            const entDocText = docParts.join(' ');
+            const entTagsText = entTags.join(" ");
+            const entDocText = docParts.join(" ");
             docs.push({
               _id: entDocId,
               name: entItem.name,
               tagsText: entTagsText,
-              desc: entItem.description || '',
+              desc: entItem.description || "",
               docText: entDocText,
-              synonymText: expandSynonyms(entItem.name + ' ' + entTagsText + ' ' + (entItem.description || ''))
+              synonymText: expandSynonyms(
+                entItem.name +
+                  " " +
+                  entTagsText +
+                  " " +
+                  (entItem.description || ""),
+              ),
             });
             fallbackIdx.push(entItemData);
           }
@@ -448,14 +568,20 @@ export function rebuildSearchIndex() {
   if (MiniSearch && !_useFallback) {
     // MiniSearch already loaded, build index immediately
     _miniSearch = new MiniSearch({
-      idField: '_id',
-      fields: ['name', 'tagsText', 'desc', 'docText', 'synonymText'],
-      storeFields: ['_id'],
+      idField: "_id",
+      fields: ["name", "tagsText", "desc", "docText", "synonymText"],
+      storeFields: ["_id"],
       searchOptions: {
-        boost: { name: 3, tagsText: 2, desc: 1.5, docText: 1, synonymText: 0.5 },
+        boost: {
+          name: 3,
+          tagsText: 2,
+          desc: 1.5,
+          docText: 1,
+          synonymText: 0.5,
+        },
         fuzzy: 0.2,
-        prefix: true
-      }
+        prefix: true,
+      },
     });
     _miniSearch.addAll(docs);
   } else if (!_useFallback) {
@@ -464,14 +590,20 @@ export function rebuildSearchIndex() {
     ensureMiniSearch().then(() => {
       if (MiniSearch && _pendingDocs.length > 0) {
         _miniSearch = new MiniSearch({
-          idField: '_id',
-          fields: ['name', 'tagsText', 'desc', 'docText', 'synonymText'],
-          storeFields: ['_id'],
+          idField: "_id",
+          fields: ["name", "tagsText", "desc", "docText", "synonymText"],
+          storeFields: ["_id"],
           searchOptions: {
-            boost: { name: 3, tagsText: 2, desc: 1.5, docText: 1, synonymText: 0.5 },
+            boost: {
+              name: 3,
+              tagsText: 2,
+              desc: 1.5,
+              docText: 1,
+              synonymText: 0.5,
+            },
             fuzzy: 0.2,
-            prefix: true
-          }
+            prefix: true,
+          },
         });
         _miniSearch.addAll(_pendingDocs);
         _pendingDocs = [];
@@ -490,8 +622,12 @@ function searchWithMiniSearch(query) {
   const qLower = q.toLowerCase();
   const queries = [q];
   for (const [abbr, full] of Object.entries(SYNONYMS)) {
-    if (qLower === abbr || qLower.startsWith(abbr + ' ') || qLower.endsWith(' ' + abbr)) {
-      queries.push(q.replace(new RegExp('\\b' + abbr + '\\b', 'gi'), full));
+    if (
+      qLower === abbr ||
+      qLower.startsWith(abbr + " ") ||
+      qLower.endsWith(" " + abbr)
+    ) {
+      queries.push(q.replace(new RegExp("\\b" + abbr + "\\b", "gi"), full));
     }
   }
 
@@ -508,15 +644,14 @@ function searchWithMiniSearch(query) {
   }
 
   // Sort by score descending, map back to item shape
-  const sorted = [...scoreMap.entries()]
-    .sort((a, b) => b[1] - a[1]);
+  const sorted = [...scoreMap.entries()].sort((a, b) => b[1] - a[1]);
 
   const seen = new Set();
   const deduped = [];
   for (const [docId] of sorted) {
     const item = _itemsById.get(docId);
     if (!item) continue;
-    const key = `${item.type}:${item.id}${item.planetId || ''}`;
+    const key = `${item.type}:${item.id}${item.planetId || ""}`;
     if (!seen.has(key)) {
       seen.add(key);
       deduped.push({ ...item, score: scoreMap.get(docId) });
@@ -539,7 +674,7 @@ function searchProductFallback(query) {
     else if (nm.startsWith(q)) score += 80;
     else if (nm.includes(q)) score += 60;
     if (ds.includes(q)) score += 30;
-    const dt = (item.docText || '').toLowerCase();
+    const dt = (item.docText || "").toLowerCase();
     if (dt.includes(q)) score += 20;
     for (const t of tgs) {
       if (t === q) score += 90;
@@ -551,7 +686,7 @@ function searchProductFallback(query) {
   const seen = new Set();
   const deduped = [];
   for (const r of scored) {
-    const key = `${r.type}:${r.id}${r.planetId || ''}`;
+    const key = `${r.type}:${r.id}${r.planetId || ""}`;
     if (!seen.has(key)) {
       seen.add(key);
       deduped.push(r);
@@ -568,12 +703,13 @@ export function searchProduct(query) {
 
 // ── AI question detection ────────────────────────────────────
 
-const QUESTION_WORDS = /^(what|how|why|does|is|are|can|will|could|should|would|explain|describe|tell|where|when|which|who)\b/i;
+const QUESTION_WORDS =
+  /^(what|how|why|does|is|are|can|will|could|should|would|explain|describe|tell|where|when|which|who)\b/i;
 
 export function isQuestion(query) {
   if (!query || query.trim().length < 5) return false;
   const q = query.trim();
-  if (q.endsWith('?')) return true;
+  if (q.endsWith("?")) return true;
   if (QUESTION_WORDS.test(q)) return true;
   // 4+ words that aren't all-caps (not an API name like "NPSP_TDTM_HANDLER")
   const words = q.split(/\s+/);
@@ -584,7 +720,7 @@ export function isQuestion(query) {
 // ── AI answer fetching ───────────────────────────────────────
 
 export async function askAi(question) {
-  if (!_aiEndpoint) return { error: 'AI not configured' };
+  if (!_aiEndpoint) return { error: "AI not configured" };
 
   const cacheKey = question.trim().toLowerCase();
   if (_aiSessionCache.has(cacheKey)) {
@@ -597,23 +733,27 @@ export async function askAi(question) {
   }
 
   const promise = (async () => {
-    const searchMatches = searchProduct(question).slice(0, 5).map(r => ({
-      name: r.name, type: r.type, desc: r.desc.substring(0, 100)
-    }));
+    const searchMatches = searchProduct(question)
+      .slice(0, 5)
+      .map((r) => ({
+        name: r.name,
+        type: r.type,
+        desc: r.desc.substring(0, 100),
+      }));
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
+      const timeout = setTimeout(() => controller.abort(), 15000);
 
       const res = await fetch(_aiEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
           question: question.trim(),
           systemContext: _aiContext,
-          searchMatches
-        })
+          searchMatches,
+        }),
       });
       clearTimeout(timeout);
 
@@ -632,8 +772,9 @@ export async function askAi(question) {
       }
       return data;
     } catch (err) {
-      if (err.name === 'AbortError') return { error: 'Request timed out' };
-      return { error: 'Network error' };
+      if (err.name === "AbortError")
+        return { error: "AI search timed out. Try a simpler question." };
+      return { error: "AI search unavailable. Results shown below." };
     }
   })();
 
@@ -650,16 +791,21 @@ export async function askAi(question) {
 export function highlightMatch(text, query) {
   if (!query) return text;
   // Try exact substring match first
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp('(' + escaped + ')', 'gi');
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp("(" + escaped + ")", "gi");
   if (re.test(text)) {
     return text.replace(re, '<span class="sr-match">$1</span>');
   }
   // Fallback: highlight individual query terms (for fuzzy matches)
-  const terms = query.trim().split(/\s+/).filter((t) => t.length >= 2);
+  const terms = query
+    .trim()
+    .split(/\s+/)
+    .filter((t) => t.length >= 2);
   if (terms.length === 0) return text;
-  const termPattern = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-  const termRe = new RegExp('(' + termPattern + ')', 'gi');
+  const termPattern = terms
+    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  const termRe = new RegExp("(" + termPattern + ")", "gi");
   return text.replace(termRe, '<span class="sr-match">$1</span>');
 }
 
@@ -668,7 +814,8 @@ export function highlightMatch(text, query) {
 // to their GitHub source URLs. Must be called BEFORE formatAiMarkdown()
 // so that [name](url) syntax is converted to <a> tags by the markdown parser.
 export function linkifyEntityNames(escapedText) {
-  if (!_entityLinkMap || !_entityLinkNames || _entityLinkNames.length === 0) return escapedText;
+  if (!_entityLinkMap || !_entityLinkNames || _entityLinkNames.length === 0)
+    return escapedText;
 
   // Split into existing markdown links (preserved) and plain text (linkified)
   const parts = [];
@@ -676,18 +823,22 @@ export function linkifyEntityNames(escapedText) {
   const linkRe = /\[([^\]]+)\]\([^)]+\)/g;
   let m;
   while ((m = linkRe.exec(escapedText)) !== null) {
-    if (m.index > lastIdx) parts.push({ text: escapedText.slice(lastIdx, m.index), isLink: false });
+    if (m.index > lastIdx)
+      parts.push({ text: escapedText.slice(lastIdx, m.index), isLink: false });
     parts.push({ text: m[0], isLink: true });
     lastIdx = m.index + m[0].length;
   }
-  if (lastIdx < escapedText.length) parts.push({ text: escapedText.slice(lastIdx), isLink: false });
+  if (lastIdx < escapedText.length)
+    parts.push({ text: escapedText.slice(lastIdx), isLink: false });
 
   // Only linkify entity names in non-link segments
   const linked = new Set();
   for (const name of _entityLinkNames) {
     if (linked.has(name)) continue;
     const url = _entityLinkMap[name];
-    const re = new RegExp('\\b(' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')\\b');
+    const re = new RegExp(
+      "\\b(" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")\\b",
+    );
     for (let i = 0; i < parts.length; i++) {
       if (parts[i].isLink || linked.has(name)) continue;
       if (re.exec(parts[i].text)) {
@@ -697,7 +848,7 @@ export function linkifyEntityNames(escapedText) {
     }
   }
 
-  return parts.map(p => p.text).join('');
+  return parts.map((p) => p.text).join("");
 }
 
 // ── AI answer markdown formatting ─────────────────────────────
@@ -714,41 +865,72 @@ export function linkifyEntityNames(escapedText) {
 export function formatAiMarkdown(escaped) {
   // ── Step 1: Extract code blocks to placeholders ──
   const codeBlocks = [];
-  let text = escaped.replace(/(^|\n)```(\w*)\n([\s\S]*?)```/g, (_, pre, lang, code) => {
-    const idx = codeBlocks.length;
-    codeBlocks.push(`<pre class="ai-code-block"><code>${code.replace(/\n$/, '')}</code></pre>`);
-    return `${pre}\x00CODEBLOCK${idx}\x00`;
-  });
+  let text = escaped.replace(
+    /(^|\n)```(\w*)\n([\s\S]*?)```/g,
+    (_, pre, lang, code) => {
+      const idx = codeBlocks.length;
+      codeBlocks.push(
+        `<pre class="ai-code-block"><code>${code.replace(/\n$/, "")}</code></pre>`,
+      );
+      return `${pre}\x00CODEBLOCK${idx}\x00`;
+    },
+  );
 
   // ── Step 2: Parse tables ──
-  text = text.replace(/(^|\n)(\|.+\|)\n(\|[\s:|-]+\|)\n((?:\|.+\|\n?)+)/g, (_, pre, headerRow, _sepRow, bodyBlock) => {
-    const parseRow = row => row.replace(/^\||\|$/g, '').split('|').map(c => c.trim());
-    const headers = parseRow(headerRow);
-    const headHtml = headers.map(h => `<th>${h}</th>`).join('');
-    const rows = bodyBlock.trim().split('\n');
-    const bodyHtml = rows.map(r => {
-      const cells = parseRow(r);
-      return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`;
-    }).join('');
-    return `${pre}<table class="ai-table"><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`;
-  });
+  text = text.replace(
+    /(^|\n)(\|.+\|)\n(\|[\s:|-]+\|)\n((?:\|.+\|\n?)+)/g,
+    (_, pre, headerRow, _sepRow, bodyBlock) => {
+      const parseRow = (row) =>
+        row
+          .replace(/^\||\|$/g, "")
+          .split("|")
+          .map((c) => c.trim());
+      const headers = parseRow(headerRow);
+      const headHtml = headers.map((h) => `<th>${h}</th>`).join("");
+      const rows = bodyBlock.trim().split("\n");
+      const bodyHtml = rows
+        .map((r) => {
+          const cells = parseRow(r);
+          return `<tr>${cells.map((c) => `<td>${c}</td>`).join("")}</tr>`;
+        })
+        .join("");
+      return `${pre}<table class="ai-table"><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`;
+    },
+  );
 
   // ── Step 3: Headings (### before ## before #) ──
-  text = text.replace(/(^|\n)###\s+(.+)/g, '$1<h4 class="ai-heading ai-h3">$2</h4>');
-  text = text.replace(/(^|\n)##\s+(.+)/g, '$1<h3 class="ai-heading ai-h2">$2</h3>');
-  text = text.replace(/(^|\n)#\s+(.+)/g, '$1<h2 class="ai-heading ai-h1">$2</h2>');
+  text = text.replace(
+    /(^|\n)###\s+(.+)/g,
+    '$1<h4 class="ai-heading ai-h3">$2</h4>',
+  );
+  text = text.replace(
+    /(^|\n)##\s+(.+)/g,
+    '$1<h3 class="ai-heading ai-h2">$2</h3>',
+  );
+  text = text.replace(
+    /(^|\n)#\s+(.+)/g,
+    '$1<h2 class="ai-heading ai-h1">$2</h2>',
+  );
 
   // ── Step 4: Inline formatting ──
   text = text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/(?<!<\/?)\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(?<!<\/?)\*(.+?)\*/g, "<em>$1</em>")
     .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" class="ai-link" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(
+      /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+      '<a href="$2" class="ai-link" target="_blank" rel="noopener noreferrer">$1</a>',
+    )
     .replace(/(^|\n)[*-] (.+)/g, '$1<span class="ai-bullet">$2</span>')
-    .replace(/(^|\n)(\d+)\. (.+)/g, '$1<span class="ai-bullet"><span class="ai-bullet-num">$2.</span> $3</span>');
+    .replace(
+      /(^|\n)(\d+)\. (.+)/g,
+      '$1<span class="ai-bullet"><span class="ai-bullet-num">$2.</span> $3</span>',
+    );
 
   // ── Step 5: Restore code blocks ──
-  codeBlocks.forEach((html, i) => { text = text.replace(`\x00CODEBLOCK${i}\x00`, html); });
+  codeBlocks.forEach((html, i) => {
+    text = text.replace(`\x00CODEBLOCK${i}\x00`, html);
+  });
 
   return text;
 }
@@ -756,14 +938,20 @@ export function formatAiMarkdown(escaped) {
 // ── AI answer copy helper ────────────────────────────────────
 function copyAiAnswer(btn, text) {
   const onSuccess = () => {
-    btn.classList.add('copied');
+    btn.classList.add("copied");
     const prev = btn.textContent;
-    btn.textContent = '\u2713 Copied';
-    setTimeout(() => { btn.textContent = prev; btn.classList.remove('copied'); }, 1500);
-    showToast('Copied to clipboard');
+    btn.textContent = "\u2713 Copied";
+    setTimeout(() => {
+      btn.textContent = prev;
+      btn.classList.remove("copied");
+    }, 1500);
+    showToast("Copied to clipboard");
   };
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(onSuccess).catch(() => onSuccess());
+    navigator.clipboard
+      .writeText(text)
+      .then(onSuccess)
+      .catch(() => onSuccess());
   } else {
     onSuccess();
   }
@@ -772,9 +960,14 @@ function copyAiAnswer(btn, text) {
 let _previewIndex = -1;
 
 const TYPE_COLORS = {
-  planet: '#4d8bff', component: '#4d8bff', tag: '#64748b',
-  'class': '#4d8bff', object: '#22c55e', trigger: '#ef4444',
-  lwc: '#a855f7', metadata: '#f59e0b'
+  planet: "#4d8bff",
+  component: "#4d8bff",
+  tag: "#64748b",
+  class: "#4d8bff",
+  object: "#22c55e",
+  trigger: "#ef4444",
+  lwc: "#a855f7",
+  metadata: "#f59e0b",
 };
 
 // NOTE on innerHTML safety: All search data comes from the trusted product data
@@ -783,44 +976,52 @@ const TYPE_COLORS = {
 
 // Render master list of results into #searchMaster
 function renderMasterList(results, query) {
-  const el = document.getElementById('searchMaster');
+  const el = document.getElementById("searchMaster");
 
   if (results.length === 0 && query.trim()) {
-    el.textContent = '';
-    const noResults = document.createElement('div');
-    noResults.style.cssText = 'text-align:center;padding:24px;color:var(--text-dim);font-size:var(--text-sm)';
+    el.textContent = "";
+    const noResults = document.createElement("div");
+    noResults.style.cssText =
+      "text-align:center;padding:24px;color:var(--text-dim);font-size:var(--text-sm)";
     noResults.textContent = 'No results for "' + query + '"';
     el.appendChild(noResults);
     return;
   }
 
-  const resultsHtml = results.map((r, i) => {
-    const typeColor = TYPE_COLORS[r.type] || '#64748b';
-    const stagger = i < 10 ? `--stagger-index: ${i};` : '';
-    return `<div class="search-result${i === searchIndex ? ' active' : ''}" ` +
-      `id="sr-opt-${i}" data-idx="${i}" data-search-result="${i}" style="${stagger}--type-color:${typeColor}" ` +
-      `role="option" aria-selected="${i === searchIndex}">` +
-      `<div class="sr-icon" style="background:${r.color}22;border:1px solid ${r.color}44">${r.icon}</div>` +
-      `<div class="sr-body">` +
-      `<div class="sr-title">${highlightMatch(r.name, query)}</div>` +
-      `<div class="sr-path">${r.level}</div>` +
-      `</div>` +
-      `<span class="sr-type" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${r.type}</span>` +
-      `</div>`;
-  }).join('');
+  const resultsHtml = results
+    .map((r, i) => {
+      const typeColor = TYPE_COLORS[r.type] || "#64748b";
+      const stagger = i < 10 ? `--stagger-index: ${i};` : "";
+      return (
+        `<div class="search-result${i === searchIndex ? " active" : ""}" ` +
+        `id="sr-opt-${i}" data-idx="${i}" data-search-result="${i}" style="${stagger}--type-color:${typeColor}" ` +
+        `role="option" aria-selected="${i === searchIndex}">` +
+        `<div class="sr-icon" style="background:${r.color}22;border:1px solid ${r.color}44">${r.icon}</div>` +
+        `<div class="sr-body">` +
+        `<div class="sr-title">${highlightMatch(r.name, query)}</div>` +
+        `<div class="sr-path">${r.level}</div>` +
+        `</div>` +
+        `<span class="sr-type" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${r.type}</span>` +
+        `</div>`
+      );
+    })
+    .join("");
 
   // Safe: app-owned data, query escaped via highlightMatch
   el.innerHTML = resultsHtml;
 
   // Attach event listeners for search results
-  el.querySelectorAll('[data-search-result]').forEach((resultEl) => {
+  el.querySelectorAll("[data-search-result]").forEach((resultEl) => {
     const idx = parseInt(resultEl.dataset.searchResult, 10);
-    resultEl.addEventListener('click', () => activateResult(idx));
-    resultEl.addEventListener('mouseenter', () => {
+    resultEl.addEventListener("click", () => activateResult(idx));
+    resultEl.addEventListener("mouseenter", () => {
       searchIndex = idx;
       _previewIndex = idx;
       highlightActive();
-      renderPreview(searchResults[idx], document.getElementById('searchInput').value);
+      renderPreview(
+        searchResults[idx],
+        document.getElementById("searchInput").value,
+      );
     });
   });
 }
@@ -828,15 +1029,16 @@ function renderMasterList(results, query) {
 // Render AI answer section into #aiSection
 // aiState: null | { loading: true } | { answer: string } | { error: string }
 export function renderAiSection(query, aiState) {
-  const el = document.getElementById('aiSection');
+  const el = document.getElementById("aiSection");
   if (!aiState) {
-    el.textContent = '';
+    el.textContent = "";
     return;
   }
 
-  let html = '';
+  let html = "";
   if (aiState.loading) {
-    html = `<div class="ai-section" id="ai-section">` +
+    html =
+      `<div class="ai-section" id="ai-section">` +
       `<div class="ai-header">AI ANSWER</div>` +
       `<div class="ai-card">` +
       `<div class="ai-icon">&#x2728;</div>` +
@@ -845,9 +1047,13 @@ export function renderAiSection(query, aiState) {
       `</div></div></div>`;
   } else if (aiState.answer) {
     // Escape HTML in AI answer (AI-generated content), linkify, format markdown
-    const safeAnswer = aiState.answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safeAnswer = aiState.answer
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
     const formattedAnswer = formatAiMarkdown(linkifyEntityNames(safeAnswer));
-    html = `<div class="ai-section" id="ai-section">` +
+    html =
+      `<div class="ai-section" id="ai-section">` +
       `<div class="ai-header"><span class="ai-header-left">AI ANSWER${buildFeedbackButtonsHtml()}</span><button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
       buildFeedbackPanelHtml() +
       `<div class="ai-card ai-card-clickable" role="button" tabindex="0">` +
@@ -857,7 +1063,8 @@ export function renderAiSection(query, aiState) {
       `<div class="ai-attribution">Based on ${_productName} product data</div>` +
       `</div></div></div>`;
   } else if (aiState.error) {
-    html = `<div class="ai-section" id="ai-section">` +
+    html =
+      `<div class="ai-section" id="ai-section">` +
       `<div class="ai-error">${aiState.error}</div></div>`;
   }
 
@@ -865,17 +1072,25 @@ export function renderAiSection(query, aiState) {
   el.innerHTML = html;
 
   // Prevent mousedown on AI section from closing search overlay
-  const aiSection = el.querySelector('.ai-section');
+  const aiSection = el.querySelector(".ai-section");
   if (aiSection) {
-    aiSection.addEventListener('mousedown', (e) => { e.preventDefault(); });
+    aiSection.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+    });
   }
 
   // Wire copy button
-  const aiCopyBtn = el.querySelector('[data-ai-copy]');
+  const aiCopyBtn = el.querySelector("[data-ai-copy]");
   if (aiCopyBtn && aiState && aiState.answer) {
     const rawAnswer = aiState.answer;
-    aiCopyBtn.addEventListener('click', (e) => { e.stopPropagation(); copyAiAnswer(aiCopyBtn, rawAnswer); });
-    aiCopyBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); });
+    aiCopyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      copyAiAnswer(aiCopyBtn, rawAnswer);
+    });
+    aiCopyBtn.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+    });
   }
 
   // Wire feedback buttons
@@ -884,18 +1099,25 @@ export function renderAiSection(query, aiState) {
   }
 
   // Make AI card clickable to open search results page
-  const aiClickable = el.querySelector('.ai-card-clickable');
+  const aiClickable = el.querySelector(".ai-card-clickable");
   if (aiClickable && _enterSearchResults) {
     const openResultsPage = () => {
       const currentQuery = query;
       const currentAnswer = aiState.answer;
       const currentResults = [...searchResults];
       closeSearch();
-      setTimeout(() => { _enterSearchResults(currentQuery, currentResults, { aiAnswer: currentAnswer }); }, 100);
+      setTimeout(() => {
+        _enterSearchResults(currentQuery, currentResults, {
+          aiAnswer: currentAnswer,
+        });
+      }, 100);
     };
-    aiClickable.addEventListener('click', openResultsPage);
-    aiClickable.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); openResultsPage(); }
+    aiClickable.addEventListener("click", openResultsPage);
+    aiClickable.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        openResultsPage();
+      }
     });
   }
 }
@@ -903,14 +1125,15 @@ export function renderAiSection(query, aiState) {
 // Render preview pane for a search result into #searchPreview
 // All data is app-owned (product data), query escaped via highlightMatch
 export function renderPreview(item, query) {
-  const el = document.getElementById('searchPreview');
+  const el = document.getElementById("searchPreview");
   if (!item) {
     el.innerHTML = '<div class="sp-empty">Select a result to preview</div>';
     return;
   }
 
-  const typeColor = TYPE_COLORS[item.type] || '#64748b';
-  let html = `<div class="sp-header">` +
+  const typeColor = TYPE_COLORS[item.type] || "#64748b";
+  let html =
+    `<div class="sp-header">` +
     `<span class="sp-type-badge" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${item.type}</span>` +
     `<span class="sp-name">${highlightMatch(item.name, query)}</span>` +
     `</div>`;
@@ -922,12 +1145,12 @@ export function renderPreview(item, query) {
 
   if (item._keyMethods && item._keyMethods.length > 0) {
     html += `<div class="sp-section-label">Key Methods</div>`;
-    html += `<div class="sp-pills">${item._keyMethods.map(m => `<span class="sp-pill">${m}</span>`).join('')}</div>`;
+    html += `<div class="sp-pills">${item._keyMethods.map((m) => `<span class="sp-pill">${m}</span>`).join("")}</div>`;
   }
 
   if (item._referencedObjects && item._referencedObjects.length > 0) {
     html += `<div class="sp-section-label">Referenced Objects</div>`;
-    html += `<div class="sp-pills">${item._referencedObjects.map(o => `<span class="sp-pill">${o}</span>`).join('')}</div>`;
+    html += `<div class="sp-pills">${item._referencedObjects.map((o) => `<span class="sp-pill">${o}</span>`).join("")}</div>`;
   }
 
   if (item._extends) {
@@ -942,7 +1165,7 @@ export function renderPreview(item, query) {
 
   if (item._fields && item._fields.length > 0) {
     html += `<div class="sp-section-label">Fields</div>`;
-    html += `<div class="sp-pills">${item._fields.map(f => `<span class="sp-pill">${f.name}</span>`).join('')}</div>`;
+    html += `<div class="sp-pills">${item._fields.map((f) => `<span class="sp-pill">${f.name}</span>`).join("")}</div>`;
   }
 
   // Safe: app-owned data, query escaped via highlightMatch
@@ -950,91 +1173,98 @@ export function renderPreview(item, query) {
 }
 
 export function highlightActive() {
-  const master = document.getElementById('searchMaster');
+  const master = document.getElementById("searchMaster");
   if (!master) return;
-  master.querySelectorAll('.search-result').forEach((el, i) => {
-    el.classList.toggle('active', i === searchIndex);
-    el.setAttribute('aria-selected', i === searchIndex);
+  master.querySelectorAll(".search-result").forEach((el, i) => {
+    el.classList.toggle("active", i === searchIndex);
+    el.setAttribute("aria-selected", i === searchIndex);
   });
   // Update aria-activedescendant so screen readers track the focused option
   if (searchIndex >= 0) {
-    master.setAttribute('aria-activedescendant', `sr-opt-${searchIndex}`);
+    master.setAttribute("aria-activedescendant", `sr-opt-${searchIndex}`);
   } else {
-    master.removeAttribute('aria-activedescendant');
+    master.removeAttribute("aria-activedescendant");
   }
 }
 
 export function activateResult(idx) {
   const r = searchResults[idx];
   if (r) {
-    track('search_result_click', { name: r.name, type: r.type });
+    track("search_result_click", { name: r.name, type: r.type });
     closeSearch();
-    setTimeout(() => { r.action(); }, 100);
+    setTimeout(() => {
+      r.action();
+    }, 100);
   }
 }
 
 export function cycleResult(dir) {
   if (searchResults.length === 0) return;
-  searchIndex = (searchIndex + dir + searchResults.length) % searchResults.length;
+  searchIndex =
+    (searchIndex + dir + searchResults.length) % searchResults.length;
   _previewIndex = searchIndex;
   highlightActive();
-  const master = document.getElementById('searchMaster');
+  const master = document.getElementById("searchMaster");
   if (master) {
-    const active = master.querySelector('.search-result.active');
-    if (active) active.scrollIntoView({ block: 'nearest' });
+    const active = master.querySelector(".search-result.active");
+    if (active) active.scrollIntoView({ block: "nearest" });
   }
-  renderPreview(searchResults[searchIndex], document.getElementById('searchInput').value);
+  renderPreview(
+    searchResults[searchIndex],
+    document.getElementById("searchInput").value,
+  );
 }
 
 export function openSearch() {
-  document.getElementById('searchInput').focus();
+  document.getElementById("searchInput").focus();
 }
 
 export function closeSearch() {
-  const shell = document.getElementById('searchShell');
-  const drop = document.getElementById('searchDrop');
-  const scrim = document.getElementById('searchScrim');
-  shell.classList.remove('focused', 'typing');
-  drop.classList.remove('open');
-  scrim.classList.remove('visible');
+  const shell = document.getElementById("searchShell");
+  const drop = document.getElementById("searchDrop");
+  const scrim = document.getElementById("searchScrim");
+  shell.classList.remove("focused", "typing");
+  drop.classList.remove("open");
+  scrim.classList.remove("visible");
   searchResults = [];
   searchIndex = -1;
   _previewIndex = -1;
   clearTimeout(_aiDebounceTimer);
-  const input = document.getElementById('searchInput');
-  input.value = '';
-  input.setAttribute('aria-expanded', 'false');
+  const input = document.getElementById("searchInput");
+  input.value = "";
+  input.setAttribute("aria-expanded", "false");
   input.blur();
-  const master = document.getElementById('searchMaster');
-  master.removeAttribute('aria-activedescendant');
-  master.textContent = '';
-  document.getElementById('searchPreview').textContent = '';
-  document.getElementById('aiSection').textContent = '';
+  const master = document.getElementById("searchMaster");
+  master.removeAttribute("aria-activedescendant");
+  master.textContent = "";
+  document.getElementById("searchPreview").textContent = "";
+  document.getElementById("aiSection").textContent = "";
 }
 
 let _searchTrackTimer = null;
 let _searchAnnounceTimer = null;
 
 export function expandSearch(query) {
-  const shell = document.getElementById('searchShell');
-  const drop = document.getElementById('searchDrop');
-  const scrim = document.getElementById('searchScrim');
-  shell.classList.remove('focused');
-  shell.classList.add('typing');
-  drop.classList.add('open');
-  scrim.classList.add('visible');
-  document.getElementById('searchInput').setAttribute('aria-expanded', 'true');
+  const shell = document.getElementById("searchShell");
+  const drop = document.getElementById("searchDrop");
+  const scrim = document.getElementById("searchScrim");
+  shell.classList.remove("focused");
+  shell.classList.add("typing");
+  drop.classList.add("open");
+  scrim.classList.add("visible");
+  document.getElementById("searchInput").setAttribute("aria-expanded", "true");
   if (window.innerWidth > 480) {
-    const dropInner = document.querySelector('.search-drop-inner');
+    const dropInner = document.querySelector(".search-drop-inner");
     const shellRect = shell.getBoundingClientRect();
-    dropInner.style.marginTop = (shellRect.bottom + 8) + 'px';
+    dropInner.style.marginTop = shellRect.bottom + 8 + "px";
   }
   searchResults = searchProduct(query);
   searchIndex = searchResults.length > 0 ? 0 : -1;
   _previewIndex = searchIndex;
 
   // Detect question and trigger AI search (min 10 chars to avoid partial queries)
-  const shouldAskAi = _aiEndpoint && query.trim().length >= 10 && isQuestion(query);
+  const shouldAskAi =
+    _aiEndpoint && query.trim().length >= 10 && isQuestion(query);
 
   // Render the three panels
   renderMasterList(searchResults, query);
@@ -1046,11 +1276,11 @@ export function expandSearch(query) {
     _aiDebounceTimer = setTimeout(async () => {
       const result = await askAi(query);
       // Only update if search is still showing the same query
-      const currentInput = document.getElementById('searchInput');
+      const currentInput = document.getElementById("searchInput");
       if (currentInput && currentInput.value === query) {
         if (result.answer) {
           renderAiSection(query, { answer: result.answer });
-          announce('AI answer generated');
+          announce("AI answer generated");
         } else if (result.error) {
           renderAiSection(query, { error: result.error });
         }
@@ -1061,7 +1291,11 @@ export function expandSearch(query) {
   clearTimeout(_searchTrackTimer);
   if (query.length >= 2) {
     _searchTrackTimer = setTimeout(() => {
-      track('search_used', { query: query, result_count: searchResults.length, ai: shouldAskAi });
+      track("search_used", {
+        query: query,
+        result_count: searchResults.length,
+        ai: shouldAskAi,
+      });
     }, 800);
   }
   // B5: Debounced screen reader announcement for search results
@@ -1069,27 +1303,30 @@ export function expandSearch(query) {
   if (query.length >= 2) {
     _searchAnnounceTimer = setTimeout(() => {
       const count = searchResults.length;
-      const msg = count === 0 ? 'No results found' : `${count} result${count !== 1 ? 's' : ''} found`;
-      announce(shouldAskAi ? msg + '. Loading AI answer.' : msg);
+      const msg =
+        count === 0
+          ? "No results found"
+          : `${count} result${count !== 1 ? "s" : ""} found`;
+      announce(shouldAskAi ? msg + ". Loading AI answer." : msg);
     }, 500);
   }
 }
 
 export function collapseSearch() {
-  const shell = document.getElementById('searchShell');
-  const drop = document.getElementById('searchDrop');
-  const scrim = document.getElementById('searchScrim');
-  shell.classList.remove('typing');
-  shell.classList.add('focused');
-  drop.classList.remove('open');
-  scrim.classList.remove('visible');
-  document.getElementById('searchInput').setAttribute('aria-expanded', 'false');
+  const shell = document.getElementById("searchShell");
+  const drop = document.getElementById("searchDrop");
+  const scrim = document.getElementById("searchScrim");
+  shell.classList.remove("typing");
+  shell.classList.add("focused");
+  drop.classList.remove("open");
+  scrim.classList.remove("visible");
+  document.getElementById("searchInput").setAttribute("aria-expanded", "false");
   searchResults = [];
   searchIndex = -1;
   _previewIndex = -1;
-  const cMaster = document.getElementById('searchMaster');
-  cMaster.removeAttribute('aria-activedescendant');
-  cMaster.textContent = '';
-  document.getElementById('searchPreview').textContent = '';
-  document.getElementById('aiSection').textContent = '';
+  const cMaster = document.getElementById("searchMaster");
+  cMaster.removeAttribute("aria-activedescendant");
+  cMaster.textContent = "";
+  document.getElementById("searchPreview").textContent = "";
+  document.getElementById("aiSection").textContent = "";
 }

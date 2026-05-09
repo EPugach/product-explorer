@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Product Explorer Tests</title>
+<style>
+  body { font-family: monospace; background: #1a1a2e; color: #e2e8f0; padding: 24px; }
+  .pass { color: #22c55e; } .fail { color: #ef4444; } .suite { margin: 16px 0; }
+  h2 { color: #94a3b8; font-size: 14px; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+  pre { background: #0f0f23; padding: 8px; border-radius: 4px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Product Explorer Tests</h1>
+<div id="results"></div>
+<script type="module">
+  import { reportAll } from './test-utils.js';
+  import './merge-entities.test.js';
+  import './search.test.js';
+  import './navigation-state.test.js';
+
+  setTimeout(() => reportAll(document.getElementById('results')), 100);
+</script>
+</body>
+</html>
