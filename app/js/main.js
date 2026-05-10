@@ -945,6 +945,12 @@ async function init() {
   ) {
     handleHashNavigation();
   }
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("../sw.js", { scope: "../" })
+      .catch(() => {});
+  }
 }
 
 document.addEventListener("DOMContentLoaded", init);

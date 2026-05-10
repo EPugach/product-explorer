@@ -6,8 +6,10 @@
 !README.md
 !LICENSE
 
-# Allow root landing page
+# Allow root landing page + PWA files
 !index.html
+!sw.js
+!manifest.json
 
 # Allow the shared rendering engine
 !app/

@@ -3,56 +3,66 @@
 // Reads: products/manifest.js (stats), products/<id>/config.js (metadata), app/js/version.js (cache-bust)
 // Usage: node scripts/generate-product-html.mjs
 
-import { writeFileSync, mkdirSync } from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import { writeFileSync, mkdirSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..');
+const ROOT = join(__dirname, "..");
 
-const SITE_BASE = 'https://epugach.github.io/product-explorer';
+const SITE_BASE = "https://epugach.github.io/product-explorer";
 
 const STAT_ID_MAP = {
-  'Apex Classes': 'statClasses',
-  'Triggers': 'statTriggers',
-  'Custom Objects': 'statObjects',
-  'Objects': 'statObjects',
-  'Domains': 'statDomains',
-  'Components': 'statComponents',
-  'Metadata': 'statMetadata',
-  'Tours': 'statTours',
+  "Apex Classes": "statClasses",
+  Triggers: "statTriggers",
+  "Custom Objects": "statObjects",
+  Objects: "statObjects",
+  Domains: "statDomains",
+  Components: "statComponents",
+  Metadata: "statMetadata",
+  Tours: "statTours",
 };
 
 async function main() {
-  const { PRODUCTS } = await import(`file://${join(ROOT, 'products/manifest.js')}`);
-  const { JS_VERSION, CSS_VERSION } = await import(`file://${join(ROOT, 'app/js/version.js')}`);
+  const { PRODUCTS } = await import(
+    `file://${join(ROOT, "products/manifest.js")}`
+  );
+  const { JS_VERSION, CSS_VERSION } = await import(
+    `file://${join(ROOT, "app/js/version.js")}`
+  );
 
   for (const entry of PRODUCTS) {
-    const cfgModule = await import(`file://${join(ROOT, `products/${entry.id}/config.js`)}`);
+    const cfgModule = await import(
+      `file://${join(ROOT, `products/${entry.id}/config.js`)}`
+    );
     const cfg = cfgModule.default;
-    const gaId = cfg.analytics?.gaId || 'G-HJTE1NYP82';
+    const gaId = cfg.analytics?.gaId || "G-HJTE1NYP82";
 
     const html = renderHtml(cfg, entry, JS_VERSION, CSS_VERSION, gaId);
-    const outPath = join(ROOT, entry.id, 'index.html');
+    const outPath = join(ROOT, entry.id, "index.html");
     mkdirSync(dirname(outPath), { recursive: true });
-    writeFileSync(outPath, html, 'utf-8');
+    writeFileSync(outPath, html, "utf-8");
     console.log(`  ✓ ${entry.id}/index.html`);
   }
 
-  console.log(`\nGenerated ${PRODUCTS.length} product pages (JS v${JS_VERSION}, CSS v${CSS_VERSION})`);
+  console.log(
+    `\nGenerated ${PRODUCTS.length} product pages (JS v${JS_VERSION}, CSS v${CSS_VERSION})`,
+  );
 }
 
 function renderStats(stats) {
-  return stats.map(([label, value]) => {
-    const id = STAT_ID_MAP[label] || `stat${label.replace(/\s+/g, '')}`;
-    return `      <div class="stat-item"><div class="stat-value" id="${id}">${value}</div><div class="stat-label">${label}</div></div>`;
-  }).join('\n');
+  return stats
+    .map(([label, value]) => {
+      const id = STAT_ID_MAP[label] || `stat${label.replace(/\s+/g, "")}`;
+      return `      <div class="stat-item"><div class="stat-value" id="${id}">${value}</div><div class="stat-label">${label}</div></div>`;
+    })
+    .join("\n");
 }
 
 export function renderHtml(cfg, manifestEntry, jsVersion, cssVersion, gaId) {
   const { id, name, fullName } = cfg;
   const title = cfg.title || `${name} Explorer`;
-  const version = cfg.version || '';
+  const version = cfg.version || "";
   const description = `Interactive galaxy-themed visualization of ${fullName}. Explore domains, components, and entities as an interconnected universe.`;
   const versionIndicator = version ? `${name} ${version}` : name;
 
@@ -74,6 +84,8 @@ export function renderHtml(cfg, manifestEntry, jsVersion, cssVersion, gaId) {
 <meta name="twitter:description" content="${description}">
 <meta name="twitter:image" content="${SITE_BASE}/${id}/og-image.png">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="${cfg.color || "#4d8bff"}">
 <!-- Google tag (gtag.js) -->
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <script async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
@@ -221,4 +233,7 @@ ${renderStats(manifestEntry.stats)}
 `;
 }
 
-main().catch(err => { console.error(err); process.exit(1); });
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
