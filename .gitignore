@@ -32,6 +32,10 @@
 !eda/
 !eda/index.html
 
+# Allow scripts
+!scripts/
+!scripts/**
+
 # Allow tests
 !tests/
 !tests/**
