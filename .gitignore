@@ -10,6 +10,7 @@
 !index.html
 !sw.js
 !manifest.json
+!icon-512.png
 
 # Allow the shared rendering engine
 !app/

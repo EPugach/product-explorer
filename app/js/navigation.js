@@ -500,7 +500,11 @@ function renderSearchResultsPage(query, results, options = {}) {
   const isMobile = window.innerWidth < 768;
 
   // Breadcrumb
-  let html = `<div class="bc"><span class="bc-link" data-nav="galaxy">${productName}</span><span class="bc-sep">&#x276F;</span><span class="bc-here">Search Results</span></div>`;
+  // eslint-disable-next-line no-shadow -- local accumulator intentionally shadows imported html()
+  let html = breadcrumb([
+    { label: productName, nav: "galaxy" },
+    { label: "Search Results" },
+  ]);
 
   // Search input (value HTML-escaped via safeQ)
   html += `<div class="sr-search-box"><span class="sr-search-icon">\u{1F50D}</span><input type="text" class="sr-search-input" id="srSearchInput" value="${safeQ}" autocomplete="off" spellcheck="false" placeholder="Search ${productName}..."></div>`;
@@ -571,9 +575,10 @@ function renderSearchResultsPage(query, results, options = {}) {
   }
 
   // Wire breadcrumb
-  el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
-    l.style.cursor = "pointer";
-    l.addEventListener("click", () => navigateTo("galaxy"));
+  wireNavLinks(el, {
+    galaxy: () => navigateTo("galaxy"),
+    planet: () => {},
+    back: () => {},
   });
 
   // Wire result card interactions

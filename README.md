@@ -7,12 +7,14 @@ Product Explorer closes that gap. It reads the codebase and renders it as an int
 ## What You Get
 
 For admins, consultants, and implementation teams:
+
 - See how features connect without tracing code paths
 - Understand dependencies before making configuration changes
 - Explore guided tours that walk through architectural stories
 - Search across every entity, field, and method in one place
 
 For developers and architects:
+
 - Execution flows and code samples for every component
 - Complete entity data: classes, objects, triggers, LWCs, metadata
 - Cross-domain connection maps showing system interactions
@@ -26,14 +28,14 @@ For developers and architects:
 
 The Salesforce Nonprofit Success Pack powers thousands of nonprofit organizations. This explorer maps its entire architecture:
 
-| | |
-|---|---|
-| Domains | 18 feature areas across 4 clusters |
-| Components | 55 functional groups |
-| Entities | 534 classes, objects, triggers, LWCs, metadata |
-| Connections | 86 cross-domain dependencies |
-| Tours | 9 guided constellation stories |
-| Source | SalesforceFoundation/NPSP repository |
+|             |                                                |
+| ----------- | ---------------------------------------------- |
+| Domains     | 18 feature areas across 4 clusters             |
+| Components  | 55 functional groups                           |
+| Entities    | 534 classes, objects, triggers, LWCs, metadata |
+| Connections | 86 cross-domain dependencies                   |
+| Tours       | 9 guided constellation stories                 |
+| Source      | SalesforceFoundation/NPSP repository           |
 
 Entity data extracted from the Cumulus repository and enriched with AI-generated descriptions covering purpose, behavior, and architectural role.
 
@@ -51,18 +53,18 @@ Salesforce Public Sector Solutions transforms delivery of government services wi
 
 ## Navigation
 
-| Action | How |
-|--------|-----|
-| Explore a domain | Click any planet on the galaxy view |
-| View a component | Click a component card within a domain |
-| Browse entities | Switch tabs (Classes, Objects, Triggers, LWCs, Metadata) |
-| View entity detail | Click any entity card |
-| Search | Press `/` or click the search icon |
-| Go back | Press `ESC` or click breadcrumbs |
-| Switch tabs | `Left` / `Right` arrow keys (on component view) |
-| Change transitions | Press `T` to cycle Gentle / Cinematic / Snappy |
-| Rearrange planets | Drag any planet on the galaxy view |
-| Zoom | Scroll wheel or pinch on touch devices |
+| Action             | How                                                      |
+| ------------------ | -------------------------------------------------------- |
+| Explore a domain   | Click any planet on the galaxy view                      |
+| View a component   | Click a component card within a domain                   |
+| Browse entities    | Switch tabs (Classes, Objects, Triggers, LWCs, Metadata) |
+| View entity detail | Click any entity card                                    |
+| Search             | Press `/` or click the search icon                       |
+| Go back            | Press `ESC` or click breadcrumbs                         |
+| Switch tabs        | `Left` / `Right` arrow keys (on component view)          |
+| Change transitions | Press `T` to cycle Gentle / Cinematic / Snappy           |
+| Rearrange planets  | Drag any planet on the galaxy view                       |
+| Zoom               | Scroll wheel or pinch on touch devices                   |
 
 ## Architecture
 
@@ -74,3 +76,12 @@ Galaxy View (all domains)
 ```
 
 No build step. No dependencies. No frameworks. Pure HTML, CSS, and ES modules.
+
+## Adding a Product
+
+1. Create `products/<id>/` with `config.js`, `data.js`, `entities.js`, `icons.js`, `tour-data.js`, `ai-context.js`, and `feedback.js`
+2. Add an entry to `products/manifest.js` with id, name, fullName, and stats
+3. Drop `<id>/og-image.png` (1536x1024) and `<id>/favicon.svg` into the product directory
+4. Run `npm run build:html` to generate `<id>/index.html`
+5. Add the product directory to `.gitignore` allowlist
+6. Bump `JS_VERSION` in `app/js/version.js` if any shared JS changed
