@@ -1,25 +1,103 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Product Explorer Tests</title>
-<style>
-  body { font-family: monospace; background: #1a1a2e; color: #e2e8f0; padding: 24px; }
-  .pass { color: #22c55e; } .fail { color: #ef4444; } .suite { margin: 16px 0; }
-  h2 { color: #94a3b8; font-size: 14px; border-bottom: 1px solid #334155; padding-bottom: 4px; }
-  pre { background: #0f0f23; padding: 8px; border-radius: 4px; overflow-x: auto; }
-</style>
-</head>
-<body>
-<h1>Product Explorer Tests</h1>
-<div id="results"></div>
-<script type="module">
-  import { reportAll } from './test-utils.js';
-  import './merge-entities.test.js';
-  import './search.test.js';
-  import './navigation-state.test.js';
+  <head>
+    <meta charset="UTF-8" />
+    <title>Product Explorer Tests</title>
+    <style>
+      :root {
+        --bg: #1a1a2e;
+        --fg: #e2e8f0;
+        --muted: #94a3b8;
+        --pass: #22c55e;
+        --fail: #ef4444;
+        --code-bg: #0f0f23;
+        --hr: #334155;
+      }
+      :root.theme-light {
+        --bg: #f5f5fa;
+        --fg: #1f2937;
+        --muted: #475569;
+        --pass: #15803d;
+        --fail: #b91c1c;
+        --code-bg: #e9ecf3;
+        --hr: #cbd5e1;
+      }
+      body {
+        font-family: monospace;
+        background: var(--bg);
+        color: var(--fg);
+        padding: 24px;
+        transition:
+          background 0.2s,
+          color 0.2s;
+      }
+      .pass {
+        color: var(--pass);
+      }
+      .fail {
+        color: var(--fail);
+      }
+      .suite {
+        margin: 16px 0;
+      }
+      h1 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      h2 {
+        color: var(--muted);
+        font-size: 14px;
+        border-bottom: 1px solid var(--hr);
+        padding-bottom: 4px;
+      }
+      pre {
+        background: var(--code-bg);
+        padding: 8px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      .theme-btn {
+        background: none;
+        border: 1px solid var(--muted);
+        color: var(--muted);
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-family: monospace;
+        font-size: 13px;
+      }
+      .theme-btn:hover {
+        border-color: var(--fg);
+        color: var(--fg);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      Product Explorer Tests
+      <button class="theme-btn" id="themeBtn">&#x263C;</button>
+    </h1>
+    <div id="results"></div>
+    <script>
+      const k = "productexplorer:tests:theme";
+      if (localStorage.getItem(k) === "light")
+        document.documentElement.classList.add("theme-light");
+      document.getElementById("themeBtn").addEventListener("click", () => {
+        const light = document.documentElement.classList.toggle("theme-light");
+        localStorage.setItem(k, light ? "light" : "dark");
+        document.getElementById("themeBtn").textContent = light ? "☾" : "☼";
+      });
+      if (document.documentElement.classList.contains("theme-light"))
+        document.getElementById("themeBtn").textContent = "☾";
+    </script>
+    <script type="module">
+      import { reportAll } from "./test-utils.js";
+      import "./merge-entities.test.js";
+      import "./search.test.js";
+      import "./navigation-state.test.js";
 
-  setTimeout(() => reportAll(document.getElementById('results')), 100);
-</script>
-</body>
+      setTimeout(() => reportAll(document.getElementById("results")), 100);
+    </script>
+  </body>
 </html>
