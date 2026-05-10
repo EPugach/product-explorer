@@ -5,6 +5,13 @@
 // ══════════════════════════════════════════════════════════════
 
 import { track, announce, showToast } from "./utils.js";
+import {
+  html,
+  esc,
+  breadcrumb,
+  wireNavLinks,
+  wireClickAndEnter,
+} from "./templates.js";
 import { resetZoomPan, nodeMap } from "./physics.js";
 import { domainSvg, entitySvg, uiSvg } from "./icons.js";
 import {
@@ -1016,12 +1023,13 @@ function renderComponentCard(c, i, id, p) {
 function renderPlanetView(id) {
   const p = PRODUCT_DATA[id];
   const el = document.getElementById("planet-content");
+
   let domainStats = "";
   if (p._entities) {
-    const dc = (p._entities.classes || []).length,
-      do_ = (p._entities.objects || []).length;
-    const dt = (p._entities.triggers || []).length,
-      dl = (p._entities.lwcs || []).length;
+    const dc = (p._entities.classes || []).length;
+    const do_ = (p._entities.objects || []).length;
+    const dt = (p._entities.triggers || []).length;
+    const dl = (p._entities.lwcs || []).length;
     const parts = [];
     if (dc) parts.push(dc + " classes");
     if (do_) parts.push(do_ + " objects");
@@ -1030,44 +1038,108 @@ function renderPlanetView(id) {
     if (parts.length > 0)
       domainStats = `<div class="domain-entity-stats">${p.components.length} groups \u00B7 ${parts.join(" \u00B7 ")}</div>`;
   }
+
   let domainPkgHtml = "";
   if (
     p.packages &&
     p.packages.length > 0 &&
     Object.keys(PRODUCT_PACKAGES).length > 0
   ) {
-    domainPkgHtml = `<div class="domain-packages">${p.packages
-      .map((pkgKey) => {
+    domainPkgHtml = html`<div class="domain-packages">
+      ${p.packages.map((pkgKey) => {
         const pkg = PRODUCT_PACKAGES[pkgKey];
         return pkg
           ? `<span class="package-badge" style="--pkg-color:${pkg.color}">${pkg.name}</span>`
           : "";
-      })
-      .join("")}</div>`;
+      })}
+    </div>`;
   }
+
   const cardHtml = p.components
     .map((c, i) => renderComponentCard(c, i, id, p))
     .join("");
-  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || "Home"}</span><span class="bc-sep">\u276F</span><span class="bc-here">${p.name}</span></div><div class="planet-header"><div class="planet-header-orb" style="background:${p.color};box-shadow:0 0 20px ${p.color}"><span class="icon-svg">${domainSvg(id, 28)}</span></div><div><h2 style="color:${p.color}">${p.name}</h2><p>${p.description}</p>${domainPkgHtml}</div></div>${domainStats}<div class="component-grid">${cardHtml}</div><div class="data-flow" style="animation-delay:${p.components.length * 30 + 60}ms"><h3>\u{1F500} Data Flow</h3><div class="flow-diagram">${p.dataFlow.map((n, i) => (i > 0 ? `<span class="flow-arrow">\u2192</span>` : "") + `<span class="flow-node">${n}</span>`).join("")}</div></div><div class="connections-section" style="animation-delay:${p.components.length * 30 + 120}ms"><h3>\u{1F30C} Connected Systems</h3>${p.connections.map((c) => `<div class="connection-item" data-connection-planet="${c.planet}" role="button" tabindex="0"><div class="conn-planet" style="background:${PLANET_META[c.planet] ? PLANET_META[c.planet].color : "#64748b"}"><span class="icon-svg">${PLANET_META[c.planet] ? PLANET_META[c.planet].svg : ""}</span></div><div><strong>${PRODUCT_DATA[c.planet] ? PRODUCT_DATA[c.planet].name : c.planet}</strong><div style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px">${c.desc}</div></div></div>`).join("")}</div>`;
-  el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
-    l.style.cursor = "pointer";
-    l.addEventListener("click", () => navigateTo("galaxy"));
+
+  const flowHtml = p.dataFlow
+    .map(
+      (n, i) =>
+        (i > 0 ? '<span class="flow-arrow">\u2192</span>' : "") +
+        `<span class="flow-node">${n}</span>`,
+    )
+    .join("");
+
+  const connectionsHtml = p.connections.map((c) => {
+    const meta = PLANET_META[c.planet];
+    const name = PRODUCT_DATA[c.planet]
+      ? PRODUCT_DATA[c.planet].name
+      : c.planet;
+    return html` <div
+      class="connection-item"
+      data-connection-planet="${c.planet}"
+      role="button"
+      tabindex="0"
+    >
+      <div
+        class="conn-planet"
+        style="background:${meta ? meta.color : "#64748b"}"
+      >
+        <span class="icon-svg">${meta ? meta.svg : ""}</span>
+      </div>
+      <div>
+        <strong>${name}</strong>
+        <div
+          style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px"
+        >
+          ${c.desc}
+        </div>
+      </div>
+    </div>`;
   });
-  el.querySelectorAll(".component-card").forEach((card) => {
-    const cid = card.dataset.component,
-      pid2 = card.dataset.planet;
-    card.addEventListener("click", () => enterCore(pid2, cid));
-    card.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") enterCore(pid2, cid);
-    });
+
+  el.innerHTML = html` ${breadcrumb([
+      { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
+      { label: p.name },
+    ])}
+    <div class="planet-header">
+      <div
+        class="planet-header-orb"
+        style="background:${p.color};box-shadow:0 0 20px ${p.color}"
+      >
+        <span class="icon-svg">${domainSvg(id, 28)}</span>
+      </div>
+      <div>
+        <h2 style="color:${p.color}">${p.name}</h2>
+        <p>${p.description}</p>
+        ${domainPkgHtml}
+      </div>
+    </div>
+    ${domainStats}
+    <div class="component-grid">${cardHtml}</div>
+    <div
+      class="data-flow"
+      style="animation-delay:${p.components.length * 30 + 60}ms"
+    >
+      <h3>🔀 Data Flow</h3>
+      <div class="flow-diagram">${flowHtml}</div>
+    </div>
+    <div
+      class="connections-section"
+      style="animation-delay:${p.components.length * 30 + 120}ms"
+    >
+      <h3>🌌 Connected Systems</h3>
+      ${connectionsHtml}
+    </div>`;
+
+  wireNavLinks(el, {
+    galaxy: () => navigateTo("galaxy"),
+    planet: () => {},
+    back: () => {},
   });
-  el.querySelectorAll("[data-connection-planet]").forEach((item) => {
-    const planetId = item.dataset.connectionPlanet;
-    item.addEventListener("click", () => enterPlanet(planetId));
-    item.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") enterPlanet(planetId);
-    });
-  });
+  wireClickAndEnter(el, ".component-card", (card) =>
+    enterCore(card.dataset.planet, card.dataset.component),
+  );
+  wireClickAndEnter(el, "[data-connection-planet]", (item) =>
+    enterPlanet(item.dataset.connectionPlanet),
+  );
   document.getElementById("planet-view").scrollTop = 0;
 }
 
@@ -1125,15 +1197,24 @@ function renderCoreView(pid, cid) {
     tabBar = `<div class="entity-tab-bar">${tabs.map((t) => `<button class="entity-tab${t.key === "overview" ? " active" : ""}" data-tab="${t.key}" data-entity-tab-pid="${pid}" data-entity-tab-cid="${cid}">${t.label}${t.count !== null ? ` <span class="tab-count">${t.count}</span>` : ""}</button>`).join("")}</div>`;
   else if (!entitiesLoaded)
     tabBar = `<div class="entity-loading-hint" style="padding:8px 0;font-size:12px;color:var(--text-dim,#64748b);opacity:0.7">Loading entity data\u2026</div>`;
-  // Safe: all template content is from trusted app-owned product data (no user input)
-  el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || "Home"}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${c.name}</span></div><div class="core-header"><span style="font-size:24px">${c.icon}</span><div><h2>${c.name}</h2><span class="badge">TRIGGER LEVEL</span></div></div>${tabBar}<div id="entity-tab-content">${renderOverviewTab(c)}</div>`;
-  el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
-    l.style.cursor = "pointer";
-    l.addEventListener("click", () => navigateTo("galaxy"));
-  });
-  el.querySelectorAll('[data-nav="planet"]').forEach((l) => {
-    l.style.cursor = "pointer";
-    l.addEventListener("click", () => navigateTo("planet"));
+  el.innerHTML = html` ${breadcrumb([
+      { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
+      { label: p.name, nav: "planet" },
+      { label: c.name },
+    ])}
+    <div class="core-header">
+      <span style="font-size:24px">${c.icon}</span>
+      <div>
+        <h2>${c.name}</h2>
+        <span class="badge">TRIGGER LEVEL</span>
+      </div>
+    </div>
+    ${tabBar}
+    <div id="entity-tab-content">${renderOverviewTab(c)}</div>`;
+  wireNavLinks(el, {
+    galaxy: () => navigateTo("galaxy"),
+    planet: () => navigateTo("planet"),
+    back: () => {},
   });
   el.querySelectorAll(".entity-tab").forEach((tab) => {
     tab.addEventListener("click", () =>
@@ -1365,14 +1446,19 @@ function renderEntityView(pid, cid, rawType, entityName) {
     // Entities not loaded yet: show loading indicator
     if (!entitiesLoaded) {
       const el = document.getElementById("entity-content");
-      el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || "Home"}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p ? p.name : pid}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entityName}</span></div><div class="entity-loading"><div class="entity-loading-spinner"></div><div class="entity-loading-text">Loading entity data\u2026</div></div>`;
-      el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
-        l.style.cursor = "pointer";
-        l.addEventListener("click", () => navigateTo("galaxy"));
-      });
-      el.querySelectorAll('[data-nav="planet"]').forEach((l) => {
-        l.style.cursor = "pointer";
-        l.addEventListener("click", () => navigateTo("planet"));
+      el.innerHTML = html` ${breadcrumb([
+          { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
+          { label: p ? p.name : pid, nav: "planet" },
+          { label: entityName },
+        ])}
+        <div class="entity-loading">
+          <div class="entity-loading-spinner"></div>
+          <div class="entity-loading-text">Loading entity data…</div>
+        </div>`;
+      wireNavLinks(el, {
+        galaxy: () => navigateTo("galaxy"),
+        planet: () => navigateTo("planet"),
+        back: () => {},
       });
     }
     return;
@@ -1382,40 +1468,46 @@ function renderEntityView(pid, cid, rawType, entityName) {
   );
   if (!entity) {
     const el = document.getElementById("entity-content");
-    el.innerHTML = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || "Home"}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="back">${c.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entityName}</span></div><div class="entity-not-found"><div class="entity-not-found-icon">\u{1F50D}</div><div class="entity-not-found-text">${entityName} not found in ${entityType}</div><button class="entity-not-found-back" data-nav="back">\u2190 Back to ${c.name}</button></div>`;
-    el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
-      l.style.cursor = "pointer";
-      l.addEventListener("click", () => navigateTo("galaxy"));
-    });
-    el.querySelectorAll('[data-nav="planet"]').forEach((l) => {
-      l.style.cursor = "pointer";
-      l.addEventListener("click", () => navigateTo("planet"));
-    });
-    el.querySelectorAll('[data-nav="back"]').forEach((l) => {
-      l.style.cursor = "pointer";
-      l.addEventListener("click", () => goBack());
+    el.innerHTML = html` ${breadcrumb([
+        { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
+        { label: p.name, nav: "planet" },
+        { label: c.name, nav: "back" },
+        { label: entityName },
+      ])}
+      <div class="entity-not-found">
+        <div class="entity-not-found-icon">🔍</div>
+        <div class="entity-not-found-text">
+          ${entityName} not found in ${entityType}
+        </div>
+        <button class="entity-not-found-back" data-nav="back">
+          ← Back to ${c.name}
+        </button>
+      </div>`;
+    wireNavLinks(el, {
+      galaxy: () => navigateTo("galaxy"),
+      planet: () => navigateTo("planet"),
+      back: () => goBack(),
     });
     return;
   }
   const el = document.getElementById("entity-content");
-  let h = `<div class="bc"><span class="bc-link" data-nav="galaxy">${PRODUCT_CONFIG.name || "Home"}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="planet">${p.name}</span><span class="bc-sep">\u276F</span><span class="bc-link" data-nav="back">${c.name}</span><span class="bc-sep">\u276F</span><span class="bc-here">${entity.name}</span></div>`;
+  const bc = breadcrumb([
+    { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
+    { label: p.name, nav: "planet" },
+    { label: c.name, nav: "back" },
+    { label: entity.name },
+  ]);
+  let h = bc;
   if (entityType === "classes") h += renderClassDetail(entity);
   else if (entityType === "objects") h += renderObjectDetail(entity);
   else if (entityType === "triggers") h += renderTriggerDetail(entity);
   else if (entityType === "lwcs") h += renderLwcDetail(entity);
   else if (entityType === "metadata") h += renderMetadataDetail(entity);
   el.innerHTML = h;
-  el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
-    l.style.cursor = "pointer";
-    l.addEventListener("click", () => navigateTo("galaxy"));
-  });
-  el.querySelectorAll('[data-nav="planet"]').forEach((l) => {
-    l.style.cursor = "pointer";
-    l.addEventListener("click", () => navigateTo("planet"));
-  });
-  el.querySelectorAll('[data-nav="back"]').forEach((l) => {
-    l.style.cursor = "pointer";
-    l.addEventListener("click", () => goBack());
+  wireNavLinks(el, {
+    galaxy: () => navigateTo("galaxy"),
+    planet: () => navigateTo("planet"),
+    back: () => goBack(),
   });
   el.querySelectorAll("[data-entity-link]").forEach((l) => {
     const d = JSON.parse(l.dataset.entityLink);
