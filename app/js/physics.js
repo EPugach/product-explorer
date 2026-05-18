@@ -263,9 +263,14 @@ export function initGraph(w, h) {
   alpha = 1.0;
 }
 
-function simulate() {
+function simulate(opts) {
   if (alpha < 0.001) return;
   alpha *= 0.992;
+  // collisionOnly mode: only N-body repulsion + integration + bounds clamp.
+  // Skips edge springs, centering gravity, and group gravity — used by the
+  // transient drag-nudge so neighbors get pushed out of the way without
+  // anything pulling planets back to their original positions afterward.
+  const collisionOnly = !!(opts && opts.collisionOnly);
 
   // N-body repulsion
   const labelPad = 15; // half of ~30px label zone below each planet
@@ -287,43 +292,45 @@ function simulate() {
     }
   }
 
-  // Spring attraction along edges
-  for (const e of edges) {
-    const s = nodeMap[e.source],
-      t = nodeMap[e.target];
-    if (!s || !t) continue;
-    let dx = t.x - s.x,
-      dy = t.y - s.y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const idealLen = Math.min(layoutW, layoutH) < 600 ? 160 : 260;
-    const force = (dist - idealLen) * 0.04 * alpha;
-    const fx = (dx / dist) * force,
-      fy = (dy / dist) * force;
-    s.vx += fx;
-    s.vy += fy;
-    t.vx -= fx;
-    t.vy -= fy;
-  }
+  if (!collisionOnly) {
+    // Spring attraction along edges
+    for (const e of edges) {
+      const s = nodeMap[e.source],
+        t = nodeMap[e.target];
+      if (!s || !t) continue;
+      let dx = t.x - s.x,
+        dy = t.y - s.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      const idealLen = Math.min(layoutW, layoutH) < 600 ? 160 : 260;
+      const force = (dist - idealLen) * 0.04 * alpha;
+      const fx = (dx / dist) * force,
+        fy = (dy / dist) * force;
+      s.vx += fx;
+      s.vy += fy;
+      t.vx -= fx;
+      t.vy -= fy;
+    }
 
-  // Anisotropic centering gravity
-  const cx = layoutW / 2,
-    cy = (200 + layoutH - 80) / 2;
-  for (const n of nodes) {
-    n.vx += (cx - n.x) * 0.003 * alpha;
-    n.vy += (cy - n.y) * 0.01 * alpha;
-  }
+    // Anisotropic centering gravity
+    const cx = layoutW / 2,
+      cy = (200 + layoutH - 80) / 2;
+    for (const n of nodes) {
+      n.vx += (cx - n.x) * 0.003 * alpha;
+      n.vy += (cy - n.y) * 0.01 * alpha;
+    }
 
-  // Group gravity
-  const groups = _groups();
-  const groupCenters = _groupCenters();
-  for (const n of nodes) {
-    const g = groups[n.id];
-    if (g === undefined) continue;
-    const center = groupCenters[g];
-    const targetX = center.x * layoutW;
-    const targetY = center.y * layoutH;
-    n.vx += (targetX - n.x) * GROUP_GRAVITY * alpha;
-    n.vy += (targetY - n.y) * GROUP_GRAVITY * alpha;
+    // Group gravity
+    const groups = _groups();
+    const groupCenters = _groupCenters();
+    for (const n of nodes) {
+      const g = groups[n.id];
+      if (g === undefined) continue;
+      const center = groupCenters[g];
+      const targetX = center.x * layoutW;
+      const targetY = center.y * layoutH;
+      n.vx += (targetX - n.x) * GROUP_GRAVITY * alpha;
+      n.vy += (targetY - n.y) * GROUP_GRAVITY * alpha;
+    }
   }
 
   // Integration with friction
@@ -456,7 +463,10 @@ function _nudgeTick() {
     return;
   }
   alpha = _nudgeAlpha;
-  simulate();
+  // Collision-only mode: neighbors push aside via N-body repulsion during
+  // drag, but no homing forces pull anyone back to their original position.
+  // Each drop is permanent; the released planet stays exactly where dropped.
+  simulate({ collisionOnly: true });
   _nudgeAlpha *= NUDGE_DECAY;
   if (_onNudgeFrame) _onNudgeFrame();
   _nudgeRafId = requestAnimationFrame(_nudgeTick);

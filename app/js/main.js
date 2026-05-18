@@ -106,6 +106,7 @@ import {
   setHover3D,
   setTheme3D,
   syncSphere,
+  triggerReleaseBounce,
 } from "./galaxy-3d.js";
 
 // ── Resolve product ID from <body data-product="..."> ──
@@ -893,6 +894,7 @@ async function init() {
     setHover3D,
     syncSphere,
     nudgePhysics,
+    triggerReleaseBounce,
   });
   setupGalaxyKeyboard();
   setupKeyboard();

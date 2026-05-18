@@ -45,11 +45,13 @@ export function setupPointerEvents({
   setHover3D,
   syncSphere,
   nudgePhysics,
+  triggerReleaseBounce,
 }) {
   const noop = () => {};
   const _setHover3D = setHover3D || noop;
   const _syncSphere = syncSphere || noop;
   const _nudgePhysics = nudgePhysics || noop;
+  const _triggerReleaseBounce = triggerReleaseBounce || noop;
   const container = document.getElementById("galaxyContainer");
   if (!container) return;
 
@@ -259,6 +261,9 @@ export function setupPointerEvents({
         return;
       }
       track("planet_drag", { planet: dragNode.id });
+      // Tiny visual cue on drop — sphere does a brief scale pulse. No
+      // physics return; the planet stays exactly where the user dropped it.
+      _triggerReleaseBounce(dragNode.id);
       dragNode.fx = null;
       dragNode.fy = null;
     }

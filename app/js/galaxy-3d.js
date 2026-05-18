@@ -126,6 +126,7 @@ function _createPlanetMesh(n) {
   mesh.userData.breathPhase = Math.random() * Math.PI * 2;
   mesh.userData.hoverScale = 1.0;
   mesh.userData.hoverEmissive = 0.0; // 0 → 1 hover progress
+  mesh.userData.bouncePhase = 0.0; // set to 1.0 on release, decays each frame
   mesh.userData.id = n.id;
   mesh.rotation.x = mesh.userData.tilt;
 
@@ -138,9 +139,13 @@ function _syncMeshPosition(mesh, n) {
   mesh.position.x = n.x * zoom + panX - window.innerWidth / 2;
   mesh.position.y = -(n.y * zoom + panY - window.innerHeight / 2);
   // mesh.position.z stays 0
-  // visual scale = node radius × zoom × hover spring
+  // visual scale = node radius × zoom × hover spring × release bounce
   const baseR = n.radius * zoom;
-  mesh.scale.setScalar(baseR * mesh.userData.hoverScale);
+  // Release bounce: a single damped scale pulse on drop. bouncePhase decays
+  // from 1.0 → 0; the sin(phase·π) shape gives a 0→peak→0 hump that fades.
+  const bp = mesh.userData.bouncePhase;
+  const bounceScale = bp > 0.001 ? 1 + Math.sin(bp * Math.PI) * 0.12 * bp : 1.0;
+  mesh.scale.setScalar(baseR * mesh.userData.hoverScale * bounceScale);
 }
 
 // ── Render (called every frame from main.js particleTick) ──
@@ -182,6 +187,14 @@ export function renderGalaxy3D() {
       breathAdd = Math.sin(mesh.userData.breathPhase) * BREATH_AMPLITUDE;
     }
 
+    // Release bounce decay: phase drops from 1.0 → 0 over ~250ms.
+    // Visual contribution lives in _syncMeshPosition (scale factor).
+    if (mesh.userData.bouncePhase > 0.001) {
+      mesh.userData.bouncePhase *= 0.85;
+    } else if (mesh.userData.bouncePhase !== 0) {
+      mesh.userData.bouncePhase = 0;
+    }
+
     // Combine: base emissive + hover bump + breath
     const baseEmissive =
       _theme === "light" ? BASE_EMISSIVE_LIGHT : BASE_EMISSIVE_DARK;
@@ -210,6 +223,16 @@ export function syncSphere(id) {
 // ── Hover state (called from pointer-events.js pointerover/pointerout) ──
 export function setHover3D(id) {
   _hoverId = id || null;
+}
+
+// ── Release bounce (called from pointer-events.js pointerup after a drag) ──
+// Triggers a brief scale pulse on the named sphere so the user gets a tiny
+// visual cue when they drop a planet — without the system relaxing back to
+// its original layout. Pure cosmetic, no physics involvement.
+export function triggerReleaseBounce(id) {
+  if (!_initialized) return;
+  const mesh = _meshes[id];
+  if (mesh) mesh.userData.bouncePhase = 1.0;
 }
 
 // ── Theme (called from main.js toggleTheme) ──
