@@ -42,7 +42,12 @@ export function setupPointerEvents({
   showTooltip,
   hideTooltip,
   setParticleHover,
+  setHover3D,
+  syncSphere,
 }) {
+  const noop = () => {};
+  const _setHover3D = setHover3D || noop;
+  const _syncSphere = syncSphere || noop;
   const container = document.getElementById("galaxyContainer");
   if (!container) return;
 
@@ -91,6 +96,7 @@ export function setupPointerEvents({
       showTooltip(node, e.clientX, e.clientY);
       applyHoverState(id);
       setParticleHover(node);
+      _setHover3D(id);
     }
   });
 
@@ -103,6 +109,7 @@ export function setupPointerEvents({
     hideTooltip();
     clearHoverState();
     setParticleHover(null);
+    _setHover3D(null);
   });
 
   container.addEventListener("pointermove", (e) => {
@@ -194,6 +201,7 @@ export function setupPointerEvents({
       dragNode.fx = dragNode.x;
       dragNode.fy = dragNode.y;
       updatePlanetPosition(dragNode);
+      _syncSphere(dragNode.id);
       hideTooltip();
     } else if (pendingPan || isPanning) {
       // Fix A: commit to panning only after the cursor crosses the deadzone.

@@ -1,4 +1,4 @@
-const SHELL_VERSION = 3;
+const SHELL_VERSION = 4;
 const SHELL_CACHE = `pe-shell-v${SHELL_VERSION}`;
 const DATA_CACHE = "pe-data-v1";
 
@@ -7,11 +7,13 @@ const SHELL_URLS = [
   "./app/css/galaxy-planets.css",
   "./app/fonts/BricolageGrotesque-latin.woff2",
   "./app/vendor/minisearch.7.2.0.js",
+  "./app/vendor/three.0.184.min.js",
   "./app/js/main.js",
   "./app/js/navigation.js",
   "./app/js/search.js",
   "./app/js/physics.js",
   "./app/js/galaxy-renderer.js",
+  "./app/js/galaxy-3d.js",
   "./app/js/particles.js",
   "./app/js/starfield.js",
   "./app/js/tours.js",

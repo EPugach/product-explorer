@@ -97,6 +97,14 @@ import {
 } from "./starfield.js";
 import { uiSvg, domainSvg, setDomainPaths } from "./icons.js";
 import { setupPointerEvents } from "./pointer-events.js";
+import {
+  initGalaxy3D,
+  renderGalaxy3D,
+  resizeGalaxy3D,
+  setHover3D,
+  setTheme3D,
+  syncSphere,
+} from "./galaxy-3d.js";
 
 // ── Resolve product ID from <body data-product="..."> ──
 const productId = document.body.dataset.product || "npsp";
@@ -190,6 +198,7 @@ function toggleTheme() {
     light ? "sun" : "moon",
     18,
   );
+  setTheme3D(light ? "light" : "dark");
   track("theme_change", { theme: light ? "light" : "dark" });
 }
 
@@ -461,6 +470,7 @@ function particleTick() {
   if (pageHidden || currentLevel !== "galaxy") return;
   updateParticles();
   renderParticles();
+  renderGalaxy3D();
   requestAnimationFrame(particleTick);
 }
 
@@ -735,6 +745,7 @@ function onResize() {
   updateAllPositions(nodes, edges);
   resizeParticleCanvas();
   resizeStarfield();
+  resizeGalaxy3D();
 }
 
 // ── Popstate handler ──
@@ -859,6 +870,11 @@ async function init() {
   // Create DOM planets and edges from settled positions
   initGalaxyDOM(nodes, edges, nodeMap);
 
+  // Init WebGL 3D layer (luminous orbs behind DOM planets).
+  // Falls back to body.no-webgl if init fails (CSS restores flat planets).
+  initGalaxy3D(nodes, nodeMap);
+  setTheme3D(lightMode ? "light" : "dark");
+
   // Init particles (only remaining canvas)
   initParticles();
 
@@ -867,6 +883,8 @@ async function init() {
     showTooltip,
     hideTooltip,
     setParticleHover: setParticleHover,
+    setHover3D,
+    syncSphere,
   });
   setupGalaxyKeyboard();
   setupKeyboard();

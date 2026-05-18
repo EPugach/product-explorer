@@ -18,6 +18,37 @@
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
 }
+
+/* ── WebGL 3D Layer ──
+   Renders luminous-orb spheres positioned to match each .planet-node hit
+   zone. Stays purely cosmetic — pointer events fall through to the DOM
+   planets above. Fly-in/fly-out classes mirror .galaxy-container's so the
+   3D layer animates in lockstep (see galaxy-renderer.js _syncGL3D). */
+#galaxy-3d {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+#galaxy-3d.fly-in {
+  transition:
+    transform 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 200ms ease 400ms;
+}
+#galaxy-3d.fly-out {
+  transition:
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 200ms ease;
+}
+#galaxy-3d.hidden {
+  opacity: 0;
+}
+body.no-webgl #galaxy-3d {
+  display: none;
+}
 .galaxy-container.hidden {
   opacity: 0;
   pointer-events: none;
@@ -33,17 +64,15 @@
   height: calc(var(--planet-r) * 2);
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 35% 35%,
-    var(--planet-light) 0%,
-    var(--planet-color) 60%,
-    var(--planet-dark) 100%
-  );
+  /* Body is rendered by the WebGL layer (#galaxy-3d). The DOM div remains
+     as the hit zone + label/icon container. Reduced halo composites above
+     the lit sphere without competing with the emissive glow. */
+  background: transparent;
   box-shadow:
-    0 0 calc(var(--planet-r) * 0.8)
-      color-mix(in srgb, var(--planet-color) 30%, transparent),
-    0 0 calc(var(--planet-r) * 1.6)
-      color-mix(in srgb, var(--planet-color) 15%, transparent);
+    0 0 calc(var(--planet-r) * 0.6)
+      color-mix(in srgb, var(--planet-color) 18%, transparent),
+    0 0 calc(var(--planet-r) * 1.2)
+      color-mix(in srgb, var(--planet-color) 10%, transparent);
   cursor: pointer;
   transition:
     transform 0.2s ease-out,
@@ -80,6 +109,23 @@
 /* Suppress hover scale during drag to prevent visual jumps */
 .galaxy-container.dragging .planet-node:hover {
   transform: translate(-50%, -50%) scale(1);
+}
+
+/* Fallback when WebGL is unavailable (init failure, disabled, or unsupported
+   driver). galaxy-3d.js sets body.no-webgl on init failure; this restores
+   the original CSS-only flat-circle planet with full halo. */
+body.no-webgl .planet-node {
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--planet-light) 0%,
+    var(--planet-color) 60%,
+    var(--planet-dark) 100%
+  );
+  box-shadow:
+    0 0 calc(var(--planet-r) * 0.8)
+      color-mix(in srgb, var(--planet-color) 30%, transparent),
+    0 0 calc(var(--planet-r) * 1.6)
+      color-mix(in srgb, var(--planet-color) 15%, transparent);
 }
 
 .planet-node.dimmed {

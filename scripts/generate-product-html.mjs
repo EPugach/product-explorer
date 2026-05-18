@@ -100,9 +100,10 @@ export function renderHtml(cfg, manifestEntry, jsVersion, cssVersion, gaId) {
 <body data-product="${id}">
 <a href="#stage" class="skip-link">Skip to content</a>
 
-<!-- Background layers: canvas starfield (z0) > particles canvas (z1) > galaxy DOM (z3) -->
+<!-- Background layers: starfield (z0) > particles (z1) > 3D orbs (z2) > galaxy DOM (z3) -->
 <canvas id="starfield" role="presentation" aria-hidden="true"></canvas>
 <canvas id="particle-canvas" role="presentation" aria-hidden="true"></canvas>
+<canvas id="galaxy-3d" role="presentation" aria-hidden="true"></canvas>
 
 <!-- Galaxy DOM layer: planets + edges (z3) -->
 <div class="galaxy-container" id="galaxyContainer"
