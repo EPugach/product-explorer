@@ -1,4 +1,4 @@
-const SHELL_VERSION = 4;
+const SHELL_VERSION = 5;
 const SHELL_CACHE = `pe-shell-v${SHELL_VERSION}`;
 const DATA_CACHE = "pe-data-v1";
 
@@ -8,6 +8,7 @@ const SHELL_URLS = [
   "./app/fonts/BricolageGrotesque-latin.woff2",
   "./app/vendor/minisearch.7.2.0.js",
   "./app/vendor/three.0.184.min.js",
+  "./app/vendor/three.core.min.js",
   "./app/js/main.js",
   "./app/js/navigation.js",
   "./app/js/search.js",
