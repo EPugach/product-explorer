@@ -4,89 +4,158 @@
 //  No canvas state — rendering handled by galaxy-renderer.js (DOM/SVG).
 // ══════════════════════════════════════════════════════════════
 
-import { prefersReducedMotion } from './state.js';
+import { prefersReducedMotion } from "./state.js";
 
 // Product data is injected by main.js via setProductData()
 let PRODUCT_DATA = {};
 let _radiusCache = null;
-export const setProductData = (data) => { PRODUCT_DATA = data; _radiusCache = null; };
+export const setProductData = (data) => {
+  PRODUCT_DATA = data;
+  _radiusCache = null;
+};
 
 // ── Physics config: product-specific layout parameters ──
 // Injected by main.js via setPhysicsConfig(). Falls back to NPSP defaults.
 let _physicsConfig = null;
-export const setPhysicsConfig = (cfg) => { _physicsConfig = cfg || null; _radiusCache = null; };
+export const setPhysicsConfig = (cfg) => {
+  _physicsConfig = cfg || null;
+  _radiusCache = null;
+};
 
 // NPSP defaults — used when no product-specific physics config is provided
 const _NPSP_DEFAULTS = {
   weights: {
-    recurring: 89, rollups: 76, bdi: 66, settings: 64, donations: 50, batch: 45,
-    contacts: 39, allocations: 28, errors: 22, addresses: 20, giftentry: 19,
-    elevate: 14, engagement: 12, softcredits: 8, relationships: 6, levels: 6,
-    tdtm: 15, affiliations: 4
+    recurring: 89,
+    rollups: 76,
+    bdi: 66,
+    settings: 64,
+    donations: 50,
+    batch: 45,
+    contacts: 39,
+    allocations: 28,
+    errors: 22,
+    addresses: 20,
+    giftentry: 19,
+    elevate: 14,
+    engagement: 12,
+    softcredits: 8,
+    relationships: 6,
+    levels: 6,
+    tdtm: 15,
+    affiliations: 4,
   },
   foundational: { tdtm: 2.5, settings: 1.3, errors: 1.2 },
   groups: {
-    donations: 0, contacts: 0, recurring: 0, softcredits: 0,
-    rollups: 1, batch: 1, allocations: 1, levels: 1,
-    bdi: 2, giftentry: 2, elevate: 2,
-    tdtm: 3, settings: 3, errors: 3,
-    relationships: 3, addresses: 3, affiliations: 3, engagement: 3
+    donations: 0,
+    contacts: 0,
+    recurring: 0,
+    softcredits: 0,
+    rollups: 1,
+    batch: 1,
+    allocations: 1,
+    levels: 1,
+    bdi: 2,
+    giftentry: 2,
+    elevate: 2,
+    tdtm: 3,
+    settings: 3,
+    errors: 3,
+    relationships: 3,
+    addresses: 3,
+    affiliations: 3,
+    engagement: 3,
   },
   groupCenters: [
-    { x: 0.40, y: 0.30 },
+    { x: 0.4, y: 0.3 },
     { x: 0.18, y: 0.65 },
     { x: 0.75, y: 0.68 },
-    { x: 0.82, y: 0.30 },
+    { x: 0.82, y: 0.3 },
   ],
   seeds: {
-    donations:     { angle:  0.00, ring: 0.45 },
-    contacts:      { angle:  0.50, ring: 0.50 },
-    recurring:     { angle:  0.25, ring: 0.65 },
-    softcredits:   { angle: -0.25, ring: 0.60 },
-    rollups:       { angle:  1.60, ring: 0.65 },
-    batch:         { angle:  2.00, ring: 0.70 },
-    allocations:   { angle:  1.80, ring: 0.80 },
-    levels:        { angle:  2.30, ring: 0.85 },
-    bdi:           { angle: -1.20, ring: 0.70 },
-    giftentry:     { angle: -1.50, ring: 0.75 },
-    elevate:       { angle: -1.00, ring: 0.80 },
-    tdtm:          { angle: -0.50, ring: 0.40 },
-    settings:      { angle: -0.70, ring: 0.45 },
-    errors:        { angle: -0.90, ring: 0.50 },
-    relationships: { angle:  0.80, ring: 0.85 },
-    addresses:     { angle: -2.30, ring: 0.75 },
-    affiliations:  { angle:  0.70, ring: 0.80 },
-    engagement:    { angle: -1.80, ring: 0.85 },
-  }
+    donations: { angle: 0.0, ring: 0.45 },
+    contacts: { angle: 0.5, ring: 0.5 },
+    recurring: { angle: 0.25, ring: 0.65 },
+    softcredits: { angle: -0.25, ring: 0.6 },
+    rollups: { angle: 1.6, ring: 0.65 },
+    batch: { angle: 2.0, ring: 0.7 },
+    allocations: { angle: 1.8, ring: 0.8 },
+    levels: { angle: 2.3, ring: 0.85 },
+    bdi: { angle: -1.2, ring: 0.7 },
+    giftentry: { angle: -1.5, ring: 0.75 },
+    elevate: { angle: -1.0, ring: 0.8 },
+    tdtm: { angle: -0.5, ring: 0.4 },
+    settings: { angle: -0.7, ring: 0.45 },
+    errors: { angle: -0.9, ring: 0.5 },
+    relationships: { angle: 0.8, ring: 0.85 },
+    addresses: { angle: -2.3, ring: 0.75 },
+    affiliations: { angle: 0.7, ring: 0.8 },
+    engagement: { angle: -1.8, ring: 0.85 },
+  },
 };
 
 // Accessors that read from injected config or fall back to NPSP defaults
-function _weights() { return (_physicsConfig && _physicsConfig.weights) || _NPSP_DEFAULTS.weights; }
-function _foundational() { return (_physicsConfig && _physicsConfig.foundational) || _NPSP_DEFAULTS.foundational; }
-function _groups() { return (_physicsConfig && _physicsConfig.groups) || _NPSP_DEFAULTS.groups; }
-function _groupCenters() { return (_physicsConfig && _physicsConfig.groupCenters) || _NPSP_DEFAULTS.groupCenters; }
-function _seeds() { return (_physicsConfig && _physicsConfig.seeds) || _NPSP_DEFAULTS.seeds; }
+function _weights() {
+  return (_physicsConfig && _physicsConfig.weights) || _NPSP_DEFAULTS.weights;
+}
+function _foundational() {
+  return (
+    (_physicsConfig && _physicsConfig.foundational) ||
+    _NPSP_DEFAULTS.foundational
+  );
+}
+function _groups() {
+  return (_physicsConfig && _physicsConfig.groups) || _NPSP_DEFAULTS.groups;
+}
+function _groupCenters() {
+  return (
+    (_physicsConfig && _physicsConfig.groupCenters) ||
+    _NPSP_DEFAULTS.groupCenters
+  );
+}
+function _seeds() {
+  return (_physicsConfig && _physicsConfig.seeds) || _NPSP_DEFAULTS.seeds;
+}
 
 // ── Exported mutable state ──
 export let nodes = [];
 export let edges = [];
 export let nodeMap = {};
-export let layoutW = 0, layoutH = 0;
-export let zoom = 1, panX = 0, panY = 0;
+export let layoutW = 0,
+  layoutH = 0;
+export let zoom = 1,
+  panX = 0,
+  panY = 0;
 
 // Setters for mutable state that other modules need to write
-export const setZoom = (v) => { zoom = v; };
-export const setPanX = (v) => { panX = v; };
-export const setPanY = (v) => { panY = v; };
+export const setZoom = (v) => {
+  zoom = v;
+};
+export const setPanX = (v) => {
+  panX = v;
+};
+export const setPanY = (v) => {
+  panY = v;
+};
 
 // ── Transform update callback ──
 // Set by main.js — called by animation functions to update CSS transform
 let _onTransformUpdate = null;
-export const setTransformCallback = (fn) => { _onTransformUpdate = fn; };
+export const setTransformCallback = (fn) => {
+  _onTransformUpdate = fn;
+};
+
+// ── Transient nudge frame callback ──
+// Called every frame the nudge loop is running. Used by main.js to sync
+// DOM planet positions + SVG edges (the WebGL layer stays in sync via the
+// existing particleTick rAF, since renderGalaxy3D reads nodeMap directly).
+let _onNudgeFrame = null;
+export const setNudgeFrameCallback = (fn) => {
+  _onNudgeFrame = fn;
+};
 
 let alpha = 1.0;
 
-const GROUP_GRAVITY = 0.20;
+const GROUP_GRAVITY = 0.2;
 
 // Responsive radius range
 function getRadiusRange() {
@@ -99,7 +168,12 @@ function _computeRadiusScale() {
   const foundational = _foundational();
   const scores = Object.keys(PRODUCT_DATA).map((k) => {
     const dd = PRODUCT_DATA[k];
-    return ((weights[k] || 5) + dd.components.length * 10 + dd.connections.length * 3) * (foundational[k] || 1.0);
+    return (
+      ((weights[k] || 5) +
+        dd.components.length * 10 +
+        dd.connections.length * 3) *
+      (foundational[k] || 1.0)
+    );
   });
   _radiusCache = { mn: Math.min(...scores), mx: Math.max(...scores) };
 }
@@ -125,7 +199,8 @@ export function initGraph(w, h) {
   layoutH = h || innerHeight;
 
   const keys = Object.keys(PRODUCT_DATA);
-  const cx = layoutW / 2, cy = (200 + layoutH - 80) / 2;
+  const cx = layoutW / 2,
+    cy = (200 + layoutH - 80) / 2;
   const spreadX = layoutW * 0.42;
   const spreadY = layoutH * 0.25;
   const tilt = -0.26;
@@ -133,7 +208,10 @@ export function initGraph(w, h) {
   const weights = _weights();
 
   nodes = keys.map((key, i) => {
-    const seed = seeds[key] || { angle: Math.random() * Math.PI * 2, ring: 0.7 };
+    const seed = seeds[key] || {
+      angle: Math.random() * Math.PI * 2,
+      ring: 0.7,
+    };
     return {
       id: key,
       label: PRODUCT_DATA[key].name,
@@ -144,29 +222,37 @@ export function initGraph(w, h) {
       classCount: weights[key] || 0,
       connectionCount: PRODUCT_DATA[key].connections.length,
       radius: calcRadius(key),
-      x: cx + (Math.cos(seed.angle) * spreadX * seed.ring) * Math.cos(tilt)
-             - (Math.sin(seed.angle) * spreadY * seed.ring) * Math.sin(tilt)
-             + (Math.random() - 0.5) * 20,
-      y: cy + (Math.cos(seed.angle) * spreadX * seed.ring) * Math.sin(tilt)
-             + (Math.sin(seed.angle) * spreadY * seed.ring) * Math.cos(tilt)
-             + (Math.random() - 0.5) * 20,
-      vx: 0, vy: 0,
-      fx: null, fy: null,
+      x:
+        cx +
+        Math.cos(seed.angle) * spreadX * seed.ring * Math.cos(tilt) -
+        Math.sin(seed.angle) * spreadY * seed.ring * Math.sin(tilt) +
+        (Math.random() - 0.5) * 20,
+      y:
+        cy +
+        Math.cos(seed.angle) * spreadX * seed.ring * Math.sin(tilt) +
+        Math.sin(seed.angle) * spreadY * seed.ring * Math.cos(tilt) +
+        (Math.random() - 0.5) * 20,
+      vx: 0,
+      vy: 0,
+      fx: null,
+      fy: null,
       breathPhase: Math.random() * Math.PI * 2,
       entranceDelay: i * 50,
-      entranceAlpha: 0
+      entranceAlpha: 0,
     };
   });
 
   nodeMap = {};
-  nodes.forEach((n) => { nodeMap[n.id] = n; });
+  nodes.forEach((n) => {
+    nodeMap[n.id] = n;
+  });
 
   // Build edges from connections
   const edgeSet = new Set();
   edges = [];
   for (const n of nodes) {
     for (const conn of PRODUCT_DATA[n.id].connections) {
-      const key = [n.id, conn.planet].sort().join('--');
+      const key = [n.id, conn.planet].sort().join("--");
       if (!edgeSet.has(key) && nodeMap[conn.planet]) {
         edgeSet.add(key);
         edges.push({ source: n.id, target: conn.planet, label: conn.desc });
@@ -185,35 +271,46 @@ function simulate() {
   const labelPad = 15; // half of ~30px label zone below each planet
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
-      const a = nodes[i], b = nodes[j];
-      let dx = b.x - a.x, dy = b.y - a.y;
+      const a = nodes[i],
+        b = nodes[j];
+      let dx = b.x - a.x,
+        dy = b.y - a.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const minDist = (a.radius + labelPad) + (b.radius + labelPad) + 220;
-      const force = (minDist * minDist) / (dist * dist) * 2.5 * alpha;
-      const fx = (dx / dist) * force, fy = (dy / dist) * force;
-      a.vx -= fx; a.vy -= fy;
-      b.vx += fx; b.vy += fy;
+      const minDist = a.radius + labelPad + (b.radius + labelPad) + 220;
+      const force = ((minDist * minDist) / (dist * dist)) * 2.5 * alpha;
+      const fx = (dx / dist) * force,
+        fy = (dy / dist) * force;
+      a.vx -= fx;
+      a.vy -= fy;
+      b.vx += fx;
+      b.vy += fy;
     }
   }
 
   // Spring attraction along edges
   for (const e of edges) {
-    const s = nodeMap[e.source], t = nodeMap[e.target];
+    const s = nodeMap[e.source],
+      t = nodeMap[e.target];
     if (!s || !t) continue;
-    let dx = t.x - s.x, dy = t.y - s.y;
+    let dx = t.x - s.x,
+      dy = t.y - s.y;
     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
     const idealLen = Math.min(layoutW, layoutH) < 600 ? 160 : 260;
     const force = (dist - idealLen) * 0.04 * alpha;
-    const fx = (dx / dist) * force, fy = (dy / dist) * force;
-    s.vx += fx; s.vy += fy;
-    t.vx -= fx; t.vy -= fy;
+    const fx = (dx / dist) * force,
+      fy = (dy / dist) * force;
+    s.vx += fx;
+    s.vy += fy;
+    t.vx -= fx;
+    t.vy -= fy;
   }
 
   // Anisotropic centering gravity
-  const cx = layoutW / 2, cy = (200 + layoutH - 80) / 2;
+  const cx = layoutW / 2,
+    cy = (200 + layoutH - 80) / 2;
   for (const n of nodes) {
     n.vx += (cx - n.x) * 0.003 * alpha;
-    n.vy += (cy - n.y) * 0.010 * alpha;
+    n.vy += (cy - n.y) * 0.01 * alpha;
   }
 
   // Group gravity
@@ -231,10 +328,20 @@ function simulate() {
 
   // Integration with friction
   for (const n of nodes) {
-    if (n.fx !== null) { n.x = n.fx; n.vx = 0; }
-    else { n.vx *= 0.6; n.x += n.vx; }
-    if (n.fy !== null) { n.y = n.fy; n.vy = 0; }
-    else { n.vy *= 0.6; n.y += n.vy; }
+    if (n.fx !== null) {
+      n.x = n.fx;
+      n.vx = 0;
+    } else {
+      n.vx *= 0.6;
+      n.x += n.vx;
+    }
+    if (n.fy !== null) {
+      n.y = n.fy;
+      n.vy = 0;
+    } else {
+      n.vy *= 0.6;
+      n.y += n.vy;
+    }
 
     const margin = n.radius + 20;
     const bottomMargin = n.radius + 50; // extra 30px for label below planet
@@ -250,7 +357,9 @@ export function computeLayout(w, h) {
   layoutH = h || innerHeight;
 
   // Recalculate radii for new dimensions
-  nodes.forEach((n) => { n.radius = calcRadius(n.id); });
+  nodes.forEach((n) => {
+    n.radius = calcRadius(n.id);
+  });
 
   alpha = 1.0;
   let iterations = 0;
@@ -269,7 +378,9 @@ export function onGraphResize(w, h) {
 let zoomAnimId = null;
 
 export function animatePanTo(node, duration, targetZoomLevel, callback) {
-  const startZoom = zoom, startPanX = panX, startPanY = panY;
+  const startZoom = zoom,
+    startPanX = panX,
+    startPanY = panY;
   const targetZoom = targetZoomLevel || 1.4;
   const targetPanX = layoutW / 2 - node.x * targetZoom;
   const targetPanY = layoutH / 2 - node.y * targetZoom;
@@ -291,8 +402,12 @@ export function animatePanTo(node, duration, targetZoomLevel, callback) {
     panX = startPanX + (targetPanX - startPanX) * e;
     panY = startPanY + (targetPanY - startPanY) * e;
     if (_onTransformUpdate) _onTransformUpdate();
-    if (t < 1) { zoomAnimId = requestAnimationFrame(step); }
-    else { zoomAnimId = null; if (callback) callback(); }
+    if (t < 1) {
+      zoomAnimId = requestAnimationFrame(step);
+    } else {
+      zoomAnimId = null;
+      if (callback) callback();
+    }
   }
 
   if (zoomAnimId) cancelAnimationFrame(zoomAnimId);
@@ -300,10 +415,49 @@ export function animatePanTo(node, duration, targetZoomLevel, callback) {
 }
 
 export function cancelPanAnimation() {
-  if (zoomAnimId) { cancelAnimationFrame(zoomAnimId); zoomAnimId = null; }
+  if (zoomAnimId) {
+    cancelAnimationFrame(zoomAnimId);
+    zoomAnimId = null;
+  }
 }
 
 export function resetZoomPan() {
   cancelPanAnimation();
-  zoom = 1; panX = 0; panY = 0;
+  zoom = 1;
+  panX = 0;
+  panY = 0;
+}
+
+// ── Transient nudge loop ──
+// Runs the existing simulate() every frame with a decaying alpha. Used to
+// give planet drags soft-collision feel (neighbors push out of the way via
+// N-body repulsion) and let the layout self-heal back to its settled state
+// when the user releases (centering + group gravity pull everyone home).
+//
+// Called from pointer-events.js on each drag pointermove — each call tops
+// up _nudgeAlpha to NUDGE_ALPHA. When the user stops dragging, alpha decays
+// naturally over ~1.2s and the loop exits. Safe to call repeatedly — only
+// one rAF loop ever runs at a time.
+let _nudgeAlpha = 0;
+let _nudgeRafId = null;
+const NUDGE_ALPHA = 0.4; // initial / top-up alpha during drag
+const NUDGE_DECAY = 0.95; // per-frame decay (~0.225s half-life @60fps)
+const NUDGE_FLOOR = 0.01; // stop loop when alpha drops below this
+
+export function nudgePhysics(initial = NUDGE_ALPHA) {
+  _nudgeAlpha = Math.max(_nudgeAlpha, initial);
+  if (_nudgeRafId !== null) return;
+  _nudgeRafId = requestAnimationFrame(_nudgeTick);
+}
+
+function _nudgeTick() {
+  if (_nudgeAlpha < NUDGE_FLOOR) {
+    _nudgeRafId = null;
+    return;
+  }
+  alpha = _nudgeAlpha;
+  simulate();
+  _nudgeAlpha *= NUDGE_DECAY;
+  if (_onNudgeFrame) _onNudgeFrame();
+  _nudgeRafId = requestAnimationFrame(_nudgeTick);
 }

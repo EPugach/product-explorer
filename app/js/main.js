@@ -23,6 +23,8 @@ import {
   setProductData as setPhysicsData,
   setPhysicsConfig,
   setTransformCallback,
+  setNudgeFrameCallback,
+  nudgePhysics,
   initGraph,
   computeLayout,
   onGraphResize,
@@ -875,6 +877,11 @@ async function init() {
   initGalaxy3D(nodes, nodeMap);
   setTheme3D(lightMode ? "light" : "dark");
 
+  // Wire the nudge-loop frame callback: each tick of the transient physics
+  // sim during drag, refresh DOM planet positions + SVG edges. The WebGL
+  // layer reads nodeMap directly in particleTick, so it's already covered.
+  setNudgeFrameCallback(() => updateAllPositions(nodes, edges));
+
   // Init particles (only remaining canvas)
   initParticles();
 
@@ -885,6 +892,7 @@ async function init() {
     setParticleHover: setParticleHover,
     setHover3D,
     syncSphere,
+    nudgePhysics,
   });
   setupGalaxyKeyboard();
   setupKeyboard();

@@ -44,10 +44,12 @@ export function setupPointerEvents({
   setParticleHover,
   setHover3D,
   syncSphere,
+  nudgePhysics,
 }) {
   const noop = () => {};
   const _setHover3D = setHover3D || noop;
   const _syncSphere = syncSphere || noop;
+  const _nudgePhysics = nudgePhysics || noop;
   const container = document.getElementById("galaxyContainer");
   if (!container) return;
 
@@ -202,6 +204,10 @@ export function setupPointerEvents({
       dragNode.fy = dragNode.y;
       updatePlanetPosition(dragNode);
       _syncSphere(dragNode.id);
+      // Top up the transient physics nudge — keeps neighbors pushing aside
+      // for the duration of the drag. After pointerup, alpha decays naturally
+      // and the layout self-heals back to its settled state.
+      _nudgePhysics();
       hideTooltip();
     } else if (pendingPan || isPanning) {
       // Fix A: commit to panning only after the cursor crosses the deadzone.
