@@ -1,62 +1,71 @@
-const SHELL_VERSION = 1;
+const SHELL_VERSION = 3;
 const SHELL_CACHE = `pe-shell-v${SHELL_VERSION}`;
-const DATA_CACHE = 'pe-data-v1';
+const DATA_CACHE = "pe-data-v1";
 
 const SHELL_URLS = [
-  './app/css/galaxy.css',
-  './app/css/galaxy-planets.css',
-  './app/fonts/BricolageGrotesque-latin.woff2',
-  './app/vendor/minisearch.7.2.0.js',
-  './app/js/main.js',
-  './app/js/navigation.js',
-  './app/js/search.js',
-  './app/js/physics.js',
-  './app/js/galaxy-renderer.js',
-  './app/js/particles.js',
-  './app/js/starfield.js',
-  './app/js/tours.js',
-  './app/js/state.js',
-  './app/js/utils.js',
-  './app/js/icons.js',
-  './app/js/pointer-events.js',
-  './app/js/templates.js',
-  './app/js/version.js',
-  './app/js/feedback-shared.js',
+  "./app/css/galaxy.css",
+  "./app/css/galaxy-planets.css",
+  "./app/fonts/BricolageGrotesque-latin.woff2",
+  "./app/vendor/minisearch.7.2.0.js",
+  "./app/js/main.js",
+  "./app/js/navigation.js",
+  "./app/js/search.js",
+  "./app/js/physics.js",
+  "./app/js/galaxy-renderer.js",
+  "./app/js/particles.js",
+  "./app/js/starfield.js",
+  "./app/js/tours.js",
+  "./app/js/state.js",
+  "./app/js/utils.js",
+  "./app/js/icons.js",
+  "./app/js/pointer-events.js",
+  "./app/js/templates.js",
+  "./app/js/version.js",
+  "./app/js/feedback-shared.js",
 ];
 
 const NETWORK_ONLY = [
-  'workers.dev',
-  'googletagmanager.com',
-  'google-analytics.com',
-  'googleapis.com/analytics',
-  'script.google.com',
+  "workers.dev",
+  "googletagmanager.com",
+  "google-analytics.com",
+  "googleapis.com/analytics",
+  "script.google.com",
 ];
 
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE)
-      .then(cache => cache.addAll(SHELL_URLS))
-      .then(() => self.skipWaiting())
+    caches
+      .open(SHELL_CACHE)
+      .then((cache) => cache.addAll(SHELL_URLS))
+      .then(() => self.skipWaiting()),
   );
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys
-          .filter(k => k !== SHELL_CACHE && k !== DATA_CACHE)
-          .map(k => caches.delete(k))
-      ))
-      .then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => k !== SHELL_CACHE && k !== DATA_CACHE)
+            .map((k) => caches.delete(k)),
+        ),
+      )
+      .then(() => self.clients.claim()),
   );
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  if (event.request.method !== 'GET') return;
-  if (NETWORK_ONLY.some(host => url.hostname.includes(host) || url.pathname.includes(host))) return;
+  if (event.request.method !== "GET") return;
+  if (
+    NETWORK_ONLY.some(
+      (host) => url.hostname.includes(host) || url.pathname.includes(host),
+    )
+  )
+    return;
 
   if (isShellRequest(url)) {
     event.respondWith(cacheFirst(event.request, SHELL_CACHE));
@@ -75,20 +84,24 @@ self.addEventListener('fetch', (event) => {
 });
 
 function isShellRequest(url) {
-  return url.pathname.includes('/app/js/') ||
-         url.pathname.includes('/app/css/') ||
-         url.pathname.includes('/app/fonts/') ||
-         url.pathname.includes('/app/vendor/');
+  return (
+    url.pathname.includes("/app/js/") ||
+    url.pathname.includes("/app/css/") ||
+    url.pathname.includes("/app/fonts/") ||
+    url.pathname.includes("/app/vendor/")
+  );
 }
 
 function isProductData(url) {
-  return url.pathname.includes('/products/');
+  return url.pathname.includes("/products/");
 }
 
 function isStaticAsset(url) {
-  return url.pathname.endsWith('.svg') ||
-         url.pathname.endsWith('.png') ||
-         url.pathname.endsWith('.woff2');
+  return (
+    url.pathname.endsWith(".svg") ||
+    url.pathname.endsWith(".png") ||
+    url.pathname.endsWith(".woff2")
+  );
 }
 
 async function cacheFirst(request, cacheName) {
@@ -102,7 +115,10 @@ async function cacheFirst(request, cacheName) {
     }
     return response;
   } catch {
-    return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+    return new Response("Offline", {
+      status: 503,
+      statusText: "Service Unavailable",
+    });
   }
 }
 
@@ -111,11 +127,13 @@ async function staleWhileRevalidate(request, cacheName) {
   const cached = await cache.match(request, { ignoreSearch: true });
 
   const fetchPromise = fetch(request)
-    .then(response => {
+    .then((response) => {
       if (response.ok) cache.put(request, response.clone());
       return response;
     })
     .catch(() => null);
 
-  return cached || await fetchPromise || new Response('Offline', { status: 503 });
+  return (
+    cached || (await fetchPromise) || new Response("Offline", { status: 503 })
+  );
 }

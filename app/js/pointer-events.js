@@ -25,6 +25,18 @@ import {
 import { tourState } from "./state.js";
 import { track } from "./utils.js";
 
+// Hit zone radius as a multiple of a planet's visual radius. The planet's
+// box-shadow has two layers (inner halo at 0.8r blur, outer aura at 1.6r
+// blur) that visually extend ~3r from the center but don't enter hit-testing.
+// 2.0× catches the visually-strong portion. Safe against overlap: physics
+// enforces a center-to-center minimum of ≥310px (radius+labelPad sum + 220
+// repulsion), so even at r=52 (max) the 2.0× zones can't collide.
+const HIT_RADIUS_FACTOR = 2.0;
+
+// Pan deadzone: ignore pointer drift below this many pixels before committing
+// to a canvas pan. Mirrors the click-vs-drag threshold used for planets.
+const PAN_THRESHOLD_PX = 5;
+
 export function setupPointerEvents({
   enterPlanet,
   showTooltip,
@@ -37,10 +49,34 @@ export function setupPointerEvents({
   let dragNode = null;
   let isDragging = false;
   let isPanning = false;
+  let pendingPan = false;
   let startPos = { x: 0, y: 0 };
   let lastPos = { x: 0, y: 0 };
   let hoveredId = null;
   let activePointerId = null;
+
+  // Distance-based hit fallback (Fix D): nearest planet whose center is
+  // within HIT_RADIUS_FACTOR × its visual radius of the click point. Returns
+  // null if no planet qualifies. Voronoi-style: closest center wins, so
+  // overlapping hit zones resolve deterministically.
+  function nearestPlanetWithin(clientX, clientY, factor) {
+    let best = null;
+    let bestDist = Infinity;
+    for (const id in nodeMap) {
+      const n = nodeMap[id];
+      const sx = n.x * zoom + panX;
+      const sy = n.y * zoom + panY;
+      const dx = clientX - sx;
+      const dy = clientY - sy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const hitR = n.radius * zoom * factor;
+      if (dist <= hitR && dist < bestDist) {
+        best = n;
+        bestDist = dist;
+      }
+    }
+    return best;
+  }
 
   // ── Hover ──
   container.addEventListener("pointerover", (e) => {
@@ -76,10 +112,29 @@ export function setupPointerEvents({
     }
   });
 
+  // ── Belt-and-suspenders: kill HTML5 native drag-and-drop. CSS user-select
+  // already prevents new selections from forming, but if any descendant
+  // becomes draggable in the future (an image, a link, a [draggable=true]
+  // element) this guarantees the gesture stays in our pointer handler.
+  container.addEventListener("dragstart", (e) => {
+    e.preventDefault();
+  });
+
   // ── Down: start drag or pan ──
   container.addEventListener("pointerdown", (e) => {
     if (e.button !== 0 && e.pointerType === "mouse") return;
     if (activePointerId !== null) return;
+
+    // Defensive: clear any text selection that lives inside the galaxy
+    // before we start a gesture. Only scoped to selections rooted in the
+    // galaxy container — selections in the search box / breadcrumb stay.
+    const sel = window.getSelection && window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (container.contains(range.commonAncestorContainer)) {
+        sel.removeAllRanges();
+      }
+    }
 
     activePointerId = e.pointerId;
     container.setPointerCapture(e.pointerId);
@@ -99,15 +154,32 @@ export function setupPointerEvents({
         container.classList.add("dragging");
       }
     } else {
-      isPanning = true;
-      container.classList.add("dragging");
+      // Fix D: glow-edge fallback before falling through to pan.
+      const fallback = nearestPlanetWithin(
+        e.clientX,
+        e.clientY,
+        HIT_RADIUS_FACTOR,
+      );
+      if (fallback) {
+        dragNode = fallback;
+        dragNode.fx = dragNode.x;
+        dragNode.fy = dragNode.y;
+        const div = getPlanetEl(fallback.id);
+        if (div) div.style.willChange = "left, top";
+        container.classList.add("dragging");
+      } else {
+        // Fix A: arm pan but don't commit until the cursor crosses the
+        // movement threshold. Also defer the "dragging" class so a stationary
+        // mis-click doesn't flicker the cursor or hide the tooltip.
+        pendingPan = true;
+      }
     }
   });
 
   // ── Move: drag planet or pan ──
   container.addEventListener("pointermove", (e) => {
     if (e.pointerId !== activePointerId) return;
-    if (!dragNode && !isPanning) return;
+    if (!dragNode && !isPanning && !pendingPan) return;
 
     const dx = e.clientX - lastPos.x;
     const dy = e.clientY - lastPos.y;
@@ -115,18 +187,34 @@ export function setupPointerEvents({
     const totalDy = e.clientY - startPos.y;
 
     if (dragNode) {
-      if (Math.abs(totalDx) + Math.abs(totalDy) > 5) isDragging = true;
+      if (Math.abs(totalDx) + Math.abs(totalDy) > PAN_THRESHOLD_PX)
+        isDragging = true;
       dragNode.x += dx / zoom;
       dragNode.y += dy / zoom;
       dragNode.fx = dragNode.x;
       dragNode.fy = dragNode.y;
       updatePlanetPosition(dragNode);
       hideTooltip();
-    } else if (isPanning) {
-      setPanX(panX + dx);
-      setPanY(panY + dy);
-      updateGalaxyTransform();
-      hideTooltip();
+    } else if (pendingPan || isPanning) {
+      // Fix A: commit to panning only after the cursor crosses the deadzone.
+      // The first ~5px of motion is intentionally swallowed (standard drag
+      // threshold). Keeps a stationary mis-click — including the click that
+      // triggered Fix D's lookup but landed too far from any planet — from
+      // jiggling the canvas.
+      if (
+        !isPanning &&
+        Math.abs(totalDx) + Math.abs(totalDy) > PAN_THRESHOLD_PX
+      ) {
+        isPanning = true;
+        pendingPan = false;
+        container.classList.add("dragging");
+      }
+      if (isPanning) {
+        setPanX(panX + dx);
+        setPanY(panY + dy);
+        updateGalaxyTransform();
+        hideTooltip();
+      }
     }
     lastPos = { x: e.clientX, y: e.clientY };
   });
@@ -148,6 +236,7 @@ export function setupPointerEvents({
         dragNode.fy = null;
         dragNode = null;
         isPanning = false;
+        pendingPan = false;
         hideTooltip();
         if (!tourState.active) {
           enterPlanet(id);
@@ -161,6 +250,7 @@ export function setupPointerEvents({
     }
     dragNode = null;
     isPanning = false;
+    pendingPan = false;
   });
 
   // ── Pointer cancel ──
@@ -176,6 +266,7 @@ export function setupPointerEvents({
     }
     dragNode = null;
     isPanning = false;
+    pendingPan = false;
   });
 
   // ── Leave container ──
