@@ -157,7 +157,11 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
   }
 }
 
-// Zoomed variant: applies zoom + pan to edge path coordinates
+// Zoomed variant: applies zoom + pan to edge path coordinates and trims
+// each endpoint inward by the planet's radius so the edge terminates at
+// the sphere surface instead of penetrating to the center. Trim direction
+// is along the bezier tangent at each endpoint (toward the control point),
+// which keeps the curve smooth even on highly bent edges.
 function _updateEdgePathZoomed(pathEl, s, t) {
   const { mx, my } = edgeBezier(s, t);
   const sx = s.x * zoom + panX,
@@ -166,7 +170,27 @@ function _updateEdgePathZoomed(pathEl, s, t) {
     ty = t.y * zoom + panY;
   const cmx = mx * zoom + panX,
     cmy = my * zoom + panY;
-  pathEl.setAttribute("d", `M${sx},${sy} Q${cmx},${cmy} ${tx},${ty}`);
+
+  // Push start endpoint along tangent toward control by s.radius * zoom
+  const sR = (s.radius || 0) * zoom;
+  const sdx = cmx - sx,
+    sdy = cmy - sy;
+  const sLen = Math.sqrt(sdx * sdx + sdy * sdy) || 1;
+  const startX = sx + (sdx / sLen) * sR;
+  const startY = sy + (sdy / sLen) * sR;
+
+  // Push end endpoint along tangent toward control by t.radius * zoom
+  const tR = (t.radius || 0) * zoom;
+  const tdx = cmx - tx,
+    tdy = cmy - ty;
+  const tLen = Math.sqrt(tdx * tdx + tdy * tdy) || 1;
+  const endX = tx + (tdx / tLen) * tR;
+  const endY = ty + (tdy / tLen) * tR;
+
+  pathEl.setAttribute(
+    "d",
+    `M${startX},${startY} Q${cmx},${cmy} ${endX},${endY}`,
+  );
 }
 
 // ── Transform (position-based zoom/pan for crisp text) ──

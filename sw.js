@@ -1,4 +1,4 @@
-const SHELL_VERSION = 5;
+const SHELL_VERSION = 6;
 const SHELL_CACHE = `pe-shell-v${SHELL_VERSION}`;
 const DATA_CACHE = "pe-data-v1";
 
