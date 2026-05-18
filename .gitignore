@@ -5,6 +5,7 @@
 !.gitignore
 !README.md
 !LICENSE
+!CLAUDE.md
 
 # Allow root landing page + PWA files
 !index.html
