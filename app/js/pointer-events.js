@@ -45,12 +45,14 @@ export function setupPointerEvents({
   setHover3D,
   syncSphere,
   nudgePhysics,
+  stopNudge,
   triggerReleaseBounce,
 }) {
   const noop = () => {};
   const _setHover3D = setHover3D || noop;
   const _syncSphere = syncSphere || noop;
   const _nudgePhysics = nudgePhysics || noop;
+  const _stopNudge = stopNudge || noop;
   const _triggerReleaseBounce = triggerReleaseBounce || noop;
   const container = document.getElementById("galaxyContainer");
   if (!container) return;
@@ -261,9 +263,12 @@ export function setupPointerEvents({
         return;
       }
       track("planet_drag", { planet: dragNode.id });
-      // Tiny visual cue on drop — sphere does a brief scale pulse. No
-      // physics return; the planet stays exactly where the user dropped it.
+      // Tiny visual cue on drop — sphere does a brief scale pulse. Then stop
+      // the physics nudge immediately so the released planet stays exactly
+      // where dropped (collision forces would otherwise nudge it away from
+      // any planet it ended up overlapping).
       _triggerReleaseBounce(dragNode.id);
+      _stopNudge();
       dragNode.fx = null;
       dragNode.fy = null;
     }
@@ -282,6 +287,7 @@ export function setupPointerEvents({
       if (div) div.style.willChange = "";
       dragNode.fx = null;
       dragNode.fy = null;
+      _stopNudge();
     }
     dragNode = null;
     isPanning = false;

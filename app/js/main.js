@@ -25,6 +25,7 @@ import {
   setTransformCallback,
   setNudgeFrameCallback,
   nudgePhysics,
+  stopNudge,
   initGraph,
   computeLayout,
   onGraphResize,
@@ -894,6 +895,7 @@ async function init() {
     setHover3D,
     syncSphere,
     nudgePhysics,
+    stopNudge,
     triggerReleaseBounce,
   });
   setupGalaxyKeyboard();

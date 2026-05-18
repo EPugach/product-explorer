@@ -266,29 +266,67 @@ export function initGraph(w, h) {
 function simulate(opts) {
   if (alpha < 0.001) return;
   alpha *= 0.992;
-  // collisionOnly mode: only N-body repulsion + integration + bounds clamp.
+  // collisionOnly mode: contact-only collision + integration + bounds clamp.
   // Skips edge springs, centering gravity, and group gravity — used by the
   // transient drag-nudge so neighbors get pushed out of the way without
   // anything pulling planets back to their original positions afterward.
   const collisionOnly = !!(opts && opts.collisionOnly);
 
-  // N-body repulsion
   const labelPad = 15; // half of ~30px label zone below each planet
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const a = nodes[i],
-        b = nodes[j];
-      let dx = b.x - a.x,
-        dy = b.y - a.y;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const minDist = a.radius + labelPad + (b.radius + labelPad) + 220;
-      const force = ((minDist * minDist) / (dist * dist)) * 2.5 * alpha;
-      const fx = (dx / dist) * force,
-        fy = (dy / dist) * force;
-      a.vx -= fx;
-      a.vy -= fy;
-      b.vx += fx;
-      b.vy += fy;
+
+  if (collisionOnly) {
+    // Contact-only collision: hard geometric constraint, NOT alpha-scaled
+    // (collision must always fully resolve overlaps regardless of sim phase).
+    // All-pairs but cheap at N=18 (~324 iterations). Linear overlap response.
+    // No long-range component — distant planets exert zero force on each
+    // other, so dragging one doesn't cascade-spread the whole graph.
+    const COLLISION_K = 0.45;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i],
+          b = nodes[j];
+        let dx = b.x - a.x,
+          dy = b.y - a.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        const minDist = a.radius + b.radius + labelPad * 2;
+        if (dist >= minDist) continue;
+        // Exact-overlap deadlock: synthesize a small random direction so
+        // coincident planets don't get stuck (zero direction → zero force).
+        if (dist < 0.5) {
+          const ang = Math.random() * Math.PI * 2;
+          dx = Math.cos(ang);
+          dy = Math.sin(ang);
+          dist = 1;
+        }
+        const overlap = minDist - dist;
+        const force = overlap * COLLISION_K;
+        const fx = (dx / dist) * force,
+          fy = (dy / dist) * force;
+        a.vx -= fx;
+        a.vy -= fy;
+        b.vx += fx;
+        b.vy += fy;
+      }
+    }
+  } else {
+    // Layout-time N-body repulsion: long-range, alpha-scaled, inverse-square.
+    // Produces the well-spaced initial layout when computeLayout converges.
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i],
+          b = nodes[j];
+        let dx = b.x - a.x,
+          dy = b.y - a.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const minDist = a.radius + labelPad + (b.radius + labelPad) + 220;
+        const force = ((minDist * minDist) / (dist * dist)) * 2.5 * alpha;
+        const fx = (dx / dist) * force,
+          fy = (dy / dist) * force;
+        a.vx -= fx;
+        a.vy -= fy;
+        b.vx += fx;
+        b.vy += fy;
+      }
     }
   }
 
@@ -353,8 +391,17 @@ function simulate(opts) {
     const margin = n.radius + 20;
     const bottomMargin = n.radius + 50; // extra 30px for label below planet
     const topBound = Math.max(margin, 200);
-    n.x = Math.max(margin, Math.min(layoutW - margin, n.x));
-    n.y = Math.max(topBound, Math.min(layoutH - bottomMargin - 100, n.y));
+    const clampedX = Math.max(margin, Math.min(layoutW - margin, n.x));
+    const clampedY = Math.max(
+      topBound,
+      Math.min(layoutH - bottomMargin - 100, n.y),
+    );
+    // Zero perpendicular velocity when clamped at a wall — otherwise repeated
+    // force injections accumulate against the wall and produce jitter.
+    if (clampedX !== n.x) n.vx = 0;
+    if (clampedY !== n.y) n.vy = 0;
+    n.x = clampedX;
+    n.y = clampedY;
   }
 }
 
@@ -455,6 +502,13 @@ export function nudgePhysics(initial = NUDGE_ALPHA) {
   _nudgeAlpha = Math.max(_nudgeAlpha, initial);
   if (_nudgeRafId !== null) return;
   _nudgeRafId = requestAnimationFrame(_nudgeTick);
+}
+
+// Stops the nudge loop on the next tick. Called from pointer-events.js on
+// pointerup so the released planet stays exactly where dropped — no further
+// collision forces fire to nudge it away from any planets it overlapped.
+export function stopNudge() {
+  _nudgeAlpha = 0;
 }
 
 function _nudgeTick() {
