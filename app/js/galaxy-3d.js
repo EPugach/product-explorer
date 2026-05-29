@@ -28,7 +28,7 @@ let _lastTime = 0;
 
 // ── Tunables ──
 const BASE_EMISSIVE_DARK = 0.42;
-const BASE_EMISSIVE_LIGHT = 0.18;
+const BASE_EMISSIVE_LIGHT = 0.24; // enough self-color to read vivid (not gray) on white, matte material keeps it solid
 const HOVER_EMISSIVE_BUMP = 0.3;
 const HOVER_SCALE = 1.04;
 const HOVER_LERP_SPEED = 15; // exponential lerp speed (per second)
@@ -109,13 +109,13 @@ function _createPlanetMesh(n) {
     color,
     emissive: color.clone(),
     emissiveIntensity: BASE_EMISSIVE_DARK,
-    roughness: 0.35,
+    roughness: 0.5,
     metalness: 0.0,
-    clearcoat: 0.6,
-    clearcoatRoughness: 0.2,
-    sheen: 0.5,
+    clearcoat: 0.12,
+    clearcoatRoughness: 0.5,
+    sheen: 0.1,
     sheenColor: sheenC,
-    sheenRoughness: 0.6,
+    sheenRoughness: 0.7,
   });
 
   const mesh = new THREE.Mesh(_geometry, mat);
@@ -241,8 +241,8 @@ export function setTheme3D(theme) {
   if (!_initialized) return;
   if (_theme === "light") {
     _ambient.color.setHex(0xffffff);
-    _ambient.intensity = 0.85;
-    _directional.intensity = 1.1;
+    _ambient.intensity = 0.7;
+    _directional.intensity = 1.2;
   } else {
     _ambient.color.setHex(0x404060);
     _ambient.intensity = 0.6;

@@ -3,7 +3,7 @@
 //  State management, camera orchestration, UI rendering
 // ══════════════════════════════════════════════════════════════
 
-import { domainSvg } from './icons.js';
+import { domainSvg, iconHtml } from './icons.js';
 
 // Tour data and product data are injected by main.js
 let TOURS = [];
@@ -135,7 +135,7 @@ export function initTours() {
 function renderTourPicker() {
   return TOURS.map((t) =>
     `<div class="tour-picker-item" data-tour-id="${t.id}" role="button" tabindex="0">` +
-      `<div class="tour-picker-icon">${t.icon}</div>` +
+      `<div class="tour-picker-icon icon-svg">${iconHtml(t.icon, 24)}</div>` +
       `<div class="tour-picker-info">` +
         `<div class="tour-picker-title">${t.title}</div>` +
         `<div class="tour-picker-desc">${t.desc}</div>` +

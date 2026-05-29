@@ -123,6 +123,85 @@ let PRODUCT_CONFIG = {};
 let PRODUCT_PACKAGES = {};
 let _prefixToPkg = {};
 
+// ── Cluster recolor ──────────────────────────────────────────────
+// Orb color encodes the domain's cluster (physics group / groupCenters):
+// 4 brand hue families with a tonal lightness ramp inside each, so a
+// cluster reads as one color family while spatial position + labels
+// disambiguate individual domains. Falls back to authored colors when a
+// product defines no group data.
+// Per-cluster color family {hue, saturation, lightness ramp lo→hi}. The three
+// functional clusters stay vivid; the large infrastructure cluster is muted to
+// a calm slate-blue so the "plumbing" recedes and the eye goes to what matters.
+const CLUSTERS = [
+  { h: 199, s: 0.95, l0: 0.6, l1: 0.47 }, // 0 Cloud Blue — giving core (hero)
+  { h: 173, s: 0.9, l0: 0.58, l1: 0.45 }, // 1 Teal — rollups / accounting
+  { h: 280, s: 0.86, l0: 0.62, l1: 0.5 }, // 2 Violet — data import / payments
+  { h: 218, s: 0.3, l0: 0.62, l1: 0.5 }, //  3 Slate-blue — infrastructure (recessive)
+];
+
+function _hexToHsl(hex) {
+  const m = hex.replace("#", "");
+  const r = parseInt(m.slice(0, 2), 16) / 255;
+  const g = parseInt(m.slice(2, 4), 16) / 255;
+  const b = parseInt(m.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
+  let h = 0, s = 0;
+  const d = max - min;
+  if (d) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h /= 6;
+  }
+  return [h * 360, s, l];
+}
+
+function _hslToHex(h, s, l) {
+  h /= 360;
+  const f = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  let r, g, b;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = f(p, q, h + 1 / 3);
+    g = f(p, q, h);
+    b = f(p, q, h - 1 / 3);
+  }
+  const to = (x) => ("0" + Math.round(Math.max(0, Math.min(1, x)) * 255).toString(16)).slice(-2);
+  return "#" + to(r) + to(g) + to(b);
+}
+
+function applyClusterColors(data, config) {
+  const groups = config && config.physics && config.physics.groups;
+  if (!groups) return;
+  const buckets = {};
+  for (const k of Object.keys(data)) {
+    const g = groups[k];
+    if (g == null) continue;
+    (buckets[g] = buckets[g] || []).push(k);
+  }
+  for (const g of Object.keys(buckets)) {
+    const cl = CLUSTERS[g % CLUSTERS.length];
+    const ids = buckets[g];
+    const n = ids.length;
+    ids.forEach((k, i) => {
+      const t = n > 1 ? i / (n - 1) : 0.4;
+      const L = cl.l0 - t * (cl.l0 - cl.l1); // distinct shades within the family
+      data[k].color = _hslToHex(cl.h, cl.s, L);
+    });
+  }
+}
+
 async function loadProductData() {
   const [configModule, dataModule] = await Promise.all([
     import(`${productsBase}/config.js${v}`),
@@ -132,6 +211,8 @@ async function loadProductData() {
   PRODUCT_CONFIG = configModule.default;
   PRODUCT_DATA = dataModule.PRODUCT;
   PRODUCT_PACKAGES = configModule.PACKAGES || {};
+
+  applyClusterColors(PRODUCT_DATA, PRODUCT_CONFIG);
 
   _prefixToPkg = Object.fromEntries(
     Object.entries(PRODUCT_PACKAGES).map(([key, pkg]) => [pkg.prefix, key]),
@@ -874,10 +955,14 @@ async function init() {
   // Create DOM planets and edges from settled positions
   initGalaxyDOM(nodes, edges, nodeMap);
 
-  // Init WebGL 3D layer (luminous orbs behind DOM planets).
-  // Falls back to body.no-webgl if init fails (CSS restores flat planets).
-  initGalaxy3D(nodes, nodeMap);
-  setTheme3D(lightMode ? "light" : "dark");
+  // Matte-planet renderer: the DOM planet nodes ARE the visual (CSS matte
+  // spheres — lit hemisphere → terminator → shadow). The WebGL layer is
+  // intentionally left uninitialized — the glossy 3D sphere read as
+  // "fake/glassy", and the CSS matte look is more solid, lighter, and
+  // removes the hit-zone-sync + release-bounce artifacts. All 3D hooks
+  // (setHover3D / syncSphere / triggerReleaseBounce / renderGalaxy3D) no-op
+  // safely while uninitialized; body.no-webgl drives the matte CSS styling.
+  document.body.classList.add("no-webgl");
 
   // Wire the nudge-loop frame callback: each tick of the transient physics
   // sim during drag, refresh DOM planet positions + SVG edges. The WebGL

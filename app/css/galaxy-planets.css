@@ -111,21 +111,40 @@ body.no-webgl #galaxy-3d {
   transform: translate(-50%, -50%) scale(1);
 }
 
-/* Fallback when WebGL is unavailable (init failure, disabled, or unsupported
-   driver). galaxy-3d.js sets body.no-webgl on init failure; this restores
-   the original CSS-only flat-circle planet with full halo. */
+/* ── Matte-planet renderer (PRIMARY) ──
+   The DOM planet node IS the visual: a CSS matte sphere with a lit
+   hemisphere → terminator → shadowed side. WebGL is intentionally off
+   (main.js always sets body.no-webgl), so this is the production look,
+   not just a fallback. Solid in both themes, no gloss, no see-through. */
 body.no-webgl .planet-node {
   background: radial-gradient(
-    circle at 35% 35%,
-    var(--planet-light) 0%,
-    var(--planet-color) 60%,
-    var(--planet-dark) 100%
+    circle at 32% 28%,
+    color-mix(in srgb, var(--planet-color) 72%, #ffffff) 0%,
+    var(--planet-color) 46%,
+    color-mix(in srgb, var(--planet-color) 82%, #000000) 80%,
+    color-mix(in srgb, var(--planet-color) 66%, #000000) 100%
   );
-  box-shadow:
-    0 0 calc(var(--planet-r) * 0.8)
-      color-mix(in srgb, var(--planet-color) 30%, transparent),
-    0 0 calc(var(--planet-r) * 1.6)
-      color-mix(in srgb, var(--planet-color) 15%, transparent);
+}
+/* Terminator: soft shadow on the side away from the light source */
+body.no-webgl .planet-node::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 70% 74%,
+    rgba(2, 8, 24, 0.34) 0%,
+    rgba(2, 8, 24, 0) 56%
+  );
+  pointer-events: none;
+}
+/* Matte planets carry a saturated fill in BOTH themes → icon stays white,
+   and sits above the terminator shadow. */
+body.no-webgl .planet-icon,
+body.no-webgl.theme-light .planet-icon {
+  color: rgba(255, 255, 255, 0.96);
+  position: relative;
+  z-index: 2;
 }
 
 .planet-node.dimmed {
@@ -288,10 +307,16 @@ body.no-webgl .planet-node {
 
 /* ── Light Theme ── */
 body.theme-light .planet-node {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--planet-color, #0176d3) 38%, transparent),
+    0 8px 22px rgba(2, 18, 46, 0.18),
+    0 2px 6px rgba(2, 18, 46, 0.12);
 }
 body.theme-light .planet-node:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--planet-color, #0176d3) 55%, transparent),
+    0 14px 32px rgba(2, 18, 46, 0.24),
+    0 4px 10px rgba(2, 18, 46, 0.16);
 }
 body.theme-light .planet-icon {
   color: rgba(0, 0, 0, 0.7);

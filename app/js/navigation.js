@@ -13,7 +13,7 @@ import {
   wireClickAndEnter,
 } from "./templates.js";
 import { resetZoomPan, nodeMap } from "./physics.js";
-import { domainSvg, entitySvg, uiSvg } from "./icons.js";
+import { domainSvg, entitySvg, uiSvg, iconHtml } from "./icons.js";
 import {
   formatAiMarkdown,
   linkifyEntityNames,
@@ -449,15 +449,15 @@ const SR_TYPE_COLORS = {
 };
 
 const SR_TYPE_ICONS = {
-  domain: "\u{1F30C}",
-  planet: "\u{1F30C}",
-  component: "\u2699\uFE0F",
-  class: "\u{1F4D8}",
-  object: "\u{1F4E6}",
-  trigger: "\u26A1",
-  lwc: "\u{1F528}",
-  metadata: "\u{1F4CB}",
-  tag: "\u{1F3F7}\uFE0F",
+  domain: "globe",
+  planet: "globe",
+  component: "settings",
+  class: "class",
+  object: "object",
+  trigger: "trigger",
+  lwc: "lwc",
+  metadata: "metadata",
+  tag: "tag",
 };
 
 export function enterSearchResults(query, results, options = {}) {
@@ -507,7 +507,7 @@ function renderSearchResultsPage(query, results, options = {}) {
   ]);
 
   // Search input (value HTML-escaped via safeQ)
-  html += `<div class="sr-search-box"><span class="sr-search-icon">\u{1F50D}</span><input type="text" class="sr-search-input" id="srSearchInput" value="${safeQ}" autocomplete="off" spellcheck="false" placeholder="Search ${productName}..."></div>`;
+  html += `<div class="sr-search-box"><span class="sr-search-icon icon-svg">${uiSvg("search", 16)}</span><input type="text" class="sr-search-input" id="srSearchInput" value="${safeQ}" autocomplete="off" spellcheck="false" placeholder="Search ${productName}..."></div>`;
 
   // AI answer section
   if (shouldAskAi) {
@@ -543,13 +543,13 @@ function renderSearchResultsPage(query, results, options = {}) {
     html += `<div class="sr-master-list" id="srMasterList">`;
     results.forEach((r, i) => {
       const color = SR_TYPE_COLORS[r.type] || "#64748b";
-      const icon = SR_TYPE_ICONS[r.type] || "\u{1F4C4}";
+      const icon = SR_TYPE_ICONS[r.type] || "file-text";
       const safeName = r.name
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
       html += `<div class="sr-result-card${i === 0 ? " sr-selected" : ""}" data-sr-idx="${i}" style="--card-accent:${color}" role="button" tabindex="0">`;
-      html += `<div class="sr-result-icon" style="color:${color}">${icon}</div>`;
+      html += `<div class="sr-result-icon icon-svg" style="color:${color}">${iconHtml(icon, 18)}</div>`;
       html += `<div class="sr-result-body"><div class="sr-result-name">${highlightMatch(safeName, query)}</div>`;
       html += `<div class="sr-result-path">${r.level || ""}</div>`;
       html += `</div>`;
@@ -1019,10 +1019,10 @@ function renderComponentCard(c, i, id, p) {
   }
 
   if (c._synthetic) {
-    return `<div class="component-card component-card--synthetic" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i * 30, 1500)}ms" role="button" tabindex="0"><div class="infra-badge">Infrastructure</div><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div>${eb}</div>`;
+    return `<div class="component-card component-card--synthetic" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i * 30, 1500)}ms" role="button" tabindex="0"><div class="infra-badge">Infrastructure</div><h3><span class="icon icon-svg">${iconHtml(c.icon, 18)}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div>${eb}</div>`;
   }
 
-  return `<div class="component-card" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i * 30, 1500)}ms" role="button" tabindex="0"><h3><span class="icon">${c.icon}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div><div class="card-tags">${(c.tags || []).map((t) => `<span class="card-tag">${t}</span>`).join("")}${(c.triggerTags || []).map((t) => `<span class="card-tag trigger">${t}</span>`).join("")}</div>${eb}</div>`;
+  return `<div class="component-card" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i * 30, 1500)}ms" role="button" tabindex="0"><h3><span class="icon icon-svg">${iconHtml(c.icon, 18)}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div><div class="card-tags">${(c.tags || []).map((t) => `<span class="card-tag">${t}</span>`).join("")}${(c.triggerTags || []).map((t) => `<span class="card-tag trigger">${t}</span>`).join("")}</div>${eb}</div>`;
 }
 
 function renderPlanetView(id) {
@@ -1123,14 +1123,14 @@ function renderPlanetView(id) {
       class="data-flow"
       style="animation-delay:${p.components.length * 30 + 60}ms"
     >
-      <h3>🔀 Data Flow</h3>
+      <h3><span class="icon-svg">${iconHtml("data-flow", 18)}</span> Data Flow</h3>
       <div class="flow-diagram">${flowHtml}</div>
     </div>
     <div
       class="connections-section"
       style="animation-delay:${p.components.length * 30 + 120}ms"
     >
-      <h3>🌌 Connected Systems</h3>
+      <h3><span class="icon-svg">${iconHtml("connected", 18)}</span> Connected Systems</h3>
       ${connectionsHtml}
     </div>`;
 
@@ -1149,17 +1149,17 @@ function renderPlanetView(id) {
 }
 
 function renderOverviewTab(c) {
-  let h = `<div class="trigger-section" style="animation-delay:0ms"><h3>\u{1F4CB} Overview</h3><div class="trigger-desc">${c.desc}</div><div class="card-tags">${(c.tags || []).map((t) => `<span class="card-tag">${t}</span>`).join("")}${(c.triggerTags || []).map((t) => `<span class="card-tag trigger">${t}</span>`).join("")}</div></div>`;
+  let h = `<div class="trigger-section" style="animation-delay:0ms"><h3><span class="icon-svg">${iconHtml("clipboard-list", 18)}</span> Overview</h3><div class="trigger-desc">${c.desc}</div><div class="card-tags">${(c.tags || []).map((t) => `<span class="card-tag">${t}</span>`).join("")}${(c.triggerTags || []).map((t) => `<span class="card-tag trigger">${t}</span>`).join("")}</div></div>`;
   if (c.executionFlow)
-    h += `<div class="trigger-section" style="animation-delay:60ms"><h3>\u26A1 Execution Flow</h3><div class="execution-flow">${c.executionFlow.map((s, i) => `<div class="exec-step" style="animation-delay:${80 + i * 40}ms"><span class="step-num">${i + 1}</span><span>${s}</span></div>`).join("")}</div></div>`;
+    h += `<div class="trigger-section" style="animation-delay:60ms"><h3><span class="icon-svg">${iconHtml("zap", 18)}</span> Execution Flow</h3><div class="execution-flow">${c.executionFlow.map((s, i) => `<div class="exec-step" style="animation-delay:${80 + i * 40}ms"><span class="step-num">${i + 1}</span><span>${s}</span></div>`).join("")}</div></div>`;
   if (c.docs && c.docs.length > 0) {
-    h += `<div class="trigger-section doc-section" style="animation-delay:90ms"><h3>\u{1F4CB} Details</h3>${c.docs.map((p) => `<p class="doc-para">${p}</p>`).join("")}`;
+    h += `<div class="trigger-section doc-section" style="animation-delay:90ms"><h3><span class="icon-svg">${iconHtml("file-text", 18)}</span> Details</h3>${c.docs.map((p) => `<p class="doc-para">${p}</p>`).join("")}`;
     if (c.docUrl)
-      h += `<a class="doc-source-link" href="${c.docUrl}" target="_blank" rel="noopener noreferrer">\u{1F517} View on Salesforce Help \u2197</a>`;
+      h += `<a class="doc-source-link" href="${c.docUrl}" target="_blank" rel="noopener noreferrer"><span class="icon-svg" style="vertical-align:-3px">${iconHtml("link", 14)}</span> View on Salesforce Help \u2197</a>`;
     h += `</div>`;
   }
   if (c.code)
-    h += `<div class="trigger-section" style="animation-delay:120ms"><h3>\u{1F4BB} Source Code Pattern</h3><div class="code-block"><div class="code-header"><span class="lang">${c.code.lang}</span><span>${c.code.title}</span><button class="copy-btn" data-copy-code aria-label="Copy code">Copy</button></div><div class="code-body"><pre>${c.code.body}</pre></div></div></div>`;
+    h += `<div class="trigger-section" style="animation-delay:120ms"><h3><span class="icon-svg">${iconHtml("code", 18)}</span> Source Code Pattern</h3><div class="code-block"><div class="code-header"><span class="lang">${c.code.lang}</span><span>${c.code.title}</span><button class="copy-btn" data-copy-code aria-label="Copy code">Copy</button></div><div class="code-body"><pre>${c.code.body}</pre></div></div></div>`;
   return h;
 }
 
@@ -1208,10 +1208,10 @@ function renderCoreView(pid, cid) {
       { label: c.name },
     ])}
     <div class="core-header">
-      <span style="font-size:24px">${c.icon}</span>
+      <span class="icon-svg">${iconHtml(c.icon, 26)}</span>
       <div>
         <h2>${c.name}</h2>
-        <span class="badge">TRIGGER LEVEL</span>
+        <span class="badge">Trigger level</span>
       </div>
     </div>
     ${tabBar}
@@ -1480,7 +1480,7 @@ function renderEntityView(pid, cid, rawType, entityName) {
         { label: entityName },
       ])}
       <div class="entity-not-found">
-        <div class="entity-not-found-icon">🔍</div>
+        <div class="entity-not-found-icon icon-svg">${uiSvg("search", 32)}</div>
         <div class="entity-not-found-text">
           ${entityName} not found in ${entityType}
         </div>

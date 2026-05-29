@@ -121,7 +121,7 @@ export function renderHtml(cfg, manifestEntry, jsVersion, cssVersion, gaId) {
 
 <!-- Navbar -->
 <nav id="navbar" aria-label="Navigation">
-  <div class="nav-brand" id="nav-brand" style="cursor:pointer" role="button" tabindex="0">${title.toUpperCase()}</div>
+  <div class="nav-brand" id="nav-brand" style="cursor:pointer" role="button" tabindex="0">${title}</div>
   <button id="tour-btn" class="tour-btn" aria-label="Tour">Tour <span class="tour-btn-icon nav-icon-svg" id="tour-icon"></span></button>
   <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme"><span class="nav-icon-svg" id="theme-icon"></span></button>
   <div id="zoom-indicator" aria-hidden="true">
@@ -159,7 +159,7 @@ export function renderHtml(cfg, manifestEntry, jsVersion, cssVersion, gaId) {
   <!-- GALAXY VIEW (canvas-based, minimal DOM) -->
   <div id="galaxy-view" class="view-layer active">
     <div class="galaxy-title">
-      <h1>${fullName.toUpperCase()}</h1>
+      <h1>${fullName}</h1>
       <div class="search-box" id="searchBox">
         <div class="search-shell" id="searchShell">
           <span class="s-icon nav-icon-svg" aria-hidden="true" id="search-icon"></span>
