@@ -6,7 +6,7 @@
     <title>Product Explorer</title>
     <meta
       name="description"
-      content="See the architecture. Skip the source code. Interactive visual explorations of product architectures for admins, consultants, developers, and architects."
+      content="See the architecture. Skip the code. Salesforce industry-cloud codebases rendered as an interactive galaxy you can navigate, search, and tour."
     />
     <link rel="icon" type="image/svg+xml" href="npsp/favicon.svg" />
     <style>
@@ -17,734 +17,1204 @@
         font-display: swap;
       }
 
+      /* ══════════════════════════════════════════════════
+         Tokens — light body (SLDS-grounded) + dark hero world.
+         No pure #000/#fff; neutrals tinted toward the brand hue.
+         ══════════════════════════════════════════════════ */
+      :root {
+        /* Light body */
+        --bg: #f3f3f3; /* SLDS neutral-95 */
+        --bg-field: radial-gradient(
+          ellipse 120% 80% at 50% -10%,
+          #eaf5fe 0%,
+          #f4f7fc 46%,
+          #eef1f6 100%
+        );
+        --surface: #fcfdff; /* hair-tinted, not pure #fff */
+        --surface-sunk: #f6f9fe;
+        --line: #e3e7ee;
+        --line-strong: #cdd4df;
+        --ink: #181818; /* neutral-10 */
+        --ink-2: #444444; /* neutral-30 */
+        --ink-3: #5c5c5c; /* neutral-40 */
+        --ink-4: #747474; /* neutral-50 */
+
+        --brand-display: #00b3ff; /* Cloud Blue 68 — large text / fills only */
+        --brand-link: #0b5cab; /* Blue 40 — clears 50pt delta on white */
+        --brand-link-hover: #0176d3; /* SLDS Blue 50 */
+
+        --accent-teal: #06a59a;
+        --accent-violet: #9050e9;
+        --accent-pink: #e1206f;
+
+        --elev-1: 0 1px 2px rgba(2, 18, 46, 0.08);
+        --elev-2: 0 6px 18px rgba(2, 18, 46, 0.08), 0 1px 3px rgba(2, 18, 46, 0.06);
+        --elev-3: 0 18px 44px rgba(2, 18, 46, 0.12), 0 4px 10px rgba(2, 18, 46, 0.07);
+
+        /* Dark hero world */
+        --hero-field: radial-gradient(
+          ellipse 130% 100% at 50% 8%,
+          #0a2154 0%,
+          #061634 46%,
+          #03102a 100%
+        );
+        --hero-ink: #e7eef9;
+        --hero-ink-2: #aebfdc;
+        --hero-accent: #38c6ff; /* large hero accent on dark */
+
+        --font-display: "Bricolage Grotesque", -apple-system,
+          BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+          sans-serif;
+
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        --r-lg: 18px;
+        --r-md: 14px;
+        --r-sm: 10px;
+      }
+
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
 
+      html {
+        scroll-behavior: smooth;
+      }
+
       body {
-        background: #f3f3f3;
-        color: #181818;
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-body);
         line-height: 1.6;
         -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
       }
 
-      .page {
-        max-width: 960px;
+      a {
+        color: var(--brand-link);
+        text-decoration: none;
+      }
+
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: 12px;
+        z-index: 100;
+        background: var(--surface);
+        color: var(--brand-link);
+        padding: 10px 16px;
+        border-radius: var(--r-sm);
+        box-shadow: var(--elev-2);
+        font-weight: 600;
+      }
+      .skip-link:focus {
+        left: 16px;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--brand-link);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+
+      .wrap {
+        width: 100%;
+        max-width: 1120px;
         margin: 0 auto;
-        padding: 0 24px;
+        padding: 0 clamp(20px, 5vw, 40px);
       }
 
-      /* ── Hero ── */
+      /* ══════════════════════════════════════════════════
+         HERO — dark galaxy world
+         ══════════════════════════════════════════════════ */
       .hero {
-        padding: 72px 0 48px;
-        text-align: center;
-      }
-
-      .hero-title {
-        font-family: "Bricolage Grotesque", sans-serif;
-        font-size: clamp(2rem, 5vw, 3rem);
-        font-weight: 700;
-        color: #181818;
-        margin-bottom: 12px;
-      }
-
-      .hero-subtitle {
-        font-size: clamp(1rem, 2.5vw, 1.25rem);
-        color: #0176d3;
-        font-weight: 500;
-        margin-bottom: 32px;
-      }
-
-      .hero-stepper {
+        position: relative;
+        min-height: clamp(540px, 78vh, 720px);
+        background: var(--hero-field);
+        color: var(--hero-ink);
+        overflow: hidden;
+        isolation: isolate;
         display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        gap: 0;
-        margin: 32px 0;
-        padding: 0 16px;
+        align-items: center;
       }
 
-      .hero-step {
+      /* live galaxy stage (decorative) */
+      .galaxy {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: auto;
+      }
+      #stars {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .star {
+        position: absolute;
+        border-radius: 50%;
+        background: #cfe0ff;
+      }
+      #edges {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        overflow: visible;
+      }
+      .edge {
+        fill: none;
+        stroke: rgba(120, 160, 255, 0.26);
+        stroke-width: 1.3;
+        stroke-dasharray: 6 5;
+        transition: stroke 0.2s, opacity 0.2s, stroke-width 0.2s;
+      }
+      .edge.lit {
+        stroke: #6cd0ff;
+        stroke-dasharray: none;
+        stroke-width: 2.2;
+        opacity: 1 !important;
+      }
+      .galaxy.dimming .edge:not(.lit) {
+        opacity: 0.07;
+      }
+
+      .planet {
+        position: absolute;
+        width: var(--d);
+        height: var(--d);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        /* MATTE real-planet (from planet-playground.html, Eugene's pick) */
+        background: radial-gradient(
+          circle at 32% 28%,
+          var(--c-lt) 0%,
+          var(--c) 44%,
+          var(--c-dk) 78%,
+          var(--c-dk2) 100%
+        );
+        box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45),
+          0 0 22px color-mix(in srgb, var(--c) 16%, transparent);
+        transition: filter 0.2s ease, opacity 0.25s ease;
+        will-change: transform;
+      }
+      .planet::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 70% 74%,
+          rgba(0, 0, 0, 0.32) 0%,
+          rgba(0, 0, 0, 0) 55%
+        );
+        pointer-events: none;
+      }
+      .planet .ico {
+        width: calc(var(--d) * 0.42);
+        height: calc(var(--d) * 0.42);
+        pointer-events: none;
+        z-index: 1;
+      }
+      .planet .ico svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        stroke: rgba(255, 255, 255, 0.92);
+        fill: none;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .galaxy.dimming .planet:not(.hovered):not(.adj) {
+        opacity: 0.24;
+      }
+      .planet.hovered {
+        filter: brightness(1.08);
+        z-index: 5;
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 2;
+        pointer-events: none;
+        width: 100%;
+      }
+      /* left scrim so the headline stays legible over planets */
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: linear-gradient(
+          100deg,
+          rgba(3, 14, 36, 0.82) 0%,
+          rgba(3, 14, 36, 0.55) 34%,
+          rgba(3, 14, 36, 0) 62%
+        );
+      }
+      .hero-content .col {
+        max-width: 600px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--hero-ink-2);
+        margin-bottom: 22px;
+      }
+      .eyebrow .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--brand-display);
+        box-shadow: 0 0 12px var(--brand-display);
+      }
+
+      .hero h1 {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: clamp(2.3rem, 6vw, 4rem);
+        line-height: 1.04;
+        letter-spacing: -0.02em;
+        color: var(--hero-ink);
+        margin-bottom: 20px;
+      }
+      .hero h1 .accent {
+        color: var(--hero-accent);
+      }
+      .hero-sub {
+        font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+        color: var(--hero-ink-2);
+        line-height: 1.55;
+        max-width: 46ch;
+        margin-bottom: 34px;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: center;
+        pointer-events: auto;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 0.98rem;
+        font-weight: 600;
+        padding: 13px 22px;
+        border-radius: var(--r-sm);
+        transition: transform 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out),
+          background 0.18s, border-color 0.18s;
+      }
+      .btn svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .btn-primary {
+        background: var(--brand-display);
+        color: #042038;
+        box-shadow: 0 6px 22px rgba(0, 179, 255, 0.32);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0, 179, 255, 0.42);
+      }
+      .btn-ghost {
+        color: var(--hero-ink);
+        border: 1px solid rgba(174, 191, 220, 0.4);
+      }
+      .btn-ghost:hover {
+        border-color: rgba(174, 191, 220, 0.85);
+        background: rgba(120, 160, 255, 0.08);
+      }
+
+      .scroll-cue {
+        position: absolute;
+        left: 50%;
+        bottom: 22px;
+        transform: translateX(-50%);
+        z-index: 2;
+        color: var(--hero-ink-2);
+        font-size: 0.75rem;
+        letter-spacing: 0.06em;
+        text-transform: lowercase;
         display: flex;
         flex-direction: column;
         align-items: center;
-        text-align: center;
-        flex: 0 0 auto;
-        width: 140px;
+        gap: 6px;
+        opacity: 0.7;
+        animation: floaty 2.6s ease-in-out infinite;
+      }
+      .scroll-cue svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      @keyframes floaty {
+        0%, 100% { transform: translate(-50%, 0); }
+        50% { transform: translate(-50%, 5px); }
       }
 
-      .hero-step-circle {
-        width: 64px;
-        height: 64px;
-        border-radius: 50%;
-        border: 1px solid #c9c9c9;
-        background: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 12px;
-        flex-shrink: 0;
-      }
-
-      .hero-step-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #181818;
-        margin-bottom: 2px;
-      }
-
-      .hero-step-label--accent {
-        color: #0176d3;
-      }
-
-      .hero-step-sub {
-        font-size: 11px;
-        color: #595959;
-      }
-
-      .hero-step-connector {
-        flex: 1;
-        max-width: 80px;
-        min-width: 24px;
-        height: 1px;
-        border-top: 1px dashed #d4d4d4;
-        margin-top: 32px;
+      /* ══════════════════════════════════════════════════
+         BODY — light, SLDS-grounded
+         ══════════════════════════════════════════════════ */
+      main {
+        background: var(--bg-field);
         position: relative;
       }
 
-      .hero-step-connector::after {
-        content: "";
-        position: absolute;
-        right: -3px;
-        top: -4px;
-        width: 0;
-        height: 0;
-        border-top: 4px solid transparent;
-        border-bottom: 4px solid transparent;
-        border-left: 6px solid #c9c9c9;
+      .section {
+        padding: clamp(54px, 8vw, 92px) 0;
       }
-
-      .hero-hook {
-        text-align: left;
+      .section-head {
+        margin-bottom: 40px;
       }
-
-      .hero-hook p {
-        font-size: 1.05rem;
-        color: #444444;
-        line-height: 1.7;
-        margin-bottom: 16px;
-      }
-
-      .hero-hook p:last-child {
-        margin-bottom: 0;
-      }
-
-      /* ── Value Props ── */
-      .value-props {
-        padding-bottom: 48px;
-      }
-
-      .props-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-      }
-
-      .prop-card {
-        background: #ffffff;
-        border: 1px solid rgba(201, 201, 201, 0.6);
-        border-radius: 12px;
-        padding: 32px;
-        box-shadow:
-          0 1px 2px rgba(0, 0, 0, 0.06),
-          0 4px 12px rgba(0, 0, 0, 0.04);
-      }
-
-      .prop-card h2 {
-        font-family: "Bricolage Grotesque", sans-serif;
-        font-size: 1.15rem;
-        font-weight: 600;
-        color: #181818;
-        margin-bottom: 16px;
-      }
-
-      .prop-card ul {
-        list-style: none;
-        padding: 0;
-      }
-
-      .prop-card li {
-        font-size: 0.95rem;
-        color: #444444;
-        padding: 8px 0;
-        border-bottom: 1px solid rgba(201, 201, 201, 0.3);
-        line-height: 1.5;
-      }
-
-      .prop-card li:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
-      }
-
-      .prop-label {
-        font-weight: 600;
-        color: #181818;
-      }
-
-      /* ── Products ── */
-      .products {
-        padding-bottom: 48px;
-      }
-
-      .products-heading {
-        font-family: "Bricolage Grotesque", sans-serif;
-        font-size: 1.5rem;
+      .section-kicker {
+        font-size: 0.8rem;
         font-weight: 700;
-        color: #181818;
-        margin-bottom: 24px;
-        text-align: center;
+        letter-spacing: 0.04em;
+        color: var(--brand-link);
+        margin-bottom: 10px;
+      }
+      .section-title {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: clamp(1.6rem, 3.4vw, 2.3rem);
+        letter-spacing: -0.015em;
+        color: var(--ink);
+        line-height: 1.12;
+      }
+      .section-lede {
+        font-size: 1.05rem;
+        color: var(--ink-2);
+        max-width: 60ch;
+        margin-top: 12px;
       }
 
-      #productGrid {
+      /* ── Capabilities: two-column, de-carded ── */
+      .caps {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: clamp(28px, 5vw, 64px);
       }
-
-      .product-card {
+      .cap h3 {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--ink);
+        padding-bottom: 14px;
+        margin-bottom: 6px;
+        border-bottom: 1px solid var(--line-strong);
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 24px;
-        background: #ffffff;
-        border: 1px solid rgba(201, 201, 201, 0.6);
-        border-radius: 12px;
-        padding: 24px 32px;
+        gap: 11px;
+      }
+      .cap h3 .ci {
+        width: 22px;
+        height: 22px;
+        color: var(--brand-link);
+        flex-shrink: 0;
+      }
+      .cap h3 .ci svg {
+        width: 100%;
+        height: 100%;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .cap dl {
+        margin: 0;
+      }
+      .cap dt {
+        font-weight: 600;
+        color: var(--ink);
+        margin-top: 18px;
+        font-size: 0.98rem;
+      }
+      .cap dd {
+        color: var(--ink-2);
+        font-size: 0.95rem;
+        line-height: 1.55;
+        margin: 3px 0 0;
+      }
+
+      /* ── Roster ── */
+      .roster {
+        display: grid;
+        gap: 18px;
+      }
+      /* Featured flagship (NPSP) */
+      .feature {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        box-shadow: var(--elev-2);
         text-decoration: none;
         color: inherit;
-        transition:
-          border-color 0.2s ease,
-          box-shadow 0.2s ease,
-          transform 0.2s ease;
-        box-shadow:
-          0 1px 2px rgba(0, 0, 0, 0.06),
-          0 4px 12px rgba(0, 0, 0, 0.04);
+        transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out),
+          border-color 0.2s;
       }
-
-      .product-card:hover {
-        border-color: #0176d3;
-        box-shadow:
-          0 2px 4px rgba(0, 0, 0, 0.08),
-          0 8px 24px rgba(0, 0, 0, 0.06);
-        transform: translateY(-2px);
+      .feature:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--elev-3);
+        border-color: var(--line-strong);
       }
-
-      .product-info {
-        flex: 1;
-        min-width: 0;
+      .feature-body {
+        padding: clamp(28px, 4vw, 42px);
       }
-
-      .product-name {
-        font-family: "Bricolage Grotesque", sans-serif;
-        font-size: 1.15rem;
+      .feature-tag {
+        display: inline-block;
+        font-size: 0.72rem;
         font-weight: 700;
-        color: #181818;
-        margin-bottom: 2px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--brand-link);
+        background: #eaf5fe;
+        border-radius: 999px;
+        padding: 5px 12px;
+        margin-bottom: 16px;
+      }
+      .feature-name {
+        font-family: var(--font-display);
+        font-size: clamp(1.6rem, 3vw, 2.1rem);
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        color: var(--ink);
+        line-height: 1.05;
+      }
+      .feature-full {
+        color: var(--ink-3);
+        font-size: 1rem;
+        margin: 4px 0 22px;
+      }
+      .feature-stats {
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        gap: 20px 32px;
+        justify-content: start;
+        margin-bottom: 26px;
+      }
+      .stat .n {
+        font-family: var(--font-display);
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--ink);
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+      }
+      .stat .l {
+        font-size: 0.82rem;
+        color: var(--ink-3);
+        margin-top: 5px;
+      }
+      .feature-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: var(--brand-link);
+        font-size: 1rem;
+      }
+      .feature:hover .feature-cta {
+        color: var(--brand-link-hover);
+      }
+      .feature-cta svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: transform 0.18s var(--ease-out);
+      }
+      .feature:hover .feature-cta svg {
+        transform: translateX(4px);
+      }
+      /* featured visual panel — drifting matte planets, dark inset */
+      .feature-visual {
+        position: relative;
+        background: var(--hero-field);
+        min-height: 230px;
+        overflow: hidden;
+      }
+      .feature-visual #fedges {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        pointer-events: none;
+      }
+      .feature-visual .edge {
+        stroke: rgba(120, 160, 255, 0.3);
       }
 
-      .product-fullname {
-        font-size: 0.85rem;
-        color: #595959;
-        margin-bottom: 12px;
+      /* Compact roster grid */
+      .roster-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 14px;
       }
-
-      .product-stats {
+      .rcard {
         display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
+        flex-direction: column;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 20px 22px;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out),
+          border-color 0.18s;
       }
-
-      .product-stat {
+      .rcard:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--elev-2);
+        border-color: var(--line-strong);
+      }
+      .rcard-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .rdot {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: radial-gradient(
+          circle at 34% 30%,
+          var(--c-lt) 0%,
+          var(--c) 52%,
+          var(--c-dk) 100%
+        );
+        box-shadow: var(--elev-1);
+      }
+      .rcard-name {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: var(--ink);
+        line-height: 1.15;
+      }
+      .rcard-full {
         font-size: 0.8rem;
-        color: #595959;
+        color: var(--ink-4);
+        margin-top: 1px;
       }
-
-      .product-stat strong {
-        color: #181818;
+      .rcard-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        margin-top: auto;
+        padding-top: 4px;
+      }
+      .rstat {
+        font-size: 0.82rem;
+        color: var(--ink-3);
+      }
+      .rstat strong {
+        color: var(--ink);
         font-weight: 600;
         font-variant-numeric: tabular-nums;
       }
-
-      .product-cta {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: #0176d3;
-        white-space: nowrap;
-        flex-shrink: 0;
-      }
-
-      /* ── Footer ── */
-      .footer {
-        padding: 32px 0;
-        text-align: center;
-        border-top: 1px solid rgba(201, 201, 201, 0.6);
-      }
-
-      .footer-tech {
+      .rcard-go {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 16px;
         font-size: 0.85rem;
-        color: #595959;
-        margin-bottom: 8px;
-      }
-
-      .footer-brand {
-        font-family: "Bricolage Grotesque", sans-serif;
-        font-size: 0.8rem;
         font-weight: 600;
-        color: #999999;
-        letter-spacing: 0.5px;
+        color: var(--brand-link);
+      }
+      .rcard-go svg {
+        width: 15px;
+        height: 15px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: transform 0.18s var(--ease-out);
+      }
+      .rcard:hover .rcard-go svg {
+        transform: translateX(3px);
       }
 
-      /* ── Mobile ── */
+      /* ══════════════════════════════════════════════════
+         FOOTER
+         ══════════════════════════════════════════════════ */
+      footer {
+        border-top: 1px solid var(--line);
+        background: var(--surface);
+        padding: 40px 0;
+      }
+      .foot {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px 40px;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .foot-prov {
+        color: var(--ink-3);
+        font-size: 0.9rem;
+        max-width: 62ch;
+        line-height: 1.6;
+      }
+      .foot-prov strong {
+        color: var(--ink-2);
+        font-weight: 600;
+      }
+      .foot-meta {
+        display: flex;
+        gap: 22px;
+        align-items: center;
+        font-size: 0.85rem;
+      }
+      .foot-brand {
+        font-family: var(--font-display);
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .foot-link {
+        color: var(--brand-link);
+        font-weight: 600;
+      }
+      .foot-link:hover {
+        color: var(--brand-link-hover);
+      }
+
+      /* ── reveal on load ── */
+      .reveal {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      .reveal.in {
+        opacity: 1;
+        transform: none;
+        transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+      }
+
+      /* ══════════════════════════════════════════════════
+         RESPONSIVE
+         ══════════════════════════════════════════════════ */
+      @media (max-width: 860px) {
+        .caps {
+          grid-template-columns: 1fr;
+        }
+        .feature {
+          grid-template-columns: 1fr;
+        }
+        .feature-visual {
+          order: -1;
+          min-height: 170px;
+        }
+      }
       @media (max-width: 600px) {
         .hero {
-          padding: 48px 0 36px;
-        }
-
-        .hero-subtitle {
-          margin-bottom: 24px;
-        }
-
-        .hero-stepper {
-          flex-direction: column;
-          align-items: center;
-          gap: 0;
-          margin: 24px 0;
-          padding: 0;
-        }
-
-        .hero-step {
-          width: auto;
-        }
-
-        .hero-step-circle {
-          width: 56px;
-          height: 56px;
-        }
-
-        .hero-step-label {
-          font-size: 14px;
-        }
-
-        .hero-step-sub {
-          font-size: 12px;
-        }
-
-        .hero-step-connector {
-          width: 1px;
-          height: 24px;
-          min-width: auto;
-          max-width: none;
-          border-top: none;
-          border-left: 1px dashed #d4d4d4;
-          margin-top: 0;
-          margin: 4px 0;
-        }
-
-        .hero-step-connector::after {
-          right: auto;
-          top: auto;
-          bottom: -3px;
-          left: -4px;
-          border-left: 4px solid transparent;
-          border-right: 4px solid transparent;
-          border-top: 6px solid #c9c9c9;
-        }
-
-        .props-grid {
-          grid-template-columns: 1fr;
-          gap: 16px;
-        }
-
-        .prop-card {
-          padding: 24px;
-        }
-
-        .value-props {
-          padding-bottom: 36px;
-        }
-
-        .products {
-          padding-bottom: 36px;
-        }
-
-        .product-card {
-          flex-direction: column;
+          min-height: clamp(480px, 86vh, 620px);
           align-items: flex-start;
-          padding: 24px;
         }
-
-        .product-cta {
-          align-self: flex-end;
+        .hero-content {
+          padding-top: 64px;
         }
+        /* vertical scrim: protect the headline up top, let planets drift below */
+        .hero::after {
+          background: linear-gradient(
+            180deg,
+            rgba(3, 14, 36, 0.94) 0%,
+            rgba(3, 14, 36, 0.78) 34%,
+            rgba(3, 14, 36, 0.35) 62%,
+            rgba(3, 14, 36, 0) 84%
+          );
+        }
+        .cta-row {
+          width: 100%;
+        }
+        .btn {
+          flex: 1;
+          justify-content: center;
+        }
+        .feature-stats {
+          grid-template-columns: repeat(2, auto);
+        }
+        .scroll-cue {
+          display: none;
+        }
+      }
 
-        .footer {
-          padding: 24px 0;
+      /* ── reduced motion ── */
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        .scroll-cue {
+          animation: none;
+        }
+        .reveal {
+          opacity: 1;
+          transform: none;
+          transition: none;
+        }
+        .btn,
+        .feature,
+        .rcard {
+          transition: none;
         }
       }
     </style>
   </head>
   <body>
-    <div class="page">
-      <!-- Hero -->
-      <section class="hero">
-        <h1 class="hero-title">Product Explorer</h1>
-        <p class="hero-subtitle">See the architecture. Skip the source code.</p>
+    <a class="skip-link" href="#main">Skip to products</a>
 
-        <div class="hero-hook">
-          <p>
-            There's a gap between the people who build software and the people
-            who need to understand it. Source code tells the whole story, but
-            it's written in a language most stakeholders don't speak.
+    <!-- ════════ HERO — dark galaxy world ════════ -->
+    <header class="hero">
+      <div class="galaxy" id="galaxy" aria-hidden="true">
+        <div id="stars"></div>
+        <svg id="edges"></svg>
+      </div>
+
+      <div class="hero-content wrap">
+        <div class="col">
+          <span class="eyebrow reveal"><span class="dot"></span>Product Explorer</span>
+          <h1 class="reveal">
+            See the architecture.<br />
+            <span class="accent">Skip the code.</span>
+          </h1>
+          <p class="hero-sub reveal">
+            Salesforce industry-cloud codebases, rendered as an interactive
+            galaxy. Navigate domains, trace how data flows, and search the whole
+            system, without reading a single line of code.
           </p>
-
-          <!-- Infographic: visual breather between problem and solution -->
-          <div
-            class="hero-stepper"
-            role="img"
-            aria-label="Source code becomes documentation becomes an interactive map with AI search"
-          >
-            <div class="hero-step">
-              <div class="hero-step-circle">
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                  <path
-                    d="M10 6 L4 14 L10 22"
-                    stroke="#595959"
-                    stroke-width="2"
-                    fill="none"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M18 6 L24 14 L18 22"
-                    stroke="#595959"
-                    stroke-width="2"
-                    fill="none"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <line
-                    x1="15.5"
-                    y1="4"
-                    x2="12.5"
-                    y2="24"
-                    stroke="#595959"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </div>
-              <div class="hero-step-label">Source Code</div>
-              <div class="hero-step-sub">Your codebase</div>
-            </div>
-            <div class="hero-step-connector" aria-hidden="true"></div>
-            <div class="hero-step">
-              <div class="hero-step-circle hero-step-circle--accent">
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                  <path
-                    d="M14 4 C10 4 5 5.5 5 7.5 L5 22 C5 20.5 10 19 14 19.5"
-                    stroke="#0176d3"
-                    stroke-width="1.5"
-                    fill="none"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M14 4 C18 4 23 5.5 23 7.5 L23 22 C23 20.5 18 19 14 19.5"
-                    stroke="#0176d3"
-                    stroke-width="1.5"
-                    fill="none"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <line
-                    x1="14"
-                    y1="4"
-                    x2="14"
-                    y2="19.5"
-                    stroke="#0176d3"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="9"
-                    x2="12"
-                    y2="9"
-                    stroke="#0176d3"
-                    stroke-width="1"
-                    opacity="0.4"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="12"
-                    x2="11"
-                    y2="12"
-                    stroke="#0176d3"
-                    stroke-width="1"
-                    opacity="0.4"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="16"
-                    y1="9"
-                    x2="20"
-                    y2="9"
-                    stroke="#0176d3"
-                    stroke-width="1"
-                    opacity="0.4"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="16"
-                    y1="12"
-                    x2="19"
-                    y2="12"
-                    stroke="#0176d3"
-                    stroke-width="1"
-                    opacity="0.4"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </div>
-              <div class="hero-step-label hero-step-label--accent">
-                Documentation
-              </div>
-              <div class="hero-step-sub">Analyzed and structured</div>
-            </div>
-            <div class="hero-step-connector" aria-hidden="true"></div>
-            <div class="hero-step">
-              <div class="hero-step-circle">
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                  <circle cx="14" cy="12" r="4" fill="#0176d3" />
-                  <circle cx="7" cy="7" r="2.5" fill="#0176d3" opacity="0.55" />
-                  <circle cx="21" cy="8" r="2" fill="#0176d3" opacity="0.45" />
-                  <circle cx="8" cy="20" r="2" fill="#0176d3" opacity="0.45" />
-                  <circle
-                    cx="21"
-                    cy="19"
-                    r="2.5"
-                    fill="#0176d3"
-                    opacity="0.35"
-                  />
-                  <line
-                    x1="14"
-                    y1="12"
-                    x2="7"
-                    y2="7"
-                    stroke="#0176d3"
-                    stroke-width="0.75"
-                    opacity="0.35"
-                  />
-                  <line
-                    x1="14"
-                    y1="12"
-                    x2="21"
-                    y2="8"
-                    stroke="#0176d3"
-                    stroke-width="0.75"
-                    opacity="0.35"
-                  />
-                  <line
-                    x1="14"
-                    y1="12"
-                    x2="8"
-                    y2="20"
-                    stroke="#0176d3"
-                    stroke-width="0.75"
-                    opacity="0.35"
-                  />
-                  <line
-                    x1="14"
-                    y1="12"
-                    x2="21"
-                    y2="19"
-                    stroke="#0176d3"
-                    stroke-width="0.75"
-                    opacity="0.35"
-                  />
-                </svg>
-              </div>
-              <div class="hero-step-label">Interactive Map</div>
-              <div class="hero-step-sub">Navigate visually</div>
-            </div>
-            <div class="hero-step-connector" aria-hidden="true"></div>
-            <div class="hero-step">
-              <div class="hero-step-circle hero-step-circle--accent">
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="6"
-                    stroke="#0176d3"
-                    stroke-width="1.5"
-                    fill="none"
-                  />
-                  <line
-                    x1="16.2"
-                    y1="16.2"
-                    x2="22"
-                    y2="22"
-                    stroke="#0176d3"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M21 5 L21.8 2.5 L22.6 5 L25 5.8 L22.6 6.6 L21.8 9 L21 6.6 L18.5 5.8z"
-                    fill="#0ea5e9"
-                  />
-                  <path
-                    d="M5 5 L5.6 3.2 L6.2 5 L8 5.6 L6.2 6.2 L5.6 8 L5 6.2 L3.2 5.6z"
-                    fill="#0ea5e9"
-                    opacity="0.7"
-                  />
-                  <path
-                    d="M22 16 L22.5 14.5 L23 16 L24.5 16.5 L23 17 L22.5 18.5 L22 17 L20.5 16.5z"
-                    fill="#0ea5e9"
-                    opacity="0.5"
-                  />
-                </svg>
-              </div>
-              <div class="hero-step-label hero-step-label--accent">
-                AI Search
-              </div>
-              <div class="hero-step-sub">Ask anything</div>
-            </div>
+          <div class="cta-row reveal">
+            <a class="btn btn-primary" id="heroPrimary" href="npsp/">
+              Explore NPSP
+              <svg viewBox="0 0 24 24"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </a>
+            <a class="btn btn-ghost" href="#products">Browse all products</a>
           </div>
+        </div>
+      </div>
 
-          <p>
-            Product Explorer closes that gap. It reads the codebase, layers in
-            available documentation, and renders it as an interactive visual
-            system. Navigate, search, and explore without reading a single line
-            of code.
+      <div class="scroll-cue" aria-hidden="true">
+        <span>explore</span>
+        <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ════════ Capabilities ════════ -->
+      <section class="section wrap">
+        <div class="section-head reveal">
+          <p class="section-kicker">Built for the whole team</p>
+          <h2 class="section-title">One map. Every level of detail.</h2>
+          <p class="section-lede">
+            Each product opens as a galaxy of domains. Drill from the big
+            picture down to a single Apex class, or let a guided tour walk you
+            through the workflows that matter.
           </p>
         </div>
-      </section>
 
-      <!-- Value Props -->
-      <section class="value-props">
-        <div class="props-grid">
-          <div class="prop-card">
-            <h2>For Admins &amp; Consultants</h2>
-            <ul>
-              <li>
-                <span class="prop-label">Feature connections.</span> See how
-                components relate across the product
-              </li>
-              <li>
-                <span class="prop-label">Dependencies.</span> Understand what
-                relies on what before making changes
-              </li>
-              <li>
-                <span class="prop-label">Guided tours.</span> Walk through key
-                workflows with narrated constellation stories
-              </li>
-              <li>
-                <span class="prop-label">Universal search.</span> Find any
-                component, entity, or domain instantly
-              </li>
-            </ul>
+        <div class="caps reveal">
+          <div class="cap">
+            <h3>
+              <span class="ci"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.9" /><path d="M16 3.1a4 4 0 0 1 0 7.8" /></svg></span>
+              For admins &amp; consultants
+            </h3>
+            <dl>
+              <dt>Feature connections</dt>
+              <dd>See how components relate across the product at a glance.</dd>
+              <dt>Dependencies</dt>
+              <dd>Understand what relies on what before you change anything.</dd>
+              <dt>Guided tours</dt>
+              <dd>Walk key workflows as narrated constellation stories.</dd>
+              <dt>Universal search</dt>
+              <dd>Find any component, entity, or domain instantly.</dd>
+            </dl>
           </div>
-          <div class="prop-card">
-            <h2>For Developers &amp; Architects</h2>
-            <ul>
-              <li>
-                <span class="prop-label">Execution flows.</span> Trace how data
-                moves through triggers, classes, and handlers
-              </li>
-              <li>
-                <span class="prop-label">Entity data.</span> Inspect classes,
-                objects, triggers, and LWCs per component
-              </li>
-              <li>
-                <span class="prop-label">Connection maps.</span> Visualize
-                cross-domain dependencies and data flows
-              </li>
-              <li>
-                <span class="prop-label">AI descriptions.</span> Every component
-                and entity annotated with plain-language summaries
-              </li>
-            </ul>
+          <div class="cap">
+            <h3>
+              <span class="ci"><svg viewBox="0 0 24 24"><path d="m18 16 4-4-4-4" /><path d="m6 8-4 4 4 4" /><path d="m14.5 4-5 16" /></svg></span>
+              For developers &amp; architects
+            </h3>
+            <dl>
+              <dt>Execution flows</dt>
+              <dd>Trace data through triggers, classes, and handlers.</dd>
+              <dt>Entity data</dt>
+              <dd>Inspect classes, objects, triggers, and LWCs per component.</dd>
+              <dt>Connection maps</dt>
+              <dd>Visualize cross-domain dependencies and data flows.</dd>
+              <dt>Plain-language descriptions</dt>
+              <dd>Every component and entity annotated in clear English.</dd>
+            </dl>
           </div>
         </div>
       </section>
 
-      <!-- Products -->
-      <section class="products">
-        <h2 class="products-heading">Explore</h2>
-        <div id="productGrid"></div>
-      </section>
-    </div>
+      <!-- ════════ Products ════════ -->
+      <section class="section wrap" id="products">
+        <div class="section-head reveal">
+          <p class="section-kicker">Explore</p>
+          <h2 class="section-title">Ten products, mapped end to end.</h2>
+        </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <div class="page">
-        <p class="footer-tech">
-          No build step. No dependencies. No frameworks. Pure HTML, CSS, and ES
-          modules.
+        <div class="roster">
+          <!-- featured flagship injected here -->
+          <a class="feature reveal" id="feature" href="#"></a>
+          <!-- compact roster injected here -->
+          <div class="roster-grid reveal" id="rosterGrid"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ════════ Footer ════════ -->
+    <footer>
+      <div class="wrap foot">
+        <p class="foot-prov">
+          <strong>Architecture mapped from public, open-source repositories</strong>
+          and public product documentation, then rendered as an interactive
+          system. No build step, no dependencies, no frameworks: pure HTML, CSS,
+          and ES modules.
         </p>
-        <p class="footer-brand">Product Explorer</p>
+        <div class="foot-meta">
+          <span class="foot-brand">Product Explorer</span>
+          <a
+            class="foot-link"
+            href="https://github.com/EPugach/product-explorer"
+            rel="noopener"
+            >View source</a
+          >
+        </div>
       </div>
     </footer>
 
     <script type="module">
       import { PRODUCTS } from "./products/manifest.js";
 
-      const grid = document.getElementById("productGrid");
-      for (const p of PRODUCTS) {
-        const card = document.createElement("a");
-        card.href = p.id + "/";
-        card.className = "product-card";
+      /* ── tiny icon set (Lucide, ISC) ── */
+      const I = {
+        users:
+          '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
+        dollar:
+          '<path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+        refresh:
+          '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+        chart:
+          '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+        layers:
+          '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/>',
+        zap:
+          '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+        package:
+          '<path d="M11 21.7a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7z"/><path d="M12 22V12"/><polyline points="3.3 7 12 12 20.7 7"/>',
+        upload:
+          '<path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>',
+        arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+      };
+      const svgIco = (p, cls = "") =>
+        `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 
-        const info = document.createElement("div");
-        info.className = "product-info";
+      /* ── cluster color (HSL ramp, matte recipe from playground) ── */
+      const HUES = [205, 174, 280, 338]; // blue, teal, violet, pink
+      const SAT = [88, 70, 70, 78];
+      const hsl = (h, s, l) => `hsl(${h} ${s}% ${l}%)`;
+      function clusterVars(cluster, t = 0.4) {
+        const h = HUES[cluster],
+          s = SAT[cluster];
+        const L = 60 - t * 13; // 60 → 47
+        return {
+          "--c": hsl(h, s, L),
+          "--c-lt": hsl(h, Math.min(100, s + 6), L + 16),
+          "--c-dk": hsl(h, s, L - 14),
+          "--c-dk2": hsl(h, s, L - 26),
+        };
+      }
+      const setVars = (el, vars) => {
+        for (const k in vars) el.style.setProperty(k, vars[k]);
+      };
 
-        const name = document.createElement("div");
-        name.className = "product-name";
-        name.textContent = p.name;
+      /* ══════════════════════════════════════════════
+         HERO GALAXY — drifting matte planets + edges
+         ══════════════════════════════════════════════ */
+      // fractional positions tuned for a wide band; visual mass right-of-centre
+      const NODES = [
+        { id: "don", c: 0, r: 46, x: 0.66, y: 0.42, ic: I.dollar },
+        { id: "rec", c: 0, r: 30, x: 0.57, y: 0.24, ic: I.refresh },
+        { id: "con", c: 0, r: 28, x: 0.78, y: 0.28, ic: I.users },
+        { id: "roll", c: 1, r: 35, x: 0.87, y: 0.55, ic: I.chart },
+        { id: "batch", c: 1, r: 26, x: 0.76, y: 0.68, ic: I.layers },
+        { id: "bdi", c: 2, r: 31, x: 0.6, y: 0.7, ic: I.upload },
+        { id: "alloc", c: 2, r: 24, x: 0.49, y: 0.55, ic: I.package },
+        { id: "tdtm", c: 3, r: 27, x: 0.9, y: 0.34, ic: I.zap },
+        { id: "rel", c: 3, r: 24, x: 0.67, y: 0.84, ic: I.users },
+        { id: "lvl", c: 1, r: 21, x: 0.95, y: 0.74, ic: I.chart },
+      ];
+      const LINKS = [
+        ["don", "rec"], ["don", "con"], ["don", "roll"], ["don", "alloc"],
+        ["don", "bdi"], ["don", "tdtm"], ["roll", "batch"], ["roll", "lvl"],
+        ["bdi", "alloc"], ["con", "tdtm"], ["bdi", "rel"], ["batch", "lvl"],
+      ];
 
-        const full = document.createElement("div");
-        full.className = "product-fullname";
-        full.textContent = p.fullName;
+      const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-        const stats = document.createElement("div");
-        stats.className = "product-stats";
+      function buildGalaxy(stage, edgesSvg, nodes, links, opts = {}) {
+        const byId = {};
+        const adj = {};
+        nodes.forEach((n) => (adj[n.id] = new Set()));
+        links.forEach(([a, b]) => {
+          adj[a].add(b);
+          adj[b].add(a);
+        });
 
-        for (const [label, value] of p.stats) {
-          const span = document.createElement("span");
-          span.className = "product-stat";
-          const strong = document.createElement("strong");
-          strong.textContent = value;
-          span.appendChild(strong);
-          span.appendChild(document.createTextNode(" " + label));
-          stats.appendChild(span);
+        nodes.forEach((n) => {
+          const inC = nodes.filter((q) => q.c === n.c);
+          const t = inC.length > 1 ? inC.indexOf(n) / (inC.length - 1) : 0.4;
+          const el = document.createElement("div");
+          el.className = "planet";
+          setVars(el, clusterVars(n.c, t));
+          if (n.ic && opts.icons !== false)
+            el.innerHTML = `<span class="ico">${svgIco(n.ic)}</span>`;
+          stage.appendChild(el);
+          byId[n.id] = el;
+          n._phx = Math.random() * Math.PI * 2;
+          n._phy = Math.random() * Math.PI * 2;
+          n._amp = 4 + Math.random() * 6;
+
+          if (opts.hover !== false) {
+            el.addEventListener("pointerenter", () => {
+              stage.classList.add("dimming");
+              nodes.forEach((m) => byId[m.id].classList.remove("hovered", "adj"));
+              el.classList.add("hovered");
+              adj[n.id].forEach((m) => byId[m].classList.add("adj"));
+              edgesSvg.querySelectorAll(".edge").forEach((e) =>
+                e.classList.toggle(
+                  "lit",
+                  e.dataset.a === n.id || e.dataset.b === n.id
+                )
+              );
+            });
+            el.addEventListener("pointerleave", () => {
+              stage.classList.remove("dimming");
+              nodes.forEach((m) => byId[m.id].classList.remove("hovered", "adj"));
+              edgesSvg.querySelectorAll(".edge").forEach((e) =>
+                e.classList.remove("lit")
+              );
+            });
+          }
+        });
+
+        edgesSvg.innerHTML = links
+          .map(
+            ([a, b]) =>
+              `<line class="edge" data-a="${a}" data-b="${b}" />`
+          )
+          .join("");
+        const lineEls = [...edgesSvg.querySelectorAll(".edge")];
+
+        let W = 0,
+          H = 0;
+        function measure() {
+          const r = stage.getBoundingClientRect();
+          W = r.width;
+          H = r.height;
         }
+        function frame(time) {
+          const ts = time || 0;
+          nodes.forEach((n) => {
+            n._bx = n.x * W;
+            n._by = n.y * H;
+            if (reduce) {
+              n._dx = 0;
+              n._dy = 0;
+            } else {
+              n._dx = Math.sin(ts * 0.00018 + n._phx) * n._amp;
+              n._dy = Math.cos(ts * 0.00021 + n._phy) * n._amp;
+            }
+            const el = byId[n.id];
+            el.style.left = n._bx + "px";
+            el.style.top = n._by + "px";
+            el.style.setProperty("--d", n.r * 2 + "px");
+            el.style.transform = `translate(-50%,-50%) translate(${n._dx}px,${n._dy}px)`;
+          });
+          lineEls.forEach((line) => {
+            const a = nodes.find((n) => n.id === line.dataset.a);
+            const b = nodes.find((n) => n.id === line.dataset.b);
+            line.setAttribute("x1", a._bx + a._dx);
+            line.setAttribute("y1", a._by + a._dy);
+            line.setAttribute("x2", b._bx + b._dx);
+            line.setAttribute("y2", b._by + b._dy);
+          });
+          if (!reduce) requestAnimationFrame(frame);
+        }
+        measure();
+        addEventListener("resize", () => {
+          measure();
+          if (reduce) frame(0);
+        });
+        requestAnimationFrame(frame);
+      }
 
-        info.appendChild(name);
-        info.appendChild(full);
-        info.appendChild(stats);
+      // starfield
+      (function stars() {
+        const el = document.getElementById("stars");
+        let s = "";
+        for (let i = 0; i < 80; i++) {
+          const sz = Math.random() * 1.6 + 0.4;
+          s += `<div class="star" style="left:${Math.random() * 100}%;top:${
+            Math.random() * 100
+          }%;width:${sz}px;height:${sz}px;opacity:${
+            Math.random() * 0.55 + 0.15
+          }"></div>`;
+        }
+        el.innerHTML = s;
+      })();
 
-        const cta = document.createElement("span");
-        cta.className = "product-cta";
-        cta.textContent = "Launch Explorer \u2192";
+      buildGalaxy(
+        document.getElementById("galaxy"),
+        document.getElementById("edges"),
+        NODES,
+        LINKS
+      );
 
-        card.appendChild(info);
-        card.appendChild(cta);
+      /* ══════════════════════════════════════════════
+         PRODUCT ROSTER (from manifest)
+         ══════════════════════════════════════════════ */
+      const stat = (label, val) =>
+        `<span class="rstat"><strong>${val}</strong> ${label}</span>`;
+
+      const flagship =
+        PRODUCTS.find((p) => p.id === "npsp") || PRODUCTS[0];
+      const rest = PRODUCTS.filter((p) => p !== flagship);
+
+      // featured flagship
+      const fEl = document.getElementById("feature");
+      fEl.href = flagship.id + "/";
+      const fStats = flagship.stats
+        .slice(0, 6)
+        .map(
+          ([l, v]) =>
+            `<div class="stat"><div class="n">${v}</div><div class="l">${l}</div></div>`
+        )
+        .join("");
+      fEl.innerHTML = `
+        <div class="feature-body">
+          <span class="feature-tag">Flagship</span>
+          <div class="feature-name">${flagship.name}</div>
+          <div class="feature-full">${flagship.fullName}</div>
+          <div class="feature-stats">${fStats}</div>
+          <span class="feature-cta">Launch explorer ${svgIco(I.arrow)}</span>
+        </div>
+        <div class="feature-visual">
+          <svg id="fedges"></svg>
+        </div>`;
+
+      // mini drifting galaxy inside the featured panel
+      const fNodes = [
+        { id: "a", c: 0, r: 34, x: 0.4, y: 0.42, ic: I.dollar },
+        { id: "b", c: 0, r: 22, x: 0.27, y: 0.66, ic: I.users },
+        { id: "c", c: 2, r: 24, x: 0.62, y: 0.66, ic: I.upload },
+        { id: "d", c: 1, r: 22, x: 0.68, y: 0.34, ic: I.chart },
+        { id: "e", c: 3, r: 18, x: 0.52, y: 0.22, ic: I.zap },
+      ];
+      const fLinks = [["a", "b"], ["a", "c"], ["a", "d"], ["a", "e"], ["c", "d"]];
+      buildGalaxy(
+        fEl.querySelector(".feature-visual"),
+        fEl.querySelector("#fedges"),
+        fNodes,
+        fLinks,
+        { hover: false }
+      );
+
+      // compact roster
+      const grid = document.getElementById("rosterGrid");
+      const ICONS = [I.dollar, I.refresh, I.layers, I.chart, I.package, I.zap, I.upload, I.users];
+      rest.forEach((p, i) => {
+        const card = document.createElement("a");
+        card.className = "rcard";
+        card.href = p.id + "/";
+        const dotVars = clusterVars(i % 4, 0.4);
+        const dotStyle = Object.entries(dotVars)
+          .map(([k, v]) => `${k}:${v}`)
+          .join(";");
+        const keyStats = p.stats
+          .filter(([l]) => ["Domains", "Components", "Objects"].includes(l))
+          .slice(0, 3)
+          .map(([l, v]) => stat(l, v))
+          .join("");
+        card.innerHTML = `
+          <div class="rcard-top">
+            <span class="rdot" style="${dotStyle}"></span>
+            <div>
+              <div class="rcard-name">${p.name}</div>
+              <div class="rcard-full">${p.fullName}</div>
+            </div>
+          </div>
+          <div class="rcard-stats">${keyStats}</div>
+          <div class="rcard-go">Explore ${svgIco(I.arrow)}</div>`;
         grid.appendChild(card);
+      });
+
+      /* ══════════════════════════════════════════════
+         Staggered reveal on load
+         ══════════════════════════════════════════════ */
+      if (!reduce) {
+        const items = [...document.querySelectorAll(".reveal")];
+        // hero items reveal immediately, staggered; body items on scroll
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((e) => {
+              if (e.isIntersecting) {
+                e.target.classList.add("in");
+                io.unobserve(e.target);
+              }
+            });
+          },
+          { threshold: 0.12 }
+        );
+        items.forEach((el, i) => {
+          if (el.closest(".hero")) {
+            setTimeout(() => el.classList.add("in"), 90 * i + 80);
+          } else {
+            io.observe(el);
+          }
+        });
+      } else {
+        document
+          .querySelectorAll(".reveal")
+          .forEach((el) => el.classList.add("in"));
       }
     </script>
   </body>
