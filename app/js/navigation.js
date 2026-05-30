@@ -232,7 +232,14 @@ export const handleHashNavigation = () => {
   } else if (segments.length >= 4) {
     const [domainId, componentId, rawEntityType, ...entityNameParts] = segments;
     const entityType = ENTITY_TYPE_MAP[rawEntityType] || rawEntityType;
-    const entityName = decodeURIComponent(entityNameParts.join("/"));
+    let entityName;
+    try {
+      entityName = decodeURIComponent(entityNameParts.join("/"));
+    } catch {
+      // Malformed escape (e.g. a lone "%") — fall back to the raw segment so
+      // navigation routes to entity-not-found instead of throwing URIError.
+      entityName = entityNameParts.join("/");
+    }
     if (!PRODUCT_DATA[domainId]) {
       setHash("#/");
       handleHashNavigation();
@@ -436,16 +443,18 @@ export function enterEntity(pid, cid, entityType, entityName) {
 // AI-generated content is escaped THEN formatted via formatAiMarkdown (XSS-safe pattern).
 // Type labels, icons, and product name are app-owned trusted data.
 
+// Theme-aware: token var() references resolve per active theme (and clear AA
+// on both badge chips). Trigger/lwc no longer alias to red/legacy-violet.
 const SR_TYPE_COLORS = {
-  domain: "#00d4ff",
-  planet: "#00d4ff",
-  component: "#4d8bff",
-  class: "#4d8bff",
-  object: "#22c55e",
-  trigger: "#ef4444",
-  lwc: "#a855f7",
-  metadata: "#f59e0b",
-  tag: "#64748b",
+  domain: "var(--tag-class)",
+  planet: "var(--tag-class)",
+  component: "var(--tag-class)",
+  class: "var(--tag-class)",
+  object: "var(--tag-object)",
+  trigger: "var(--tag-trigger)",
+  lwc: "var(--tag-lwc)",
+  metadata: "var(--tag-metadata)",
+  tag: "var(--text-dim)",
 };
 
 const SR_TYPE_ICONS = {
@@ -512,7 +521,7 @@ function renderSearchResultsPage(query, results, options = {}) {
   // AI answer section
   if (shouldAskAi) {
     html += `<div class="sr-ai-section" id="srAiSection">`;
-    html += `<div class="sr-ai-header"><span class="sr-ai-label-group"><span class="sr-ai-label"><span class="sr-ai-label-icon">\u2728</span> AI Answer</span>`;
+    html += `<div class="sr-ai-header"><span class="sr-ai-label-group"><span class="sr-ai-label"><span class="sr-ai-label-icon icon-svg">${iconHtml("sparkles", 16)}</span> AI Answer</span>`;
     html += `${options.aiAnswer ? buildFeedbackButtonsHtml() : ""}</span>`;
     html += `<span class="sr-ai-header-actions">`;
     html += `<button class="ai-copy-btn" id="srAiCopyBtn" style="display:${options.aiAnswer ? "" : "none"}" aria-label="Copy answer">Copy</button>`;
@@ -542,7 +551,7 @@ function renderSearchResultsPage(query, results, options = {}) {
     // Master list
     html += `<div class="sr-master-list" id="srMasterList">`;
     results.forEach((r, i) => {
-      const color = SR_TYPE_COLORS[r.type] || "#64748b";
+      const color = SR_TYPE_COLORS[r.type] || "var(--text-dim)";
       const icon = SR_TYPE_ICONS[r.type] || "file-text";
       const safeName = r.name
         .replace(/&/g, "&amp;")
@@ -685,19 +694,19 @@ function renderFullPreview(container, item, query) {
 
   const typeColor =
     {
-      planet: "#4d8bff",
-      component: "#4d8bff",
-      tag: "#64748b",
-      class: "#4d8bff",
-      object: "#22c55e",
-      trigger: "#ef4444",
-      lwc: "#a855f7",
-      metadata: "#f59e0b",
-    }[item.type] || "#64748b";
+      planet: "var(--tag-class)",
+      component: "var(--tag-class)",
+      tag: "var(--text-dim)",
+      class: "var(--tag-class)",
+      object: "var(--tag-object)",
+      trigger: "var(--tag-trigger)",
+      lwc: "var(--tag-lwc)",
+      metadata: "var(--tag-metadata)",
+    }[item.type] || "var(--text-dim)";
 
   let html =
     `<div class="sp-header">` +
-    `<span class="sp-type-badge" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${item.type}</span>` +
+    `<span class="sp-type-badge" style="background:color-mix(in srgb, ${typeColor} 13%, transparent);color:${typeColor};border:1px solid color-mix(in srgb, ${typeColor} 27%, transparent)">${item.type}</span>` +
     `<span class="sp-name" style="font-size:16px">${highlightMatch(item.name, query)}</span>` +
     `</div>`;
   html += `<div class="sp-domain">${item.level}</div>`;
@@ -1297,12 +1306,12 @@ function renderEntityGrid(component, entityType, pid) {
     },
     triggers: {
       icon: entitySvg("trigger", 14),
-      color: "rgba(239,68,68,",
+      color: "rgba(169,155,255,",
       badgeClass: "badge-trigger",
     },
     lwcs: {
       icon: entitySvg("lwc", 14),
-      color: "rgba(168,85,247,",
+      color: "rgba(209,125,254,",
       badgeClass: "badge-lwc",
     },
     metadata: {
@@ -1408,7 +1417,10 @@ function attachEntityGridListeners(container) {
     } = card.dataset;
     card.addEventListener("click", () => enterEntity(pid, cid, type, name));
     card.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") enterEntity(pid, cid, type, name);
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        enterEntity(pid, cid, type, name);
+      }
     });
   });
   // Package filter pill click handlers
@@ -1516,9 +1528,14 @@ function renderEntityView(pid, cid, rawType, entityName) {
   });
   el.querySelectorAll("[data-entity-link]").forEach((l) => {
     const d = JSON.parse(l.dataset.entityLink);
-    l.addEventListener("click", () =>
-      enterEntity(d.pid, d.cid, d.type, d.name),
-    );
+    const go = () => enterEntity(d.pid, d.cid, d.type, d.name);
+    l.addEventListener("click", go);
+    l.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        go();
+      }
+    });
   });
   document.getElementById("entity-view").scrollTop = 0;
 }
@@ -1526,36 +1543,52 @@ function renderEntityView(pid, cid, rawType, entityName) {
 function renderClassDetail(entity) {
   const typeColors = {
     tdtm_handler: {
-      bg: "rgba(239,68,68,0.1)",
-      color: "#ef4444",
+      bg: "color-mix(in srgb, var(--tag-trigger) 14%, transparent)",
+      color: "var(--tag-trigger)",
       label: "TDTM Handler",
     },
-    batch: { bg: "rgba(168,85,247,0.1)", color: "#a855f7", label: "Batch Job" },
-    service: { bg: "rgba(34,197,94,0.1)", color: "#22c55e", label: "Service" },
-    utility: { bg: "rgba(245,158,11,0.1)", color: "#f59e0b", label: "Utility" },
+    batch: {
+      bg: "color-mix(in srgb, var(--tag-lwc) 14%, transparent)",
+      color: "var(--tag-lwc)",
+      label: "Batch Job",
+    },
+    service: {
+      bg: "color-mix(in srgb, var(--tag-object) 14%, transparent)",
+      color: "var(--tag-object)",
+      label: "Service",
+    },
+    utility: {
+      bg: "color-mix(in srgb, var(--tag-metadata) 14%, transparent)",
+      color: "var(--tag-metadata)",
+      label: "Utility",
+    },
     controller: {
-      bg: "rgba(6,182,212,0.1)",
-      color: "#06b6d4",
+      bg: "color-mix(in srgb, var(--tag-class) 14%, transparent)",
+      color: "var(--tag-class)",
       label: "Controller",
     },
     scheduled: {
-      bg: "rgba(124,58,237,0.1)",
-      color: "#7c3aed",
+      bg: "color-mix(in srgb, var(--tag-lwc) 14%, transparent)",
+      color: "var(--tag-lwc)",
       label: "Scheduled",
     },
-    class: { bg: "rgba(77,139,255,0.1)", color: "#4d8bff", label: "Class" },
+    class: {
+      bg: "color-mix(in srgb, var(--tag-class) 14%, transparent)",
+      color: "var(--tag-class)",
+      label: "Class",
+    },
   };
   const tc = typeColors[entity.type] || typeColors["class"];
   let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-class"><span class="icon-svg">${entitySvg("class", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:${tc.bg};color:${tc.color}">${tc.label}</span>${packageBadge(entity)}${entity.linesOfCode ? `<span class="entity-detail-meta">${entity.linesOfCode} lines of code</span>` : ""}</div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "No description available."}</p></div>`;
   if (entity.type === "tdtm_handler" && entity.object)
-    h += `<div class="entity-detail-section"><h3>\u26A1 Trigger Context</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Object:</span><span>${entity.object}</span></div>${entity.triggerActions ? `<div class="edt-row"><span class="edt-label">Events:</span><span>${entity.triggerActions.map((a) => `<span class="card-tag trigger">${a}</span>`).join(" ")}</span></div>` : ""}${entity.loadOrder ? `<div class="edt-row"><span class="edt-label">Load Order:</span><span>${entity.loadOrder}</span></div>` : ""}</div></div>`;
+    h += `<div class="entity-detail-section"><h3><span class="icon-svg">${iconHtml("zap", 18)}</span> Trigger Context</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Object:</span><span>${entity.object}</span></div>${entity.triggerActions ? `<div class="edt-row"><span class="edt-label">Events:</span><span>${entity.triggerActions.map((a) => `<span class="card-tag trigger">${a}</span>`).join(" ")}</span></div>` : ""}${entity.loadOrder ? `<div class="edt-row"><span class="edt-label">Load Order:</span><span>${entity.loadOrder}</span></div>` : ""}</div></div>`;
   if (entity.extends)
     h += `<div class="entity-detail-section"><h3>Inheritance</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Extends:</span><span class="entity-detail-code">${entity.extends}</span></div>${entity.implements ? `<div class="edt-row"><span class="edt-label">Implements:</span><span class="entity-detail-code">${entity.implements}</span></div>` : ""}</div></div>`;
   if (entity.keyMethods && entity.keyMethods.length > 0)
     h += `<div class="entity-detail-section"><h3>Key Methods</h3><div class="entity-methods">${entity.keyMethods.map((m) => `<span class="entity-method">${m}</span>`).join("")}</div></div>`;
   if (entity.referencedObjects && entity.referencedObjects.length > 0)
-    h += `<div class="entity-detail-section"><h3>\u{1F517} Referenced Objects</h3><div class="entity-refs">${entity.referencedObjects
+    h += `<div class="entity-detail-section"><h3><span class="icon-svg">${iconHtml("link", 18)}</span> Referenced Objects</h3><div class="entity-refs">${entity.referencedObjects
       .map((refName) => {
         const found = findEntityAcrossDomains(refName, "objects");
         if (found)
@@ -1564,7 +1597,7 @@ function renderClassDetail(entity) {
       })
       .join("")}</div></div>`;
   if (entity.sourceUrl)
-    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View Source on GitHub \u2197</a></div>`;
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer"><span class="icon-svg" style="vertical-align:-3px">${iconHtml("link", 14)}</span> View Source on GitHub \u2197</a></div>`;
   return h;
 }
 
@@ -1574,11 +1607,11 @@ function renderObjectDetail(entity) {
   let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-object"><span class="icon-svg">${entitySvg("object", 18)}</span></div><div><h2 class="entity-detail-name">${entity.label || entity.name}</h2><span class="entity-detail-meta" style="display:block;margin-top:2px">${entity.name}</span>${packageBadge(entity)}<span class="entity-detail-meta">${fldCount} fields</span></div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "Custom object in the managed package."}</p></div>`;
   if (entity.relationships && entity.relationships.length > 0)
-    h += `<div class="entity-detail-section"><h3>\u{1F517} Relationships</h3><div class="entity-detail-table">${entity.relationships.map((r) => `<div class="edt-row"><span class="edt-label">${r.type}:</span><span>${r.field ? `<span class="entity-detail-code">${r.field}</span>` : r.description || r.type} \u2192 ${r.target}</span></div>`).join("")}</div></div>`;
+    h += `<div class="entity-detail-section"><h3><span class="icon-svg">${iconHtml("link", 18)}</span> Relationships</h3><div class="entity-detail-table">${entity.relationships.map((r) => `<div class="edt-row"><span class="edt-label">${r.type}:</span><span>${r.field ? `<span class="entity-detail-code">${r.field}</span>` : r.description || r.type} \u2192 ${r.target}</span></div>`).join("")}</div></div>`;
   if (flds.length > 0)
     h += `<div class="entity-detail-section"><h3>Fields (${flds.length})</h3><div class="entity-fields-table"><div class="eft-header"><span>Field</span><span>Type</span><span>Description</span></div>${flds.map((f) => `<div class="eft-row"><span class="entity-detail-code">${f.name}</span><span class="eft-type">${f.type}</span><span class="eft-desc">${f.desc || f.label || ""}</span></div>`).join("")}</div></div>`;
   if (entity.sourceUrl)
-    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View on GitHub \u2197</a></div>`;
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer"><span class="icon-svg" style="vertical-align:-3px">${iconHtml("link", 14)}</span> View on GitHub \u2197</a></div>`;
   return h;
 }
 
@@ -1586,9 +1619,9 @@ function renderTriggerDetail(entity) {
   let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-trigger"><span class="icon-svg">${entitySvg("trigger", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2>${packageBadge(entity)}<span class="entity-detail-meta">Trigger on ${entity.object}</span></div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>Trigger for the ${entity.object} object. Dispatches to registered handler classes via the trigger framework.</p></div>`;
   if (entity.events && entity.events.length > 0)
-    h += `<div class="entity-detail-section"><h3>\u26A1 Registered Events</h3><div class="entity-methods">${entity.events.map((e) => `<span class="card-tag trigger">${e}</span>`).join("")}</div></div>`;
+    h += `<div class="entity-detail-section"><h3><span class="icon-svg">${iconHtml("zap", 18)}</span> Registered Events</h3><div class="entity-methods">${entity.events.map((e) => `<span class="card-tag trigger">${e}</span>`).join("")}</div></div>`;
   if (entity.handlers && entity.handlers.length > 0)
-    h += `<div class="entity-detail-section"><h3>\u{1F517} Handler Chain</h3><p style="margin-bottom:8px;font-size:var(--text-xs);color:var(--text-dim)">Handlers execute in Load_Order__c sequence:</p><div class="trigger-handler-chain">${entity.handlers
+    h += `<div class="entity-detail-section"><h3><span class="icon-svg">${iconHtml("link", 18)}</span> Handler Chain</h3><p style="margin-bottom:8px;font-size:var(--text-xs);color:var(--text-dim)">Handlers execute in Load_Order__c sequence:</p><div class="trigger-handler-chain">${entity.handlers
       .map((handler, i) => {
         const found = findEntityAcrossDomains(handler, "classes");
         const hh = found
@@ -1598,22 +1631,22 @@ function renderTriggerDetail(entity) {
       })
       .join("")}</div></div>`;
   if (entity.sourceUrl)
-    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View Source on GitHub \u2197</a></div>`;
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer"><span class="icon-svg" style="vertical-align:-3px">${iconHtml("link", 14)}</span> View Source on GitHub \u2197</a></div>`;
   return h;
 }
 
 function renderLwcDetail(entity) {
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-lwc"><span class="icon-svg">${entitySvg("lwc", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:rgba(168,85,247,0.1);color:#a855f7">Lightning Web Component</span>${packageBadge(entity)}</div></div>`;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-lwc"><span class="icon-svg">${entitySvg("lwc", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:color-mix(in srgb, var(--tag-lwc) 14%, transparent);color:var(--tag-lwc)">Lightning Web Component</span>${packageBadge(entity)}</div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "Lightning Web Component in the managed package."}</p></div>`;
   if (entity.imports && entity.imports.length > 0)
     h += `<div class="entity-detail-section"><h3>Imports</h3><div class="entity-methods">${entity.imports.map((imp) => `<span class="entity-method">${imp}</span>`).join("")}</div></div>`;
   if (entity.sourceUrl)
-    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer">\u{1F4C4} View on GitHub \u2197</a></div>`;
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer"><span class="icon-svg" style="vertical-align:-3px">${iconHtml("link", 14)}</span> View on GitHub \u2197</a></div>`;
   return h;
 }
 
 function renderMetadataDetail(entity) {
-  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-metadata"><span class="icon-svg">${entitySvg("metadata", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:rgba(245,158,11,0.1);color:#f59e0b">Custom Metadata Type</span>${packageBadge(entity)}${entity.recordCount ? `<span class="entity-detail-meta">${entity.recordCount} records</span>` : ""}</div></div>`;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-metadata"><span class="icon-svg">${entitySvg("metadata", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:color-mix(in srgb, var(--tag-metadata) 14%, transparent);color:var(--tag-metadata)">Custom Metadata Type</span>${packageBadge(entity)}${entity.recordCount ? `<span class="entity-detail-meta">${entity.recordCount} records</span>` : ""}</div></div>`;
   h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "Custom Metadata Type used for configuration."}</p></div>`;
   return h;
 }

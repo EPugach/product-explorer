@@ -62,9 +62,12 @@
   --cluster-4: #ff538a; /* pink */
 
   /* ── Entity-type / tag semantics (trigger de-aliased from error-red) ── */
-  --tag-class: #1b96ff;
-  --tag-object: #2e844a;
-  --tag-trigger: #8b7bff; /* indigo — a type, NOT an alert */
+  /* Badge/type-tag text colors — tuned to clear WCAG AA (>=4.5) as text on
+     their own 12% tint chip over the dark field. Lighter than the light-theme
+     siblings on purpose (dark chip needs lighter text). */
+  --tag-class: #6ba2ff;
+  --tag-object: #3dd07f;
+  --tag-trigger: #a99bff; /* indigo — a type, NOT an alert */
   --tag-lwc: #d17dfe;
   --tag-metadata: #fcc003;
 
@@ -215,11 +218,13 @@ body.theme-light {
   --cluster-4: #e1206f;
 
   /* Tag semantics */
-  --tag-class: #0176d3;
-  --tag-object: #2e844a;
+  /* Darkened to clear AA (>=4.5) as text on their own 12% tint chip over the
+     pale light surface (white-tuned values erode below 4.5 on a tinted chip). */
+  --tag-class: #0b5cab;
+  --tag-object: #216e3a;
   --tag-trigger: #5b4bd6; /* indigo — AA on white, distinct from error red */
-  --tag-lwc: #9050e9;
-  --tag-metadata: #ca8a04;
+  --tag-lwc: #7c3aed;
+  --tag-metadata: #854d0e;
 
   /* Elevation (soft neutral shadows for the bright theme) */
   --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.08);
@@ -2266,6 +2271,19 @@ body {
   outline-offset: -2px;
 }
 
+/* Entity cross-reference links + wordmark (keyboard-operable, need a ring) */
+.entity-link:focus-visible,
+.entity-ref:focus-visible {
+  outline: 2px solid var(--glow-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.nav-brand:focus-visible {
+  outline: 2px solid var(--glow-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 /* ── Skip-to-Content Link (Accessibility) ── */
 .skip-link {
   position: absolute;
@@ -2273,13 +2291,13 @@ body {
   top: auto;
   z-index: 10000;
   padding: 8px 16px;
-  background: var(--glow-primary);
-  color: #fff;
+  background: #0b5cab; /* deep brand blue: white text clears AA 4.5 (6.7:1) */
+  color: #f4f9ff; /* hair-tinted white (on-accent), not pure #fff */
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   text-decoration: none;
   border-radius: 0 0 8px 0;
-  box-shadow: 0 2px 8px rgba(77, 139, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(11, 92, 171, 0.4);
 }
 .skip-link:focus {
   left: 0;
@@ -2713,14 +2731,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 .badge-class {
-  background: rgba(77, 139, 255, 0.1);
-  color: rgba(77, 139, 255, 0.9);
-  border: 1px solid rgba(77, 139, 255, 0.2);
+  background: color-mix(in srgb, var(--tag-class) 12%, transparent);
+  color: var(--tag-class);
+  border: 1px solid color-mix(in srgb, var(--tag-class) 24%, transparent);
 }
 .badge-object {
-  background: rgba(34, 197, 94, 0.1);
-  color: rgba(34, 197, 94, 0.9);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: color-mix(in srgb, var(--tag-object) 12%, transparent);
+  color: var(--tag-object);
+  border: 1px solid color-mix(in srgb, var(--tag-object) 24%, transparent);
 }
 .badge-trigger {
   background: color-mix(in srgb, var(--tag-trigger) 12%, transparent);
@@ -2728,14 +2746,14 @@ body {
   border: 1px solid color-mix(in srgb, var(--tag-trigger) 24%, transparent);
 }
 .badge-lwc {
-  background: rgba(168, 85, 247, 0.1);
-  color: rgba(168, 85, 247, 0.9);
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: color-mix(in srgb, var(--tag-lwc) 12%, transparent);
+  color: var(--tag-lwc);
+  border: 1px solid color-mix(in srgb, var(--tag-lwc) 24%, transparent);
 }
 .badge-metadata {
-  background: rgba(245, 158, 11, 0.1);
-  color: rgba(245, 158, 11, 0.9);
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: color-mix(in srgb, var(--tag-metadata) 12%, transparent);
+  color: var(--tag-metadata);
+  border: 1px solid color-mix(in srgb, var(--tag-metadata) 24%, transparent);
 }
 
 /* ── Domain-Level Entity Stats ── */
@@ -3329,8 +3347,12 @@ body.theme-light .sr-open-entity-btn:hover {
 body.theme-light .ai-section {
   border-bottom-color: #d9d9d9;
 }
-body.theme-light .ai-header {
-  color: #0176d3;
+body.theme-light .ai-header,
+body.theme-light .sr-ai-label {
+  color: #0b5cab; /* Blue 40 — clears AA on the pale AI panel (5.8:1) */
+}
+body.theme-light .entity-method {
+  color: #0b5cab; /* clears AA on the blue-tint method chip (6.1:1) */
 }
 body.theme-light .ai-skeleton > div {
   background: linear-gradient(90deg, #e9e9e9 25%, #f3f3f3 50%, #e9e9e9 75%);

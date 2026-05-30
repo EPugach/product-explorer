@@ -130,6 +130,34 @@ const GLYPH_PATHS = {
   "file-check": '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="m9 15 2 2 4-4"/>',
   "list-checks": '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
   "code": '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+  // ── Extended set (Lucide, ISC) — added to retire the last raw-emoji icons ──
+  "clock": '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  "truck": '<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  "lock": '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  "megaphone": '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  "briefcase": '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
+  "graduation-cap": '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+  "trophy": '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  "triangle-alert": '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  "phone": '<path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.06 6.131z"/>',
+  "smartphone": '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+  "database": '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
+  "house": '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  "shopping-cart": '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+  "scale": '<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
+  "hammer": '<path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>',
+  "map-pin": '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+  "download": '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>',
+  "cloud": '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  "play": '<polygon points="6 3 20 12 6 21 6 3"/>',
+  "plus": '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  "gift": '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
+  "image": '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  "flag": '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
+  "hand": '<path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+  "octagon-x": '<path d="M12 16h.01"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/><path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z"/>',
+  "trending-down": '<path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/>',
+  "sparkles": '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
 };
 
 // Emoji → glyph-name (or shared UI-icon name). Variation selectors are stripped
@@ -152,6 +180,31 @@ const EMOJI_TO_GLYPH = {
   "🪐": "globe", "🔧": "settings", "📁": "folder", "📂": "folder",
   // section-header / structural keys (referenced directly by name)
   "data-flow": "refresh-cw", "connected": "globe",
+  // ── Extended coverage: the remaining data.js icons (was raw-emoji fallthrough) ──
+  "📒": "clipboard-list", "⚖": "scale", "🏦": "building-2", "💵": "dollar-sign",
+  "🔮": "star", "▶": "play", "⏰": "clock", "⇄": "refresh-cw", "💱": "dollar-sign",
+  "🗃": "database", "🏗": "building-2", "🔒": "lock", "🔨": "hammer", "🏪": "shopping-cart",
+  "🏬": "shopping-cart", "❄": "star", "📞": "phone", "🏆": "trophy", "🛒": "shopping-cart",
+  "🖊": "file-pen-line", "🚚": "truck", "🛣": "map", "📍": "map-pin", "🏭": "building-2",
+  "🚛": "truck", "📥": "download", "📱": "smartphone", "📲": "smartphone", "💾": "database",
+  "🌍": "globe", "🚩": "flag", "📌": "map-pin", "🏙": "building-2", "📢": "megaphone",
+  "🎭": "star", "✏": "file-pen-line", "📉": "trending-down", "🛍": "shopping-cart",
+  "☁": "cloud", "💼": "briefcase", "🧑": "user", "🏠": "house", "🏛": "building-2",
+  "🔃": "refresh-cw", "🎓": "graduation-cap", "📑": "file-text", "📖": "book-open",
+  "💯": "target", "🏫": "graduation-cap", "🚨": "bell", "👫": "users", "🏊": "user",
+  "⚠": "triangle-alert", "📨": "mail", "📧": "mail", "🛤": "map", "🔖": "tag",
+  "📣": "megaphone", "🎪": "star", "📬": "mail", "📎": "link", "🏁": "flag", "👪": "users",
+  "🌟": "star", "💪": "target", "🚀": "trending-up", "📕": "book-open", "🎁": "gift",
+  "🏅": "trophy", "✋": "hand", "⏳": "clock", "📇": "clipboard-list", "☎": "phone",
+  "📓": "book-open", "🧾": "file-text", "🔁": "refresh-cw", "🖼": "image", "✨": "star",
+  "🌹": "star", "📏": "file-text", "🔇": "bell", "🗑": "package", "🚦": "bell",
+  "✂": "file-pen-line", "📡": "globe", "🎨": "image", "🪄": "star", "🔌": "settings",
+  "🖧": "globe", "📀": "database", "🛠": "settings", "🧮": "chart-column", "𝑓": "code",
+  "➕": "plus", "🔤": "file-text", "🔢": "chart-column", "🔎": "search", "📩": "mail",
+  "💸": "dollar-sign", "🧭": "target", "🕵": "search", "🔏": "lock", "🌀": "refresh-cw",
+  "⏱": "clock", "💲": "dollar-sign", "⛔": "octagon-x", "📐": "file-text",
+  // ZWJ sequences resolve to their U+200D-stripped concatenation
+  "🧑🤝🧑": "users", "🧑💻": "code",
 };
 
 
@@ -191,8 +244,9 @@ export function entitySvg(type, size = 14) {
 
 // Resolve an icon value to inline SVG. Accepts an emoji (mapped via
 // EMOJI_TO_GLYPH), a glyph name, or a shared UI-icon name. Variation
-// selectors are stripped first. Unmapped values fall back to the raw
-// string so nothing silently vanishes.
+// selectors are stripped first. Unmapped values FAIL SAFE to a neutral
+// glyph so a raw emoji can never render as iconography (guarded by
+// scripts/check-icons.mjs). Distinct mappings live in EMOJI_TO_GLYPH.
 export function iconHtml(value, size = 20) {
   if (!value) return '';
   const key = String(value).replace(/[\uFE0E\uFE0F\u200D]/g, "").trim();
@@ -200,7 +254,7 @@ export function iconHtml(value, size = 20) {
   if (GLYPH_PATHS[name]) return buildSvg(GLYPH_PATHS[name], { size });
   if (UI_PATHS[name]) return buildSvg(UI_PATHS[name], { size });
   if (ENTITY_PATHS[name]) return buildSvg(ENTITY_PATHS[name], { size, strokeWidth: 1.8 });
-  return value;
+  return buildSvg(GLYPH_PATHS["puzzle"], { size });
 }
 
 

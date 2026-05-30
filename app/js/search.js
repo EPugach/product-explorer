@@ -412,31 +412,31 @@ function buildSearchIndex() {
             key: "classes",
             type: "class",
             icon: entitySvg("class", 14),
-            color: "#4d8bff",
+            color: "var(--tag-class)",
           },
           {
             key: "objects",
             type: "object",
             icon: entitySvg("object", 14),
-            color: "#22c55e",
+            color: "var(--tag-object)",
           },
           {
             key: "triggers",
             type: "trigger",
             icon: entitySvg("trigger", 14),
-            color: "#ef4444",
+            color: "var(--tag-trigger)",
           },
           {
             key: "lwcs",
             type: "lwc",
             icon: entitySvg("lwc", 14),
-            color: "#a855f7",
+            color: "var(--tag-lwc)",
           },
           {
             key: "metadata",
             type: "metadata",
             icon: entitySvg("metadata", 14),
-            color: "#f59e0b",
+            color: "var(--tag-metadata)",
           },
         ];
         for (const et of entityTypes) {
@@ -959,15 +959,16 @@ function copyAiAnswer(btn, text) {
 
 let _previewIndex = -1;
 
+// Theme-aware token references (resolve per theme; consumed via color-mix below).
 const TYPE_COLORS = {
-  planet: "#4d8bff",
-  component: "#4d8bff",
-  tag: "#64748b",
-  class: "#4d8bff",
-  object: "#22c55e",
-  trigger: "#ef4444",
-  lwc: "#a855f7",
-  metadata: "#f59e0b",
+  planet: "var(--tag-class)",
+  component: "var(--tag-class)",
+  tag: "var(--text-dim)",
+  class: "var(--tag-class)",
+  object: "var(--tag-object)",
+  trigger: "var(--tag-trigger)",
+  lwc: "var(--tag-lwc)",
+  metadata: "var(--tag-metadata)",
 };
 
 // NOTE on innerHTML safety: All search data comes from the trusted product data
@@ -990,18 +991,18 @@ function renderMasterList(results, query) {
 
   const resultsHtml = results
     .map((r, i) => {
-      const typeColor = TYPE_COLORS[r.type] || "#64748b";
+      const typeColor = TYPE_COLORS[r.type] || "var(--text-dim)";
       const stagger = i < 10 ? `--stagger-index: ${i};` : "";
       return (
         `<div class="search-result${i === searchIndex ? " active" : ""}" ` +
         `id="sr-opt-${i}" data-idx="${i}" data-search-result="${i}" style="${stagger}--type-color:${typeColor}" ` +
         `role="option" aria-selected="${i === searchIndex}">` +
-        `<div class="sr-icon" style="background:${r.color}22;border:1px solid ${r.color}44">${r.icon}</div>` +
+        `<div class="sr-icon" style="background:color-mix(in srgb, ${r.color} 13%, transparent);border:1px solid color-mix(in srgb, ${r.color} 27%, transparent)">${r.icon}</div>` +
         `<div class="sr-body">` +
         `<div class="sr-title">${highlightMatch(r.name, query)}</div>` +
         `<div class="sr-path">${r.level}</div>` +
         `</div>` +
-        `<span class="sr-type" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${r.type}</span>` +
+        `<span class="sr-type" style="background:color-mix(in srgb, ${typeColor} 13%, transparent);color:${typeColor};border:1px solid color-mix(in srgb, ${typeColor} 27%, transparent)">${r.type}</span>` +
         `</div>`
       );
     })
@@ -1131,10 +1132,10 @@ export function renderPreview(item, query) {
     return;
   }
 
-  const typeColor = TYPE_COLORS[item.type] || "#64748b";
+  const typeColor = TYPE_COLORS[item.type] || "var(--text-dim)";
   let html =
     `<div class="sp-header">` +
-    `<span class="sp-type-badge" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${item.type}</span>` +
+    `<span class="sp-type-badge" style="background:color-mix(in srgb, ${typeColor} 13%, transparent);color:${typeColor};border:1px solid color-mix(in srgb, ${typeColor} 27%, transparent)">${item.type}</span>` +
     `<span class="sp-name">${highlightMatch(item.name, query)}</span>` +
     `</div>`;
   html += `<div class="sp-domain">${item.level}</div>`;

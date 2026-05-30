@@ -74,9 +74,12 @@ body.no-webgl #galaxy-3d {
     0 0 calc(var(--planet-r) * 1.2)
       color-mix(in srgb, var(--planet-color) 10%, transparent);
   cursor: pointer;
+  /* box-shadow is NOT transitioned here: --planet-r is rewritten every frame
+     during zoom/drag and the glow derives from it, so a steady-state box-shadow
+     transition would restart paint each frame on every node. The glow tracks
+     the sphere 1:1 instead (imperceptible). Hover animates its glow below. */
   transition:
     transform 0.2s ease-out,
-    box-shadow 0.2s ease-out,
     opacity 0.15s ease;
   display: flex;
   align-items: center;
@@ -99,6 +102,9 @@ body.no-webgl #galaxy-3d {
 
 .planet-node:hover {
   transform: translate(-50%, -50%) scale(1.08);
+  transition:
+    transform 0.2s ease-out,
+    box-shadow 0.2s ease-out;
   box-shadow:
     0 0 calc(var(--planet-r) * 1.2)
       color-mix(in srgb, var(--planet-color) 45%, transparent),
