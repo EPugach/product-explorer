@@ -1514,12 +1514,19 @@ function renderEntityView(pid, cid, rawType, entityName) {
     { label: c.name, nav: "back" },
     { label: entity.name },
   ]);
-  let h = bc;
-  if (entityType === "classes") h += renderClassDetail(entity);
-  else if (entityType === "objects") h += renderObjectDetail(entity);
-  else if (entityType === "triggers") h += renderTriggerDetail(entity);
-  else if (entityType === "lwcs") h += renderLwcDetail(entity);
-  else if (entityType === "metadata") h += renderMetadataDetail(entity);
+  let detailHtml = "";
+  if (entityType === "classes") detailHtml = renderClassDetail(entity);
+  else if (entityType === "objects") detailHtml = renderObjectDetail(entity);
+  else if (entityType === "triggers") detailHtml = renderTriggerDetail(entity);
+  else if (entityType === "lwcs") detailHtml = renderLwcDetail(entity);
+  else if (entityType === "metadata") detailHtml = renderMetadataDetail(entity);
+  // Inner-views v2: two-column detail shell (main content + sticky quick-facts
+  // aside). Aside is placed AFTER main in DOM so screen-reader / tab order hits
+  // the primary content first; CSS grid positions it to the right. Collapses to
+  // a single column under 1024px.
+  const h =
+    bc +
+    `<div class="detail-shell"><div class="detail-main">${detailHtml}</div>${renderEntityAside(entity, entityType, c)}</div>`;
   el.innerHTML = h;
   wireNavLinks(el, {
     galaxy: () => navigateTo("galaxy"),
@@ -1538,6 +1545,60 @@ function renderEntityView(pid, cid, rawType, entityName) {
     });
   });
   document.getElementById("entity-view").scrollTop = 0;
+}
+
+// Inner-views v2: sticky "Quick facts" aside for the entity detail shell.
+// Built generically from the entity object + its parent component so it works
+// for all products (code-derived NPSP and documentation-derived products alike).
+function renderEntityAside(entity, entityType, component) {
+  const typeLabel =
+    {
+      classes: "Apex class",
+      objects: "Custom object",
+      triggers: "Trigger",
+      lwcs: "Lightning Web Component",
+      metadata: "Metadata type",
+    }[entityType] || entityType;
+
+  const rows = [
+    `<div class="aside-row"><span class="aside-label">Type</span><span class="aside-val">${typeLabel}</span></div>`,
+  ];
+  if (component && component.name)
+    rows.push(
+      `<div class="aside-row"><span class="aside-label">Component</span><span class="aside-val">${component.name}</span></div>`,
+    );
+  if (entity.linesOfCode)
+    rows.push(
+      `<div class="aside-row"><span class="aside-label">Lines of code</span><span class="aside-val">${entity.linesOfCode}</span></div>`,
+    );
+  if (entity.object)
+    rows.push(
+      `<div class="aside-row"><span class="aside-label">On object</span><span class="aside-val">${entity.object}</span></div>`,
+    );
+
+  // Adaptive count rows — only render for arrays the entity actually carries.
+  const countFields = [
+    ["Key methods", entity.keyMethods],
+    ["References", entity.referencedObjects],
+    ["Fields", entity.fields],
+    ["Relationships", entity.relationships],
+    ["Handlers", entity.handlers],
+    ["Imports", entity.imports],
+    ["Events", entity.events],
+  ];
+  for (const [label, arr] of countFields) {
+    if (Array.isArray(arr) && arr.length)
+      rows.push(
+        `<div class="aside-row"><span class="aside-label">${label}</span><span class="aside-val">${arr.length}</span></div>`,
+      );
+  }
+
+  const pkg = packageBadge(entity);
+  const pkgRow = pkg
+    ? `<div class="aside-row"><span class="aside-label">Package</span><span class="aside-val">${pkg}</span></div>`
+    : "";
+
+  return `<aside class="detail-aside"><div class="aside-card"><div class="aside-title">Quick facts</div>${rows.join("")}${pkgRow}</div></aside>`;
 }
 
 function renderClassDetail(entity) {
