@@ -1551,6 +1551,8 @@ function renderEntityView(pid, cid, rawType, entityName) {
 // Built generically from the entity object + its parent component so it works
 // for all products (code-derived NPSP and documentation-derived products alike).
 function renderEntityAside(entity, entityType, component) {
+  // Fallback is a safe generic label, never the raw route-derived entityType
+  // (defense-in-depth: the not-found guard upstream already constrains this).
   const typeLabel =
     {
       classes: "Apex class",
@@ -1558,7 +1560,7 @@ function renderEntityAside(entity, entityType, component) {
       triggers: "Trigger",
       lwcs: "Lightning Web Component",
       metadata: "Metadata type",
-    }[entityType] || entityType;
+    }[entityType] || "Entity";
 
   const rows = [
     `<div class="aside-row"><span class="aside-label">Type</span><span class="aside-val">${typeLabel}</span></div>`,
@@ -1567,7 +1569,13 @@ function renderEntityAside(entity, entityType, component) {
     rows.push(
       `<div class="aside-row"><span class="aside-label">Component</span><span class="aside-val">${component.name}</span></div>`,
     );
-  if (entity.linesOfCode)
+  // Identity facts (package) before quantitative counts, for scannability.
+  const pkg = packageBadge(entity);
+  if (pkg)
+    rows.push(
+      `<div class="aside-row"><span class="aside-label">Package</span><span class="aside-val">${pkg}</span></div>`,
+    );
+  if (entity.linesOfCode != null)
     rows.push(
       `<div class="aside-row"><span class="aside-label">Lines of code</span><span class="aside-val">${entity.linesOfCode}</span></div>`,
     );
@@ -1593,12 +1601,7 @@ function renderEntityAside(entity, entityType, component) {
       );
   }
 
-  const pkg = packageBadge(entity);
-  const pkgRow = pkg
-    ? `<div class="aside-row"><span class="aside-label">Package</span><span class="aside-val">${pkg}</span></div>`
-    : "";
-
-  return `<aside class="detail-aside"><div class="aside-card"><div class="aside-title">Quick facts</div>${rows.join("")}${pkgRow}</div></aside>`;
+  return `<aside class="detail-aside" aria-label="Quick facts"><div class="aside-card"><div class="aside-title">Quick facts</div>${rows.join("")}</div></aside>`;
 }
 
 function renderClassDetail(entity) {
