@@ -1038,21 +1038,6 @@ function renderPlanetView(id) {
   const p = PRODUCT_DATA[id];
   const el = document.getElementById("planet-content");
 
-  let domainStats = "";
-  if (p._entities) {
-    const dc = (p._entities.classes || []).length;
-    const do_ = (p._entities.objects || []).length;
-    const dt = (p._entities.triggers || []).length;
-    const dl = (p._entities.lwcs || []).length;
-    const parts = [];
-    if (dc) parts.push(dc + " classes");
-    if (do_) parts.push(do_ + " objects");
-    if (dt) parts.push(dt + " triggers");
-    if (dl) parts.push(dl + " LWCs");
-    if (parts.length > 0)
-      domainStats = `<div class="domain-entity-stats">${p.components.length} groups \u00B7 ${parts.join(" \u00B7 ")}</div>`;
-  }
-
   let domainPkgHtml = "";
   if (
     p.packages &&
@@ -1113,20 +1098,24 @@ function renderPlanetView(id) {
       { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
       { label: p.name },
     ])}
-    <div class="planet-header">
-      <div
-        class="planet-header-orb"
-        style="background:${p.color};box-shadow:0 0 20px ${p.color}"
-      >
-        <span class="icon-svg">${domainSvg(id, 28)}</span>
+    <div class="detail-shell">
+      <div class="detail-main">
+        <div class="planet-header">
+          <div
+            class="planet-header-orb"
+            style="background:${p.color};box-shadow:0 0 20px ${p.color}"
+          >
+            <span class="icon-svg">${domainSvg(id, 28)}</span>
+          </div>
+          <div>
+            <h2 style="color:${p.color}">${p.name}</h2>
+            <p>${p.description}</p>
+            ${domainPkgHtml}
+          </div>
+        </div>
       </div>
-      <div>
-        <h2 style="color:${p.color}">${p.name}</h2>
-        <p>${p.description}</p>
-        ${domainPkgHtml}
-      </div>
+      ${renderDomainAside(p)}
     </div>
-    ${domainStats}
     <div class="component-grid">${cardHtml}</div>
     <div
       class="data-flow"
@@ -1602,6 +1591,33 @@ function renderEntityAside(entity, entityType, component) {
   }
 
   return `<aside class="detail-aside" aria-label="Quick facts"><div class="aside-card"><div class="aside-title">Quick facts</div>${rows.join("")}</div></aside>`;
+}
+
+// Inner-views v2: quick-facts aside for the domain (planet) view header,
+// reusing the same .detail-shell language as the entity view.
+function renderDomainAside(p) {
+  const rows = [
+    `<div class="aside-row"><span class="aside-label">Components</span><span class="aside-val">${p.components.length}</span></div>`,
+  ];
+  if (p._entities) {
+    const counts = [
+      ["Classes", (p._entities.classes || []).length],
+      ["Objects", (p._entities.objects || []).length],
+      ["Triggers", (p._entities.triggers || []).length],
+      ["LWCs", (p._entities.lwcs || []).length],
+    ];
+    for (const [label, n] of counts) {
+      if (n)
+        rows.push(
+          `<div class="aside-row"><span class="aside-label">${label}</span><span class="aside-val">${n}</span></div>`,
+        );
+    }
+  }
+  if (p.connections && p.connections.length)
+    rows.push(
+      `<div class="aside-row"><span class="aside-label">Connections</span><span class="aside-val">${p.connections.length}</span></div>`,
+    );
+  return `<aside class="detail-aside" aria-label="Domain facts"><div class="aside-card"><div class="aside-title">Domain facts</div>${rows.join("")}</div></aside>`;
 }
 
 function renderClassDetail(entity) {
