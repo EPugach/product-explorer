@@ -64,10 +64,16 @@ export function buildContext(config, PRODUCT, ENTITIES) {
   for (const d of domainIds) nComponents += (PRODUCT[d].components || []).length;
   let nObjects = 0;
   let nMetadata = 0;
+  let nClasses = 0;
+  let nTriggers = 0;
+  let nLwcs = 0;
   for (const d of domainIds) {
     const e = ENTITIES[d] || {};
     nObjects += (e.objects || []).length;
     nMetadata += (e.metadata || []).length;
+    nClasses += (e.classes || []).length;
+    nTriggers += (e.triggers || []).length;
+    nLwcs += (e.lwcs || []).length;
   }
 
   const out = [];
@@ -110,6 +116,19 @@ export function buildContext(config, PRODUCT, ENTITIES) {
     section(lines);
   }
 
+  // ## Apex Classes (N) — OSS products only (npsp); grouped by domain, omitted
+  // entirely when there are none.
+  if (nClasses > 0) {
+    const lines = [`## Apex Classes (${nClasses})`];
+    for (const id of domainIds) {
+      const cls = (ENTITIES[id] && ENTITIES[id].classes) || [];
+      if (!cls.length) continue;
+      lines.push(`### ${PRODUCT[id].name}`);
+      for (const c of cls) lines.push(`- **${c.name}** (${c.type}): ${firstSentence(c.description)}`);
+    }
+    section(lines);
+  }
+
   // ## Key Objects (N)  — grouped by domain, domains with 0 objects skipped
   {
     const lines = [`## Key Objects (${nObjects})`];
@@ -120,6 +139,30 @@ export function buildContext(config, PRODUCT, ENTITIES) {
       for (const o of objs) {
         lines.push(`- **${o.name}**: ${firstSentence(o.description)}`);
       }
+    }
+    section(lines);
+  }
+
+  // ## Triggers (N) — OSS products only; grouped by domain, omitted when none.
+  if (nTriggers > 0) {
+    const lines = [`## Triggers (${nTriggers})`];
+    for (const id of domainIds) {
+      const trg = (ENTITIES[id] && ENTITIES[id].triggers) || [];
+      if (!trg.length) continue;
+      lines.push(`### ${PRODUCT[id].name}`);
+      for (const t of trg) lines.push(`- **${t.name}** on ${t.object}: ${(t.events || []).join(", ")}`);
+    }
+    section(lines);
+  }
+
+  // ## Lightning Web Components (N) — OSS products only; grouped by domain.
+  if (nLwcs > 0) {
+    const lines = [`## Lightning Web Components (${nLwcs})`];
+    for (const id of domainIds) {
+      const lwc = (ENTITIES[id] && ENTITIES[id].lwcs) || [];
+      if (!lwc.length) continue;
+      lines.push(`### ${PRODUCT[id].name}`);
+      for (const w of lwc) lines.push(`- **${w.name}**: ${firstSentence(w.description)}`);
     }
     section(lines);
   }
