@@ -1216,6 +1216,68 @@
           .querySelectorAll(".reveal")
           .forEach((el) => el.classList.add("in"));
       }
+
+      /* ══════════════════════════════════════════════
+         HERO CINEMA — mouse-parallax depth + scroll recede.
+         Container-level, so it composes with (never fights) the
+         per-planet drift loop. Reduced-motion users get none of it.
+         ══════════════════════════════════════════════ */
+      if (!reduce) {
+        const hero = document.querySelector(".hero");
+        const galaxy = document.getElementById("galaxy");
+        const stars = document.getElementById("stars");
+        const MAX = 16; // px shift of the planet/edge layer at full deflection
+
+        // Mouse-parallax: the planet/edge layer follows the cursor; the
+        // starfield trails it (nets ~0.45x, same direction) so the background
+        // moves less than the foreground = depth. Eased via a self-terminating rAF.
+        let tx = 0,
+          ty = 0,
+          cx = 0,
+          cy = 0,
+          praf = null;
+        function ptick() {
+          cx += (tx - cx) * 0.08;
+          cy += (ty - cy) * 0.08;
+          galaxy.style.transform = `translate(${cx * MAX}px, ${cy * MAX}px)`;
+          stars.style.transform = `translate(${cx * -MAX * 0.55}px, ${cy * -MAX * 0.55}px)`;
+          if (Math.abs(tx - cx) > 0.001 || Math.abs(ty - cy) > 0.001)
+            praf = requestAnimationFrame(ptick);
+          else praf = null;
+        }
+        hero.addEventListener("pointermove", (e) => {
+          if (e.pointerType && e.pointerType !== "mouse") return; // skip touch
+          const r = hero.getBoundingClientRect();
+          tx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+          ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
+          if (!praf) praf = requestAnimationFrame(ptick);
+        });
+        hero.addEventListener("pointerleave", () => {
+          tx = 0;
+          ty = 0;
+          if (!praf) praf = requestAnimationFrame(ptick);
+        });
+
+        // Scroll recede: the hero galaxy fades as you scroll into the content,
+        // so the hero -> content hand-off reads cinematic. Opacity only, so it
+        // never contends with the parallax transform above.
+        let sraf = null;
+        addEventListener(
+          "scroll",
+          () => {
+            if (sraf) return;
+            sraf = requestAnimationFrame(() => {
+              const fade = Math.max(
+                0,
+                1 - window.scrollY / (innerHeight * 0.75),
+              );
+              galaxy.style.opacity = fade.toFixed(3);
+              sraf = null;
+            });
+          },
+          { passive: true },
+        );
+      }
     </script>
   </body>
 </html>
