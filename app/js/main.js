@@ -284,6 +284,14 @@ function toggleTheme() {
     18,
   );
   setTheme3D(light ? "light" : "dark");
+  // Keep the DOM starfield in sync with the theme. On a light-mode page load the
+  // starfield is initialized then immediately paused (see initApp: `if (lightMode)
+  // pauseStarfield()`). Without this line, toggling light→dark left it paused —
+  // a blank, stopped canvas — so the stars were missing until reload. Mirrors the
+  // load-time gating; dark→light→dark worked before only because a dark load
+  // leaves the loop running.
+  if (light) pauseStarfield();
+  else resumeStarfield();
   track("theme_change", { theme: light ? "light" : "dark" });
 }
 
