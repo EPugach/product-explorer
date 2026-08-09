@@ -820,8 +820,8 @@
             system, without reading a single line of code.
           </p>
           <div class="cta-row reveal">
-            <a class="btn btn-primary" id="heroPrimary" href="npsp/">
-              Explore NPSP
+            <a class="btn btn-primary" id="heroPrimary" href="nonprofitcloud/">
+              Explore Nonprofit Cloud
               <svg viewBox="0 0 24 24"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
             </a>
             <a class="btn btn-ghost" href="#products">Browse all products</a>
@@ -1116,7 +1116,7 @@
         `<span class="rstat"><strong>${val}</strong> ${label}</span>`;
 
       const flagship =
-        PRODUCTS.find((p) => p.id === "npsp") || PRODUCTS[0];
+        PRODUCTS.find((p) => p.id === "nonprofitcloud") || PRODUCTS[0];
       const rest = PRODUCTS.filter((p) => p !== flagship);
 
       // featured flagship
@@ -1215,6 +1215,75 @@
         document
           .querySelectorAll(".reveal")
           .forEach((el) => el.classList.add("in"));
+      }
+
+      /* ══════════════════════════════════════════════
+         HERO CINEMA — mouse-parallax depth + scroll recede.
+         Container-level, so it composes with (never fights) the
+         per-planet drift loop. Reduced-motion users get none of it.
+         ══════════════════════════════════════════════ */
+      if (!reduce) {
+        const hero = document.querySelector(".hero");
+        const galaxy = document.getElementById("galaxy");
+        const stars = document.getElementById("stars");
+        const MAX = 16; // px shift of the planet/edge layer at full deflection
+
+        // Mouse-parallax: the planet/edge layer follows the cursor; the
+        // starfield trails it (nets ~0.45x, same direction) so the background
+        // moves less than the foreground = depth. Eased via a self-terminating rAF.
+        let tx = 0,
+          ty = 0,
+          cx = 0,
+          cy = 0,
+          praf = null;
+        function ptick() {
+          cx += (tx - cx) * 0.08;
+          cy += (ty - cy) * 0.08;
+          galaxy.style.transform = `translate(${cx * MAX}px, ${cy * MAX}px)`;
+          // #stars is a CHILD of #galaxy, so its own -0.55 transform COMPOSES
+          // with the parent's +1.0 to net +0.45x on screen: same direction as
+          // the planets, less travel = the background sits "further away".
+          stars.style.transform = `translate(${cx * -MAX * 0.55}px, ${cy * -MAX * 0.55}px)`;
+          if (Math.abs(tx - cx) > 0.001 || Math.abs(ty - cy) > 0.001)
+            praf = requestAnimationFrame(ptick);
+          else praf = null;
+        }
+        hero.addEventListener("pointermove", (e) => {
+          if (e.pointerType && e.pointerType !== "mouse") return; // skip touch
+          const r = hero.getBoundingClientRect();
+          tx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+          ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
+          if (!praf) praf = requestAnimationFrame(ptick);
+        }, { passive: true });
+        hero.addEventListener("pointerleave", () => {
+          tx = 0;
+          ty = 0;
+          if (!praf) praf = requestAnimationFrame(ptick);
+        });
+
+        // Scroll recede: the hero galaxy fades as you scroll into the content,
+        // so the hero -> content hand-off reads cinematic. Opacity only, so it
+        // never contends with the parallax transform above.
+        let sraf = null;
+        const applyFade = () => {
+          const fade = Math.max(0, 1 - window.scrollY / (innerHeight * 0.75));
+          galaxy.style.opacity = fade.toFixed(3);
+        };
+        addEventListener(
+          "scroll",
+          () => {
+            if (sraf) return;
+            sraf = requestAnimationFrame(() => {
+              applyFade();
+              sraf = null;
+            });
+          },
+          { passive: true },
+        );
+        // Recompute on resize and once now, so a restored/non-zero scroll
+        // position or a rotate/resize doesn't leave the hero at stale opacity.
+        addEventListener("resize", applyFade, { passive: true });
+        applyFade();
       }
     </script>
   </body>
