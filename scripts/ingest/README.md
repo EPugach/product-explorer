@@ -8,7 +8,17 @@ automatically.
 > Status: **pilot proven for `nonprofitcloud`** (2026-08-09). Full design, results, and the
 > P4-hardening backlog live in `design/2026-08-08-workstream-B-ingestion-pilot-plan.md` (the vault).
 
-## Commands
+## Local admin UI (P3)
+
+```bash
+node scripts/ingest/serve.mjs   # → http://127.0.0.1:8940/  (local only, no auth)
+```
+Click-driven flow: see each product's PDF freshness + last-synth + gate status →
+**Synthesize** (live progress) → **View diff** (the structured report) → **Adopt →**
+(copies scratch → `products/<id>/`; refuses unless gates passed + zero drift). Adopt
+still requires you to `git diff` / commit + bump cache versions before any deploy.
+
+## Commands (CLI)
 
 ```bash
 # 1. Stage the Help PDF (browser "Download as PDF" from help.salesforce.com) at:

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ingest Admin — Product Explorer</title>
+<style>
+  :root {
+    --bg: #0b1020; --panel: #141a2e; --panel2: #1b2340;
+    --line: #2a3352; --txt: #e6e9f2; --dim: #9aa3bd; --accent: #38c6ff;
+    --ok: #34d399; --bad: #f87171; --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt);
+    font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 18px 24px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 12px; }
+  header h1 { font-size: 18px; margin: 0; }
+  header .sub { color: var(--dim); font-size: 12px; }
+  main { display: grid; grid-template-columns: 1.1fr 1fr; gap: 0; height: calc(100vh - 61px); }
+  .col { overflow: auto; padding: 20px 24px; }
+  .col.right { border-left: 1px solid var(--line); background: #090d1a; }
+  .card { background: var(--panel); border: 1px solid var(--line);
+    border-left: 4px solid var(--dim); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+  .card.ok { border-left-color: var(--ok); }
+  .card.bad { border-left-color: var(--bad); }
+  .card.none { border-left-color: var(--dim); }
+  .card h3 { margin: 0 0 2px; font-size: 15px; }
+  .card .fn { color: var(--dim); font-size: 11px; margin-bottom: 8px; }
+  .status { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; margin: 8px 0 10px; }
+  .status span { color: var(--dim); }
+  .status b { color: var(--txt); font-weight: 600; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  button { font: inherit; font-size: 12px; padding: 6px 12px; border-radius: 7px;
+    border: 1px solid var(--line); background: var(--panel2); color: var(--txt); cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.primary { background: #123; border-color: var(--accent); color: var(--accent); }
+  button.adopt { border-color: var(--warn); color: var(--warn); }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 11px;
+    border: 1px solid var(--line); }
+  #log { background: #05070f; border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+    font: 12px/1.55 ui-monospace, "Cascadia Code", Consolas, monospace; white-space: pre-wrap;
+    color: #cfd6ea; min-height: 120px; max-height: 40vh; overflow: auto; }
+  #diff { background: #05070f; border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+    font: 12px/1.55 ui-monospace, Consolas, monospace; white-space: pre-wrap; color: #cfd6ea;
+    margin-top: 14px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); margin: 0 0 10px; }
+  .empty { color: var(--dim); font-style: italic; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ingest Admin</h1>
+  <span class="sub">Workstream B · local only · synthesize → review diff → adopt</span>
+</header>
+<main>
+  <div class="col left">
+    <h2>Products</h2>
+    <div id="products"><span class="empty">loading…</span></div>
+  </div>
+  <div class="col right">
+    <h2>Activity</h2>
+    <div id="log"><span class="empty">Select a product and click Synthesize.</span></div>
+    <div id="diffwrap" style="display:none">
+      <h2 style="margin-top:18px">Diff vs committed</h2>
+      <div id="diff"></div>
+    </div>
+  </div>
+</main>
+<script>
+const $ = (s) => document.querySelector(s);
+const logEl = $("#log");
+let selected = null;
+
+function fmtDate(s){ if(!s) return "never"; const d=new Date(s); return d.toLocaleString(); }
+function fmtBytes(n){ return n ? (n/1048576).toFixed(1)+" MB" : "—"; }
+
+function statusClass(p){ if(p.gatesOk===true) return "ok"; if(p.gatesOk===false) return "bad"; return "none"; }
+function gateGlyph(p){
+  if(p.gatesOk===true) return "✓ gates pass";
+  if(p.gatesOk===false) return "✗ gates FAIL";
+  return "— not synthesized";
+}
+
+async function loadProducts(){
+  const list = await (await fetch("/api/products")).json();
+  const box = $("#products");
+  box.innerHTML = "";
+  for(const p of list){
+    const card = document.createElement("div");
+    card.className = "card " + statusClass(p);
+    const drift = p.driftCount==null ? "" : (p.driftCount>0 ? ` · ⚠ drift ${p.driftCount}` : " · drift 0");
+    card.innerHTML = `
+      <h3>${p.name}</h3>
+      <div class="fn">${p.id}</div>
+      <div class="status">
+        <span>PDF: <b>${p.hasPdf ? "📄 staged ("+fmtBytes(p.pdfSize)+")" : "⚠ none"}</b></span>
+        <span>Last synth: <b>${fmtDate(p.lastSynth)}</b></span>
+        <span><b>${gateGlyph(p)}${drift}</b></span>
+        ${p.model?`<span>model: <b>${p.model}</b></span>`:""}
+      </div>
+      <div class="btns">
+        <button class="primary" data-act="synth" data-id="${p.id}" ${p.hasPdf?"":"disabled title='stage input/"+p.id+".pdf first'"}>Synthesize</button>
+        <button data-act="diff" data-id="${p.id}" ${p.hasScratch?"":"disabled"}>View diff</button>
+        <button class="adopt" data-act="adopt" data-id="${p.id}" ${p.hasScratch&&p.gatesOk?"":"disabled"}>Adopt →</button>
+      </div>`;
+    box.appendChild(card);
+  }
+}
+
+function log(line, cls){
+  if(logEl.querySelector(".empty")) logEl.innerHTML="";
+  const div=document.createElement("div"); if(cls) div.style.color=cls; div.textContent=line;
+  logEl.appendChild(div); logEl.scrollTop=logEl.scrollHeight;
+}
+
+function synth(id){
+  logEl.innerHTML=""; $("#diffwrap").style.display="none";
+  log(`▶ synthesizing ${id}…`);
+  const es = new EventSource(`/api/synthesize?id=${encodeURIComponent(id)}`);
+  es.addEventListener("log", e => log(JSON.parse(e.data).line));
+  es.addEventListener("done", e => {
+    const d = JSON.parse(e.data);
+    es.close();
+    log(d.ok ? `✓ done (exit ${d.code})` : `✗ failed (exit ${d.code})`, d.ok?"#34d399":"#f87171");
+    loadProducts();
+    if(d.ok) viewDiff(id);
+  });
+  es.onerror = () => { log("✗ stream error", "#f87171"); es.close(); loadProducts(); };
+}
+
+async function viewDiff(id){
+  const md = await (await fetch(`/api/diff?id=${encodeURIComponent(id)}`)).text();
+  $("#diff").textContent = md;
+  $("#diffwrap").style.display="block";
+}
+
+async function adopt(id){
+  if(!confirm(`Adopt regenerated ${id} into products/${id}/?\n\nThis overwrites the committed data.js / entities.js / ai-context.js. Review the diff first. (You can revert with git.)`)) return;
+  const r = await (await fetch("/api/adopt",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id})})).json();
+  if(r.error){ log("✗ adopt: "+r.error, "#f87171"); alert("Adopt failed: "+r.error); }
+  else { log(`✓ adopted ${id} → products/. ${r.note}`, "#34d399"); alert("Adopted into products/"+id+"/.\n\n"+r.note); }
+  loadProducts();
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button[data-act]"); if(!b) return;
+  const {act,id}=b.dataset;
+  if(act==="synth") synth(id);
+  else if(act==="diff") viewDiff(id);
+  else if(act==="adopt") adopt(id);
+});
+
+loadProducts();
+</script>
+</body>
+</html>
