@@ -4535,9 +4535,12 @@ body.tour-active #version-indicator {
   top: 88px;
   align-self: start;
   /* Never scroll-jail: if the card is taller than the viewport when pinned,
-     let it scroll internally so its lower rows stay reachable. */
+     let it scroll internally so its lower rows stay reachable. overscroll
+     containment stops wheel/trackpad from chaining into the page only in the
+     rare case the card actually overflows. */
   max-height: calc(100vh - 108px);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .aside-card {
   background: var(--bg-card);

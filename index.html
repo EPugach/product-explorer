@@ -1240,6 +1240,9 @@
           cx += (tx - cx) * 0.08;
           cy += (ty - cy) * 0.08;
           galaxy.style.transform = `translate(${cx * MAX}px, ${cy * MAX}px)`;
+          // #stars is a CHILD of #galaxy, so its own -0.55 transform COMPOSES
+          // with the parent's +1.0 to net +0.45x on screen: same direction as
+          // the planets, less travel = the background sits "further away".
           stars.style.transform = `translate(${cx * -MAX * 0.55}px, ${cy * -MAX * 0.55}px)`;
           if (Math.abs(tx - cx) > 0.001 || Math.abs(ty - cy) > 0.001)
             praf = requestAnimationFrame(ptick);
@@ -1251,7 +1254,7 @@
           tx = ((e.clientX - r.left) / r.width - 0.5) * 2;
           ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
           if (!praf) praf = requestAnimationFrame(ptick);
-        });
+        }, { passive: true });
         hero.addEventListener("pointerleave", () => {
           tx = 0;
           ty = 0;
@@ -1262,21 +1265,25 @@
         // so the hero -> content hand-off reads cinematic. Opacity only, so it
         // never contends with the parallax transform above.
         let sraf = null;
+        const applyFade = () => {
+          const fade = Math.max(0, 1 - window.scrollY / (innerHeight * 0.75));
+          galaxy.style.opacity = fade.toFixed(3);
+        };
         addEventListener(
           "scroll",
           () => {
             if (sraf) return;
             sraf = requestAnimationFrame(() => {
-              const fade = Math.max(
-                0,
-                1 - window.scrollY / (innerHeight * 0.75),
-              );
-              galaxy.style.opacity = fade.toFixed(3);
+              applyFade();
               sraf = null;
             });
           },
           { passive: true },
         );
+        // Recompute on resize and once now, so a restored/non-zero scroll
+        // position or a rotate/resize doesn't leave the hero at stale opacity.
+        addEventListener("resize", applyFade, { passive: true });
+        applyFade();
       }
     </script>
   </body>
