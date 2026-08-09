@@ -90,3 +90,10 @@
 !publicsectorsolutions/index.html
 !publicsectorsolutions/favicon.svg
 !publicsectorsolutions/og-image.png
+
+# Ingestion tool (scripts/ingest/): keep source code + README + fixtures,
+# re-ignore fetched/generated artifacts (allowlisted by !scripts/** above).
+scripts/ingest/input/*.pdf
+scripts/ingest/archive/
+scripts/ingest/scratch/
+scripts/ingest/**/_*.mjs
