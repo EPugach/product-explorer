@@ -1,6 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "build:html": "node scripts/generate-product-html.mjs"
+    "build:html": "node scripts/generate-product-html.mjs",
+    "test": "node --test scripts/ingest/test/gates.test.mjs scripts/ingest/test/render.test.mjs"
   }
 }
