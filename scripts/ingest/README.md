@@ -94,7 +94,10 @@ node scripts/ingest/fetch.mjs <id> [--stage]
 node scripts/ingest/refresh.mjs <id> [--fetch] [--force] [--detect-only] [--promote]
 
 # Programmatic grounding gate (exhaustive; --full-doc = full recall). Exit 1 if a contradiction is found.
-node scripts/ingest/ground.mjs <id> [--full-doc] [--committed] [--domains a,b]
+#   --runs N  run each domain N times and take CONSENSUS (odd N, e.g. 3). The LLM judge is high-variance;
+#             a claim counts CONTRADICTED only if it reproduces in >= ceil(N/2) runs (noise washes out).
+#             Default 1 = single run (identity/legacy). ~N× gate cost — cheap for small products.
+node scripts/ingest/ground.mjs <id> [--full-doc] [--committed] [--runs N] [--domains a,b]
 
 # Grounding-gate-in-loop: regenerate CONTRADICTED domains with full-doc + the gate's feedback, then re-ground
 node scripts/ingest/reground.mjs <id> [--domains a,b]
@@ -108,6 +111,13 @@ node scripts/ingest/reground.mjs <id> [--domains a,b]
 - Grounding ground truth = **Help doc ∪ frozen committed schema** (a field that matches the frozen
   schema is grounded, not a hallucination). A CONTRADICTED claim blocks promotion; a clean run is a
   spot-check, **not** license for unattended auto-promotion (human review stays in-loop).
+- **The gate is high-variance** — a single run flips a domain between several contradictions and zero
+  across identical inputs. Use `--runs 3` (or 5) for a trustworthy verdict: consensus counts a claim
+  CONTRADICTED only if it reproduces in ≥⌈N/2⌉ runs (genuine errors reproduce; noise washes out).
+  Two guards: a **quorum** (≥⌈N/2⌉ runs must *succeed*, else the domain is INCONCLUSIVE and blocks —
+  a flaky gateway never reads as clean) and the **reproduction threshold** measured against the
+  intended N. Consensus removes random noise, not systematic judge bias — cross-check a reproduced
+  flag deterministically (term-presence in the committed data) before treating it as a defect.
 - **`playwright-core` is pinned to `1.59.1`** to match the installed chromium revision (1217); fetch
   discovers the browser and warns on version drift. No browser download, no corp-control workaround.
 

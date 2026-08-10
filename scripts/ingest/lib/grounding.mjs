@@ -58,6 +58,81 @@ export function scoreGrounding(findings) {
   return { claimsChecked, grounded, unsupported, contradicted, ratio, overall, blocksPromote: contradicted > 0 };
 }
 
+const VERDICTS = new Set(["GROUNDED", "UNSUPPORTED", "CONTRADICTED"]);
+
+// Multi-run CONSENSUS calibration (item 1 — the linchpin). The LLM judge is high-variance:
+// the same input can flip a domain between several contradictions and zero across identical runs,
+// so a single run is a reliable REVIEW SIGNAL, not a trustworthy AUTO-BLOCKER. Reduce the per-run
+// findings arrays it is HANDED to ONE consensus finding per claim: adopt a problem verdict only if
+// it REPRODUCES in >= ceil(N/2) runs (CONTRADICTED checked before UNSUPPORTED — it is both more
+// severe and the safe/blocking outcome on a tie); otherwise the claim is GROUNDED. Genuine errors
+// reproduce; judge noise washes out. The consensus array feeds scoreGrounding UNCHANGED.
+//
+// `runs` is an array of findings arrays, one per SUCCESSFUL run. Error-filtering and the fail-closed
+// quorum are the caller's job (see consensusDomain) — this reducer only tallies what it is given.
+// `denomN` is the INTENDED run count the threshold is measured against (defaults to runs.length): a
+// contradiction must reproduce in >= ceil(denomN/2) runs. Passing the intended N even when some runs
+// errored keeps "reproduced X/N" honest (a lone flag among 2 survivors of 3 is NOT reproduction and
+// must not block) and keeps the reported threshold consistent with what is actually applied.
+// Each run contributes AT MOST ONE vote per claimIndex (a malformed judge response that double-reports
+// a claim can't stuff its own ballot). A washed-out claim carries no borrowed evidence: only a run
+// that actually voted the consensus verdict supplies the quote (so a GROUNDED verdict never shows a
+// stray contradiction quote, and a CONTRADICTED one always carries a real one for reground). N=1 is
+// the identity (ceil(1/2)=1 => one contradiction still blocks — today's behavior).
+export function consensusFindings(runs, denomN = runs.length) {
+  const threshold = Math.ceil(denomN / 2);
+  const byClaim = new Map(); // claimIndex -> { votes, sample: {verdict->finding}, any }
+  for (const run of runs) {
+    const seen = new Set(); // one vote per claim per run
+    for (const f of run || []) {
+      if (f?.claimIndex == null || seen.has(f.claimIndex)) continue;
+      seen.add(f.claimIndex);
+      let e = byClaim.get(f.claimIndex);
+      if (!e) { e = { votes: { GROUNDED: 0, UNSUPPORTED: 0, CONTRADICTED: 0 }, sample: {}, any: f }; byClaim.set(f.claimIndex, e); }
+      if (VERDICTS.has(f.verdict)) e.votes[f.verdict]++;
+      if (!e.sample[f.verdict]) e.sample[f.verdict] = f; // first finding of each verdict — for representative evidence
+    }
+  }
+  const out = [];
+  for (const [claimIndex, e] of byClaim) {
+    const { votes } = e;
+    const verdict = votes.CONTRADICTED >= threshold ? "CONTRADICTED"
+      : votes.UNSUPPORTED >= threshold ? "UNSUPPORTED"
+      : "GROUNDED";
+    const rep = e.sample[verdict]; // only a run that voted the consensus verdict may supply the quote
+    out.push({
+      claimIndex,
+      verdict,
+      source: rep ? rep.source : null,
+      evidence: rep ? rep.evidence : "",
+      claim: e.any.claim,
+      ref: e.any.ref,
+      votes: { ...votes, runs: denomN },
+    });
+  }
+  out.sort((a, b) => a.claimIndex - b.claimIndex);
+  return out;
+}
+
+// Fail-CLOSED quorum wrapper around consensusFindings. `runResults` is one entry per attempted run,
+// each { findings } on success or { error } on failure. Two independent guards:
+//   1. COVERAGE (quorum): require >= ceil(N/2) SUCCESSFUL runs, else the domain is INCONCLUSIVE and
+//      the caller must block — never auto-pass a doc audited fewer than a majority of intended times.
+//   2. REPRODUCTION: at/above quorum, tally the survivor findings but measure the threshold against the
+//      INTENDED N (see consensusFindings). An errored run therefore abstains — a contradiction seen by
+//      only a minority of the intended runs washes out whether the shortfall was judge noise OR a gateway
+//      error. This is deliberate: below-quorum coverage is already caught by guard 1, so within quorum a
+//      non-reproduced flag is correctly treated as noise, and "reproduced X/N" stays honest.
+// N defaults to runResults.length (the intended run count).
+export function consensusDomain(runResults, N = runResults.length) {
+  const okRuns = runResults.filter((r) => !r?.error);
+  const runsOk = okRuns.length;
+  const runsErrored = N - runsOk;
+  if (runsOk < Math.ceil(N / 2)) return { findings: [], runsOk, runsErrored, inconclusive: true };
+  // Tally over survivors, but measure reproduction against the INTENDED N (see consensusFindings).
+  return { findings: consensusFindings(okRuns.map((r) => r.findings || []), N), runsOk, runsErrored, inconclusive: false };
+}
+
 // Every checkable claim in a domain, as an ordered array of { kind, ref, text }.
 export function domainClaims(regenData, regenEntities) {
   const claims = [];
