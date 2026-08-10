@@ -308,6 +308,7 @@ function parseArgs(argv) {
     const v = argv[i];
     if (v === "--model") a.model = argv[++i];
     else if (v === "--pdf") a.pdf = argv[++i];
+    else if (v === "--dev") a.dev = argv[++i];
     else if (v === "--out") a.out = argv[++i];
     else if (v === "--domains") a.domains = argv[++i].split(",").map((s) => s.trim()).filter(Boolean);
     else if (v === "--limit-domains") a.limit = parseInt(argv[++i], 10);
@@ -339,9 +340,22 @@ async function main() {
 
   // Extract.
   log(`[extract] reading PDF…`);
-  const { text: fullText, pageCount, sha256 } = extractPdfText(pdf, { layout: true });
+  let { text: fullText, pageCount, sha256 } = extractPdfText(pdf, { layout: true });
+  log(`[extract] Help: ${pageCount} pages, ${fullText.length} chars, sha256=${sha256.slice(0, 12)}`);
+  // Item 5 — dev-doc fusion: if a Developer Guide is staged (input/<id>-dev.pdf), fuse it in as a
+  // second grounded source. Field-level detail the Help doc omits (e.g. object fields) lives in the
+  // Dev Guide, so fusion grounds the object/metadata descriptions the Help-only pass could not.
+  let fused = false;
+  const devPdf = args.dev || pdf.replace(/\.pdf$/i, "-dev.pdf");
+  if (fs.existsSync(devPdf)) {
+    const dev = extractPdfText(devPdf, { layout: true });
+    fullText = `${fullText}\n\n===== DEVELOPER GUIDE =====\n\n${dev.text}`;
+    pageCount += dev.pageCount;
+    fused = true;
+    log(`[extract] fused Developer Guide: +${dev.pageCount} pages, +${dev.text.length} chars`);
+  }
   const sections = splitSections(fullText);
-  log(`[extract] ${pageCount} pages, ${fullText.length} chars, ${sections.length} sections, sha256=${sha256.slice(0, 12)}`);
+  log(`[extract] total ${pageCount} pages, ${fullText.length} chars, ${sections.length} sections${fused ? " (Help+Dev fused)" : ""}`);
 
   // Pass 1.
   log(`[pass1] building glossary/summary…`);
@@ -394,6 +408,9 @@ async function main() {
   fs.writeFileSync(path.join(outDir, "entities.js"), entitiesJs);
   fs.writeFileSync(path.join(outDir, "ai-context.js"), aiContext);
   fs.writeFileSync(path.join(outDir, "diff-report.md"), diff.markdown);
+  // Persist the exact corpus synthesis saw (Help, or Help+Dev when fused) so the grounding gate
+  // audits against the same ground truth. (_*.txt is gitignored.)
+  fs.writeFileSync(path.join(outDir, "_doctext.txt"), fullText);
 
   const provenance = {
     pipeline: "workstream-b-pilot",
