@@ -2,6 +2,6 @@
   "type": "module",
   "scripts": {
     "build:html": "node scripts/generate-product-html.mjs",
-    "test": "node --test scripts/ingest/test/gates.test.mjs scripts/ingest/test/render.test.mjs scripts/ingest/test/autofetch.test.mjs"
+    "test": "node --test scripts/ingest/test/gates.test.mjs scripts/ingest/test/render.test.mjs scripts/ingest/test/autofetch.test.mjs scripts/ingest/test/grounding.test.mjs"
   }
 }

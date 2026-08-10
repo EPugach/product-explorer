@@ -111,7 +111,7 @@ const GLOSSARY_SCHEMA = {
 };
 
 // ── Deterministic per-domain retrieval (Pass 1.5) ────────────────────────────
-function retrieveForDomain(sections, fullText, domain, ent) {
+export function retrieveForDomain(sections, fullText, domain, ent) {
   const kw = new Set();
   kw.add(domain.name.toLowerCase());
   for (const c of domain.components || []) kw.add(c.name.toLowerCase());
