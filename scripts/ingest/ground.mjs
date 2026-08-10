@@ -83,47 +83,28 @@ async function main() {
 
   const line = (d) => log(`  ${d.blocksPromote ? "✗" : (d.overall === "STRONG" ? "✓" : "•")} ${d.id}: ${d.overall} (${d.grounded}/${d.claimsChecked}${d.contradicted ? `, ${d.contradicted} CONTRADICTED` : ""})`);
 
-  let perDomain;
-  if (args.fullDoc) {
-    // Full-recall mode (council #5): ONE pass over the whole doc with ALL claims, so a
-    // contradiction whose supporting text lives outside a domain's retrieval chunk is still
-    // caught (e.g. a wrong engine name). Fits the 1.05M-token context for every product.
-    const claims = [];
-    const schemaParts = [];
-    for (const id of domainIds) {
-      for (const c of domainClaims(PRODUCT[id], ENTITIES[id])) claims.push({ ...c, domain: id });
-      const s = frozenSchemaText(ENTITIES[id]);
-      if (s) schemaParts.push(`# ${id}\n${s}`);
-    }
-    log(`[ground] full-doc: ${claims.length} claims in one pass over ${fullText.length} chars`);
-    const res = await groundDomain({
-      productName, domainName: `${args.id} (all domains, full doc)`, claims,
-      docChunk: fullText, schema: schemaParts.join("\n"), model: args.model, maxTokens: 32000,
-    });
-    for (const f of res.findings) f.domain = claims[f.claimIndex - 1]?.domain;
-    const byDom = Object.fromEntries(domainIds.map((id) => [id, []]));
-    for (const f of res.findings) (byDom[f.domain] || (byDom[f.domain] = [])).push(f);
-    perDomain = domainIds.map((id, i) => {
-      const d = { id, name: PRODUCT[id].name, ...scoreGrounding(byDom[id] || []), findings: byDom[id] || [], schemaDocMismatches: i === 0 ? res.schemaDocMismatches : [] };
+  // --full-doc = full recall (council #5): each domain is judged against the WHOLE doc, so a
+  // contradiction whose supporting text lives outside the domain's retrieval chunk is still
+  // caught (e.g. a wrong engine name). Done PER DOMAIN (not one giant all-domains call) so each
+  // request stays within the gateway timeout even on very large docs — a single all-domains pass
+  // over a ~957K-token doc (400+ claims) times out. Lower concurrency in full-doc mode: each call
+  // ships the whole doc, so fewer in flight avoids gateway overload.
+  const conc = args.fullDoc ? Math.min(args.concurrency, 2) : args.concurrency;
+  const perDomain = await pool(domainIds, conc, async (id) => {
+    const docChunk = args.fullDoc ? fullText : retrieveForDomain(sections, fullText, PRODUCT[id], ENTITIES[id]);
+    const claims = domainClaims(PRODUCT[id], ENTITIES[id]);
+    const schema = frozenSchemaText(ENTITIES[id]);
+    try {
+      const { findings, schemaDocMismatches } = await groundDomain({
+        productName, domainName: PRODUCT[id].name, claims, docChunk, schema, model: args.model,
+      });
+      const d = { id, name: PRODUCT[id].name, ...scoreGrounding(findings), findings, schemaDocMismatches };
       line(d); return d;
-    });
-  } else {
-    perDomain = await pool(domainIds, args.concurrency, async (id) => {
-      const docChunk = retrieveForDomain(sections, fullText, PRODUCT[id], ENTITIES[id]);
-      const claims = domainClaims(PRODUCT[id], ENTITIES[id]);
-      const schema = frozenSchemaText(ENTITIES[id]);
-      try {
-        const { findings, schemaDocMismatches } = await groundDomain({
-          productName, domainName: PRODUCT[id].name, claims, docChunk, schema, model: args.model,
-        });
-        const d = { id, name: PRODUCT[id].name, ...scoreGrounding(findings), findings, schemaDocMismatches };
-        line(d); return d;
-      } catch (e) {
-        log(`  ! ${id}: gate error ${String(e).split("\n")[0]}`);
-        return { id, name: PRODUCT[id].name, error: String(e), findings: [], contradicted: 0, blocksPromote: false, claimsChecked: 0, grounded: 0, overall: "ERROR" };
-      }
-    });
-  }
+    } catch (e) {
+      log(`  ! ${id}: gate error ${String(e).split("\n")[0]}`);
+      return { id, name: PRODUCT[id].name, error: String(e), findings: [], contradicted: 0, blocksPromote: false, claimsChecked: 0, grounded: 0, overall: "ERROR" };
+    }
+  });
 
   const allFindings = perDomain.flatMap((d) => d.findings || []);
   const agg = scoreGrounding(allFindings);
