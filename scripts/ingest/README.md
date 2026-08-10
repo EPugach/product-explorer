@@ -83,3 +83,43 @@ synthesis is a P4 milestone.)
   (a programmatic grounding gate is the top P4-hardening item — see the plan).
 - Source docs are currently rebranded "Agentforce Nonprofit"; the synthesizer is instructed to keep
   the canonical product name from `config.js`.
+
+## Item 4 — auto-fetch, change-detection, grounding gate
+
+```bash
+# Fetch a product's Help PDF headlessly (reuses the existing chromium; --stage writes input/<id>.pdf)
+node scripts/ingest/fetch.mjs <id> [--stage]
+
+# One-command refresh: fetch-or-reuse -> archive -> change-detect -> synth-on-change -> ground -> hold/promote
+node scripts/ingest/refresh.mjs <id> [--fetch] [--force] [--detect-only] [--promote]
+
+# Programmatic grounding gate (exhaustive; --full-doc = full recall). Exit 1 if a contradiction is found.
+node scripts/ingest/ground.mjs <id> [--full-doc] [--committed] [--domains a,b]
+
+# Grounding-gate-in-loop: regenerate CONTRADICTED domains with full-doc + the gate's feedback, then re-ground
+node scripts/ingest/reground.mjs <id> [--domains a,b]
+```
+
+- `bundles.json` — authoritative product→bundle map (bundle-ids are not derivable from `docUrl`).
+- `archive/<id>/<date>-<sha8>/` — dated, content-hashed snapshots (never deleted; same-day distinct
+  fetches don't overwrite; identical re-fetch is idempotent). `changedetect.mjs` strips the volatile
+  daily "Last Updated" stamp so raw-hash noise can't false-trigger; re-synth trigger = bundle-id OR
+  normalized-text change.
+- Grounding ground truth = **Help doc ∪ frozen committed schema** (a field that matches the frozen
+  schema is grounded, not a hallucination). A CONTRADICTED claim blocks promotion; a clean run is a
+  spot-check, **not** license for unattended auto-promotion (human review stays in-loop).
+- **`playwright-core` is pinned to `1.59.1`** to match the installed chromium revision (1217); fetch
+  discovers the browser and warns on version drift. No browser download, no corp-control workaround.
+
+## Security scope (untrusted PDFs)
+
+The fetch pipeline currently pulls **trusted** Salesforce Help bundles over TLS from
+`help.salesforce.com` / `zoominsoftware.io`, and validates every download (expected host + `%PDF`
+magic bytes + a real `pdftotext` parse) so an SSO redirect or wrong artifact fails loudly rather
+than being mistaken for "unchanged".
+
+**Fetching UNTRUSTED third-party PDFs is explicitly OUT OF SCOPE** until a real sandbox exists. A
+Node `child_process` cannot enforce filesystem/network isolation on the `pdftotext` binary (poppler
+RCE risk is real); a genuine sandbox needs OS-level isolation (Windows Job Object + a restricted
+token / AppContainer, or a container). Do not point the fetcher at untrusted sources before that is
+built.
