@@ -11,6 +11,7 @@
     },
     "accountingsubledger": {
       "stems": ["tdta-sfdo-accounting_subledger"],
+      "devSlug": "asl_dev_guide",
       "primary": "tdta-sfdo-accounting_subledger",
       "lastKnownBundleIds": ["tdta-sfdo-accounting_subledger-262-0-0-production"],
       "downloadPage": "https://help.salesforce.com/s/products/nonprofit"
