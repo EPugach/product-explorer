@@ -152,7 +152,7 @@ async function buildManifest(fullText, product, model, maxTokens) {
 }
 
 // ── Pass 2: one domain ───────────────────────────────────────────────────────
-async function synthDomain({ domainId, domain, ent, docText, manifest, model, maxTokens, productName }) {
+export async function synthDomain({ domainId, domain, ent, docText, manifest, model, maxTokens, productName, feedback }) {
   const frozenComponents = (domain.components || []).map((c) => ({ id: c.id, name: c.name }));
   const frozenObjects = ((ent && ent.objects) || []).map((o) => ({
     name: o.name,
@@ -201,6 +201,7 @@ async function synthDomain({ domainId, domain, ent, docText, manifest, model, ma
     (frozenMetadata.length ? frozenMetadata.map((m) => `- ${m.type} (${m.name})`).join("\n") : "(none)") +
     `\n\nKnown cross-domain connections (FROZEN — your description and dataFlow must stay consistent with these; do not contradict or omit them):\n` +
     (connectionsText || "(none)") +
+    (feedback ? `\n\nCORRECTIONS REQUIRED — your previous output for this domain contained these grounding errors. Fix EACH, using the EXACT term the documentation uses (the correct fact is quoted in the evidence):\n${feedback}` : "") +
     `\n\n<DOCUMENTATION>\n${docText}\n</DOCUMENTATION>`;
 
   const call = () => chat({ model, system, prompt, schema: DOMAIN_SCHEMA, schemaName: "domain", maxTokens });
@@ -242,7 +243,7 @@ function checkDomainCoverage(json, frozenComponents, frozenObjects, frozenMetada
 }
 
 // ── Merge regenerated content onto the frozen skeleton ───────────────────────
-function mergeDomainData(frozen, regen) {
+export function mergeDomainData(frozen, regen) {
   const byId = Object.fromEntries((regen.components || []).map((c) => [c.id, c]));
   return {
     packages: frozen.packages,
@@ -262,7 +263,7 @@ function mergeDomainData(frozen, regen) {
   };
 }
 
-function mergeDomainEntities(frozenEnt, regen) {
+export function mergeDomainEntities(frozenEnt, regen) {
   const byName = Object.fromEntries((regen.objects || []).map((o) => [o.name, o]));
   const byType = Object.fromEntries((regen.metadata || []).map((m) => [m.type, m]));
   const out = {
