@@ -1,0 +1,75 @@
+{
+  "_note": "Product -> Salesforce Help bundle map for auto-fetch (Workstream B, item 4). Bundle ids are NOT derivable from the config docUrl article id (e.g. article 'os_omnistudio_standard.htm' -> bundle 'omnistudio'), so this map is authoritative. The release version is IN the bundle id ('...-262-0-0-production'); fetch.mjs matches by `stem` and records the current full id for change-detection. `downloadPage` is a /s/products/<slug> page whose accessibility tree exposes the real 'Download as PDF' link for the bundle (a real link click is required; bare GET 401s, injected links hit SSO). Multi-bundle products list all stems; `primary` is the item-4 v1 default (fuse-all is deferred to item 5).",
+  "_resolvedAt": "2026-08-09",
+  "_releaseTag": "262-0-0-production",
+  "products": {
+    "nonprofitcloud": {
+      "stems": ["tdta-sfdo-nonprofit_cloud"],
+      "primary": "tdta-sfdo-nonprofit_cloud",
+      "lastKnownBundleIds": ["tdta-sfdo-nonprofit_cloud-262-0-0-production"],
+      "downloadPage": "https://help.salesforce.com/s/products/nonprofit"
+    },
+    "accountingsubledger": {
+      "stems": ["tdta-sfdo-accounting_subledger"],
+      "primary": "tdta-sfdo-accounting_subledger",
+      "lastKnownBundleIds": ["tdta-sfdo-accounting_subledger-262-0-0-production"],
+      "downloadPage": "https://help.salesforce.com/s/products/nonprofit"
+    },
+    "npsp": {
+      "stems": ["tdta-sfdo-nonprofit_success_pack"],
+      "primary": "tdta-sfdo-nonprofit_success_pack",
+      "lastKnownBundleIds": ["tdta-sfdo-nonprofit_success_pack-262-0-0-production"],
+      "downloadPage": "https://help.salesforce.com/s/products/nonprofit"
+    },
+    "educationcloud": {
+      "stems": ["tdta-sfdo-education_cloud"],
+      "primary": "tdta-sfdo-education_cloud",
+      "lastKnownBundleIds": ["tdta-sfdo-education_cloud-262-0-0-production"],
+      "downloadPage": "https://help.salesforce.com/s/products/additionalproducts"
+    },
+    "edassh": {
+      "stems": ["tdta-sfdo-education_data_architecture"],
+      "primary": "tdta-sfdo-education_data_architecture",
+      "lastKnownBundleIds": ["tdta-sfdo-education_data_architecture-262-0-0-production"],
+      "downloadPage": "https://help.salesforce.com/s/products/additionalproducts"
+    },
+    "omnistudio": {
+      "stems": ["tdta-xcloud-omnistudio"],
+      "primary": "tdta-xcloud-omnistudio",
+      "lastKnownBundleIds": ["tdta-xcloud-omnistudio-262-0-0-production"],
+      "downloadPage": "https://help.salesforce.com/s/products/nonprofit"
+    },
+    "revenue": {
+      "stems": ["tdta-ind-revenue"],
+      "primary": "tdta-ind-revenue",
+      "lastKnownBundleIds": ["tdta-ind-revenue-262-0-0-production"],
+      "downloadPage": "https://help.salesforce.com/s/products/additionalproducts"
+    },
+    "publicsectorsolutions": {
+      "stems": ["tdta-ind-public_sector_solutions"],
+      "primary": "tdta-ind-public_sector_solutions",
+      "lastKnownBundleIds": ["tdta-ind-public_sector_solutions-262-0-0-production"],
+      "downloadPage": "https://help.salesforce.com/s/products/additionalproducts"
+    },
+    "consumergoods": {
+      "stems": [
+        "tdta-ind-consumer_goods_retail_admin",
+        "tdta-ind-consumer_goods_retail_sync_mgmt",
+        "tdta-ind-consumer_goods_retail_user",
+        "tdta-ind-consumer_goods_retail_vscode_modeler",
+        "tdta-ind-consumer_goods_trade_promo"
+      ],
+      "primary": "tdta-ind-consumer_goods_retail_admin",
+      "lastKnownBundleIds": ["tdta-ind-consumer_goods_retail_admin-262-0-0-production"],
+      "downloadPage": "https://help.salesforce.com/s/products/consumergoods",
+      "_note": "Multi-bundle. item-4 v1 fetches `primary` only; fuse-all (all 5 stems) is an item-5 multi-source decision (Eugene: pending)."
+    },
+    "lifesciencescloud": {
+      "stems": [],
+      "primary": null,
+      "lastKnownBundleIds": [],
+      "downloadPage": "https://help.salesforce.com/s/products/additionalproducts",
+      "_todo": "Bundle id NOT yet resolved (article ind.admin_life_sciences.htm). fetch.mjs must resolve it live from the downloadPage on first run and write it back here."
+    }
+  }
+}
