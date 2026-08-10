@@ -24,13 +24,19 @@ function stageProduct(repoRoot, id, scratchDir) {
   const destDir = path.join(repoRoot, "products", id);
   if (!fs.existsSync(destDir)) throw new Error(`no committed product dir for ${id}`);
   const plan = [];
-  for (const f of FILES) {
-    const src = path.join(scratchDir, f);
-    if (!fs.existsSync(src)) throw new Error(`scratch missing ${id}/${f}`);
-    const finalPath = path.join(destDir, f);
-    const tmpPath = path.join(destDir, `.${f}.promote-tmp`);
-    fs.copyFileSync(src, tmpPath);
-    plan.push({ tmpPath, finalPath });
+  try {
+    for (const f of FILES) {
+      const src = path.join(scratchDir, f);
+      if (!fs.existsSync(src)) throw new Error(`scratch missing ${id}/${f}`);
+      const finalPath = path.join(destDir, f);
+      const tmpPath = path.join(destDir, `.${f}.promote-tmp`);
+      fs.copyFileSync(src, tmpPath);
+      plan.push({ tmpPath, finalPath });
+    }
+  } catch (err) {
+    // Clean this product's own partial temps before propagating (it may throw mid-loop).
+    for (const { tmpPath } of plan) fs.rmSync(tmpPath, { force: true });
+    throw err;
   }
   return plan;
 }
