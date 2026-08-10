@@ -50,6 +50,7 @@
 
 # Package config
 !package.json
+!package-lock.json
 !omnistudio/
 !omnistudio/index.html
 !omnistudio/favicon.svg
