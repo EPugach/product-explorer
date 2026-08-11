@@ -36,6 +36,16 @@ Top of `.gitignore` is `*` (ignore everything) followed by `!path` lines
 for kept files. New files at root or in tracked dirs are auto-ignored
 unless explicitly allowlisted.
 
+## AI Search Worker (`worker/`)
+
+Separate deployable, not part of the static-site build/deploy above. Cloudflare
+Worker backing the AI search feature (`@cf/meta/llama-4-scout-17b-16e-instruct`)
+shared by every `products/*/config.js` via `aiWorkerUrl`. See `worker/README.md`
+for the bindings contract and deploy steps. As of 2026-08-11 this is a
+transcription of the live dashboard-edited worker — confirm bindings against
+the dashboard before running `wrangler deploy` from here, since `wrangler.toml`
+has placeholder values for the KV namespace id and `ALLOWED_ORIGINS`.
+
 ## Galaxy Architecture (per-product pages only — not on root index.html)
 
 Hybrid WebGL + DOM rendering. **Don't break the separation:**

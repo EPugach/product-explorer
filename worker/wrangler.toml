@@ -1,0 +1,26 @@
+name = "npsp-ai-search"
+main = "src/worker.js"
+compatibility_date = "2026-08-11"
+
+[ai]
+binding = "AI"
+
+# Fill in the real KV namespace id from the live worker before deploying —
+# Cloudflare dashboard → Workers & Pages → npsp-ai-search → Settings →
+# Bindings → CACHE, or `npx wrangler kv namespace list`. Deploying with the
+# wrong id creates a split-brain cache/rate-limit store instead of adopting
+# the live one.
+[[kv_namespaces]]
+binding = "CACHE"
+id = "REPLACE_WITH_LIVE_KV_NAMESPACE_ID"
+
+# Comma-separated list of allowed CORS origins. Confirm the exact live value
+# in the dashboard → Settings → Variables before deploying (this worker is
+# shared across all 10 Product Explorer products, likely including both the
+# GitHub Pages origin and any local/dev origins already allowed).
+[vars]
+ALLOWED_ORIGINS = "REPLACE_WITH_LIVE_VALUE"
+
+# SHEETS_LOG_URL is a secret in the live worker, not a plaintext var — do not
+# add it here. Set it locally with:
+#   npx wrangler secret put SHEETS_LOG_URL
