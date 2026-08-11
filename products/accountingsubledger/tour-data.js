@@ -56,7 +56,7 @@ export const TOURS = [
         },
         dev: {
           title: 'Journal Record Structure',
-          body: 'Each TransactionJournal record contains JournalType (Allocation, Payment, or Transaction), DebitAmount, CreditAmount, GLCode, FundName, and four date fields (CommittedDate, DueDate, PaymentDate, TransactionDate). The IsReversal flag distinguishes adjustment records. Lookup relationships to AccountingSet and BatchManagement provide full traceability back to the configuration and job that produced each entry.'
+          body: 'Each TransactionJournal record contains JournalType (Allocation, Payment, or Transaction), DebitAmount, CreditAmount, GLCode, FundName, and four date fields (CommittedDate, DueDate, PaymentDate, TransactionDate). The IsReversal flag distinguishes adjustment records. Lookup relationships to AccountingModelConfig and BatchManagement provide full traceability back to the configuration and job that produced each entry.'
         }
       }
     ]
