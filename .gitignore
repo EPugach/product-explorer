@@ -36,6 +36,10 @@
 !eda/
 !eda/index.html
 
+# Allow the AI search Cloudflare Worker
+!worker/
+!worker/**
+
 # Allow scripts
 !scripts/
 !scripts/**
