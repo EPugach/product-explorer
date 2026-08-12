@@ -23,10 +23,10 @@ export default {
     gaId: 'G-HJTE1NYP82',
   },
   stats: {
-    objects: 73,
+    objects: 72,
     metadata: 4,
     domains: 20,
-    components: 78
+    components: 77
   },
   physics: {
     weights: {
