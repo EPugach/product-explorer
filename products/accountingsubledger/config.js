@@ -12,7 +12,7 @@ export default {
   name: 'Accounting Subledger',
   fullName: 'Salesforce Accounting Subledger',
   title: 'Accounting Subledger Explorer',
-  version: "Spring '26",
+  version: "Summer '26",
   description: 'Salesforce Accounting Subledger product documentation',
   color: '#ec4899',
   docUrl: 'https://help.salesforce.com/s/articleView?id=sfdo.accounting_subledger.htm&language=en_US&type=5',

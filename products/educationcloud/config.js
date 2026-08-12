@@ -12,7 +12,7 @@ export default {
   name: 'Education Cloud',
   fullName: 'Salesforce Education Cloud',
   title: 'Education Cloud Explorer',
-  version: "Spring '26",
+  version: "Summer '26",
   description: "Education Cloud connects institutions across recruitment, admissions, and student success for a unified view of every learner\u2019s journey.",
   color: '#10b981',
   docUrl: 'https://help.salesforce.com/s/articleView?id=sfdo.education_cloud.htm&language=en_US&type=5',

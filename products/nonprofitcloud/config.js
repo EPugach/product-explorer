@@ -12,7 +12,7 @@ export default {
   name: 'Nonprofit Cloud',
   fullName: 'Salesforce Nonprofit Cloud',
   title: 'Nonprofit Cloud Explorer',
-  version: "Spring '26",
+  version: "Summer '26",
   description: 'Salesforce Nonprofit Cloud product documentation',
   color: '#f59e0b',
   docUrl: 'https://help.salesforce.com/s/articleView?id=sfdo.nonprofit_cloud.htm&language=en_US&type=5',
