@@ -1,26 +1,25 @@
 name = "npsp-ai-search"
 main = "src/worker.js"
-compatibility_date = "2026-08-11"
+# Matches the live deployment's compatibility_date exactly (confirmed via
+# `wrangler versions view <id> --json` 2026-08-11). Do NOT bump this to
+# "today" casually — a newer compatibility_date can change runtime defaults
+# even with identical source. Treat bumping it as its own deliberate,
+# tested change, separate from this reconciliation.
+compatibility_date = "2024-12-01"
 
 [ai]
 binding = "AI"
 
-# Fill in the real KV namespace id from the live worker before deploying —
-# Cloudflare dashboard → Workers & Pages → npsp-ai-search → Settings →
-# Bindings → CACHE, or `npx wrangler kv namespace list`. Deploying with the
-# wrong id creates a split-brain cache/rate-limit store instead of adopting
-# the live one.
+# Confirmed live 2026-08-11 via `wrangler versions view <id> --json`.
 [[kv_namespaces]]
 binding = "CACHE"
-id = "REPLACE_WITH_LIVE_KV_NAMESPACE_ID"
+id = "b36b0f495c5b4faab3863a19ddd7d53d"
 
-# Comma-separated list of allowed CORS origins. Confirm the exact live value
-# in the dashboard → Settings → Variables before deploying (this worker is
-# shared across all 10 Product Explorer products, likely including both the
-# GitHub Pages origin and any local/dev origins already allowed).
+# Confirmed live 2026-08-11. Shared across all 10 Product Explorer products.
 [vars]
-ALLOWED_ORIGINS = "REPLACE_WITH_LIVE_VALUE"
+ALLOWED_ORIGINS = "https://epugach.github.io,http://localhost:8000,http://localhost:3000"
 
-# SHEETS_LOG_URL is a secret in the live worker, not a plaintext var — do not
-# add it here. Set it locally with:
-#   npx wrangler secret put SHEETS_LOG_URL
+# SHEETS_LOG_URL is ALSO a plaintext var on the live worker (not a secret,
+# despite what this file previously assumed) — but this repo is public, and
+# that value is a working Google Apps Script webhook URL. See the "Open
+# question" in README.md before adding it here.
