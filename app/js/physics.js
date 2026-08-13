@@ -221,6 +221,7 @@ export function initGraph(w, h) {
       componentCount: PRODUCT_DATA[key].components.length,
       classCount: weights[key] || 0,
       connectionCount: PRODUCT_DATA[key].connections.length,
+      isHub: (_foundational()[key] || 1) > 1,
       radius: calcRadius(key),
       x:
         cx +

@@ -15,6 +15,9 @@ let _planetEls = {}; // domainId -> div element
 let _edgeEls = []; // { el, source, target }
 let _nodeMap = {};
 
+const SURFACE_TEXTURE = 0.75;
+const SURFACE_ALPHA = SURFACE_TEXTURE * 0.46;
+
 // WebGL 3D layer canvas — kept in sync with .galaxy-container fly-in/out
 // transitions so the orbs animate alongside the DOM planets.
 const _gl3d = () => document.getElementById("galaxy-3d");
@@ -75,6 +78,17 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
     _updateEdgePathZoomed(path, s, t);
     _edgesSvg.appendChild(path);
 
+    const pulsePath = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
+    pulsePath.classList.add("galaxy-edge-pulse");
+    pulsePath.dataset.source = e.source;
+    pulsePath.dataset.target = e.target;
+    pulsePath.setAttribute("pathLength", "1");
+    _updateEdgePathZoomed(pulsePath, s, t);
+    _edgesSvg.appendChild(pulsePath);
+
     // Invisible hit area for hover detection (wider stroke)
     const hitPath = document.createElementNS(
       "http://www.w3.org/2000/svg",
@@ -88,6 +102,7 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
 
     _edgeEls.push({
       el: path,
+      pulseEl: pulsePath,
       hitEl: hitPath,
       source: e.source,
       target: e.target,
@@ -124,6 +139,7 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
     const n = nodes[i];
     const div = document.createElement("div");
     div.className = "planet-node";
+    if (n.isHub) div.classList.add("hub");
     div.dataset.domain = n.id;
     div.setAttribute("role", "button");
     div.setAttribute("tabindex", "0");
@@ -133,6 +149,8 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
     div.style.setProperty("--zoom", zoom);
     div.style.setProperty("--planet-light", lightenColor(n.color, 40));
     div.style.setProperty("--planet-dark", darkenColor(n.color, 30));
+    div.style.setProperty("--planet-surface", _buildSurfaceMap(n));
+    div.style.setProperty("--planet-surface-focus", _buildSurfaceMap(n, 0.35));
     div.style.setProperty("--entrance-i", i);
     div.style.left = `${n.x * zoom + panX}px`;
     div.style.top = `${n.y * zoom + panY}px`;
@@ -153,8 +171,83 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
     div.appendChild(label);
 
     _container.appendChild(div);
+    _setOpticalIconScale(div);
     _planetEls[n.id] = div;
   }
+}
+
+function _setOpticalIconScale(planetEl) {
+  const svg = planetEl.querySelector(".planet-icon svg");
+  if (!svg || typeof svg.getBBox !== "function") return;
+  try {
+    const box = svg.getBBox();
+    const occupied = Math.max(box.width, box.height);
+    if (occupied > 0) {
+      // Normalize different glyph footprints without making any icon feel
+      // materially larger than its neighbors.
+      const scale = Math.max(0.94, Math.min(1.08, 19 / occupied));
+      planetEl.style.setProperty("--icon-optical-scale", scale.toFixed(3));
+    }
+  } catch {
+    // Detached/hidden SVGs can reject getBBox; nominal 100% remains valid.
+  }
+}
+
+function _seeded(id) {
+  let value = 17;
+  for (const char of id) value = (value * 31 + char.charCodeAt(0)) % 997;
+  return value / 997;
+}
+
+function _hexRgb(hex) {
+  const normalized = hex.replace("#", "");
+  const value = Number.parseInt(
+    normalized.length === 3
+      ? normalized
+          .split("")
+          .map((char) => char + char)
+          .join("")
+      : normalized,
+    16,
+  );
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+// Deterministic telemetry fragments give each domain a distinct surface while
+// keeping cluster color, icon, and label as the primary identifiers.
+function _buildSurfaceMap(node, alphaScale = 1) {
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext("2d");
+  if (!context) return "none";
+  const image = context.createImageData(size, size);
+  const [red, green, blue] = _hexRgb(node.color);
+  const seed = _seeded(node.id) * 80;
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const nx = (x / size - 0.5) * 2;
+      const ny = (y / size - 0.5) * 2;
+      const index = (y * size + x) * 4;
+      if (nx * nx + ny * ny > 1) continue;
+
+      const row = Math.floor((ny + 1) * 10);
+      const stagger = Math.sin(row * 4.7 + seed) * 0.35;
+      const line =
+        Math.abs((((ny * 10 + seed) % 1) + 1) % 1 - 0.5) < 0.07;
+      const segment = Math.sin((nx + stagger) * 13 + row * 1.7) > 0.05;
+      if (!line || !segment) continue;
+
+      const strength = SURFACE_TEXTURE * 0.4;
+      image.data[index] = Math.min(255, red + strength * 150);
+      image.data[index + 1] = Math.min(255, green + strength * 170);
+      image.data[index + 2] = Math.min(255, blue + strength * 185);
+      image.data[index + 3] = Math.round(SURFACE_ALPHA * alphaScale * 255);
+    }
+  }
+  context.putImageData(image, 0, 0);
+  return `url("${canvas.toDataURL()}")`;
 }
 
 // Zoomed variant: applies zoom + pan to edge path coordinates and trims
@@ -220,6 +313,7 @@ export function updateGalaxyTransform() {
       t = _nodeMap[e.target];
     if (s && t) {
       _updateEdgePathZoomed(e.el, s, t);
+      _updateEdgePathZoomed(e.pulseEl, s, t);
       if (e.hitEl) _updateEdgePathZoomed(e.hitEl, s, t);
     }
   }
@@ -261,6 +355,7 @@ export function updatePlanetPosition(node) {
         t = _nodeMap[e.target];
       if (s && t) {
         _updateEdgePathZoomed(e.el, s, t);
+        _updateEdgePathZoomed(e.pulseEl, s, t);
         if (e.hitEl) _updateEdgePathZoomed(e.hitEl, s, t);
       }
     }
@@ -282,6 +377,7 @@ export function updateAllPositions(nodes, edges) {
       t = _nodeMap[e.target];
     if (s && t) {
       _updateEdgePathZoomed(e.el, s, t);
+      _updateEdgePathZoomed(e.pulseEl, s, t);
       if (e.hitEl) _updateEdgePathZoomed(e.hitEl, s, t);
     }
   }
@@ -299,6 +395,11 @@ export function applyHoverState(planetId) {
     e.el.classList.toggle("edge-connected", connected);
     e.el.classList.toggle("dimmed", !connected);
     if (connected) {
+      e.pulseEl.classList.remove("flow-forward", "flow-reverse");
+      void e.pulseEl.getBoundingClientRect();
+      e.pulseEl.classList.add(
+        e.source === planetId ? "flow-forward" : "flow-reverse",
+      );
       connectedIds.add(e.source);
       connectedIds.add(e.target);
     }
@@ -318,6 +419,7 @@ export function clearHoverState() {
   }
   for (const e of _edgeEls) {
     e.el.classList.remove("edge-connected", "dimmed");
+    e.pulseEl.classList.remove("flow-forward", "flow-reverse");
   }
   _hideEdgeTooltip();
 }

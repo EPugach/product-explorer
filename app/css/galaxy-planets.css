@@ -123,13 +123,22 @@ body.no-webgl #galaxy-3d {
    (main.js always sets body.no-webgl), so this is the production look,
    not just a fallback. Solid in both themes, no gloss, no see-through. */
 body.no-webgl .planet-node {
-  background: radial-gradient(
-    circle at 32% 28%,
-    color-mix(in srgb, var(--planet-color) 72%, #ffffff) 0%,
-    var(--planet-color) 46%,
-    color-mix(in srgb, var(--planet-color) 82%, #000000) 80%,
-    color-mix(in srgb, var(--planet-color) 66%, #000000) 100%
-  );
+  background:
+    radial-gradient(
+      circle at 16% 45%,
+      color-mix(in srgb, var(--planet-color) 58%, #f5f9ff) 0%,
+      transparent 25%
+    ),
+    var(--planet-surface, none),
+    radial-gradient(
+      circle at 23% 50%,
+      var(--planet-color) 0%,
+      var(--planet-color) 42%,
+      color-mix(in srgb, var(--planet-color) 68%, #06132d) 76%,
+      color-mix(in srgb, var(--planet-color) 42%, #020819) 100%
+    );
+  background-size: cover;
+  background-position: center;
 }
 /* Terminator: soft shadow on the side away from the light source */
 body.no-webgl .planet-node::before {
@@ -137,11 +146,9 @@ body.no-webgl .planet-node::before {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 70% 74%,
-    rgba(2, 8, 24, 0.34) 0%,
-    rgba(2, 8, 24, 0) 56%
-  );
+  background: radial-gradient(circle, rgba(1, 8, 25, 0.3), transparent 68%);
+  transform: scale(0.52);
+  opacity: 0.22;
   pointer-events: none;
 }
 /* Matte planets carry a saturated fill in BOTH themes → icon stays white,
@@ -151,6 +158,35 @@ body.no-webgl.theme-light .planet-icon {
   color: rgba(255, 255, 255, 0.96);
   position: relative;
   z-index: 2;
+}
+
+body.no-webgl .planet-node.hovered {
+  background:
+    radial-gradient(
+      circle at 16% 45%,
+      color-mix(in srgb, var(--planet-color) 64%, #f5f9ff) 0%,
+      transparent 27%
+    ),
+    var(--planet-surface-focus, none),
+    radial-gradient(
+      circle at 23% 50%,
+      var(--planet-color) 0%,
+      var(--planet-color) 42%,
+      color-mix(in srgb, var(--planet-color) 68%, #06132d) 76%,
+      color-mix(in srgb, var(--planet-color) 42%, #020819) 100%
+    );
+}
+
+.planet-node.hub::after {
+  content: "";
+  position: absolute;
+  inset: -19%;
+  border: 1.35px solid
+    color-mix(in srgb, var(--planet-color) 56%, transparent);
+  border-radius: 50%;
+  transform: rotate(-18deg) scaleY(0.34);
+  opacity: 0.88;
+  pointer-events: none;
 }
 
 .planet-node.dimmed {
@@ -195,12 +231,45 @@ body.no-webgl.theme-light .planet-icon {
   justify-content: center;
   pointer-events: none;
   color: rgba(255, 255, 255, 0.9);
+  transform: scale(var(--icon-optical-scale, 1));
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.2s ease,
+    color 0.2s ease;
+}
+.planet-icon::before {
+  content: "";
+  position: absolute;
+  inset: -28%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(1, 8, 25, 0.34) 0%,
+    rgba(1, 8, 25, 0.14) 42%,
+    transparent 72%
+  );
+  z-index: -1;
+}
+.planet-node.hovered .planet-icon {
+  color: #f8fbff;
+  transform: scale(calc(var(--icon-optical-scale, 1) * 1.06));
+  filter: drop-shadow(0 1px 2px rgba(0, 8, 25, 0.38)) brightness(1.15);
+}
+.planet-node.hub .planet-icon {
+  transform: scale(calc(var(--icon-optical-scale, 1) * 1.05));
+}
+.planet-node.hub.hovered .planet-icon {
+  transform: scale(calc(var(--icon-optical-scale, 1) * 1.11));
 }
 
 /* Icon SVG scales with planet size (zoom-aware via --planet-r) */
 .planet-icon svg {
   width: calc(var(--planet-r) * 0.9);
   height: calc(var(--planet-r) * 0.9);
+  stroke-width: 1.7;
+}
+.planet-node.hub .planet-icon svg {
+  stroke-width: 1.82;
 }
 
 /* ── Planet Label ── */
@@ -220,6 +289,14 @@ body.no-webgl.theme-light .planet-icon {
 .planet-node:hover .planet-label,
 .planet-node.hovered .planet-label {
   color: var(--text-primary, #e2e8f0);
+  font-weight: 700;
+}
+.planet-node.connected .planet-label {
+  color: color-mix(in srgb, var(--text-primary, #e2e8f0) 76%, transparent);
+}
+.planet-node.hub .planet-label {
+  color: var(--text-primary, #e2e8f0);
+  font-weight: 700;
 }
 
 /* ── SVG Edges ── */
@@ -261,6 +338,31 @@ body.no-webgl.theme-light .planet-icon {
   opacity: 0.04;
 }
 
+.galaxy-edge-pulse {
+  fill: none;
+  stroke: var(--glow-accent, #00b3ff);
+  stroke-width: calc(3 * var(--zoom, 1));
+  opacity: 0;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+.galaxy-edge-pulse.flow-forward {
+  animation: galaxyEdgeFlowForward 700ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+.galaxy-edge-pulse.flow-reverse {
+  animation: galaxyEdgeFlowReverse 700ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+@keyframes galaxyEdgeFlowForward {
+  0% { opacity: 0; stroke-dasharray: 0.14 0.86; stroke-dashoffset: 1; }
+  16%, 72% { opacity: 0.95; }
+  100% { opacity: 0; stroke-dasharray: 0.14 0.86; stroke-dashoffset: 0; }
+}
+@keyframes galaxyEdgeFlowReverse {
+  0% { opacity: 0; stroke-dasharray: 0.14 0.86; stroke-dashoffset: -1; }
+  16%, 72% { opacity: 0.95; }
+  100% { opacity: 0; stroke-dasharray: 0.14 0.86; stroke-dashoffset: 0; }
+}
+
 .galaxy-edge.tour-edge {
   opacity: 0.8;
   stroke-width: calc(3 * var(--zoom, 1));
@@ -299,6 +401,12 @@ body.no-webgl.theme-light .planet-icon {
     transition: none;
   }
   .galaxy-edge {
+    transition: none;
+  }
+  .galaxy-edge-pulse {
+    animation: none !important;
+  }
+  .planet-icon {
     transition: none;
   }
   .galaxy-container.fly-in,
