@@ -1,6 +1,6 @@
 const SHELL_VERSION = 20;
 const SHELL_CACHE = `pe-shell-v${SHELL_VERSION}`;
-const DATA_CACHE = "pe-data-v7";
+const DATA_CACHE = "pe-data-v8";
 
 const SHELL_URLS = [
   "./app/css/galaxy.css",
