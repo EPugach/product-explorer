@@ -26,7 +26,7 @@ export default {
     objects: 154,
     metadata: 1,
     domains: 16,
-    components: 87
+    components: 85
   },
   physics: {
     weights: {

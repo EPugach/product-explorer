@@ -91,7 +91,7 @@ export const PRODUCTS = [
       ["Objects", 154],
       ["Metadata", 1],
       ["Domains", 16],
-      ["Components", 87],
+      ["Components", 85],
       ["Tours", 5],
     ],
   },
