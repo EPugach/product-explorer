@@ -184,6 +184,7 @@ async function main() {
     ``,
   ].join("\n");
 
+  fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, "grounding-report.md"), report);
   fs.writeFileSync(path.join(outDir, "grounding.json"), JSON.stringify({ id: args.id, runs: N, consensusThreshold: threshold, aggregate: { ...agg, overall: overallStatus }, blocksPromote, inconclusiveDomains: inconclusive, contradictions, schemaDocMismatches: mismatches, perDomain }, null, 2));
 
