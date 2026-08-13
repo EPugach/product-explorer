@@ -139,7 +139,12 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
     const n = nodes[i];
     const div = document.createElement("div");
     div.className = "planet-node";
-    if (n.isHub) div.classList.add("hub");
+    if (n.isHub) {
+      div.classList.add("hub");
+      const ringRear = document.createElement("span");
+      ringRear.className = "planet-ring planet-ring-rear";
+      div.appendChild(ringRear);
+    }
     div.dataset.domain = n.id;
     div.setAttribute("role", "button");
     div.setAttribute("tabindex", "0");
@@ -162,6 +167,12 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
       iconSpan.className = "planet-icon";
       iconSpan.innerHTML = iconMarkup;
       div.appendChild(iconSpan);
+    }
+
+    if (n.isHub) {
+      const ringFront = document.createElement("span");
+      ringFront.className = "planet-ring planet-ring-front";
+      div.appendChild(ringFront);
     }
 
     // Label
