@@ -197,30 +197,6 @@ body.no-webgl .planet-node::after {
   pointer-events: none;
 }
 
-.planet-ring {
-  position: absolute;
-  inset: -19%;
-  border-radius: 50%;
-  transform: rotate(-18deg) scaleY(0.34);
-  pointer-events: none;
-}
-.planet-ring-rear {
-  z-index: 0;
-  border: 1.35px solid
-    color-mix(in srgb, var(--planet-color) 42%, transparent);
-  opacity: 0.62;
-}
-.planet-ring-front {
-  z-index: 2;
-  border: 1.35px solid transparent;
-  border-bottom-color: color-mix(
-    in srgb,
-    var(--planet-color) 66%,
-    transparent
-  );
-  opacity: 0.92;
-}
-
 .planet-node.dimmed {
   opacity: 0.15;
 }
@@ -530,4 +506,75 @@ body.theme-light .edge-tooltip {
   .edge-tooltip {
     transition: none;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CINEMATIC WEBGL GALAXY (body.webgl-galaxy, redesign 2026-09)
+   galaxy-3d.js renders planets, atmospheres, moons and energy-stream
+   edges; the DOM keeps the hit zones, labels, icons and edge-hit paths.
+   Dark-only: a light theme sets body.no-webgl, which wins below.
+   ══════════════════════════════════════════════════════════════ */
+body.webgl-galaxy:not(.no-webgl) #starfield,
+body.webgl-galaxy:not(.no-webgl) #particle-canvas {
+  display: none; /* the WebGL scene draws its own nebula, stars and flow */
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node,
+body.webgl-galaxy:not(.no-webgl) .planet-node:hover,
+body.webgl-galaxy:not(.no-webgl) .planet-node:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  /* No hover scale on the hit zone: a growing target shifts its own edge
+     under the cursor and flickers hover on/off (the jitter). */
+  transform: translate(-50%, -50%);
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node:focus-visible {
+  outline: 2px solid #5cc8ff;
+  outline-offset: 6px;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node::before,
+body.webgl-galaxy:not(.no-webgl) .planet-node::after {
+  display: none;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node.dimmed {
+  opacity: 1; /* dimming happens in the shader; the DOM fades only its text */
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node.dimmed .planet-label,
+body.webgl-galaxy:not(.no-webgl) .planet-node.dimmed .planet-icon {
+  opacity: 0.32;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-icon {
+  color: #fff;
+  transition: opacity 0.3s ease;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-icon::before {
+  inset: -34%;
+  background: radial-gradient(
+    circle,
+    rgba(2, 6, 16, 0.62) 0%,
+    rgba(2, 6, 16, 0.42) 52%,
+    transparent 72%
+  );
+}
+body.webgl-galaxy:not(.no-webgl) .planet-icon svg,
+body.webgl-galaxy:not(.no-webgl) .planet-icon svg * {
+  stroke-width: 1.9;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-label,
+body.webgl-galaxy:not(.no-webgl) .planet-node:hover .planet-label,
+body.webgl-galaxy:not(.no-webgl) .planet-node.hovered .planet-label,
+body.webgl-galaxy:not(.no-webgl) .planet-node.hub .planet-label,
+body.webgl-galaxy:not(.no-webgl) .planet-node.connected .planet-label {
+  top: calc(100% + 6px);
+  font: 650 clamp(12px, calc(14px * var(--zoom, 1)), 16px) var(--font-display, sans-serif);
+  color: #fff;
+  background: rgba(3, 7, 18, 0.6);
+  border-radius: 7px;
+  padding: 3px 9px;
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease;
+}
+/* Edges are drawn by WebGL; SVG strokes stay only as invisible hover targets. */
+body.webgl-galaxy:not(.no-webgl) .galaxy-edge,
+body.webgl-galaxy:not(.no-webgl) .galaxy-edge-pulse {
+  display: none;
 }

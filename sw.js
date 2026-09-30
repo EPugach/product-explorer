@@ -1,4 +1,4 @@
-const SHELL_VERSION = 23;
+const SHELL_VERSION = 26;
 const SHELL_CACHE = `pe-shell-v${SHELL_VERSION}`;
 const DATA_CACHE = "pe-data-v9";
 
@@ -9,6 +9,16 @@ const SHELL_URLS = [
   "./app/vendor/minisearch.7.2.0.js",
   "./app/vendor/three.0.184.min.js",
   "./app/vendor/three.core.min.js",
+  "./app/vendor/three-addons/postprocessing/EffectComposer.js",
+  "./app/vendor/three-addons/postprocessing/RenderPass.js",
+  "./app/vendor/three-addons/postprocessing/ShaderPass.js",
+  "./app/vendor/three-addons/postprocessing/MaskPass.js",
+  "./app/vendor/three-addons/postprocessing/Pass.js",
+  "./app/vendor/three-addons/postprocessing/UnrealBloomPass.js",
+  "./app/vendor/three-addons/postprocessing/OutputPass.js",
+  "./app/vendor/three-addons/shaders/CopyShader.js",
+  "./app/vendor/three-addons/shaders/LuminosityHighPassShader.js",
+  "./app/vendor/three-addons/shaders/OutputShader.js",
   "./app/js/main.js",
   "./app/js/navigation.js",
   "./app/js/search.js",

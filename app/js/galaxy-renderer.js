@@ -8,6 +8,7 @@ import { lightenColor, darkenColor } from "./utils.js";
 import { domainSvg } from "./icons.js";
 import { zoom, panX, panY, layoutW, layoutH } from "./physics.js";
 import { prefersReducedMotion, tourState } from "./state.js";
+import { setFocusSet3D } from "./galaxy-3d.js";
 
 let _container = null;
 let _edgesSvg = null;
@@ -139,12 +140,7 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
     const n = nodes[i];
     const div = document.createElement("div");
     div.className = "planet-node";
-    if (n.isHub) {
-      div.classList.add("hub");
-      const ringRear = document.createElement("span");
-      ringRear.className = "planet-ring planet-ring-rear";
-      div.appendChild(ringRear);
-    }
+    if (n.isHub) div.classList.add("hub");
     div.dataset.domain = n.id;
     div.setAttribute("role", "button");
     div.setAttribute("tabindex", "0");
@@ -167,12 +163,6 @@ export function initGalaxyDOM(nodes, edges, nodeMap) {
       iconSpan.className = "planet-icon";
       iconSpan.innerHTML = iconMarkup;
       div.appendChild(iconSpan);
-    }
-
-    if (n.isHub) {
-      const ringFront = document.createElement("span");
-      ringFront.className = "planet-ring planet-ring-front";
-      div.appendChild(ringFront);
     }
 
     // Label
@@ -437,6 +427,7 @@ export function clearHoverState() {
 
 // ── Tour dimming ──
 export function applyTourDimming(focusPlanet, stopPlanets, highlightedEdges) {
+  setFocusSet3D(stopPlanets || null);
   for (const [id, el] of Object.entries(_planetEls)) {
     el.classList.toggle("dimmed", !(stopPlanets && stopPlanets.has(id)));
   }
@@ -449,6 +440,7 @@ export function applyTourDimming(focusPlanet, stopPlanets, highlightedEdges) {
 }
 
 export function clearTourDimming() {
+  setFocusSet3D(null);
   for (const el of Object.values(_planetEls)) {
     el.classList.remove("dimmed");
   }

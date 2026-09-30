@@ -103,7 +103,11 @@ import {
 import { uiSvg, domainSvg, setDomainPaths } from "./icons.js";
 import { setupPointerEvents } from "./pointer-events.js";
 import {
+  supportsGalaxy3D,
   initGalaxy3D,
+  setFocusSet3D,
+  pauseGalaxy3D,
+  resumeGalaxy3D,
   renderGalaxy3D,
   resizeGalaxy3D,
   setHover3D,
@@ -273,6 +277,20 @@ setTransformCallback(() => {
   updateGalaxyTransform();
 });
 
+// ── Cinematic 3D galaxy ──
+// Starts the WebGL renderer on capable devices; returns false (CSS planets stay)
+// when the device can't or init fails. Safe to call more than once.
+function start3D() {
+  if (!supportsGalaxy3D()) return false;
+  return initGalaxy3D(nodes, nodeMap, {
+    groups: (PRODUCT_CONFIG.physics && PRODUCT_CONFIG.physics.groups) || {},
+    components: Object.fromEntries(
+      Object.entries(PRODUCT_DATA).map(([k, d]) => [k, d.components || []]),
+    ),
+    clusterHues: CLUSTERS.map((c) => c.h),
+  });
+}
+
 // ── Theme Toggle ──
 const isLightMode = () => document.body.classList.contains("theme-light");
 
@@ -289,6 +307,15 @@ function toggleTheme() {
   const themeAction = light ? "Switch to dark theme" : "Switch to light theme";
   themeButton.setAttribute("aria-label", themeAction);
   themeButton.title = themeAction;
+  // The cinematic galaxy is dark-only: switch renderer paths with the theme.
+  // A light-mode page load skipped 3D init, so start it on the first switch to dark.
+  if (!light && !document.body.classList.contains("webgl-galaxy")) start3D();
+  document.body.classList.toggle(
+    "no-webgl",
+    light || !document.body.classList.contains("webgl-galaxy"),
+  );
+  if (light) pauseGalaxy3D();
+  else resumeGalaxy3D();
   setTheme3D(light ? "light" : "dark");
   // Keep the DOM starfield in sync with the theme. On a light-mode page load the
   // starfield is initialized then immediately paused (see initApp: `if (lightMode)
@@ -990,14 +1017,11 @@ async function init() {
   // Create DOM planets and edges from settled positions
   initGalaxyDOM(nodes, edges, nodeMap);
 
-  // Matte-planet renderer: the DOM planet nodes ARE the visual (CSS matte
-  // spheres — lit hemisphere → terminator → shadow). The WebGL layer is
-  // intentionally left uninitialized — the glossy 3D sphere read as
-  // "fake/glassy", and the CSS matte look is more solid, lighter, and
-  // removes the hit-zone-sync + release-bounce artifacts. All 3D hooks
-  // (setHover3D / syncSphere / triggerReleaseBounce / renderGalaxy3D) no-op
-  // safely while uninitialized; body.no-webgl drives the matte CSS styling.
-  document.body.classList.add("no-webgl");
+  // Cinematic WebGL galaxy (redesign 2026-09) on capable devices; CSS matte
+  // planets (body.no-webgl) everywhere else — and if init throws, galaxy-3d.js
+  // falls back to no-webgl itself. The 3D galaxy is dark-only by design, so a
+  // saved light theme keeps the CSS path. All 3D hooks no-op when it's off.
+  if (lightMode || !start3D()) document.body.classList.add("no-webgl");
 
   // Wire the nudge-loop frame callback: each tick of the transient physics
   // sim during drag, refresh DOM planet positions + SVG edges. The WebGL
