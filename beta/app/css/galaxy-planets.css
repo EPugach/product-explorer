@@ -578,3 +578,30 @@ body.webgl-galaxy:not(.no-webgl) .galaxy-edge,
 body.webgl-galaxy:not(.no-webgl) .galaxy-edge-pulse {
   display: none;
 }
+/* Focus cue that doesn't rely on brightness or hue (owner is colorblind):
+   a ring around the hovered/focused planet + a heavier label. */
+body.webgl-galaxy:not(.no-webgl) .planet-node.hovered::after,
+body.webgl-galaxy:not(.no-webgl) .planet-node:focus-visible::after {
+  display: block;
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(3, 7, 18, 0.6);
+  pointer-events: none;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node.hovered .planet-label {
+  font-weight: 800;
+  background: rgba(3, 7, 18, 0.82);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7);
+}
+/* Cinematic dive: the camera flies for ~600ms; hold the domain view back so it
+   fades in over the arrived planet instead of over mid-flight labels. */
+body.webgl-galaxy:not(.no-webgl) #planet-view.zoom-in,
+body.webgl-galaxy:not(.no-webgl) #planet-view.active {
+  transition-delay: 380ms;
+}
+body.webgl-galaxy:not(.no-webgl) #galaxy-3d.hidden {
+  transition: opacity 260ms ease 420ms;
+}

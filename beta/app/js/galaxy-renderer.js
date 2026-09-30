@@ -8,7 +8,7 @@ import { lightenColor, darkenColor } from "./utils.js";
 import { domainSvg } from "./icons.js";
 import { zoom, panX, panY, layoutW, layoutH } from "./physics.js";
 import { prefersReducedMotion, tourState } from "./state.js";
-import { setFocusSet3D } from "./galaxy-3d.js";
+import { setFocusSet3D, flyCamera3D } from "./galaxy-3d.js";
 
 let _container = null;
 let _edgesSvg = null;
@@ -33,7 +33,19 @@ function _syncGL3D() {
   for (const cls of ["fly-in", "fly-out", "hidden"]) {
     gl.classList.toggle(cls, _container.classList.contains(cls));
   }
-  gl.style.transform = _container.style.transform || "";
+  // Cinematic mode: never CSS-scale the canvas (it blurs a snapshot up to 8×).
+  // The 3D camera itself flies to match the DOM transform (see flyCamera3D).
+  const cinematic = document.body.classList.contains("webgl-galaxy") && !document.body.classList.contains("no-webgl");
+  if (cinematic) {
+    flyCamera3D(_container.style.transform || "", _container.classList.contains("fly-in") ? 600 : 800);
+    gl.style.transform = "";
+    // Keep the 3D scene visible while the camera travels; the domain view
+    // fades in over it (view-layer CSS), so there's no blank frame.
+    gl.style.opacity = "";
+    return;
+  } else {
+    gl.style.transform = _container.style.transform || "";
+  }
   gl.style.opacity = _container.style.opacity || "";
 }
 

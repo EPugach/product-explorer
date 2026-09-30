@@ -22,7 +22,7 @@ import {
   getPlanetEl,
   hideEdgeTooltip,
 } from "./galaxy-renderer.js";
-import { tourState } from "./state.js";
+import { tourState, prefersReducedMotion } from "./state.js";
 import { track } from "./utils.js";
 
 // Hit zone radius as a multiple of a planet's visual radius. The planet's
@@ -304,21 +304,55 @@ export function setupPointerEvents({
     }
   });
 
-  // ── Wheel zoom ──
+  // ── Wheel / trackpad zoom: damped, cursor-anchored, with inertia ──
+  // Each wheel event moves a TARGET zoom; a critically-damped follow eases the
+  // real zoom toward it every frame. Proportional to deltaY, so trackpad
+  // pinches (many small deltas) are smooth and mouse wheels (big steps) glide
+  // instead of jumping 10% per notch.
+  let zTarget = null, zAnchorX = 0, zAnchorY = 0, zRaf = 0, zLast = 0;
+  const zStep = (now) => {
+    const dt = Math.min((now - zLast) / 1000, 0.05);
+    zLast = now;
+    const oldZoom = zoom;
+    const k = 1 - Math.exp(-dt * 14); // ~120ms time constant
+    let newZoom = oldZoom + (zTarget - oldZoom) * k;
+    if (Math.abs(zTarget - newZoom) < 0.0005) newZoom = zTarget;
+    setZoom(newZoom);
+    setPanX(zAnchorX - (zAnchorX - panX) * (newZoom / oldZoom));
+    setPanY(zAnchorY - (zAnchorY - panY) * (newZoom / oldZoom));
+    updateGalaxyTransform();
+    if (newZoom !== zTarget) zRaf = requestAnimationFrame(zStep);
+    else zRaf = 0;
+  };
   container.addEventListener(
     "wheel",
     (e) => {
       e.preventDefault();
-      const oldZoom = zoom;
-      let newZoom = zoom * (e.deltaY < 0 ? 1.1 : 0.9);
-      newZoom = Math.max(0.3, Math.min(3, newZoom));
-      setZoom(newZoom);
-      setPanX(e.clientX - (e.clientX - panX) * (newZoom / oldZoom));
-      setPanY(e.clientY - (e.clientY - panY) * (newZoom / oldZoom));
-      updateGalaxyTransform();
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1; // lines/pages → px
+      const factor = Math.exp(-e.deltaY * unit * (e.ctrlKey ? 0.01 : 0.0022));
+      zTarget = Math.max(0.3, Math.min(3, (zTarget ?? zoom) * factor));
+      zAnchorX = e.clientX;
+      zAnchorY = e.clientY;
+      if (prefersReducedMotion) {
+        const oldZoom = zoom;
+        setZoom(zTarget);
+        setPanX(zAnchorX - (zAnchorX - panX) * (zTarget / oldZoom));
+        setPanY(zAnchorY - (zAnchorY - panY) * (zTarget / oldZoom));
+        updateGalaxyTransform();
+        zTarget = null;
+        return;
+      }
+      if (!zRaf) {
+        zLast = performance.now();
+        zRaf = requestAnimationFrame(zStep);
+      }
     },
     { passive: false },
   );
+  // A settled wheel-zoom forgets its target so the next gesture starts from the real zoom.
+  container.addEventListener("pointerdown", () => {
+    if (!zRaf) zTarget = null;
+  });
 
   // ── Pinch-to-zoom (touch supplement — pointer events don't easily
   //    support multi-touch zoom, so this handles the two-finger gesture) ──

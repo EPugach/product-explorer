@@ -46,7 +46,10 @@ let _frameTimes = [];
 
 // ── Tunables ──
 export const LIGHT_VIEW = new THREE.Vector3(-0.62, 0.5, 0.6).normalize(); // key light (view space)
-const BG = 0x010207;
+// The scene clears to black; the visible navy base + nebula are added in the lens
+// pass (LENS_FRAG) so they sit under the bloom. BG is what planets dim toward.
+const BG = 0x000000;
+const DIM_TOWARD = 0x0b1224;
 const EDGE_REST = 0.065;
 const EDGE_ON = 0.75;
 const EDGE_OFF = 0.012;
@@ -58,6 +61,9 @@ const TIERS = [
   { pr: 1, bloom: false, clouds: false },
 ];
 const SLOW_FRAME_MS = 22;
+const WARMUP_S = 4;
+const DEBUG = new Set((new URLSearchParams(location.search).get("debug3d") || "").split(",").filter(Boolean));
+let _slowWindows = 0;
 const GROUP_Z = [80, -40, 0, -110]; // depth per cluster (orthographic: affects only draw order + fog)
 
 // Cluster → planet archetype. Groups beyond 3 wrap.
@@ -121,7 +127,7 @@ export const PLANET_FRAG = `precision highp float; ${NOISE}
     float fr = pow(1.0 - max(dot(n, V), 0.0), 2.4);     // scattering: blue day limb, orange terminator
     vec3 sky = mix(vec3(1.0,.45,.2), mix(uColor, vec3(.55,.78,1.0), .55), smoothstep(-.15, .35, ndl));
     col += sky * fr * smoothstep(-.35, .25, ndl) * (uType > 2.5 ? .4 : .7) * (1.0 + uHover * 1.2);
-    col = mix(col, uBg, uDim * .75);
+    col = mix(col, uBg, uDim * .55); // dimmed planets keep ~45% (was 25%)
     gl_FragColor = vec4(col, 1.0);
   }`;
 
@@ -168,10 +174,12 @@ export const MOON_FRAG = `precision highp float; varying vec3 vN; varying vec3 v
 const TUBE_VERT = `varying vec2 vUv; varying vec3 vN;
   void main(){ vUv = uv; vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
 const TUBE_FRAG = `precision highp float; varying vec2 vUv; varying vec3 vN;
-  uniform vec3 uA, uB; uniform float uTime, uVis, uDir, uSpeed, uPhase, uPulse;
+  uniform vec3 uA, uB; uniform float uVis, uDir, uPhase, uPulse;
   void main(){
     float x = uDir > 0.0 ? vUv.x : 1.0 - vUv.x;
-    float pulse = pow(fract(x * 2.0 - uTime * uSpeed + uPhase), 12.0) * uPulse;
+    // uPhase is accumulated on the CPU (phase += dt*speed). Computing time*speed
+    // here made pulses leap many cycles whenever the speed eased up on hover.
+    float pulse = pow(fract(x * 2.0 - uPhase), 12.0) * uPulse;
     float core = pow(abs(normalize(vN).z), 1.4);
     vec3 col = mix(uA, uB, vUv.x) * mix(vec3(1.0), vec3(1.2), pulse);
     gl_FragColor = vec4(col * (.4 + pulse * 2.4) * core * uVis, 1.0);
@@ -192,15 +200,28 @@ const NEBULA_FRAG = `precision highp float; varying vec2 vUv; uniform float uTim
     gl_FragColor = vec4(max(c, 0.0) * (1.0 - smoothstep(.3, 1.9, length(p * vec2(.8, 1.0)))), 1.0);
   }`;
 
-const LENS_FRAG = `precision highp float; uniform sampler2D tDiffuse; uniform float uTime; uniform vec2 uRes; varying vec2 vUv;
+// The nebula is rendered separately (low-res, ~10 fps, see _renderNebula) and
+// composited UNDER the bloomed scene here, so bloom can never make it shimmer.
+// The scene clears to black, so "scene + nebula" layers correctly.
+const LENS_FRAG = `precision highp float; uniform sampler2D tDiffuse, tNebula; uniform float uTime; uniform vec2 uRes; varying vec2 vUv;
   void main(){
     vec2 c = vUv - .5; float d = length(c);
-    vec3 col = texture2D(tDiffuse, vUv).rgb;
+    // Lifted navy base (not near-black) + nebula + bloomed scene.
+    // Values here are LINEAR (OutputPass tone-maps + converts to sRGB after this pass).
+    // Base ≈ sRGB #1b2645 lifted navy; nebula kept to a subtle wash on top.
+    // Chromatic aberration applies to the SCENE only. (It used to overwrite the r/b
+    // channels of the combined colour with scene-only samples, which stripped the
+    // navy base + nebula out of red and blue and tinted the whole backdrop green.)
     float ca = .0009 * d;
-    col.r = mix(col.r, texture2D(tDiffuse, .5 + c * (1.0 + ca * 2.0)).r, .7);
-    col.b = mix(col.b, texture2D(tDiffuse, .5 + c * (1.0 - ca * 2.0)).b, .7);
-    col *= 1.0 - smoothstep(.28, 1.0, d * 1.22);
-    col += (fract(sin(dot(vUv * uRes + uTime, vec2(12.9898, 78.233))) * 43758.5453) - .5) * .012;
+    vec3 scene = texture2D(tDiffuse, vUv).rgb;
+    scene.r = mix(scene.r, texture2D(tDiffuse, .5 + c * (1.0 + ca * 2.0)).r, .7);
+    scene.b = mix(scene.b, texture2D(tDiffuse, .5 + c * (1.0 - ca * 2.0)).b, .7);
+    vec3 col = vec3(.012, .022, .06) + texture2D(tNebula, vUv).rgb * .3 + scene;
+    // Softer vignette (the old one made the whole frame feel heavy).
+    col *= 1.0 - smoothstep(.45, 1.15, d * 1.22) * .55;
+    // Static dither (screen-space only, no time term): hides banding in the dark
+    // gradients without the frame-to-frame shimmer the animated grain caused.
+    col += (fract(sin(dot(floor(vUv * uRes), vec2(12.9898, 78.233))) * 43758.5453) - .5) / 255.0;
     gl_FragColor = vec4(col, 1.0);
   }`;
 
@@ -232,7 +253,7 @@ export function initGalaxy3D(nodes, _nm, opts = {}) {
 
     _renderer = new THREE.WebGLRenderer({ canvas: _canvas, antialias: false, powerPreference: "high-performance" });
     _renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    _renderer.toneMappingExposure = 1.1;
+    _renderer.toneMappingExposure = 1.25;
     _renderer.setClearColor(BG, 1);
 
     _scene = new THREE.Scene();
@@ -247,7 +268,7 @@ export function initGalaxy3D(nodes, _nm, opts = {}) {
     _bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.7, 0.5, 0.88);
     _composer.addPass(_bloom);
     _lens = new ShaderPass({
-      uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(w, h) } },
+      uniforms: { tDiffuse: { value: null }, tNebula: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(w, h) } },
       vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
       fragmentShader: LENS_FRAG,
     });
@@ -257,7 +278,7 @@ export function initGalaxy3D(nodes, _nm, opts = {}) {
     _buildBackdrop(clusterHues);
 
     const lightU = { value: LIGHT_VIEW.clone() };
-    const bgU = { value: new THREE.Color(BG) };
+    const bgU = { value: new THREE.Color(DIM_TOWARD) };
     const sphereHi = new THREE.SphereGeometry(1, 96, 64);
     const sphereLo = new THREE.SphereGeometry(1, 48, 32);
 
@@ -322,7 +343,7 @@ export function initGalaxy3D(nodes, _nm, opts = {}) {
       if (!_planets[e.source] || !_planets[e.target]) continue;
       const u = {
         uA: { value: _planets[e.source].u.uColor.value }, uB: { value: _planets[e.target].u.uColor.value },
-        uTime: { value: 0 }, uVis: { value: 0 }, uDir: { value: 1 }, uSpeed: { value: 0.12 },
+        uVis: { value: 0 }, uDir: { value: 1 },
         uPulse: { value: 0 }, uPhase: { value: _hash(e.source + e.target) },
       };
       const tube = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.ShaderMaterial({
@@ -351,17 +372,27 @@ export function initGalaxy3D(nodes, _nm, opts = {}) {
   }
 }
 
+// Nebula lives in its own tiny scene rendered to a quarter-res target, refreshed
+// ~10×/s (its drift is glacial). Linear upsampling smooths the fine fbm detail
+// that shimmered at full res, and it never passes through bloom.
+let _nebScene = null, _nebCam = null, _nebTarget = null, _nebLast = -1;
+const NEB_SCALE = 0.25, NEB_INTERVAL = 0.1;
 function _buildBackdrop(hues) {
-  const cols = hues.map((h) => new THREE.Color().setHSL(h / 360, 0.7, 0.22));
-  _nebula = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
-    depthWrite: false, depthTest: false,
+  // Nebula tints are fixed cool blues/violet (not the cluster hues): a teal cluster
+  // turned the whole backdrop green and competed with the planets for attention.
+  const cols = [218, 262, 200].map((h) => new THREE.Color().setHSL(h / 360, 0.5, 0.2));
+  _nebula = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+    depthWrite: false, depthTest: false, toneMapped: false,
     uniforms: { uTime: { value: 0 }, uA: { value: cols[0] }, uB: { value: cols[2 % cols.length] }, uC: { value: cols[1 % cols.length] } },
-    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
     fragmentShader: NEBULA_FRAG,
   }));
-  _nebula.renderOrder = -10;
-  _nebula.position.z = -1500;
-  _scene.add(_nebula);
+  _nebScene = new THREE.Scene();
+  _nebScene.add(_nebula);
+  _nebCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  _nebTarget = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, depthBuffer: false });
+  _nebTarget.texture.minFilter = _nebTarget.texture.magFilter = THREE.LinearFilter;
+  _lens.uniforms.tNebula.value = _nebTarget.texture;
 
   const glow = (stops) => {
     const c = document.createElement("canvas"); c.width = c.height = 128;
@@ -402,7 +433,7 @@ function _applyTier() {
   _renderer.setPixelRatio(pr);
   _composer.setPixelRatio(pr);
   resizeGalaxy3D();
-  _bloom.enabled = T.bloom;
+  _bloom.enabled = T.bloom && !DEBUG.has("nobloom");
   for (const id in _planets) if (_planets[id].clouds) _planets[id].clouds.visible = T.clouds;
 }
 
@@ -418,10 +449,19 @@ export function renderGalaxy3D() {
   const k = reduced ? 1 : 1 - Math.pow(LERP, dt);
   const W = innerWidth, H = innerHeight;
 
-  _nebula.scale.set(W * 1.15, H * 1.15, 1);
-  _nebula.material.uniforms.uTime.value = reduced ? 0 : _t;
+  // Nebula: re-render its low-res target only a few times a second (or once, under reduced motion).
+  // ?debug3d=nonebula|nobloom isolates layers when tuning the look.
+  if (DEBUG.has("nonebula")) {
+    if (_nebLast < 0) { _nebLast = 0; _renderer.setRenderTarget(_nebTarget); _renderer.clear(); _renderer.setRenderTarget(null); }
+  } else if (_nebLast < 0 || (!reduced && _t - _nebLast >= NEB_INTERVAL)) {
+    _nebLast = _t;
+    _nebula.material.uniforms.uTime.value = reduced ? 0 : _t;
+    _renderer.setRenderTarget(_nebTarget);
+    _renderer.render(_nebScene, _nebCam);
+    _renderer.setRenderTarget(null);
+  }
   _sun.position.set(-W * 0.47, H * 0.44, -1400); // far upper-left, where the key light comes from
-  _sun.scale.setScalar(Math.min(W, H) * 0.32);
+  _sun.scale.setScalar(Math.min(W, H) * 0.16);
 
   for (const id in _planets) {
     const p = _planets[id], n = nodeMap[id];
@@ -454,18 +494,23 @@ export function renderGalaxy3D() {
     _rebuildEdge(o);
     o.cur += (o.tgt - o.cur) * k;
     o.u.uVis.value = o.cur;
-    o.u.uTime.value = reduced ? 0 : _t;
-    o.u.uSpeed.value = 0.08 + o.cur * 0.22;
+    if (!reduced) o.u.uPhase.value = (o.u.uPhase.value + dt * (0.08 + o.cur * 0.22)) % 1000;
   }
 
   _lens.uniforms.uTime.value = reduced ? 0 : _t;
+  _stepFly(now);
   _composer.render(dt);
 
   // Auto quality: step down a tier if the median frame is slow.
+  // Skip the first seconds (shader compile + uploads look like slowness), and only
+  // step down after TWO consecutive slow windows, so one hiccup can't pop the
+  // resolution mid-session. Never steps back up (no ping-pong).
+  if (_t < WARMUP_S) return;
   _frameTimes.push(dt * 1000);
-  if (_frameTimes.length >= 90) {
-    const med = _frameTimes.sort((a, b) => a - b)[45];
-    if (med > SLOW_FRAME_MS && _tier < TIERS.length - 1) { _tier++; _applyTier(); }
+  if (_frameTimes.length >= 120) {
+    const med = _frameTimes.sort((a, b) => a - b)[60];
+    _slowWindows = med > SLOW_FRAME_MS ? _slowWindows + 1 : 0;
+    if (_slowWindows >= 2 && _tier < TIERS.length - 1) { _tier++; _slowWindows = 0; _applyTier(); }
     _frameTimes = [];
   }
 }
@@ -501,6 +546,46 @@ function _applyFocus() {
   }
 }
 
+// ── Camera fly (replaces CSS-scaling the canvas during fly-in/out) ──
+// The DOM container animates `translate(tx,ty) scale(s)` about its top-left.
+// The matching orthographic camera shows the world region that transform
+// brings on screen: zoom = s, centred on the world point now at screen centre.
+// Timed with the same duration + easing as the CSS so labels and spheres agree.
+let _fly = null; // { from:{x,y,z}, to:{x,y,z}, t0, dur }
+// easeOutExpo-like: the move starts decisively (reads as a dive) and settles softly.
+const _ease = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -9 * t));
+export function flyCamera3D(transform, durationMs) {
+  if (!_initialized) return;
+  const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([-\d.]+)\)/.exec(transform || "");
+  const W = innerWidth, H = innerHeight;
+  let to = { x: 0, y: 0, z: 1 };
+  if (m) {
+    const tx = +m[1], ty = +m[2], s = +m[3];
+    // Screen centre maps back to DOM point ((W/2 - tx)/s, (H/2 - ty)/s); convert to world coords.
+    const dx = (W / 2 - tx) / s, dy = (H / 2 - ty) / s;
+    to = { x: dx - W / 2, y: -(dy - H / 2), z: s };
+  }
+  const from = { x: _camera.position.x, y: _camera.position.y, z: _camera.zoom };
+  if (prefersReducedMotion || !durationMs) {
+    _fly = null;
+    _setCam(to);
+    return;
+  }
+  _fly = { from, to, t0: performance.now(), dur: durationMs };
+}
+function _setCam(c) {
+  _camera.position.x = c.x;
+  _camera.position.y = c.y;
+  _camera.zoom = c.z;
+  _camera.updateProjectionMatrix();
+}
+function _stepFly(now) {
+  if (!_fly) return;
+  const k = Math.min(1, (now - _fly.t0) / _fly.dur), e = _ease(k), f = _fly.from, t = _fly.to;
+  _setCam({ x: f.x + (t.x - f.x) * e, y: f.y + (t.y - f.y) * e, z: f.z + (t.z - f.z) * e });
+  if (k >= 1) _fly = null;
+}
+
 export function setHover3D(id) {
   _hoverId = id || null;
   if (_initialized) _applyFocus();
@@ -533,6 +618,10 @@ export function resizeGalaxy3D() {
   _renderer.setSize(w, h, false);
   _composer.setSize(w, h);
   _lens.uniforms.uRes.value.set(w, h);
+  if (_nebTarget) {
+    _nebTarget.setSize(Math.max(2, Math.round(w * NEB_SCALE)), Math.max(2, Math.round(h * NEB_SCALE)));
+    _nebLast = -1; // redraw at the new size
+  }
   _camera.left = -w / 2; _camera.right = w / 2; _camera.top = h / 2; _camera.bottom = -h / 2;
   _camera.updateProjectionMatrix();
 }
