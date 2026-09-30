@@ -1,0 +1,1934 @@
+// ══════════════════════════════════════════════════════════════
+//  NAVIGATION — Views, breadcrumbs, state, staggered animations
+//  NOTE: All innerHTML usage is safe — content comes from the
+//  trusted product data object (app-owned), not user input.
+// ══════════════════════════════════════════════════════════════
+
+import { track, announce, showToast, copyText } from "./utils.js";
+import {
+  html,
+  esc,
+  breadcrumb,
+  wireNavLinks,
+  wireClickAndEnter,
+} from "./templates.js";
+import { resetZoomPan, nodeMap } from "./physics.js";
+import { domainSvg, entitySvg, uiSvg, iconHtml } from "./icons.js";
+import {
+  formatAiMarkdown,
+  linkifyEntityNames,
+  askAi,
+  isQuestion,
+  searchProduct,
+  buildFeedbackButtonsHtml,
+  buildFeedbackPanelHtml,
+  wireFeedbackButtons,
+  highlightMatch,
+  renderPreview,
+} from "./search.js";
+import {
+  setGalaxyVisible,
+  flyIntoPlanet,
+  flyOutFromPlanet,
+  highlightPlanet,
+  resetGalaxyState,
+} from "./galaxy-renderer.js";
+import { showPlanetHero, highlightMoon, pausePlanetHero } from "./planet-hero.js";
+import { renderRelationMap } from "./relation-map.js";
+import { markExplored, enhanceDataFlow } from "./learning.js";
+
+// Product data and config are injected by main.js via setProductData/setProductConfig
+let PRODUCT_DATA = {};
+let PRODUCT_CONFIG = {};
+let PRODUCT_PACKAGES = {};
+export const setProductData = (data) => {
+  PRODUCT_DATA = data;
+};
+export const setProductConfig = (config) => {
+  PRODUCT_CONFIG = config;
+};
+export const setPackages = (packages) => {
+  PRODUCT_PACKAGES = packages || {};
+};
+
+function packageBadge(entity) {
+  const pkg = PRODUCT_PACKAGES[entity._package];
+  if (!pkg) return "";
+  return `<span class="package-badge" style="--pkg-color:${pkg.color}">${pkg.abbr}</span>`;
+}
+
+// Normalize singular entity type slugs (from old URLs / search) to plural data keys
+const ENTITY_TYPE_MAP = {
+  class: "classes",
+  object: "objects",
+  trigger: "triggers",
+  lwc: "lwcs",
+};
+import {
+  setFocusedPlanetIndex,
+  entitiesLoaded,
+  prefersReducedMotion,
+} from "./state.js";
+
+let PLANET_META = {};
+export function rebuildPlanetMeta() {
+  PLANET_META = {};
+  for (const [k, v] of Object.entries(PRODUCT_DATA)) {
+    PLANET_META[k] = { icon: v.icon, color: v.color, svg: domainSvg(k, 20) };
+  }
+}
+
+// ── Copy current URL to clipboard ──
+export async function copyCurrentLink(btn) {
+  if (await copyText(window.location.href)) {
+    btn.classList.add("copied");
+    // NOTE: innerHTML safe — uiSvg returns trusted app-owned SVG strings
+    btn.innerHTML = uiSvg("check", 14);
+    announce("Link copied to clipboard");
+    showToast("Link copied to clipboard");
+    track("copy_link", { level: currentLevel });
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      // NOTE: innerHTML safe — uiSvg returns trusted app-owned SVG strings
+      btn.innerHTML = uiSvg("link", 14);
+    }, 1500);
+  } else {
+    announce("Unable to copy link");
+    showToast("Unable to copy link");
+  }
+}
+
+export let currentLevel = "galaxy";
+export let currentPlanet = null;
+export let currentComponent = null;
+let currentEntity = null;
+let currentEntityTab = null;
+let navHistory = [];
+let _lastSearchPage = null; // { query, results, aiAnswer }
+let _flyInAnimating = false;
+let _lastZoomedPlanet = null; // node ref for reverse fly-out
+export const isFlyInAnimating = () => _flyInAnimating;
+
+// Animation tick callback — set by main.js to avoid circular imports
+let _particleTick = null;
+export const setAnimationCallbacks = (particleTickFn) => {
+  _particleTick = particleTickFn;
+};
+
+// ── Hash Routing ──
+export let hashUpdateInProgress = false;
+
+export const setHash = (hash) => {
+  hashUpdateInProgress = true;
+  history.pushState(null, "", hash);
+  hashUpdateInProgress = false;
+};
+
+export const updateDocumentTitle = (
+  level,
+  domainId,
+  componentId,
+  entityName,
+) => {
+  const base = PRODUCT_CONFIG.title || "Product Explorer";
+  if (level === "galaxy" || !domainId) {
+    document.title = base;
+    return;
+  }
+  const domain = PRODUCT_DATA[domainId];
+  const domainName = domain ? domain.name : domainId;
+  if (level === "planet") {
+    document.title = `${domainName} \u2014 ${base}`;
+    return;
+  }
+  if (level === "core" && componentId) {
+    const comp = domain
+      ? domain.components.find((c) => c.id === componentId)
+      : null;
+    const compName = comp ? comp.name : componentId;
+    document.title = `${compName} \u2014 ${domainName} \u2014 ${base}`;
+    return;
+  }
+  if (level === "entity" && entityName) {
+    document.title = `${entityName} \u2014 ${base}`;
+    return;
+  }
+  document.title = base;
+};
+
+export const handleHashNavigation = () => {
+  const hash = window.location.hash || "#/";
+  const path = hash.replace(/^#\/?/, "");
+  if (!path) {
+    if (currentLevel !== "galaxy") {
+      navHistory = [];
+      currentLevel = "galaxy";
+      currentPlanet = null;
+      currentComponent = null;
+      currentEntity = null;
+      updateBreadcrumb();
+      updateDocumentTitle("galaxy");
+
+      if (_lastZoomedPlanet) {
+        // CSS fly-out: zoom galaxy container back from planet
+        const lzp = _lastZoomedPlanet;
+        _lastZoomedPlanet = null;
+        _flyInAnimating = false;
+        showView("galaxy-view", "out");
+        flyOutFromPlanet(lzp, () => {
+          if (_particleTick) requestAnimationFrame(_particleTick);
+        });
+      } else {
+        // Instant transition (no previous fly-in or reduced motion)
+        resetZoomPan();
+        _lastZoomedPlanet = null;
+        _flyInAnimating = false;
+        resetGalaxyState();
+        setGalaxyVisible(true);
+        showViewDirect("galaxy-view");
+        if (_particleTick) requestAnimationFrame(_particleTick);
+      }
+    }
+    return;
+  }
+  const segments = path.split("/");
+  if (segments.length === 1) {
+    const domainId = segments[0];
+    if (!PRODUCT_DATA[domainId]) {
+      setHash("#/");
+      handleHashNavigation();
+      return;
+    }
+    navHistory = [];
+    currentLevel = "planet";
+    currentPlanet = domainId;
+    currentComponent = null;
+    currentEntity = null;
+    renderPlanetView(domainId);
+    setGalaxyVisible(false);
+    showViewDirect("planet-view");
+    updateBreadcrumb();
+    updateDocumentTitle("planet", domainId);
+  } else if (segments.length === 2) {
+    const [domainId, componentId] = segments;
+    if (!PRODUCT_DATA[domainId]) {
+      setHash("#/");
+      handleHashNavigation();
+      return;
+    }
+    const comp = PRODUCT_DATA[domainId].components.find(
+      (c) => c.id === componentId,
+    );
+    if (!comp) {
+      setHash(`#/${domainId}`);
+      handleHashNavigation();
+      return;
+    }
+    navHistory = [{ level: "galaxy", planet: null, component: null }];
+    currentLevel = "core";
+    currentPlanet = domainId;
+    currentComponent = componentId;
+    currentEntity = null;
+    renderPlanetView(domainId);
+    renderCoreView(domainId, componentId);
+    setGalaxyVisible(false);
+    showViewDirect("core-view");
+    updateBreadcrumb();
+    updateDocumentTitle("core", domainId, componentId);
+  } else if (segments.length >= 4) {
+    const [domainId, componentId, rawEntityType, ...entityNameParts] = segments;
+    const entityType = ENTITY_TYPE_MAP[rawEntityType] || rawEntityType;
+    let entityName;
+    try {
+      entityName = decodeURIComponent(entityNameParts.join("/"));
+    } catch {
+      // Malformed escape (e.g. a lone "%") — fall back to the raw segment so
+      // navigation routes to entity-not-found instead of throwing URIError.
+      entityName = entityNameParts.join("/");
+    }
+    if (!PRODUCT_DATA[domainId]) {
+      setHash("#/");
+      handleHashNavigation();
+      return;
+    }
+    const comp = PRODUCT_DATA[domainId].components.find(
+      (c) => c.id === componentId,
+    );
+    if (!comp) {
+      setHash(`#/${domainId}`);
+      handleHashNavigation();
+      return;
+    }
+    navHistory = [
+      { level: "galaxy", planet: null, component: null },
+      { level: "planet", planet: domainId, component: null },
+    ];
+    currentLevel = "entity";
+    currentPlanet = domainId;
+    currentComponent = componentId;
+    currentEntity = { type: entityType, name: entityName };
+    currentEntityTab = entityType;
+    renderPlanetView(domainId);
+    renderCoreView(domainId, componentId);
+    renderEntityView(domainId, componentId, entityType, entityName);
+    setGalaxyVisible(false);
+    showViewDirect("entity-view");
+    updateBreadcrumb();
+    updateDocumentTitle("entity", domainId, componentId, entityName);
+  } else {
+    setHash("#/");
+    handleHashNavigation();
+  }
+};
+
+function getTransitionMs() {
+  const val = getComputedStyle(document.documentElement)
+    .getPropertyValue("--transition-duration")
+    .trim();
+  return parseInt(val) || 700;
+}
+
+// A view about to be aria-hidden must not keep focus (browsers block the
+// aria-hidden and warn); drop focus to <body> until the next view focuses its heading.
+function releaseFocusFrom(view) {
+  const a = document.activeElement;
+  if (a && a !== document.body && view.contains(a)) a.blur();
+}
+
+// Focus a view's heading once its view is no longer aria-hidden. Retries a
+// few frames to ride out transition timing; never silently gives up focus.
+function focusWhenVisible(el, tries = 20) {
+  if (!el.isConnected) return;
+  if (!el.closest('[aria-hidden="true"]')) {
+    el.focus({ preventScroll: true });
+  } else if (tries > 0) {
+    requestAnimationFrame(() => focusWhenVisible(el, tries - 1));
+  }
+}
+
+function showView(id, dir) {
+  if (id !== "planet-view") pausePlanetHero();
+  document.querySelectorAll(".view-layer").forEach((v) => {
+    const active = v.id === id;
+    if (!active) releaseFocusFrom(v);
+    v.toggleAttribute("inert", !active);
+    v.setAttribute("aria-hidden", active ? "false" : "true");
+    if (v.classList.contains("active")) {
+      v.classList.remove("active");
+      v.classList.add(dir === "in" ? "zoom-out" : "zoom-in");
+      setTimeout(
+        () => v.classList.remove("zoom-out", "zoom-in"),
+        getTransitionMs(),
+      );
+    }
+  });
+  const t = document.getElementById(id);
+  t.classList.remove("zoom-out", "zoom-in");
+  t.classList.add(dir === "in" ? "zoom-in" : "zoom-out");
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      t.classList.remove("zoom-out", "zoom-in");
+      t.classList.add("active");
+    }),
+  );
+}
+
+function showViewDirect(id) {
+  if (id !== "planet-view") pausePlanetHero();
+  document.querySelectorAll(".view-layer").forEach((v) => {
+    v.classList.remove("active", "zoom-out", "zoom-in");
+    const active = v.id === id;
+    if (!active) releaseFocusFrom(v);
+    v.toggleAttribute("inert", !active);
+    v.setAttribute("aria-hidden", active ? "false" : "true");
+  });
+  document.getElementById(id).classList.add("active");
+}
+
+// setGalaxyVisible is now imported from galaxy-renderer.js
+
+function updateBreadcrumb() {
+  const zoomIndicator = document.getElementById("zoom-indicator");
+  if (zoomIndicator)
+    zoomIndicator.style.display =
+      currentLevel === "search-results" ? "none" : "";
+  document.querySelectorAll(".zoom-dot").forEach((d, i) => {
+    d.classList.toggle(
+      "active",
+      (i === 0 && currentLevel === "galaxy") ||
+        (i === 1 && currentLevel === "planet") ||
+        (i === 2 && currentLevel === "core") ||
+        (i === 3 && currentLevel === "entity"),
+    );
+  });
+  const stats = document.querySelector(".galaxy-stats");
+  if (stats) stats.style.display = currentLevel === "galaxy" ? "flex" : "none";
+}
+
+export function enterPlanet(id) {
+  // If already transitioning, force-reset first so we can start the new navigation
+  if (_flyInAnimating) {
+    resetGalaxyState();
+    _flyInAnimating = false;
+  }
+  setFocusedPlanetIndex(-1);
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+  });
+  currentLevel = "planet";
+  currentPlanet = id;
+  currentComponent = null;
+
+  // Pre-render the planet view (hidden behind galaxy) so it's ready for crossfade
+  renderPlanetView(id);
+  updateBreadcrumb();
+  setHash(`#/${id}`);
+  updateDocumentTitle("planet", id);
+
+  const node = nodeMap[id];
+
+  // Pulse-highlight the planet before entering (visible briefly during fly-in)
+  highlightPlanet(id);
+
+  if (!node || prefersReducedMotion) {
+    // Instant transition (reduced motion or missing node)
+    setGalaxyVisible(false);
+    showView("planet-view", "in");
+  } else {
+    // CSS fly-in: zoom galaxy container into the clicked planet
+    _flyInAnimating = true;
+    _lastZoomedPlanet = node;
+    showView("planet-view", "in");
+    flyIntoPlanet(node, () => {
+      _flyInAnimating = false;
+    });
+  }
+
+  const p = PRODUCT_DATA[id];
+  if (p)
+    announce(`Viewing ${p.name} domain, ${p.components.length} components`);
+  const focusDelay =
+    !node || prefersReducedMotion ? getTransitionMs() + 50 : 800;
+  setTimeout(() => {
+    const heading = document.querySelector("#planet-content h2");
+    if (heading) {
+      heading.setAttribute("tabindex", "-1");
+      focusWhenVisible(heading);
+    }
+  }, focusDelay);
+}
+
+export function enterCore(pid, cid) {
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+  });
+  currentLevel = "core";
+  currentComponent = cid;
+  renderCoreView(pid, cid);
+  showView("core-view", "in");
+  updateBreadcrumb();
+  setHash(`#/${pid}/${cid}`);
+  updateDocumentTitle("core", pid, cid);
+  const pData = PRODUCT_DATA[pid];
+  const cData = pData ? pData.components.find((x) => x.id === cid) : null;
+  if (cData) announce(`Viewing ${cData.name} in ${pData.name}`);
+  setTimeout(() => {
+    const heading = document.querySelector("#core-content h2");
+    if (heading) {
+      heading.setAttribute("tabindex", "-1");
+      focusWhenVisible(heading);
+    }
+  }, getTransitionMs() + 50);
+}
+
+export function enterEntity(pid, cid, entityType, entityName) {
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+    entity: currentEntity,
+    entityTab: currentEntityTab,
+  });
+  currentLevel = "entity";
+  currentEntity = { type: entityType, name: entityName };
+  currentEntityTab = entityType;
+  renderEntityView(pid, cid, entityType, entityName);
+  showView("entity-view", "in");
+  updateBreadcrumb();
+  setHash(`#/${pid}/${cid}/${entityType}/${encodeURIComponent(entityName)}`);
+  updateDocumentTitle("entity", pid, cid, entityName);
+  track("entity_view", { type: entityType, name: entityName });
+  announce(`Viewing ${entityType}: ${entityName}`);
+  setTimeout(() => {
+    const heading = document.querySelector("#entity-content h2");
+    if (heading) {
+      heading.setAttribute("tabindex", "-1");
+      focusWhenVisible(heading);
+    }
+  }, getTransitionMs() + 50);
+}
+
+// ── Search Results Page ──
+// NOTE: safe innerHTML. All user/AI content is HTML-escaped before rendering.
+// AI-generated content is escaped THEN formatted via formatAiMarkdown (XSS-safe pattern).
+// Type labels, icons, and product name are app-owned trusted data.
+
+// Theme-aware: token var() references resolve per active theme (and clear AA
+// on both badge chips). Trigger/lwc no longer alias to red/legacy-violet.
+const SR_TYPE_COLORS = {
+  domain: "var(--tag-class)",
+  planet: "var(--tag-class)",
+  component: "var(--tag-class)",
+  class: "var(--tag-class)",
+  object: "var(--tag-object)",
+  trigger: "var(--tag-trigger)",
+  lwc: "var(--tag-lwc)",
+  metadata: "var(--tag-metadata)",
+  tag: "var(--text-dim)",
+};
+
+const SR_TYPE_ICONS = {
+  domain: "globe",
+  planet: "globe",
+  component: "settings",
+  class: "class",
+  object: "object",
+  trigger: "trigger",
+  lwc: "lwc",
+  metadata: "metadata",
+  tag: "tag",
+};
+
+export function enterSearchResults(query, results, options = {}) {
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+    entity: currentEntity,
+    entityTab: currentEntityTab,
+  });
+  currentLevel = "search-results";
+  _lastSearchPage = {
+    query,
+    results: [...results],
+    aiAnswer: options.aiAnswer || null,
+  };
+  renderSearchResultsPage(query, results, options);
+  setGalaxyVisible(false);
+  showView("search-results-view", "in");
+  const base = PRODUCT_CONFIG.title || "Product Explorer";
+  document.title = `Search: ${query} \u2014 ${base}`;
+  announce("Search results page opened");
+  track("search_results_page", {
+    query: query.substring(0, 50),
+    resultCount: results.length,
+  });
+}
+
+// All user/AI content is HTML-escaped before insertion.
+// Product name, type labels, and entity data are app-owned trusted data.
+function renderSearchResultsPage(query, results, options = {}) {
+  const el = document.getElementById("search-results-content");
+  const productName = PRODUCT_CONFIG.name || "Product";
+  const safeQ = query
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const shouldAskAi = isQuestion(query);
+  let _selectedIdx = results.length > 0 ? 0 : -1;
+  const isMobile = window.innerWidth < 768;
+
+  // Breadcrumb
+  // eslint-disable-next-line no-shadow -- local accumulator intentionally shadows imported html()
+  let html = breadcrumb([
+    { label: productName, nav: "galaxy" },
+    { label: "Search Results" },
+  ]);
+
+  // Search input (value HTML-escaped via safeQ)
+  html += `<div class="sr-search-box"><span class="sr-search-icon icon-svg">${uiSvg("search", 16)}</span><input type="text" class="sr-search-input" id="srSearchInput" value="${safeQ}" autocomplete="off" spellcheck="false" placeholder="Search ${productName}..."></div>`;
+
+  // AI answer section
+  if (shouldAskAi) {
+    html += `<div class="sr-ai-section" id="srAiSection">`;
+    html += `<div class="sr-ai-header"><span class="sr-ai-label-group"><span class="sr-ai-label"><span class="sr-ai-label-icon icon-svg">${iconHtml("sparkles", 16)}</span> AI Answer</span>`;
+    html += `${options.aiAnswer ? buildFeedbackButtonsHtml() : ""}</span>`;
+    html += `<span class="sr-ai-header-actions">`;
+    html += `<button class="ai-copy-btn" id="srAiCopyBtn" style="display:${options.aiAnswer ? "" : "none"}" aria-label="Copy answer">Copy</button>`;
+    html += `</span></div>`;
+    html += options.aiAnswer
+      ? buildFeedbackPanelHtml()
+      : "<div data-feedback-panel-slot></div>";
+    if (options.aiAnswer) {
+      const safeA = options.aiAnswer
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
+      html += `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div>`;
+      html += `<div class="ai-attribution">Based on ${productName} product data</div>`;
+    } else {
+      html += `<div class="sr-ai-skeleton" id="srAiSkeleton"><div class="sr-ai-skeleton-line"></div><div class="sr-ai-skeleton-line"></div><div class="sr-ai-skeleton-line"></div><div class="sr-ai-skeleton-line"></div></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Master-detail layout for results
+  if (results.length > 0) {
+    html += `<div class="sr-results-header">Search Results (${results.length})</div>`;
+    html += `<div class="sr-master-detail-page" id="srMasterDetail">`;
+
+    // Master list
+    html += `<div class="sr-master-list" id="srMasterList">`;
+    results.forEach((r, i) => {
+      const color = SR_TYPE_COLORS[r.type] || "var(--text-dim)";
+      const icon = SR_TYPE_ICONS[r.type] || "file-text";
+      const safeName = r.name
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      html += `<div class="sr-result-card${i === 0 ? " sr-selected" : ""}" data-sr-idx="${i}" style="--card-accent:${color}" role="button" tabindex="0">`;
+      html += `<div class="sr-result-icon icon-svg" style="color:${color}">${iconHtml(icon, 18)}</div>`;
+      html += `<div class="sr-result-body"><div class="sr-result-name">${highlightMatch(safeName, query)}</div>`;
+      html += `<div class="sr-result-path">${r.level || ""}</div>`;
+      html += `</div>`;
+      html += `<div class="sr-result-badge" style="--card-accent:${color}">${r.type}</div>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+
+    // Preview pane (hidden on mobile via CSS)
+    html += `<div class="sr-preview-pane" id="srPreviewPane"></div>`;
+    html += `</div>`;
+  } else {
+    html += `<div class="sr-empty">No results found for "${safeQ}"</div>`;
+  }
+
+  // Safe: all content HTML-escaped or app-owned
+  el.innerHTML = html;
+
+  // Render initial preview for first result
+  const previewPane = document.getElementById("srPreviewPane");
+  if (previewPane && results.length > 0 && !isMobile) {
+    renderFullPreview(previewPane, results[0], query);
+  }
+
+  // Wire breadcrumb
+  wireNavLinks(el, {
+    galaxy: () => navigateTo("galaxy"),
+    planet: () => {},
+    back: () => {},
+  });
+
+  // Wire result card interactions
+  el.querySelectorAll("[data-sr-idx]").forEach((card) => {
+    const idx = parseInt(card.dataset.srIdx, 10);
+    const result = results[idx];
+    if (!result) return;
+
+    card.addEventListener("click", () => {
+      if (isMobile) {
+        if (result.action) result.action();
+      } else {
+        _selectedIdx = idx;
+        el.querySelectorAll(".sr-result-card").forEach((c) =>
+          c.classList.remove("sr-selected"),
+        );
+        card.classList.add("sr-selected");
+        if (previewPane) renderFullPreview(previewPane, result, query);
+      }
+    });
+
+    card.addEventListener("dblclick", () => {
+      if (result.action) result.action();
+    });
+
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (card.classList.contains("sr-selected") || isMobile) {
+          if (result.action) result.action();
+        } else {
+          _selectedIdx = idx;
+          el.querySelectorAll(".sr-result-card").forEach((c) =>
+            c.classList.remove("sr-selected"),
+          );
+          card.classList.add("sr-selected");
+          if (previewPane) renderFullPreview(previewPane, result, query);
+        }
+      }
+    });
+  });
+
+  // Wire copy button
+  const copyBtn = document.getElementById("srAiCopyBtn");
+  if (copyBtn && options.aiAnswer) {
+    wireAiCopyButton(copyBtn, options.aiAnswer);
+  }
+
+  // Wire feedback buttons
+  const srAiSection = document.getElementById("srAiSection");
+  if (srAiSection && options.aiAnswer) {
+    wireFeedbackButtons(srAiSection, query);
+  }
+
+  // Wire search input for re-search
+  const srInput = document.getElementById("srSearchInput");
+  if (srInput) {
+    let reSearchTimer = null;
+    srInput.addEventListener("input", () => {
+      clearTimeout(reSearchTimer);
+      reSearchTimer = setTimeout(() => {
+        const newQuery = srInput.value.trim();
+        if (!newQuery) return;
+        const newResults = searchProduct(newQuery);
+        _lastSearchPage = {
+          query: newQuery,
+          results: [...newResults],
+          aiAnswer: null,
+        };
+        renderSearchResultsPage(newQuery, newResults, {});
+        const input = document.getElementById("srSearchInput");
+        if (input) {
+          input.focus();
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+        if (isQuestion(newQuery)) {
+          triggerAiFetch(newQuery);
+        }
+      }, 300);
+    });
+    srInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        goBack();
+      }
+    });
+  }
+
+  // Trigger AI fetch if not already provided
+  if (shouldAskAi && !options.aiAnswer) {
+    triggerAiFetch(query);
+  }
+
+  document.getElementById("search-results-view").scrollTop = 0;
+}
+
+// Rich preview content for full results page (app-owned data only)
+function renderFullPreview(container, item, query) {
+  if (!item) {
+    container.innerHTML =
+      '<div class="sp-empty">Select a result to preview</div>';
+    return;
+  }
+
+  const typeColor =
+    {
+      planet: "var(--tag-class)",
+      component: "var(--tag-class)",
+      tag: "var(--text-dim)",
+      class: "var(--tag-class)",
+      object: "var(--tag-object)",
+      trigger: "var(--tag-trigger)",
+      lwc: "var(--tag-lwc)",
+      metadata: "var(--tag-metadata)",
+    }[item.type] || "var(--text-dim)";
+
+  let html =
+    `<div class="sp-header">` +
+    `<span class="sp-type-badge" style="background:color-mix(in srgb, ${typeColor} 13%, transparent);color:${typeColor};border:1px solid color-mix(in srgb, ${typeColor} 27%, transparent)">${item.type}</span>` +
+    `<span class="sp-name" style="font-size:16px">${highlightMatch(item.name, query)}</span>` +
+    `</div>`;
+  html += `<div class="sp-domain">${item.level}</div>`;
+
+  if (item._linesOfCode) {
+    html += `<div class="sp-domain">${item._linesOfCode} lines of code</div>`;
+  }
+
+  if (item.desc) {
+    html += `<div class="sp-desc">${item.desc}</div>`;
+  }
+
+  if (item._keyMethods && item._keyMethods.length > 0) {
+    html += `<div class="sp-section-label">Key Methods</div>`;
+    html += `<div class="sp-pills">${item._keyMethods.map((m) => `<span class="sp-pill">${m}</span>`).join("")}</div>`;
+  }
+
+  if (item._referencedObjects && item._referencedObjects.length > 0) {
+    html += `<div class="sp-section-label">Referenced Objects</div>`;
+    html += `<div class="sp-pills">${item._referencedObjects.map((o) => `<span class="sp-pill">${o}</span>`).join("")}</div>`;
+  }
+
+  if (item._extends) {
+    html += `<div class="sp-section-label">Extends</div>`;
+    html += `<div class="sp-pills"><span class="sp-pill">${item._extends}</span></div>`;
+  }
+
+  if (item._implements) {
+    html += `<div class="sp-section-label">Implements</div>`;
+    html += `<div class="sp-pills"><span class="sp-pill">${item._implements}</span></div>`;
+  }
+
+  if (item._fields && item._fields.length > 0) {
+    html += `<div class="sp-section-label">Fields</div>`;
+    html += `<div class="sp-pills">${item._fields.map((f) => `<span class="sp-pill">${f.name}</span>`).join("")}</div>`;
+  }
+
+  if (item.action) {
+    html += `<button class="sr-open-entity-btn" id="srOpenEntity">Open Entity</button>`;
+  }
+
+  // Safe: all app-owned data
+  container.innerHTML = html;
+
+  const openBtn = container.querySelector("#srOpenEntity");
+  if (openBtn && item.action) {
+    openBtn.addEventListener("click", () => item.action());
+  }
+}
+
+function wireAiCopyButton(btn, rawAnswer) {
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(rawAnswer)
+        .then(() => showCopied(btn))
+        .catch(() => showCopied(btn));
+    } else {
+      showCopied(btn);
+    }
+  });
+}
+
+function showCopied(btn) {
+  btn.classList.add("copied");
+  btn.textContent = "\u2713 Copied";
+  showToast("Copied to clipboard");
+  setTimeout(() => {
+    btn.textContent = "Copy";
+    btn.classList.remove("copied");
+  }, 1500);
+}
+
+async function triggerAiFetch(query) {
+  const result = await askAi(query);
+  // Check we're still on the search results page with the same query
+  if (
+    currentLevel !== "search-results" ||
+    !_lastSearchPage ||
+    _lastSearchPage.query !== query
+  )
+    return;
+
+  const section = document.getElementById("srAiSection");
+  if (!section) return;
+
+  const skeleton = document.getElementById("srAiSkeleton");
+  const productName = PRODUCT_CONFIG.name || "Product";
+
+  if (result.answer) {
+    _lastSearchPage.aiAnswer = result.answer;
+    // Safe: AI content is escaped then formatted via formatAiMarkdown (XSS-safe pattern)
+    const safeA = result.answer
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const formattedA = formatAiMarkdown(linkifyEntityNames(safeA));
+    if (skeleton) {
+      skeleton.outerHTML =
+        `<div class="sr-ai-answer ai-answer-formatted" id="srAiAnswer">${formattedA}</div>` +
+        `<div class="ai-attribution">Based on ${productName} product data</div>`;
+    }
+    // Inject feedback buttons + panel into header (they weren't rendered while loading)
+    const header = section.querySelector(".sr-ai-header");
+    const panelSlot = section.querySelector("[data-feedback-panel-slot]");
+    if (header) {
+      const labelGroup = header.querySelector(".sr-ai-label-group");
+      if (labelGroup && !labelGroup.querySelector(".ai-feedback-btns")) {
+        labelGroup.insertAdjacentHTML("beforeend", buildFeedbackButtonsHtml());
+      }
+    }
+    if (panelSlot) {
+      panelSlot.outerHTML = buildFeedbackPanelHtml();
+    }
+    wireFeedbackButtons(section, query);
+    const copyBtn = document.getElementById("srAiCopyBtn");
+    if (copyBtn) {
+      copyBtn.style.display = "";
+      wireAiCopyButton(copyBtn, result.answer);
+    }
+  } else if (result.error) {
+    if (skeleton) {
+      // Safe: error message is from our own worker, not user input
+      skeleton.outerHTML = `<div class="sr-ai-answer" style="color:var(--text-dim);font-style:italic">${result.error}</div>`;
+    }
+  }
+}
+
+export function navigateToCore(pid, cid) {
+  navHistory.push({
+    level: currentLevel,
+    planet: currentPlanet,
+    component: currentComponent,
+  });
+  currentLevel = "core";
+  currentPlanet = pid;
+  currentComponent = cid;
+  renderPlanetView(pid);
+  renderCoreView(pid, cid);
+  setGalaxyVisible(false);
+  showViewDirect("core-view");
+  updateBreadcrumb();
+  setHash(`#/${pid}/${cid}`);
+  updateDocumentTitle("core", pid, cid);
+}
+
+export function navigateTo(level) {
+  if (level === currentLevel) return;
+  // If transitioning, force-reset so we can proceed with the new navigation
+  if (_flyInAnimating) {
+    resetGalaxyState();
+    _flyInAnimating = false;
+  }
+  if (level === "galaxy") {
+    currentLevel = "galaxy";
+    currentPlanet = null;
+    currentComponent = null;
+    setHash("#/");
+    updateDocumentTitle("galaxy");
+    announce("Returned to galaxy overview");
+
+    if (_lastZoomedPlanet) {
+      // CSS fly-out: zoom galaxy container back from planet
+      const lzp = _lastZoomedPlanet;
+      _lastZoomedPlanet = null;
+      showView("galaxy-view", "out");
+      flyOutFromPlanet(lzp, () => {
+        if (_particleTick) requestAnimationFrame(_particleTick);
+        const container = document.getElementById("galaxyContainer");
+        if (container) {
+          container.setAttribute("tabindex", "-1");
+          focusWhenVisible(container);
+        }
+      });
+    } else {
+      // Instant transition (no previous fly-in or reduced motion)
+      resetZoomPan();
+      _lastZoomedPlanet = null;
+      resetGalaxyState();
+      setGalaxyVisible(true);
+      showView("galaxy-view", "out");
+      if (_particleTick) requestAnimationFrame(_particleTick);
+      setTimeout(() => {
+        const container = document.getElementById("galaxyContainer");
+        if (container) {
+          container.setAttribute("tabindex", "-1");
+          focusWhenVisible(container);
+        }
+      }, getTransitionMs() + 50);
+    }
+  } else if (level === "planet") {
+    currentLevel = "planet";
+    currentComponent = null;
+    showView("planet-view", "out");
+    setHash(`#/${currentPlanet}`);
+    updateDocumentTitle("planet", currentPlanet);
+    const pName =
+      currentPlanet && PRODUCT_DATA[currentPlanet]
+        ? PRODUCT_DATA[currentPlanet].name
+        : "domain";
+    announce(`Returned to ${pName} domain`);
+    setTimeout(() => {
+      const heading = document.querySelector("#planet-content h2");
+      if (heading) {
+        heading.setAttribute("tabindex", "-1");
+        focusWhenVisible(heading);
+      }
+    }, getTransitionMs() + 50);
+  } else if (level === "core") {
+    currentLevel = "core";
+    currentEntity = null;
+    showView("core-view", "out");
+    setHash(`#/${currentPlanet}/${currentComponent}`);
+    updateDocumentTitle("core", currentPlanet, currentComponent);
+    announce("Returned to component view");
+    setTimeout(() => {
+      const heading = document.querySelector("#core-content h2");
+      if (heading) {
+        heading.setAttribute("tabindex", "-1");
+        focusWhenVisible(heading);
+      }
+    }, getTransitionMs() + 50);
+  }
+  updateBreadcrumb();
+}
+
+export function goBack() {
+  track("back_navigation", { from: currentLevel });
+  // If navigating back and the previous history entry was search-results, restore it
+  if (
+    currentLevel !== "search-results" &&
+    navHistory.length > 0 &&
+    navHistory[navHistory.length - 1].level === "search-results" &&
+    _lastSearchPage
+  ) {
+    const prev = navHistory.pop();
+    currentLevel = "search-results";
+    currentPlanet = prev.planet;
+    currentComponent = prev.component;
+    currentEntity = prev.entity;
+    renderSearchResultsPage(_lastSearchPage.query, _lastSearchPage.results, {
+      aiAnswer: _lastSearchPage.aiAnswer,
+    });
+    setGalaxyVisible(false);
+    showView("search-results-view", "out");
+    const base = PRODUCT_CONFIG.title || "Product Explorer";
+    document.title = `Search: ${_lastSearchPage.query} \u2014 ${base}`;
+    return;
+  }
+  if (navHistory.length > 0) {
+    const prev = navHistory.pop();
+    if (prev.level === "galaxy") navigateTo("galaxy");
+    else if (prev.level === "planet") {
+      currentPlanet = prev.planet;
+      navigateTo("planet");
+    } else if (prev.level === "core") {
+      currentLevel = "core";
+      currentPlanet = prev.planet;
+      currentComponent = prev.component;
+      currentEntity = null;
+      showView("core-view", "out");
+      updateBreadcrumb();
+      setHash(`#/${prev.planet}/${prev.component}`);
+      updateDocumentTitle("core", prev.planet, prev.component);
+    }
+  } else {
+    if (currentLevel === "search-results") {
+      _lastSearchPage = null;
+      navigateTo("galaxy");
+    } else if (currentLevel === "entity") navigateTo("core");
+    else if (currentLevel === "core") navigateTo("planet");
+    else if (currentLevel === "planet") navigateTo("galaxy");
+  }
+}
+
+// Refresh current view after entities load (called by main.js)
+export function refreshCurrentView() {
+  if (
+    currentLevel === "entity" &&
+    currentPlanet &&
+    currentComponent &&
+    currentEntity
+  ) {
+    renderEntityView(
+      currentPlanet,
+      currentComponent,
+      currentEntity.type,
+      currentEntity.name,
+    );
+  } else if (currentLevel === "planet" && currentPlanet) {
+    renderPlanetView(currentPlanet);
+  } else if (currentLevel === "core" && currentPlanet && currentComponent) {
+    renderCoreView(currentPlanet, currentComponent);
+  }
+}
+
+// Update breadcrumb zoom indicators (exported for init)
+export { updateBreadcrumb };
+
+// Render helpers use innerHTML with trusted app-owned data (NPSP object).
+// No user input is rendered. This is safe and documented.
+
+function renderComponentCard(c, i, id, p) {
+  let eb = "";
+  if (c.entities) {
+    const cn = [];
+    if (c.entities.classes && c.entities.classes.length > 0)
+      cn.push(
+        `<span class="entity-badge badge-class"><span class="icon-svg">${entitySvg("class", 12)}</span> ${c.entities.classes.length}</span>`,
+      );
+    if (c.entities.objects && c.entities.objects.length > 0)
+      cn.push(
+        `<span class="entity-badge badge-object"><span class="icon-svg">${entitySvg("object", 12)}</span> ${c.entities.objects.length}</span>`,
+      );
+    if (c.entities.triggers && c.entities.triggers.length > 0)
+      cn.push(
+        `<span class="entity-badge badge-trigger"><span class="icon-svg">${entitySvg("trigger", 12)}</span> ${c.entities.triggers.length}</span>`,
+      );
+    if (c.entities.lwcs && c.entities.lwcs.length > 0)
+      cn.push(
+        `<span class="entity-badge badge-lwc"><span class="icon-svg">${entitySvg("lwc", 12)}</span> ${c.entities.lwcs.length}</span>`,
+      );
+    if (cn.length > 0) eb = `<div class="entity-badges">${cn.join("")}</div>`;
+  }
+
+  if (c._synthetic) {
+    return `<div class="component-card component-card--synthetic" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i * 30, 1500)}ms" role="button" tabindex="0"><div class="infra-badge">Infrastructure</div><h3><span class="icon icon-svg">${iconHtml(c.icon, 18)}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div>${eb}</div>`;
+  }
+
+  return `<div class="component-card" data-component="${c.id}" data-planet="${id}" style="--card-accent:${p.color};animation-delay:${Math.min(i * 30, 1500)}ms" role="button" tabindex="0"><h3><span class="icon icon-svg">${iconHtml(c.icon, 18)}</span> ${c.name}</h3><div class="card-desc">${c.desc}</div><div class="card-tags">${(c.tags || []).map((t) => `<span class="card-tag">${t}</span>`).join("")}${(c.triggerTags || []).map((t) => `<span class="card-tag trigger">${t}</span>`).join("")}</div>${eb}</div>`;
+}
+
+function renderPlanetView(id) {
+  const p = PRODUCT_DATA[id];
+  const el = document.getElementById("planet-content");
+
+  let domainPkgHtml = "";
+  if (
+    p.packages &&
+    p.packages.length > 0 &&
+    Object.keys(PRODUCT_PACKAGES).length > 0
+  ) {
+    domainPkgHtml = html`<div class="domain-packages">
+      ${p.packages.map((pkgKey) => {
+        const pkg = PRODUCT_PACKAGES[pkgKey];
+        return pkg
+          ? `<span class="package-badge" style="--pkg-color:${pkg.color}">${pkg.name}</span>`
+          : "";
+      })}
+    </div>`;
+  }
+
+  const cardHtml = p.components
+    .map((c, i) => renderComponentCard(c, i, id, p))
+    .join("");
+
+  // Data flow as a pipeline: each step lights up in order (CSS, --i staggers).
+  const flowHtml = p.dataFlow
+    .map(
+      (n, i) =>
+        (i > 0 ? `<span class="flow-arrow" aria-hidden="true" style="--i:${i}">\u2192</span>` : "") +
+        `<span class="flow-node" style="--i:${i}"><span class="flow-step">${i + 1}</span>${n}</span>`,
+    )
+    .join("");
+
+  // Lead with the "why": the first two sentences, full text behind a disclosure.
+  const sentences = p.description.match(/[^.!?]+[.!?]+(\s|$)/g) || [p.description];
+  // Very long lead sentences (e.g. CRLP) would rebuild the wall: cap at one then.
+  const take = sentences[0].length + (sentences[1] || "").length > 260 ? 1 : 2;
+  let summary = sentences.slice(0, take).join("").trim();
+  let rest = sentences.slice(take).join("").trim();
+  if (summary.length > 260) {
+    // One very long sentence: show its opening, keep the whole thing in the disclosure.
+    const cut = summary.lastIndexOf(" ", 220);
+    rest = summary + (rest ? " " + rest : "");
+    summary = summary.slice(0, cut > 0 ? cut : 220).replace(/[,;:(]+$/, "") + "…";
+  }
+  const descHtml = rest
+    ? `<p class="planet-summary">${summary}</p><details class="planet-more"><summary>Read the full description</summary><p>${rest}</p></details>`
+    : `<p class="planet-summary">${summary}</p>`;
+
+  // "What's inside" chips double as the hero's moon legend.
+  const insideHtml = p.components
+    .map(
+      (c, i) =>
+        `<button type="button" class="inside-chip" data-inside="${c.id}" data-moon="${i}">${c.name}</button>`,
+    )
+    .join("");
+
+  const connectionsHtml = p.connections.map((c) => {
+    const meta = PLANET_META[c.planet];
+    const name = PRODUCT_DATA[c.planet]
+      ? PRODUCT_DATA[c.planet].name
+      : c.planet;
+    return html` <div
+      class="connection-item"
+      data-connection-planet="${c.planet}"
+      role="button"
+      tabindex="0"
+    >
+      <div
+        class="conn-planet"
+        style="background:${meta ? meta.color : "#64748b"}"
+      >
+        <span class="icon-svg">${meta ? meta.svg : ""}</span>
+      </div>
+      <div>
+        <strong>${name}</strong>
+        <div
+          style="color:var(--text-dim);font-size:var(--text-xs);margin-top:2px"
+        >
+          ${c.desc}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html` ${breadcrumb([
+      { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
+      { label: p.name },
+    ])}
+    <div class="detail-shell">
+      <div class="detail-main">
+        <div class="planet-header">
+          <div class="planet-hero" aria-hidden="true">
+            <canvas class="planet-hero-canvas"></canvas>
+            <div
+              class="planet-header-orb"
+              style="background:${p.color};box-shadow:0 0 20px ${p.color}"
+            >
+              <span class="icon-svg">${domainSvg(id, 28)}</span>
+            </div>
+          </div>
+          <div class="planet-intro">
+            <h2 style="color:${p.color}">${p.name}</h2>
+            ${descHtml}
+            ${domainPkgHtml}
+            <div class="inside">
+              <h3 class="inside-title">What's inside</h3>
+              <div class="inside-chips">${insideHtml}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      ${renderDomainAside(p)}
+    </div>
+    <div class="component-grid">${cardHtml}</div>
+    <div
+      class="data-flow"
+      style="animation-delay:${p.components.length * 30 + 60}ms"
+    >
+      <h3><span class="icon-svg">${iconHtml("data-flow", 18)}</span> Data Flow</h3>
+      <div class="flow-diagram">${flowHtml}</div>
+    </div>
+    <div
+      class="connections-section"
+      style="animation-delay:${p.components.length * 30 + 120}ms"
+    >
+      <h3><span class="icon-svg">${iconHtml("connected", 18)}</span> Connected Systems</h3>
+      ${connectionsHtml}
+    </div>`;
+
+  wireNavLinks(el, {
+    galaxy: () => navigateTo("galaxy"),
+    planet: () => {},
+    back: () => {},
+  });
+  wireClickAndEnter(el, ".component-card", (card) =>
+    enterCore(card.dataset.planet, card.dataset.component),
+  );
+  wireClickAndEnter(el, "[data-connection-planet]", (item) =>
+    enterPlanet(item.dataset.connectionPlanet),
+  );
+  el.querySelectorAll("[data-inside]").forEach((chip) => {
+    // Blur first so focus isn't left inside the view that's about to be aria-hidden.
+    chip.addEventListener("click", () => {
+      chip.blur();
+      enterCore(id, chip.dataset.inside);
+    });
+    const i = +chip.dataset.moon;
+    chip.addEventListener("pointerenter", () => highlightMoon(i));
+    chip.addEventListener("focus", () => highlightMoon(i));
+    chip.addEventListener("pointerleave", () => highlightMoon(-1));
+    chip.addEventListener("blur", () => highlightMoon(-1));
+  });
+
+  // 3D hero only alongside the cinematic galaxy (same capability + dark theme);
+  // otherwise the flat CSS orb stays.
+  const hero = el.querySelector(".planet-hero");
+  if (document.body.classList.contains("webgl-galaxy") && !document.body.classList.contains("no-webgl")) {
+    const ok = showPlanetHero(hero.querySelector("canvas"), {
+      id,
+      color: p.color,
+      group: PRODUCT_CONFIG.physics && PRODUCT_CONFIG.physics.groups ? PRODUCT_CONFIG.physics.groups[id] : 0,
+      components: p.components,
+    });
+    hero.classList.toggle("is-3d", ok);
+  } else {
+    pausePlanetHero();
+  }
+  markExplored(id);
+  enhanceDataFlow(el, prefersReducedMotion);
+  document.getElementById("planet-view").scrollTop = 0;
+}
+
+function renderOverviewTab(c) {
+  let h = `<div class="trigger-section" style="animation-delay:0ms"><h3><span class="icon-svg">${iconHtml("clipboard-list", 18)}</span> Overview</h3><div class="trigger-desc">${c.desc}</div><div class="card-tags">${(c.tags || []).map((t) => `<span class="card-tag">${t}</span>`).join("")}${(c.triggerTags || []).map((t) => `<span class="card-tag trigger">${t}</span>`).join("")}</div></div>`;
+  if (c.executionFlow)
+    h += `<div class="trigger-section" style="animation-delay:60ms"><h3><span class="icon-svg">${iconHtml("zap", 18)}</span> Execution Flow</h3><div class="execution-flow">${c.executionFlow.map((s, i) => `<div class="exec-step" style="animation-delay:${80 + i * 40}ms"><span class="step-num">${i + 1}</span><span>${s}</span></div>`).join("")}</div></div>`;
+  if (c.docs && c.docs.length > 0) {
+    h += `<div class="trigger-section doc-section" style="animation-delay:90ms"><h3><span class="icon-svg">${iconHtml("file-text", 18)}</span> Details</h3>${c.docs.map((p) => `<p class="doc-para">${p}</p>`).join("")}`;
+    if (c.docUrl)
+      h += `<a class="doc-source-link" href="${c.docUrl}" target="_blank" rel="noopener noreferrer"><span class="icon-svg" style="vertical-align:-3px">${iconHtml("link", 14)}</span> View on Salesforce Help \u2197</a>`;
+    h += `</div>`;
+  }
+  if (c.code)
+    h += `<div class="trigger-section" style="animation-delay:120ms"><h3><span class="icon-svg">${iconHtml("code", 18)}</span> Source Code Pattern</h3><div class="code-block"><div class="code-header"><span class="lang">${c.code.lang}</span><span>${c.code.title}</span><button class="copy-btn" data-copy-code aria-label="Copy code">Copy</button></div><div class="code-body"><pre>${c.code.body}</pre></div></div></div>`;
+  return h;
+}
+
+function renderCoreView(pid, cid) {
+  const p = PRODUCT_DATA[pid];
+  const c = p.components.find((x) => x.id === cid);
+  if (!c) return;
+  const el = document.getElementById("core-content");
+  const tabs = [{ key: "overview", label: "Overview", count: null }];
+  if (c.entities) {
+    if (c.entities.classes && c.entities.classes.length > 0)
+      tabs.push({
+        key: "classes",
+        label: "Classes",
+        count: c.entities.classes.length,
+      });
+    if (c.entities.objects && c.entities.objects.length > 0)
+      tabs.push({
+        key: "objects",
+        label: "Objects",
+        count: c.entities.objects.length,
+      });
+    if (c.entities.triggers && c.entities.triggers.length > 0)
+      tabs.push({
+        key: "triggers",
+        label: "Triggers",
+        count: c.entities.triggers.length,
+      });
+    if (c.entities.lwcs && c.entities.lwcs.length > 0)
+      tabs.push({ key: "lwcs", label: "LWCs", count: c.entities.lwcs.length });
+    if (c.entities.metadata && c.entities.metadata.length > 0)
+      tabs.push({
+        key: "metadata",
+        label: "Metadata",
+        count: c.entities.metadata.length,
+      });
+  }
+  let tabBar = "";
+  if (tabs.length > 1)
+    tabBar = `<div class="entity-tab-bar" role="tablist" aria-label="Component sections">${tabs.map((t) => `<button class="entity-tab${t.key === "overview" ? " active" : ""}" role="tab" aria-selected="${t.key === "overview"}" aria-controls="entity-tab-content" tabindex="${t.key === "overview" ? "0" : "-1"}" data-tab="${t.key}" data-entity-tab-pid="${pid}" data-entity-tab-cid="${cid}">${t.label}${t.count !== null ? ` <span class="tab-count">${t.count}</span>` : ""}</button>`).join("")}</div>`;
+  else if (!entitiesLoaded)
+    tabBar = `<div class="entity-loading-hint" style="padding:8px 0;font-size:12px;color:var(--text-dim,#64748b);opacity:0.7">Loading entity data\u2026</div>`;
+  el.innerHTML = html` ${breadcrumb([
+      { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
+      { label: p.name, nav: "planet" },
+      { label: c.name },
+    ])}
+    <div class="core-header" style="--core-color:${p.color}">
+      <span class="core-orb" aria-hidden="true"><span class="icon-svg">${iconHtml(c.icon, 22)}</span></span>
+      <div>
+        <h2>${c.name}</h2>
+        <div class="core-where">Part of <a href="#" class="core-where-link" data-nav="planet">${esc(p.name)}</a> · ${p.components.length} components</div>
+      </div>
+    </div>
+    <nav class="sibling-strip" aria-label="Other components in ${esc(p.name)}">
+      ${p.components
+        .filter((s) => !s._synthetic)
+        .map(
+          (s) =>
+            `<a href="#/${pid}/${s.id}" class="sibling${s.id === cid ? " is-here" : ""}"${s.id === cid ? ' aria-current="page"' : ""} data-sibling="${s.id}">${esc(s.name)}</a>`,
+        )
+        .join("")}
+    </nav>
+    ${tabBar}
+    <div id="entity-tab-content" role="tabpanel">${renderOverviewTab(c)}</div>`;
+  wireNavLinks(el, {
+    galaxy: () => navigateTo("galaxy"),
+    planet: () => navigateTo("planet"),
+    back: () => {},
+  });
+  el.querySelectorAll(".entity-tab").forEach((tab) => {
+    tab.addEventListener("click", () =>
+      switchEntityTab(
+        tab.dataset.entityTabPid,
+        tab.dataset.entityTabCid,
+        tab.dataset.tab,
+      ),
+    );
+    tab.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      const allTabs = [...el.querySelectorAll(".entity-tab")];
+      const current = allTabs.indexOf(tab);
+      const direction = event.key === "ArrowRight" ? 1 : -1;
+      const next = allTabs[(current + direction + allTabs.length) % allTabs.length];
+      next.focus();
+      next.click();
+    });
+  });
+  el.querySelectorAll("[data-sibling]").forEach((a) =>
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (a.dataset.sibling !== cid) {
+        a.blur();
+        enterCore(pid, a.dataset.sibling);
+      }
+    }),
+  );
+  // Overview tags that name a real entity in this component become links to it.
+  const byName = new Map();
+  for (const [type, list] of Object.entries(c.entities || {}))
+    for (const e of list || []) byName.set(e.name, type);
+  el.querySelectorAll("#entity-tab-content .card-tag").forEach((tag) => {
+    const name = tag.textContent.trim(), type = byName.get(name);
+    if (!type) return;
+    tag.classList.add("card-tag--link");
+    tag.setAttribute("role", "link");
+    tag.tabIndex = 0;
+    tag.setAttribute("aria-label", `Open ${name}`);
+    const go = () => enterEntity(pid, cid, type, name);
+    tag.addEventListener("click", go);
+    tag.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+    });
+  });
+  attachOverviewListeners(el);
+  updateTabPill();
+  document.getElementById("core-view").scrollTop = 0;
+}
+
+function attachOverviewListeners(container) {
+  container.querySelectorAll("[data-copy-code]").forEach((btn) => {
+    btn.addEventListener("click", () => copyCode(btn));
+  });
+}
+
+function updateTabPill() {
+  const bar = document.querySelector(".entity-tab-bar");
+  const active = bar && bar.querySelector(".entity-tab.active");
+  if (bar && active) {
+    bar.style.setProperty("--pill-left", active.offsetLeft + "px");
+    bar.style.setProperty("--pill-width", active.offsetWidth + "px");
+  }
+}
+
+function switchEntityTab(pid, cid, tabKey) {
+  track("tab_switch", { tab: tabKey });
+  document.querySelectorAll(".entity-tab").forEach((t) => {
+    const selected = t.dataset.tab === tabKey;
+    t.classList.toggle("active", selected);
+    t.setAttribute("aria-selected", String(selected));
+    t.tabIndex = selected ? 0 : -1;
+  });
+  updateTabPill();
+  const contentEl = document.getElementById("entity-tab-content");
+  const p = PRODUCT_DATA[pid];
+  const c = p.components.find((x) => x.id === cid);
+  if (!c) return;
+  // Safe: all template content is from trusted app-owned product data (no user input)
+  if (tabKey === "overview") {
+    contentEl.innerHTML = renderOverviewTab(c);
+    attachOverviewListeners(contentEl);
+  } else {
+    contentEl.innerHTML = renderEntityGrid(c, tabKey, pid);
+    attachEntityGridListeners(contentEl);
+  }
+  document.getElementById("core-view").scrollTop = 0;
+}
+
+function renderEntityGrid(component, entityType, pid) {
+  const entities = (component.entities && component.entities[entityType]) || [];
+  if (entities.length === 0) {
+    const typeNames = {
+      lwcs: "Lightning Web Components",
+      classes: "Apex Classes",
+      triggers: "Triggers",
+      objects: "Custom Objects",
+      metadata: "Custom Metadata",
+    };
+    const label = typeNames[entityType] || entityType;
+    return `<div class="entity-empty-state"><svg class="entity-empty-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9l6 6M15 9l-6 6"/></svg><p>No ${label} in this component</p></div>`;
+  }
+  const typeConfig = {
+    classes: {
+      icon: entitySvg("class", 14),
+      color: "rgba(77,139,255,",
+      badgeClass: "badge-class",
+    },
+    objects: {
+      icon: entitySvg("object", 14),
+      color: "rgba(34,197,94,",
+      badgeClass: "badge-object",
+    },
+    triggers: {
+      icon: entitySvg("trigger", 14),
+      color: "rgba(169,155,255,",
+      badgeClass: "badge-trigger",
+    },
+    lwcs: {
+      icon: entitySvg("lwc", 14),
+      color: "rgba(209,125,254,",
+      badgeClass: "badge-lwc",
+    },
+    metadata: {
+      icon: entitySvg("metadata", 14),
+      color: "rgba(245,158,11,",
+      badgeClass: "badge-metadata",
+    },
+  };
+  const cfg = typeConfig[entityType] || typeConfig.classes;
+
+  // Group headers for large collections (>30 items) in synthetic components
+  const useGroups =
+    component._synthetic && entities.length > 30 && entityType === "classes";
+  if (useGroups) {
+    const groups = {};
+    for (const e of entities) {
+      let prefix;
+      if (e.name.startsWith("UTIL_")) prefix = "Utility Classes";
+      else if (e.name.startsWith("STG_Panel")) prefix = "Settings Panels";
+      else if (e.name.endsWith("_TEST") || e.name.includes("_TEST_"))
+        prefix = "Test Classes";
+      else if (e.name.startsWith("BDI_")) prefix = "BDI Framework";
+      else if (e.name.startsWith("CMT_")) prefix = "Custom Metadata";
+      else prefix = "Other";
+      if (!groups[prefix]) groups[prefix] = [];
+      groups[prefix].push(e);
+    }
+    // Sort groups: named groups first alphabetically, Other last
+    const groupOrder = Object.keys(groups).sort((a, b) => {
+      if (a === "Other") return 1;
+      if (b === "Other") return -1;
+      return a.localeCompare(b);
+    });
+    // Package filter pills for grouped grids
+    const domainPkgs2 = (PRODUCT_DATA[pid] && PRODUCT_DATA[pid].packages) || [];
+    let html = "";
+    if (domainPkgs2.length > 1 && Object.keys(PRODUCT_PACKAGES).length > 0) {
+      const counts = {};
+      entities.forEach((e) => {
+        const p = e._package || "";
+        if (p) counts[p] = (counts[p] || 0) + 1;
+      });
+      const pills = domainPkgs2
+        .filter((k) => counts[k])
+        .map((pkgKey) => {
+          const pkg = PRODUCT_PACKAGES[pkgKey];
+          return pkg
+            ? `<button class="pkg-pill" data-pkg="${pkgKey}" aria-pressed="false" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>`
+            : "";
+        })
+        .join("");
+      if (pills)
+        html += `<div class="package-filter" aria-label="Package filter"><button class="pkg-pill active" data-pkg="all" aria-pressed="true" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
+    }
+    let idx = 0;
+    for (const groupName of groupOrder) {
+      html += `<div class="entity-group-header">${groupName} <span class="entity-group-count">${groups[groupName].length}</span></div>`;
+      html += `<div class="entity-grid">`;
+      for (const e of groups[groupName]) {
+        const delay = Math.min(idx * 30, 1500);
+        html += `<div class="entity-card" style="animation-delay:${delay}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g, "&quot;")}" data-entity-pkg="${e._package || ""}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type ? `<span class="entity-type-label">${e.type.replace("_", " ")}</span>` : ""}<div class="entity-desc">${(e.description || "No description available.").substring(0, 150)}${e.description && e.description.length > 150 ? "..." : ""}</div>${e.linesOfCode ? `<span class="entity-loc">${e.linesOfCode} lines</span>` : ""}${(e.fields || e.keyFields)?.length ? `<span class="entity-loc">${(e.fields || e.keyFields).length} fields</span>` : e.fieldCount ? `<span class="entity-loc">${e.fieldCount} fields</span>` : ""}</div>`;
+        idx++;
+      }
+      html += `</div>`;
+    }
+    return html;
+  }
+
+  // Package filter pills (only for multi-package domains)
+  const domainPkgs = (PRODUCT_DATA[pid] && PRODUCT_DATA[pid].packages) || [];
+  let filterHtml = "";
+  if (domainPkgs.length > 1 && Object.keys(PRODUCT_PACKAGES).length > 0) {
+    const counts = {};
+    entities.forEach((e) => {
+      const p = e._package || "";
+      if (p) counts[p] = (counts[p] || 0) + 1;
+    });
+    const pills = domainPkgs
+      .filter((k) => counts[k])
+      .map((pkgKey) => {
+        const pkg = PRODUCT_PACKAGES[pkgKey];
+        return pkg
+          ? `<button class="pkg-pill" data-pkg="${pkgKey}" aria-pressed="false" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>`
+          : "";
+      })
+      .join("");
+    if (pills)
+      filterHtml = `<div class="package-filter" aria-label="Package filter"><button class="pkg-pill active" data-pkg="all" aria-pressed="true" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
+  }
+  return (
+    filterHtml +
+    `<div class="entity-grid">${entities.map((e, i) => `<div class="entity-card" style="animation-delay:${Math.min(i * 30, 1500)}ms" data-entity-pid="${pid}" data-entity-cid="${component.id}" data-entity-type="${entityType}" data-entity-name="${e.name.replace(/"/g, "&quot;")}" data-entity-pkg="${e._package || ""}" role="button" tabindex="0"><div class="entity-card-header"><span class="entity-type-icon ${cfg.badgeClass}">${cfg.icon}</span><span class="entity-name">${e.name}</span></div>${e.type ? `<span class="entity-type-label">${e.type.replace("_", " ")}</span>` : ""}<div class="entity-desc">${(e.description || "No description available.").substring(0, 150)}${e.description && e.description.length > 150 ? "..." : ""}</div>${e.linesOfCode ? `<span class="entity-loc">${e.linesOfCode} lines</span>` : ""}${(e.fields || e.keyFields)?.length ? `<span class="entity-loc">${(e.fields || e.keyFields).length} fields</span>` : e.fieldCount ? `<span class="entity-loc">${e.fieldCount} fields</span>` : ""}</div>`).join("")}</div>`
+  );
+}
+
+function attachEntityGridListeners(container) {
+  container.querySelectorAll(".entity-card").forEach((card) => {
+    const {
+      entityPid: pid,
+      entityCid: cid,
+      entityType: type,
+      entityName: name,
+    } = card.dataset;
+    card.addEventListener("click", () => enterEntity(pid, cid, type, name));
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        enterEntity(pid, cid, type, name);
+      }
+    });
+  });
+  // Package filter pill click handlers
+  container.querySelectorAll(".pkg-pill").forEach((pill) => {
+    pill.addEventListener("click", () => {
+      const pkg = pill.dataset.pkg;
+      container
+        .querySelectorAll(".pkg-pill")
+        .forEach((p) => {
+          p.classList.remove("active");
+          p.setAttribute("aria-pressed", "false");
+        });
+      pill.classList.add("active");
+      pill.setAttribute("aria-pressed", "true");
+      container.querySelectorAll(".entity-card").forEach((card) => {
+        card.style.display =
+          pkg === "all" || card.dataset.entityPkg === pkg ? "" : "none";
+      });
+    });
+  });
+}
+
+function findEntityAcrossDomains(entityName, entityType) {
+  for (const pid in PRODUCT_DATA) {
+    const domain = PRODUCT_DATA[pid];
+    for (let ci = 0; ci < domain.components.length; ci++) {
+      const comp = domain.components[ci];
+      if (comp.entities && comp.entities[entityType]) {
+        const match = comp.entities[entityType].find(
+          (e) => e.name === entityName,
+        );
+        if (match) return { pid, cid: comp.id, entity: match };
+      }
+    }
+  }
+  return null;
+}
+
+function renderEntityView(pid, cid, rawType, entityName) {
+  const entityType = ENTITY_TYPE_MAP[rawType] || rawType;
+  const p = PRODUCT_DATA[pid];
+  const c = p.components.find((x) => x.id === cid);
+  if (!c || !c.entities) {
+    // Entities not loaded yet: show loading indicator
+    if (!entitiesLoaded) {
+      const el = document.getElementById("entity-content");
+      el.innerHTML = html` ${breadcrumb([
+          { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
+          { label: p ? p.name : pid, nav: "planet" },
+          { label: entityName },
+        ])}
+        <div class="entity-loading">
+          <div class="entity-loading-spinner"></div>
+          <div class="entity-loading-text">Loading entity data…</div>
+        </div>`;
+      wireNavLinks(el, {
+        galaxy: () => navigateTo("galaxy"),
+        planet: () => navigateTo("planet"),
+        back: () => {},
+      });
+    }
+    return;
+  }
+  const entity = (c.entities[entityType] || []).find(
+    (e) => e.name === entityName,
+  );
+  if (!entity) {
+    const el = document.getElementById("entity-content");
+    el.innerHTML = html` ${breadcrumb([
+        { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
+        { label: p.name, nav: "planet" },
+        { label: c.name, nav: "back" },
+        { label: entityName },
+      ])}
+      <div class="entity-not-found">
+        <div class="entity-not-found-icon icon-svg">${uiSvg("search", 32)}</div>
+        <div class="entity-not-found-text">
+          ${entityName} not found in ${entityType}
+        </div>
+        <button class="entity-not-found-back" data-nav="back">
+          ← Back to ${c.name}
+        </button>
+      </div>`;
+    wireNavLinks(el, {
+      galaxy: () => navigateTo("galaxy"),
+      planet: () => navigateTo("planet"),
+      back: () => goBack(),
+    });
+    return;
+  }
+  const el = document.getElementById("entity-content");
+  const bc = breadcrumb([
+    { label: PRODUCT_CONFIG.name || "Home", nav: "galaxy" },
+    { label: p.name, nav: "planet" },
+    { label: c.name, nav: "back" },
+    { label: entity.name },
+  ]);
+  let detailHtml = "";
+  if (entityType === "classes") detailHtml = renderClassDetail(entity);
+  else if (entityType === "objects") detailHtml = renderObjectDetail(entity);
+  else if (entityType === "triggers") detailHtml = renderTriggerDetail(entity);
+  else if (entityType === "lwcs") detailHtml = renderLwcDetail(entity);
+  else if (entityType === "metadata") detailHtml = renderMetadataDetail(entity);
+  // Inner-views v2: two-column detail shell (main content + sticky quick-facts
+  // aside). Aside is placed AFTER main in DOM so screen-reader / tab order hits
+  // the primary content first; CSS grid positions it to the right. Collapses to
+  // a single column under 1024px.
+  // Relationship map first: the "where does this sit" picture before the detail.
+  const mapHtml = renderRelationMap(entity, p.color, (name, kind) => {
+    const type = kind === "class" ? "classes" : "objects";
+    const found = findEntityAcrossDomains(name, type);
+    return found ? { pid: found.pid, cid: found.cid, type, name } : null;
+  });
+  const h =
+    bc +
+    `<div class="detail-shell"><div class="detail-main">${mapHtml}${detailHtml}</div>${renderEntityAside(entity, entityType, c)}</div>`;
+  el.innerHTML = h;
+  wireNavLinks(el, {
+    galaxy: () => navigateTo("galaxy"),
+    planet: () => navigateTo("planet"),
+    back: () => goBack(),
+  });
+  el.querySelectorAll("[data-entity-link]").forEach((l) => {
+    const d = JSON.parse(l.dataset.entityLink);
+    const go = () => enterEntity(d.pid, d.cid, d.type, d.name);
+    l.addEventListener("click", go);
+    l.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        go();
+      }
+    });
+  });
+  document.getElementById("entity-view").scrollTop = 0;
+}
+
+// Inner-views v2: sticky "Quick facts" aside for the entity detail shell.
+// Built generically from the entity object + its parent component so it works
+// for all products (code-derived NPSP and documentation-derived products alike).
+function renderEntityAside(entity, entityType, component) {
+  // Fallback is a safe generic label, never the raw route-derived entityType
+  // (defense-in-depth: the not-found guard upstream already constrains this).
+  const typeLabel =
+    {
+      classes: "Apex class",
+      objects: "Custom object",
+      triggers: "Trigger",
+      lwcs: "Lightning Web Component",
+      metadata: "Metadata type",
+    }[entityType] || "Entity";
+
+  const rows = [
+    `<div class="aside-row"><span class="aside-label">Type</span><span class="aside-val">${typeLabel}</span></div>`,
+  ];
+  if (component && component.name)
+    rows.push(
+      `<div class="aside-row"><span class="aside-label">Component</span><span class="aside-val">${component.name}</span></div>`,
+    );
+  // Identity facts (package) before quantitative counts, for scannability.
+  const pkg = packageBadge(entity);
+  if (pkg)
+    rows.push(
+      `<div class="aside-row"><span class="aside-label">Package</span><span class="aside-val">${pkg}</span></div>`,
+    );
+  if (entity.linesOfCode != null)
+    rows.push(
+      `<div class="aside-row"><span class="aside-label">Lines of code</span><span class="aside-val">${entity.linesOfCode}</span></div>`,
+    );
+  if (entity.object)
+    rows.push(
+      `<div class="aside-row"><span class="aside-label">On object</span><span class="aside-val">${entity.object}</span></div>`,
+    );
+
+  // Adaptive count rows — only render for arrays the entity actually carries.
+  const countFields = [
+    ["Key methods", entity.keyMethods],
+    ["References", entity.referencedObjects],
+    ["Fields", entity.fields],
+    ["Relationships", entity.relationships],
+    ["Handlers", entity.handlers],
+    ["Imports", entity.imports],
+    ["Events", entity.events],
+  ];
+  for (const [label, arr] of countFields) {
+    if (Array.isArray(arr) && arr.length)
+      rows.push(
+        `<div class="aside-row"><span class="aside-label">${label}</span><span class="aside-val">${arr.length}</span></div>`,
+      );
+  }
+
+  return `<aside class="detail-aside" aria-label="Quick facts"><div class="aside-card"><div class="aside-title">Quick facts</div>${rows.join("")}</div></aside>`;
+}
+
+// Inner-views v2: quick-facts aside for the domain (planet) view header,
+// reusing the same .detail-shell language as the entity view.
+function renderDomainAside(p) {
+  const rows = [
+    `<div class="aside-row"><span class="aside-label">Components</span><span class="aside-val">${p.components.length}</span></div>`,
+  ];
+  if (p._entities) {
+    const counts = [
+      ["Classes", (p._entities.classes || []).length],
+      ["Objects", (p._entities.objects || []).length],
+      ["Triggers", (p._entities.triggers || []).length],
+      ["LWCs", (p._entities.lwcs || []).length],
+    ];
+    for (const [label, n] of counts) {
+      if (n)
+        rows.push(
+          `<div class="aside-row"><span class="aside-label">${label}</span><span class="aside-val">${n}</span></div>`,
+        );
+    }
+  }
+  if (p.connections && p.connections.length)
+    rows.push(
+      `<div class="aside-row"><span class="aside-label">Connections</span><span class="aside-val">${p.connections.length}</span></div>`,
+    );
+  return `<aside class="detail-aside" aria-label="Domain facts"><div class="aside-card"><div class="aside-title">Domain facts</div>${rows.join("")}</div></aside>`;
+}
+
+function renderClassDetail(entity) {
+  const typeColors = {
+    tdtm_handler: {
+      bg: "color-mix(in srgb, var(--tag-trigger) 14%, transparent)",
+      color: "var(--tag-trigger)",
+      label: "TDTM Handler",
+    },
+    batch: {
+      bg: "color-mix(in srgb, var(--tag-lwc) 14%, transparent)",
+      color: "var(--tag-lwc)",
+      label: "Batch Job",
+    },
+    service: {
+      bg: "color-mix(in srgb, var(--tag-object) 14%, transparent)",
+      color: "var(--tag-object)",
+      label: "Service",
+    },
+    utility: {
+      bg: "color-mix(in srgb, var(--tag-metadata) 14%, transparent)",
+      color: "var(--tag-metadata)",
+      label: "Utility",
+    },
+    controller: {
+      bg: "color-mix(in srgb, var(--tag-class) 14%, transparent)",
+      color: "var(--tag-class)",
+      label: "Controller",
+    },
+    scheduled: {
+      bg: "color-mix(in srgb, var(--tag-lwc) 14%, transparent)",
+      color: "var(--tag-lwc)",
+      label: "Scheduled",
+    },
+    class: {
+      bg: "color-mix(in srgb, var(--tag-class) 14%, transparent)",
+      color: "var(--tag-class)",
+      label: "Class",
+    },
+  };
+  const tc = typeColors[entity.type] || typeColors["class"];
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-class"><span class="icon-svg">${entitySvg("class", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:${tc.bg};color:${tc.color}">${tc.label}</span>${packageBadge(entity)}${entity.linesOfCode ? `<span class="entity-detail-meta">${entity.linesOfCode} lines of code</span>` : ""}</div></div>`;
+  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "No description available."}</p></div>`;
+  if (entity.type === "tdtm_handler" && entity.object)
+    h += `<div class="entity-detail-section"><h3><span class="icon-svg">${iconHtml("zap", 18)}</span> Trigger Context</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Object:</span><span>${entity.object}</span></div>${entity.triggerActions ? `<div class="edt-row"><span class="edt-label">Events:</span><span>${entity.triggerActions.map((a) => `<span class="card-tag trigger">${a}</span>`).join(" ")}</span></div>` : ""}${entity.loadOrder ? `<div class="edt-row"><span class="edt-label">Load Order:</span><span>${entity.loadOrder}</span></div>` : ""}</div></div>`;
+  if (entity.extends)
+    h += `<div class="entity-detail-section"><h3>Inheritance</h3><div class="entity-detail-table"><div class="edt-row"><span class="edt-label">Extends:</span><span class="entity-detail-code">${entity.extends}</span></div>${entity.implements ? `<div class="edt-row"><span class="edt-label">Implements:</span><span class="entity-detail-code">${entity.implements}</span></div>` : ""}</div></div>`;
+  if (entity.keyMethods && entity.keyMethods.length > 0)
+    h += `<div class="entity-detail-section"><h3>Key Methods</h3><div class="entity-methods">${entity.keyMethods.map((m) => `<span class="entity-method">${m}</span>`).join("")}</div></div>`;
+  if (entity.referencedObjects && entity.referencedObjects.length > 0)
+    h += `<div class="entity-detail-section"><h3><span class="icon-svg">${iconHtml("link", 18)}</span> Referenced Objects</h3><div class="entity-refs">${entity.referencedObjects
+      .map((refName) => {
+        const found = findEntityAcrossDomains(refName, "objects");
+        if (found)
+          return `<span class="entity-ref badge-object entity-link" data-entity-link='${JSON.stringify({ pid: found.pid, cid: found.cid, type: "objects", name: refName })}' role="button" tabindex="0">${refName} \u2197</span>`;
+        return `<span class="entity-ref badge-object">${refName}</span>`;
+      })
+      .join("")}</div></div>`;
+  if (entity.sourceUrl)
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer"><span class="icon-svg" style="vertical-align:-3px">${iconHtml("link", 14)}</span> View Source on GitHub \u2197</a></div>`;
+  return h;
+}
+
+function renderObjectDetail(entity) {
+  const flds = entity.fields || entity.keyFields || [];
+  const fldCount = flds.length || entity.fieldCount || 0;
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-object"><span class="icon-svg">${entitySvg("object", 18)}</span></div><div><h2 class="entity-detail-name">${entity.label || entity.name}</h2><span class="entity-detail-meta" style="display:block;margin-top:2px">${entity.name}</span>${packageBadge(entity)}<span class="entity-detail-meta">${fldCount} fields</span></div></div>`;
+  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "Custom object in the managed package."}</p></div>`;
+  if (entity.relationships && entity.relationships.length > 0)
+    h += `<div class="entity-detail-section"><h3><span class="icon-svg">${iconHtml("link", 18)}</span> Relationships</h3><div class="entity-detail-table">${entity.relationships.map((r) => `<div class="edt-row"><span class="edt-label">${r.type}:</span><span>${r.field ? `<span class="entity-detail-code">${r.field}</span>` : r.description || r.type} \u2192 ${r.target}</span></div>`).join("")}</div></div>`;
+  if (flds.length > 0)
+    h += `<div class="entity-detail-section"><h3>Fields (${flds.length})</h3><div class="entity-fields-table"><div class="eft-header"><span>Field</span><span>Type</span><span>Description</span></div>${flds.map((f) => `<div class="eft-row"><span class="entity-detail-code">${f.name}</span><span class="eft-type">${f.type}</span><span class="eft-desc">${f.desc || f.label || ""}</span></div>`).join("")}</div></div>`;
+  if (entity.sourceUrl)
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer"><span class="icon-svg" style="vertical-align:-3px">${iconHtml("link", 14)}</span> View on GitHub \u2197</a></div>`;
+  return h;
+}
+
+function renderTriggerDetail(entity) {
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-trigger"><span class="icon-svg">${entitySvg("trigger", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2>${packageBadge(entity)}<span class="entity-detail-meta">Trigger on ${entity.object}</span></div></div>`;
+  h += `<div class="entity-detail-section"><h3>Description</h3><p>Trigger for the ${entity.object} object. Dispatches to registered handler classes via the trigger framework.</p></div>`;
+  if (entity.events && entity.events.length > 0)
+    h += `<div class="entity-detail-section"><h3><span class="icon-svg">${iconHtml("zap", 18)}</span> Registered Events</h3><div class="entity-methods">${entity.events.map((e) => `<span class="card-tag trigger">${e}</span>`).join("")}</div></div>`;
+  if (entity.handlers && entity.handlers.length > 0)
+    h += `<div class="entity-detail-section"><h3><span class="icon-svg">${iconHtml("link", 18)}</span> Handler Chain</h3><p style="margin-bottom:8px;font-size:var(--text-xs);color:var(--text-dim)">Handlers execute in Load_Order__c sequence:</p><div class="trigger-handler-chain">${entity.handlers
+      .map((handler, i) => {
+        const found = findEntityAcrossDomains(handler, "classes");
+        const hh = found
+          ? `<span class="entity-detail-code entity-link" data-entity-link='${JSON.stringify({ pid: found.pid, cid: found.cid, type: "classes", name: handler })}' role="button" tabindex="0">${handler} \u2197</span>`
+          : `<span class="entity-detail-code">${handler}</span>`;
+        return `<div class="handler-chain-item"><span class="handler-order">${i + 1}</span>${hh}</div>`;
+      })
+      .join("")}</div></div>`;
+  if (entity.sourceUrl)
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer"><span class="icon-svg" style="vertical-align:-3px">${iconHtml("link", 14)}</span> View Source on GitHub \u2197</a></div>`;
+  return h;
+}
+
+function renderLwcDetail(entity) {
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-lwc"><span class="icon-svg">${entitySvg("lwc", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:color-mix(in srgb, var(--tag-lwc) 14%, transparent);color:var(--tag-lwc)">Lightning Web Component</span>${packageBadge(entity)}</div></div>`;
+  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "Lightning Web Component in the managed package."}</p></div>`;
+  if (entity.imports && entity.imports.length > 0)
+    h += `<div class="entity-detail-section"><h3>Imports</h3><div class="entity-methods">${entity.imports.map((imp) => `<span class="entity-method">${imp}</span>`).join("")}</div></div>`;
+  if (entity.sourceUrl)
+    h += `<div class="entity-detail-section"><a class="entity-source-link" href="${entity.sourceUrl}" target="_blank" rel="noopener noreferrer"><span class="icon-svg" style="vertical-align:-3px">${iconHtml("link", 14)}</span> View on GitHub \u2197</a></div>`;
+  return h;
+}
+
+function renderMetadataDetail(entity) {
+  let h = `<div class="entity-detail-header"><div class="entity-detail-icon badge-metadata"><span class="icon-svg">${entitySvg("metadata", 18)}</span></div><div><h2 class="entity-detail-name">${entity.name}</h2><span class="entity-detail-type" style="background:color-mix(in srgb, var(--tag-metadata) 14%, transparent);color:var(--tag-metadata)">Custom Metadata Type</span>${packageBadge(entity)}${entity.recordCount ? `<span class="entity-detail-meta">${entity.recordCount} records</span>` : ""}</div></div>`;
+  h += `<div class="entity-detail-section"><h3>Description</h3><p>${entity.description || "Custom Metadata Type used for configuration."}</p></div>`;
+  return h;
+}
+
+function copyCode(btn) {
+  const pre = btn.closest(".code-block").querySelector("pre");
+  const text = pre.textContent;
+  const onSuccess = () => {
+    btn.textContent = "\u2713 Copied";
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.textContent = "Copy";
+      btn.classList.remove("copied");
+    }, 1500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard
+      .writeText(text)
+      .then(onSuccess)
+      .catch(() => {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          onSuccess();
+        } catch (e) {}
+      });
+  } else {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      onSuccess();
+    } catch (e) {}
+  }
+}

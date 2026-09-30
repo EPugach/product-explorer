@@ -1,0 +1,458 @@
+// ══════════════════════════════════════════════════════════════
+//  TOURS — Constellation Stories guided learning tours
+//  State management, camera orchestration, UI rendering
+// ══════════════════════════════════════════════════════════════
+
+import { domainSvg, iconHtml, uiSvg } from './icons.js';
+
+// Tour data and product data are injected by main.js
+let TOURS = [];
+let PRODUCT_DATA = {};
+export const setTourData = (tours) => { TOURS = tours || []; };
+export const setProductData = (data) => { PRODUCT_DATA = data; };
+import { safeLSGet, safeLSSet, track, announce } from './utils.js';
+import { resetZoomPan, cancelPanAnimation, animatePanTo, nodeMap, zoom as physZoom, panX as physPanX, panY as physPanY, setZoom, setPanX, setPanY, layoutW, layoutH } from './physics.js';
+import {
+  tourState,
+  setTourStopPlanets,
+  prefersReducedMotion,
+  lsPrefix
+} from './state.js';
+import {
+  currentLevel, navigateTo,
+  setHash, updateDocumentTitle
+} from './navigation.js';
+import { setGalaxyVisible, applyTourDimming, clearTourDimming, updateGalaxyTransform } from './galaxy-renderer.js';
+import { isMissionDone, completeMission } from './learning.js';
+
+// Animation callback set by main.js to break circular dependency
+let _particleTick = null;
+
+export const setTourAnimationCallbacks = (particleTickFn) => {
+  _particleTick = particleTickFn;
+};
+
+function restartAnimation() {
+  if (_particleTick) requestAnimationFrame(_particleTick);
+}
+
+// Animate zoom/pan back to identity (zoom=1, panX=0, panY=0) with
+// JS frame-by-frame position recalculation for crisp text.
+let _identityAnimId = null;
+function _animateToIdentity(duration) {
+  if (_identityAnimId) { cancelAnimationFrame(_identityAnimId); _identityAnimId = null; }
+  cancelPanAnimation(); // Cancel any running animatePanTo from tour stops
+
+  // Capture start values (live bindings)
+  const startZoom = physZoom, startPanX = physPanX, startPanY = physPanY;
+
+  if (prefersReducedMotion) {
+    resetZoomPan();
+    updateGalaxyTransform();
+    return;
+  }
+
+  const startTime = performance.now();
+  function step(now) {
+    const t = Math.min((now - startTime) / duration, 1);
+    const e = 1 - Math.pow(1 - t, 3); // ease-out cubic
+    setZoom(startZoom + (1 - startZoom) * e);
+    setPanX(startPanX + (0 - startPanX) * e);
+    setPanY(startPanY + (0 - startPanY) * e);
+    updateGalaxyTransform();
+    if (t < 1) { _identityAnimId = requestAnimationFrame(step); }
+    else { _identityAnimId = null; }
+  }
+  _identityAnimId = requestAnimationFrame(step);
+}
+
+export function initTours() {
+  // Restore mode preference
+  const saved = safeLSGet(lsPrefix + 'tour-mode');
+  if (saved === 'dev' || saved === 'admin') tourState.mode = saved;
+
+  // Create tour picker dropdown container
+  const picker = document.createElement('div');
+  picker.id = 'tour-picker';
+  picker.className = 'tour-picker';
+  picker.setAttribute('role', 'dialog');
+  picker.setAttribute('aria-label', 'Choose a tour');
+  picker.setAttribute('aria-hidden', 'true');
+  picker.setAttribute('inert', '');
+  // NOTE: innerHTML usage is safe here. All content is from trusted TOURS
+  // data object (app-owned tour-data.js), not user input.
+  picker.innerHTML = renderTourPicker();
+  document.body.appendChild(picker);
+
+  wirePickerItems(picker);
+
+  // Focus trap: Tab cycles within picker, Escape closes it
+  picker.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setPickerOpen(false);
+      const btn = document.getElementById('tour-btn');
+      if (btn) btn.focus();
+      return;
+    }
+    if (e.key === 'Tab') {
+      const items = picker.querySelectorAll('[data-tour-id]');
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  });
+
+  // Create narration card container
+  const card = document.createElement('div');
+  card.id = 'tour-card';
+  card.className = 'tour-card';
+  card.setAttribute('aria-hidden', 'true');
+  card.setAttribute('inert', '');
+  document.body.appendChild(card);
+
+  // Close picker when clicking outside, return focus to tour button
+  document.addEventListener('click', (e) => {
+    const pickerEl = document.getElementById('tour-picker');
+    const btn = document.getElementById('tour-btn');
+    if (pickerEl && btn && !pickerEl.contains(e.target) && !btn.contains(e.target)) {
+      if (pickerEl.classList.contains('open')) {
+        setPickerOpen(false);
+        btn.focus();
+      }
+    }
+  });
+}
+
+function wirePickerItems(picker) {
+  picker.querySelectorAll('[data-tour-id]').forEach((el) => {
+    el.addEventListener('click', () => startTour(el.dataset.tourId));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startTour(el.dataset.tourId); }
+    });
+  });
+}
+
+// Re-render after a tour completes so its ✓ shows next time the picker opens.
+function refreshTourPicker() {
+  const picker = document.getElementById('tour-picker');
+  if (!picker) return;
+  picker.innerHTML = renderTourPicker();
+  wirePickerItems(picker);
+}
+
+function renderTourPicker() {
+  return TOURS.map((t) =>
+    `<div class="tour-picker-item" data-tour-id="${t.id}" role="button" tabindex="0">` +
+      `<div class="tour-picker-icon icon-svg">${iconHtml(t.icon, 24)}</div>` +
+      `<div class="tour-picker-info">` +
+        `<div class="tour-picker-title">${t.title}</div>` +
+        `<div class="tour-picker-desc">${t.desc}</div>` +
+        `<div class="tour-picker-meta">${t.stops.length} stops${isMissionDone(t.id) ? ' · <span class="tour-done">✓ Completed</span>' : ""}</div>` +
+      `</div></div>`
+  ).join('');
+}
+
+export function toggleTourPicker() {
+  const picker = document.getElementById('tour-picker');
+  if (!picker) return;
+  const wasOpen = picker.classList.contains('open');
+  setPickerOpen(wasOpen ? false : true);
+
+  if (!wasOpen) {
+    // Opening: focus first tour item
+    track('tour_picker_open', {});
+    const first = picker.querySelector('[data-tour-id]');
+    if (first) requestAnimationFrame(() => first.focus());
+  } else {
+    // Closing: return focus to tour button
+    const btn = document.getElementById('tour-btn');
+    if (btn) btn.focus();
+  }
+}
+
+function setPickerOpen(open) {
+  const picker = document.getElementById('tour-picker');
+  const button = document.getElementById('tour-btn');
+  if (!picker) return;
+  picker.classList.toggle('open', open);
+  picker.toggleAttribute('inert', !open);
+  picker.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (button) button.setAttribute('aria-expanded', String(open));
+}
+
+// Note: window.toggleTourPicker no longer needed
+// since inline onclick was replaced with addEventListener in main.js
+
+function startTour(tourId) {
+  const tour = TOURS.find((t) => t.id === tourId);
+  if (!tour) return;
+
+  // Close picker
+  const picker = document.getElementById('tour-picker');
+  if (picker) setPickerOpen(false);
+
+  // If not on galaxy view, navigate there first
+  if (currentLevel !== 'galaxy') {
+    navigateTo('galaxy');
+  }
+
+  // Ensure galaxy canvas is visible
+  setGalaxyVisible(true);
+
+  // Build set of all planets in this tour
+  const stopPlanets = new Set();
+  for (const stop of tour.stops) {
+    stopPlanets.add(stop.planet);
+  }
+  setTourStopPlanets(stopPlanets);
+  tourState._stopPlanets = stopPlanets;
+
+  // Set tour state
+  tourState.active = true;
+  tourState.tourId = tourId;
+  tourState.stopIndex = 0;
+  tourState.startTime = Date.now();
+  tourState.stopStartTime = Date.now();
+
+  // Go to first stop
+  goToStop(0);
+
+  // Immersive mode: hide galaxy chrome
+  document.body.classList.add('tour-active');
+
+  // Show narration card
+  const card = document.getElementById('tour-card');
+  if (card) {
+    card.classList.add('visible');
+    card.removeAttribute('inert');
+    card.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => card.querySelector('[data-tour-next], [data-tour-exit]')?.focus());
+  }
+
+  track('tour_start', {
+    tour_id: tourId,
+    tour_title: tour.title,
+    total_stops: tour.stops.length
+  });
+}
+
+function goToStop(index) {
+  const tour = TOURS.find((t) => t.id === tourState.tourId);
+  if (!tour || index < 0 || index >= tour.stops.length) return;
+
+  // Track time on previous stop
+  const now = Date.now();
+  if (tourState.stopStartTime && index !== tourState.stopIndex) {
+    const timeOnStop = Math.round((now - tourState.stopStartTime) / 1000);
+    track('tour_stop_view', {
+      tour_id: tourState.tourId,
+      stop_index: tourState.stopIndex,
+      planet: tour.stops[tourState.stopIndex] ? tour.stops[tourState.stopIndex].planet : '',
+      time_on_stop_seconds: timeOnStop
+    });
+  }
+  tourState.stopStartTime = now;
+  tourState.stopIndex = index;
+  const stop = tour.stops[index];
+
+  // Fire completion event when reaching the last stop
+  if (index === tour.stops.length - 1) {
+    const totalDuration = Math.round((now - tourState.startTime) / 1000);
+    track('tour_complete', {
+      tour_id: tourState.tourId,
+      tour_title: tour.title,
+      total_stops: tour.stops.length,
+      duration_seconds: totalDuration
+    });
+  }
+
+  // Build highlighted edges set
+  const highlightedEdges = new Set();
+  if (stop.highlightEdges) {
+    for (const edge of stop.highlightEdges) {
+      const key = [stop.planet, edge].sort().join('--');
+      highlightedEdges.add(key);
+    }
+  }
+
+  // Apply tour dimming via DOM classes (replaces canvas-based dimming)
+  const stopPlanets = tourState._stopPlanets || null;
+  applyTourDimming(stop.planet, stopPlanets, highlightedEdges);
+
+  // Animate camera to planet via JS position recalculation (crisp at every frame)
+  const node = nodeMap[stop.planet];
+  if (node) {
+    animatePanTo(node, 800, 1.4);
+  }
+
+  // Ensure particle rendering continues
+  restartAnimation();
+
+  // Update narration card
+  renderNarrationCard(tour, stop, index);
+
+  // B5: Screen reader announcement for tour stop
+  const planetName = PRODUCT_DATA[stop.planet] ? PRODUCT_DATA[stop.planet].name : stop.planet;
+  announce(`Tour stop ${index + 1} of ${tour.stops.length}: ${planetName}`);
+}
+
+export function advanceStop(direction) {
+  if (!tourState.active) return;
+  const tour = TOURS.find((t) => t.id === tourState.tourId);
+  if (!tour) return;
+
+  const newIndex = tourState.stopIndex + direction;
+  if (newIndex < 0 || newIndex >= tour.stops.length) return;
+
+  goToStop(newIndex);
+  track('tour_navigate', { tour: tourState.tourId, stop: newIndex, direction: direction > 0 ? 'next' : 'prev' });
+}
+
+export function exitTour() {
+  // Capture analytics before clearing state
+  const tour = TOURS.find((t) => t.id === tourState.tourId);
+  const totalStops = tour ? tour.stops.length : 0;
+  const duration = Math.round((Date.now() - tourState.startTime) / 1000);
+  const stopsViewed = tourState.stopIndex + 1;
+  const completed = stopsViewed === totalStops;
+  const exitTourId = tourState.tourId;
+  if (completed && exitTourId) {
+    // Never let progress-saving (e.g. storage disabled) block tour cleanup below.
+    try {
+      completeMission(exitTourId);
+      refreshTourPicker();
+    } catch (err) {
+      console.warn("[tours] could not record mission:", err);
+    }
+  }
+
+  // Track time on final stop
+  if (tourState.stopStartTime && tour) {
+    const timeOnStop = Math.round((Date.now() - tourState.stopStartTime) / 1000);
+    track('tour_stop_view', {
+      tour_id: exitTourId,
+      stop_index: tourState.stopIndex,
+      planet: tour.stops[tourState.stopIndex] ? tour.stops[tourState.stopIndex].planet : '',
+      time_on_stop_seconds: timeOnStop
+    });
+  }
+
+  tourState.active = false;
+  tourState.tourId = null;
+  tourState.stopIndex = 0;
+  tourState.startTime = 0;
+  tourState.stopStartTime = 0;
+  tourState._stopPlanets = null;
+
+  // Clear visual state — remove DOM dimming classes
+  clearTourDimming();
+  setTourStopPlanets(null);
+
+  // Exit immersive mode: restore galaxy chrome
+  document.body.classList.remove('tour-active');
+
+  // Hide narration card
+  const card = document.getElementById('tour-card');
+  if (card) {
+    card.classList.remove('visible');
+    card.setAttribute('aria-hidden', 'true');
+    card.setAttribute('inert', '');
+  }
+  document.getElementById('tour-btn')?.focus();
+
+  // Reset camera: animate back to identity zoom/pan (crisp at every frame)
+  _animateToIdentity(800);
+
+  // Reset hash to galaxy view
+  setHash('#/');
+  updateDocumentTitle('galaxy');
+
+  // Ensure particle rendering continues
+  restartAnimation();
+
+  track('tour_exit', {
+    tour_id: exitTourId,
+    total_stops: totalStops,
+    stops_viewed: stopsViewed,
+    completed: completed,
+    duration_seconds: duration
+  });
+}
+
+function setTourMode(mode) {
+  tourState.mode = mode;
+  safeLSSet(lsPrefix + 'tour-mode', mode);
+
+  // Re-render current card content without camera movement
+  if (tourState.active) {
+    const tour = TOURS.find((t) => t.id === tourState.tourId);
+    if (tour) {
+      renderNarrationCard(tour, tour.stops[tourState.stopIndex], tourState.stopIndex);
+    }
+  }
+
+  track('tour_mode_change', { mode });
+}
+
+function renderNarrationCard(tour, stop, index) {
+  const card = document.getElementById('tour-card');
+  if (!card) return;
+
+  const content = stop[tourState.mode];
+  const isFirst = index === 0;
+  const isLast = index === tour.stops.length - 1;
+  const planetData = PRODUCT_DATA[stop.planet] || null;
+  const planetColor = planetData ? planetData.color : '#4d8bff';
+
+  // Progress dots
+  let dots = '';
+  for (let i = 0; i < tour.stops.length; i++) {
+    dots += `<span class="tour-dot${i === index ? ' active' : ''}${i < index ? ' completed' : ''}"></span>`;
+  }
+
+  // NOTE: All content is app-owned data from tour-data.js, not user input.
+  card.innerHTML =
+    `<div class="tour-card-header">` +
+      `<div class="tour-card-title-row">` +
+        `<span class="tour-card-planet-icon" style="color:${planetColor}">` +
+          `${planetData ? '<span class="icon-svg">' + domainSvg(stop.planet, 20) + '</span>' : ''}` +
+        `</span>` +
+        `<h3 class="tour-card-title">${content.title}</h3>` +
+      `</div>` +
+      `<div class="tour-mode-toggle">` +
+        `<button class="tour-mode-btn${tourState.mode === 'admin' ? ' active' : ''}" data-tour-mode="admin" aria-pressed="${tourState.mode === 'admin'}">Admin</button>` +
+        `<button class="tour-mode-btn${tourState.mode === 'dev' ? ' active' : ''}" data-tour-mode="dev" aria-pressed="${tourState.mode === 'dev'}">Dev</button>` +
+      `</div>` +
+      `<button class="tour-exit-btn" data-tour-exit aria-label="Exit tour">${uiSvg("close", 16)}</button>` +
+    `</div>` +
+    `<div class="tour-card-body">` +
+      `<p>${content.body}</p>` +
+    `</div>` +
+    `<div class="tour-card-footer">` +
+      `<button class="tour-nav-btn${isFirst ? ' disabled' : ''}" data-tour-prev${isFirst ? ' disabled' : ''}>${uiSvg("arrow-left", 15)} Prev</button>` +
+      `<div class="tour-progress">` +
+        `<div class="tour-dots">${dots}</div>` +
+        `<span class="tour-counter">${index + 1} / ${tour.stops.length}</span>` +
+      `</div>` +
+      `<button class="tour-nav-btn${isLast ? ' disabled' : ''}" data-tour-next${isLast ? ' disabled' : ''}>Next ${uiSvg("arrow-right", 15)}</button>` +
+    `</div>`;
+
+  // Attach event listeners for narration card controls
+  card.querySelectorAll('[data-tour-mode]').forEach((btn) => {
+    btn.addEventListener('click', () => setTourMode(btn.dataset.tourMode));
+  });
+  const exitBtn = card.querySelector('[data-tour-exit]');
+  if (exitBtn) exitBtn.addEventListener('click', () => exitTour());
+  const prevBtn = card.querySelector('[data-tour-prev]');
+  if (prevBtn) prevBtn.addEventListener('click', () => advanceStop(-1));
+  const nextBtn = card.querySelector('[data-tour-next]');
+  if (nextBtn) nextBtn.addEventListener('click', () => advanceStop(1));
+}

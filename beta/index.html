@@ -1,0 +1,1369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+<meta name="robots" content="noindex, nofollow">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Explorer</title>
+    <meta
+      name="description"
+      content="See the architecture. Skip the code. Salesforce industry-cloud codebases rendered as an interactive galaxy you can navigate, search, and tour."
+    />
+    <link rel="icon" type="image/svg+xml" href="npsp/favicon.svg" />
+    <style>
+      @font-face {
+        font-family: "Bricolage Grotesque";
+        src: url("app/fonts/BricolageGrotesque-latin.woff2") format("woff2");
+        font-weight: 100 900;
+        font-display: swap;
+      }
+
+      /* ══════════════════════════════════════════════════
+         Tokens — light body (SLDS-grounded) + dark hero world.
+         No pure #000/#fff; neutrals tinted toward the brand hue.
+         ══════════════════════════════════════════════════ */
+      :root {
+        /* Light body */
+        --bg: #f3f3f3; /* SLDS neutral-95 */
+        --bg-field: radial-gradient(
+          ellipse 120% 80% at 50% -10%,
+          #eaf5fe 0%,
+          #f4f7fc 46%,
+          #eef1f6 100%
+        );
+        --surface: #fcfdff; /* hair-tinted, not pure #fff */
+        --surface-sunk: #f6f9fe;
+        --line: #e3e7ee;
+        --line-strong: #cdd4df;
+        --ink: #181818; /* neutral-10 */
+        --ink-2: #444444; /* neutral-30 */
+        --ink-3: #5c5c5c; /* neutral-40 */
+        --ink-4: #747474; /* neutral-50 */
+
+        --brand-display: #00b3ff; /* Cloud Blue 68 — large text / fills only */
+        --brand-link: #0b5cab; /* Blue 40 — clears 50pt delta on white */
+        --brand-link-hover: #0176d3; /* SLDS Blue 50 */
+
+        --accent-teal: #06a59a;
+        --accent-violet: #9050e9;
+        --accent-pink: #e1206f;
+
+        --elev-1: 0 1px 2px rgba(2, 18, 46, 0.08);
+        --elev-2: 0 6px 18px rgba(2, 18, 46, 0.08), 0 1px 3px rgba(2, 18, 46, 0.06);
+        --elev-3: 0 18px 44px rgba(2, 18, 46, 0.12), 0 4px 10px rgba(2, 18, 46, 0.07);
+
+        /* Dark hero world */
+        --hero-field: radial-gradient(
+          ellipse 130% 100% at 50% 8%,
+          #0a2154 0%,
+          #061634 46%,
+          #03102a 100%
+        );
+        --hero-ink: #e7eef9;
+        --hero-ink-2: #aebfdc;
+        --hero-accent: #38c6ff; /* large hero accent on dark */
+
+        --font-display: "Bricolage Grotesque", -apple-system,
+          BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+          sans-serif;
+
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        --r-lg: 18px;
+        --r-md: 14px;
+        --r-sm: 10px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-body);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      a {
+        color: var(--brand-link);
+        text-decoration: none;
+      }
+
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: 12px;
+        z-index: 100;
+        background: var(--surface);
+        color: var(--brand-link);
+        padding: 10px 16px;
+        border-radius: var(--r-sm);
+        box-shadow: var(--elev-2);
+        font-weight: 600;
+      }
+      .skip-link:focus {
+        left: 16px;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--brand-link);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+
+      .wrap {
+        width: 100%;
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 clamp(20px, 5vw, 40px);
+      }
+
+      /* ══════════════════════════════════════════════════
+         HERO — dark galaxy world
+         ══════════════════════════════════════════════════ */
+      .hero {
+        position: relative;
+        min-height: clamp(540px, 78vh, 720px);
+        background: var(--hero-field);
+        color: var(--hero-ink);
+        overflow: hidden;
+        isolation: isolate;
+        display: flex;
+        align-items: center;
+      }
+
+      /* live galaxy stage (decorative) */
+      .galaxy {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: auto;
+      }
+      #stars {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .star {
+        position: absolute;
+        border-radius: 50%;
+        background: #cfe0ff;
+      }
+      #edges {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        overflow: visible;
+      }
+      .edge {
+        fill: none;
+        stroke: rgba(120, 160, 255, 0.26);
+        stroke-width: 1.3;
+        stroke-dasharray: 6 5;
+        transition: stroke 0.2s, opacity 0.2s, stroke-width 0.2s;
+      }
+      .edge.lit {
+        stroke: #6cd0ff;
+        stroke-dasharray: none;
+        stroke-width: 2.2;
+        opacity: 1 !important;
+      }
+      .galaxy.dimming .edge:not(.lit) {
+        opacity: 0.07;
+      }
+
+      .planet {
+        position: absolute;
+        width: var(--d);
+        height: var(--d);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        /* MATTE real-planet (from planet-playground.html, Eugene's pick) */
+        background: radial-gradient(
+          circle at 32% 28%,
+          var(--c-lt) 0%,
+          var(--c) 44%,
+          var(--c-dk) 78%,
+          var(--c-dk2) 100%
+        );
+        box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45),
+          0 0 22px color-mix(in srgb, var(--c) 16%, transparent);
+        transition: filter 0.2s ease, opacity 0.25s ease;
+        will-change: transform;
+      }
+      .planet::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 70% 74%,
+          rgba(0, 0, 0, 0.32) 0%,
+          rgba(0, 0, 0, 0) 55%
+        );
+        pointer-events: none;
+      }
+      .planet .ico {
+        width: calc(var(--d) * 0.42);
+        height: calc(var(--d) * 0.42);
+        pointer-events: none;
+        z-index: 1;
+      }
+      .planet .ico svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        stroke: rgba(255, 255, 255, 0.92);
+        fill: none;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .galaxy.dimming .planet:not(.hovered):not(.adj) {
+        opacity: 0.24;
+      }
+      .planet.hovered {
+        filter: brightness(1.08);
+        z-index: 5;
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 2;
+        pointer-events: none;
+        width: 100%;
+      }
+
+      /* 3D universe hero (app/js/landing-universe.js) */
+      .universe-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .galaxy.universe-on #stars,
+      .galaxy.universe-on #edges {
+        display: none;
+      }
+      .universe-links {
+        position: absolute;
+        inset: 0;
+        z-index: 1; /* under the headline text; the text column itself is pointer-events:none */
+      }
+      .universe-planet {
+        position: absolute;
+        left: 0;
+        top: 0;
+        border-radius: 50%;
+        will-change: transform;
+      }
+      .universe-planet:focus-visible {
+        outline: 2px solid #5cc8ff;
+        outline-offset: 6px;
+      }
+      .universe-label {
+        position: absolute;
+        left: 50%;
+        top: 100%;
+        transform: translate(-50%, 8px);
+        display: grid;
+        justify-items: center;
+        white-space: nowrap;
+        font: 650 13.5px/1.25 var(--font-display, sans-serif);
+        color: #fff;
+        background: rgba(3, 7, 18, 0.6);
+        border-radius: 8px;
+        padding: 4px 10px;
+        backdrop-filter: blur(4px);
+        transition: opacity 0.25s ease;
+        pointer-events: none;
+      }
+      .universe-label small {
+        font: 500 11px var(--font-body, sans-serif);
+        color: #a9b8d8;
+      }
+      .universe-planet.dim .universe-label,
+      .universe-planet.back .universe-label {
+        opacity: 0.35;
+      }
+      /* Narrow screens: planets are ambient; the product list below is the way in. */
+      .galaxy.universe-narrow .universe-label {
+        display: none;
+      }
+      .universe-planet.back:hover .universe-label,
+      .universe-planet.back:focus-visible .universe-label {
+        opacity: 1;
+      }
+      /* left scrim so the headline stays legible over planets */
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: linear-gradient(
+          100deg,
+          rgba(3, 14, 36, 0.82) 0%,
+          rgba(3, 14, 36, 0.55) 34%,
+          rgba(3, 14, 36, 0) 62%
+        );
+      }
+      .hero-content .col {
+        max-width: 600px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--hero-ink-2);
+        margin-bottom: 22px;
+      }
+      .eyebrow .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--brand-display);
+        box-shadow: 0 0 12px var(--brand-display);
+      }
+
+      .hero h1 {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: clamp(2.3rem, 6vw, 4rem);
+        line-height: 1.04;
+        letter-spacing: -0.02em;
+        color: var(--hero-ink);
+        margin-bottom: 20px;
+      }
+      .hero h1 .accent {
+        color: var(--hero-accent);
+      }
+      .hero-sub {
+        font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+        color: var(--hero-ink-2);
+        line-height: 1.55;
+        max-width: 46ch;
+        margin-bottom: 34px;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: center;
+        pointer-events: auto;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 0.98rem;
+        font-weight: 600;
+        padding: 13px 22px;
+        border-radius: var(--r-sm);
+        transition: transform 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out),
+          background 0.18s, border-color 0.18s;
+      }
+      .btn svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .btn-primary {
+        background: var(--brand-display);
+        color: #042038;
+        box-shadow: 0 6px 22px rgba(0, 179, 255, 0.32);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0, 179, 255, 0.42);
+      }
+      .btn-ghost {
+        color: var(--hero-ink);
+        border: 1px solid rgba(174, 191, 220, 0.4);
+      }
+      .btn-ghost:hover {
+        border-color: rgba(174, 191, 220, 0.85);
+        background: rgba(120, 160, 255, 0.08);
+      }
+
+      .scroll-cue {
+        position: absolute;
+        left: 50%;
+        bottom: 22px;
+        transform: translateX(-50%);
+        z-index: 2;
+        color: var(--hero-ink-2);
+        font-size: 0.75rem;
+        letter-spacing: 0.06em;
+        text-transform: lowercase;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        opacity: 0.7;
+        animation: floaty 2.6s ease-in-out infinite;
+      }
+      .scroll-cue svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      @keyframes floaty {
+        0%, 100% { transform: translate(-50%, 0); }
+        50% { transform: translate(-50%, 5px); }
+      }
+
+      /* ══════════════════════════════════════════════════
+         BODY — light, SLDS-grounded
+         ══════════════════════════════════════════════════ */
+      main {
+        background: var(--bg-field);
+        position: relative;
+      }
+
+      .section {
+        padding: clamp(54px, 8vw, 92px) 0;
+      }
+      .section-head {
+        margin-bottom: 40px;
+      }
+      .section-kicker {
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--brand-link);
+        margin-bottom: 10px;
+      }
+      .section-title {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: clamp(1.6rem, 3.4vw, 2.3rem);
+        letter-spacing: -0.015em;
+        color: var(--ink);
+        line-height: 1.12;
+      }
+      .section-lede {
+        font-size: 1.05rem;
+        color: var(--ink-2);
+        max-width: 60ch;
+        margin-top: 12px;
+      }
+
+      /* ── Capabilities: two-column, de-carded ── */
+      .caps {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: clamp(28px, 5vw, 64px);
+      }
+      .cap h3 {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--ink);
+        padding-bottom: 14px;
+        margin-bottom: 6px;
+        border-bottom: 1px solid var(--line-strong);
+        display: flex;
+        align-items: center;
+        gap: 11px;
+      }
+      .cap h3 .ci {
+        width: 22px;
+        height: 22px;
+        color: var(--brand-link);
+        flex-shrink: 0;
+      }
+      .cap h3 .ci svg {
+        width: 100%;
+        height: 100%;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .cap dl {
+        margin: 0;
+      }
+      .cap dt {
+        font-weight: 600;
+        color: var(--ink);
+        margin-top: 18px;
+        font-size: 0.98rem;
+      }
+      .cap dd {
+        color: var(--ink-2);
+        font-size: 0.95rem;
+        line-height: 1.55;
+        margin: 3px 0 0;
+      }
+
+      /* ── Roster ── */
+      .roster {
+        display: grid;
+        gap: 18px;
+      }
+      /* Featured flagship (NPSP) */
+      .feature {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        box-shadow: var(--elev-2);
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out),
+          border-color 0.2s;
+      }
+      .feature:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--elev-3);
+        border-color: var(--line-strong);
+      }
+      .feature-body {
+        padding: clamp(28px, 4vw, 42px);
+      }
+      .feature-tag {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--brand-link);
+        background: #eaf5fe;
+        border-radius: 999px;
+        padding: 5px 12px;
+        margin-bottom: 16px;
+      }
+      .feature-name {
+        font-family: var(--font-display);
+        font-size: clamp(1.6rem, 3vw, 2.1rem);
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        color: var(--ink);
+        line-height: 1.05;
+      }
+      .feature-full {
+        color: var(--ink-3);
+        font-size: 1rem;
+        margin: 4px 0 22px;
+      }
+      .feature-stats {
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        gap: 20px 32px;
+        justify-content: start;
+        margin-bottom: 26px;
+      }
+      .stat .n {
+        font-family: var(--font-display);
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--ink);
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+      }
+      .stat .l {
+        font-size: 0.82rem;
+        color: var(--ink-3);
+        margin-top: 5px;
+      }
+      .feature-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: var(--brand-link);
+        font-size: 1rem;
+      }
+      .feature:hover .feature-cta {
+        color: var(--brand-link-hover);
+      }
+      .feature-cta svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: transform 0.18s var(--ease-out);
+      }
+      .feature:hover .feature-cta svg {
+        transform: translateX(4px);
+      }
+      /* featured visual panel — drifting matte planets, dark inset */
+      .feature-visual {
+        position: relative;
+        background: var(--hero-field);
+        min-height: 230px;
+        overflow: hidden;
+      }
+      .feature-visual #fedges {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        pointer-events: none;
+      }
+      .feature-visual .edge {
+        stroke: rgba(120, 160, 255, 0.3);
+      }
+
+      /* Compact roster grid */
+      .roster-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 14px;
+      }
+      .rcard {
+        display: flex;
+        flex-direction: column;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 20px 22px;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out),
+          border-color 0.18s;
+      }
+      .rcard:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--elev-2);
+        border-color: var(--line-strong);
+      }
+      .rcard-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .rdot {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: radial-gradient(
+          circle at 34% 30%,
+          var(--c-lt) 0%,
+          var(--c) 52%,
+          var(--c-dk) 100%
+        );
+        box-shadow: var(--elev-1);
+      }
+      .rcard-name {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: var(--ink);
+        line-height: 1.15;
+      }
+      .rcard-full {
+        font-size: 0.8rem;
+        color: var(--ink-4);
+        margin-top: 1px;
+      }
+      .rcard-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        margin-top: auto;
+        padding-top: 4px;
+      }
+      .rstat {
+        font-size: 0.82rem;
+        color: var(--ink-3);
+      }
+      .rstat strong {
+        color: var(--ink);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .rcard-go {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 16px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--brand-link);
+      }
+      .rcard-go svg {
+        width: 15px;
+        height: 15px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: transform 0.18s var(--ease-out);
+      }
+      .rcard:hover .rcard-go svg {
+        transform: translateX(3px);
+      }
+
+      /* ══════════════════════════════════════════════════
+         FOOTER
+         ══════════════════════════════════════════════════ */
+      footer {
+        border-top: 1px solid var(--line);
+        background: var(--surface);
+        padding: 40px 0;
+      }
+      .foot {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px 40px;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .foot-prov {
+        color: var(--ink-3);
+        font-size: 0.9rem;
+        max-width: 62ch;
+        line-height: 1.6;
+      }
+      .foot-prov strong {
+        color: var(--ink-2);
+        font-weight: 600;
+      }
+      .foot-meta {
+        display: flex;
+        gap: 22px;
+        align-items: center;
+        font-size: 0.85rem;
+      }
+      .foot-brand {
+        font-family: var(--font-display);
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .foot-link {
+        color: var(--brand-link);
+        font-weight: 600;
+      }
+      .foot-link:hover {
+        color: var(--brand-link-hover);
+      }
+
+      /* ── reveal on load ── */
+      .reveal {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      .reveal.in {
+        opacity: 1;
+        transform: none;
+        transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+      }
+
+      /* ══════════════════════════════════════════════════
+         RESPONSIVE
+         ══════════════════════════════════════════════════ */
+      @media (max-width: 860px) {
+        .caps {
+          grid-template-columns: 1fr;
+        }
+        .feature {
+          grid-template-columns: 1fr;
+        }
+        .feature-visual {
+          order: -1;
+          min-height: 170px;
+        }
+      }
+      @media (max-width: 600px) {
+        .hero {
+          min-height: clamp(480px, 86vh, 620px);
+          align-items: flex-start;
+        }
+        .hero-content {
+          padding-top: 64px;
+        }
+        /* vertical scrim: protect the headline up top, let planets drift below */
+        .hero::after {
+          background: linear-gradient(
+            180deg,
+            rgba(3, 14, 36, 0.94) 0%,
+            rgba(3, 14, 36, 0.78) 34%,
+            rgba(3, 14, 36, 0.35) 62%,
+            rgba(3, 14, 36, 0) 84%
+          );
+        }
+        .cta-row {
+          width: 100%;
+        }
+        .btn {
+          flex: 1;
+          justify-content: center;
+        }
+        .feature-stats {
+          grid-template-columns: repeat(2, auto);
+        }
+        .scroll-cue {
+          display: none;
+        }
+      }
+
+      /* ── reduced motion ── */
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        .scroll-cue {
+          animation: none;
+        }
+        .reveal {
+          opacity: 1;
+          transform: none;
+          transition: none;
+        }
+        .btn,
+        .feature,
+        .rcard {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to products</a>
+
+    <!-- ════════ HERO — dark galaxy world ════════ -->
+    <header class="hero">
+      <div class="galaxy" id="galaxy" aria-hidden="true">
+        <div id="stars"></div>
+        <svg id="edges"></svg>
+      </div>
+
+      <div class="hero-content wrap">
+        <div class="col">
+          <span class="eyebrow reveal"><span class="dot"></span>Product Explorer</span>
+          <h1 class="reveal">
+            See the architecture.<br />
+            <span class="accent">Skip the code.</span>
+          </h1>
+          <p class="hero-sub reveal">
+            Salesforce industry-cloud codebases, rendered as an interactive
+            galaxy. Navigate domains, trace how data flows, and search the whole
+            system, without reading a single line of code.
+          </p>
+          <div class="cta-row reveal">
+            <a class="btn btn-primary" id="heroPrimary" href="nonprofitcloud/">
+              Explore Nonprofit Cloud
+              <svg viewBox="0 0 24 24"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </a>
+            <a class="btn btn-ghost" href="#products">Browse all products</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="scroll-cue" aria-hidden="true">
+        <span>explore</span>
+        <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ════════ Capabilities ════════ -->
+      <section class="section wrap">
+        <div class="section-head reveal">
+          <p class="section-kicker">Built for the whole team</p>
+          <h2 class="section-title">One map. Every level of detail.</h2>
+          <p class="section-lede">
+            Each product opens as a galaxy of domains. Drill from the big
+            picture down to a single Apex class, or let a guided tour walk you
+            through the workflows that matter.
+          </p>
+        </div>
+
+        <div class="caps reveal">
+          <div class="cap">
+            <h3>
+              <span class="ci"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.9" /><path d="M16 3.1a4 4 0 0 1 0 7.8" /></svg></span>
+              For admins &amp; consultants
+            </h3>
+            <dl>
+              <dt>Feature connections</dt>
+              <dd>See how components relate across the product at a glance.</dd>
+              <dt>Dependencies</dt>
+              <dd>Understand what relies on what before you change anything.</dd>
+              <dt>Guided tours</dt>
+              <dd>Walk key workflows as narrated constellation stories.</dd>
+              <dt>Universal search</dt>
+              <dd>Find any component, entity, or domain instantly.</dd>
+            </dl>
+          </div>
+          <div class="cap">
+            <h3>
+              <span class="ci"><svg viewBox="0 0 24 24"><path d="m18 16 4-4-4-4" /><path d="m6 8-4 4 4 4" /><path d="m14.5 4-5 16" /></svg></span>
+              For developers &amp; architects
+            </h3>
+            <dl>
+              <dt>Execution flows</dt>
+              <dd>Trace data through triggers, classes, and handlers.</dd>
+              <dt>Entity data</dt>
+              <dd>Inspect classes, objects, triggers, and LWCs per component.</dd>
+              <dt>Connection maps</dt>
+              <dd>Visualize cross-domain dependencies and data flows.</dd>
+              <dt>Plain-language descriptions</dt>
+              <dd>Every component and entity annotated in clear English.</dd>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════ Products ════════ -->
+      <section class="section wrap" id="products">
+        <div class="section-head reveal">
+          <p class="section-kicker">Explore</p>
+          <h2 class="section-title">Ten products, mapped end to end.</h2>
+        </div>
+
+        <div class="roster">
+          <!-- featured flagship injected here -->
+          <a class="feature reveal" id="feature" href="#"></a>
+          <!-- compact roster injected here -->
+          <div class="roster-grid reveal" id="rosterGrid"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ════════ Footer ════════ -->
+    <footer>
+      <div class="wrap foot">
+        <p class="foot-prov">
+          <strong>Architecture mapped from public, open-source repositories</strong>
+          and public product documentation, then rendered as an interactive
+          system. No build step, no dependencies, no frameworks: pure HTML, CSS,
+          and ES modules.
+        </p>
+        <div class="foot-meta">
+          <span class="foot-brand">Product Explorer</span>
+          <a
+            class="foot-link"
+            href="https://github.com/EPugach/product-explorer"
+            rel="noopener"
+            >View source</a
+          >
+        </div>
+      </div>
+    </footer>
+
+    <script type="module">
+      import { PRODUCTS } from "./products/manifest.js";
+
+      /* ── tiny icon set (Lucide, ISC) ── */
+      const I = {
+        users:
+          '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
+        dollar:
+          '<path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+        refresh:
+          '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+        chart:
+          '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+        layers:
+          '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/>',
+        zap:
+          '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+        package:
+          '<path d="M11 21.7a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7z"/><path d="M12 22V12"/><polyline points="3.3 7 12 12 20.7 7"/>',
+        upload:
+          '<path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>',
+        arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+      };
+      const svgIco = (p, cls = "") =>
+        `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+
+      /* ── cluster color (HSL ramp, matte recipe from playground) ── */
+      const HUES = [205, 174, 280, 338]; // blue, teal, violet, pink
+      const SAT = [88, 70, 70, 78];
+      const hsl = (h, s, l) => `hsl(${h} ${s}% ${l}%)`;
+      function clusterVars(cluster, t = 0.4) {
+        const h = HUES[cluster],
+          s = SAT[cluster];
+        const L = 60 - t * 13; // 60 → 47
+        return {
+          "--c": hsl(h, s, L),
+          "--c-lt": hsl(h, Math.min(100, s + 6), L + 16),
+          "--c-dk": hsl(h, s, L - 14),
+          "--c-dk2": hsl(h, s, L - 26),
+        };
+      }
+      const setVars = (el, vars) => {
+        for (const k in vars) el.style.setProperty(k, vars[k]);
+      };
+
+      /* ══════════════════════════════════════════════
+         HERO GALAXY — drifting matte planets + edges
+         ══════════════════════════════════════════════ */
+      // fractional positions tuned for a wide band; visual mass right-of-centre
+      const NODES = [
+        { id: "don", c: 0, r: 46, x: 0.66, y: 0.42, ic: I.dollar },
+        { id: "rec", c: 0, r: 30, x: 0.57, y: 0.24, ic: I.refresh },
+        { id: "con", c: 0, r: 28, x: 0.78, y: 0.28, ic: I.users },
+        { id: "roll", c: 1, r: 35, x: 0.87, y: 0.55, ic: I.chart },
+        { id: "batch", c: 1, r: 26, x: 0.76, y: 0.68, ic: I.layers },
+        { id: "bdi", c: 2, r: 31, x: 0.6, y: 0.7, ic: I.upload },
+        { id: "alloc", c: 2, r: 24, x: 0.49, y: 0.55, ic: I.package },
+        { id: "tdtm", c: 3, r: 27, x: 0.9, y: 0.34, ic: I.zap },
+        { id: "rel", c: 3, r: 24, x: 0.67, y: 0.84, ic: I.users },
+        { id: "lvl", c: 1, r: 21, x: 0.95, y: 0.74, ic: I.chart },
+      ];
+      const LINKS = [
+        ["don", "rec"], ["don", "con"], ["don", "roll"], ["don", "alloc"],
+        ["don", "bdi"], ["don", "tdtm"], ["roll", "batch"], ["roll", "lvl"],
+        ["bdi", "alloc"], ["con", "tdtm"], ["bdi", "rel"], ["batch", "lvl"],
+      ];
+
+      const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function buildGalaxy(stage, edgesSvg, nodes, links, opts = {}) {
+        const byId = {};
+        const adj = {};
+        nodes.forEach((n) => (adj[n.id] = new Set()));
+        links.forEach(([a, b]) => {
+          adj[a].add(b);
+          adj[b].add(a);
+        });
+
+        nodes.forEach((n) => {
+          const inC = nodes.filter((q) => q.c === n.c);
+          const t = inC.length > 1 ? inC.indexOf(n) / (inC.length - 1) : 0.4;
+          const el = document.createElement("div");
+          el.className = "planet";
+          setVars(el, clusterVars(n.c, t));
+          if (n.ic && opts.icons !== false)
+            el.innerHTML = `<span class="ico">${svgIco(n.ic)}</span>`;
+          stage.appendChild(el);
+          byId[n.id] = el;
+          n._phx = Math.random() * Math.PI * 2;
+          n._phy = Math.random() * Math.PI * 2;
+          n._amp = 4 + Math.random() * 6;
+
+          if (opts.hover !== false) {
+            el.addEventListener("pointerenter", () => {
+              stage.classList.add("dimming");
+              nodes.forEach((m) => byId[m.id].classList.remove("hovered", "adj"));
+              el.classList.add("hovered");
+              adj[n.id].forEach((m) => byId[m].classList.add("adj"));
+              edgesSvg.querySelectorAll(".edge").forEach((e) =>
+                e.classList.toggle(
+                  "lit",
+                  e.dataset.a === n.id || e.dataset.b === n.id
+                )
+              );
+            });
+            el.addEventListener("pointerleave", () => {
+              stage.classList.remove("dimming");
+              nodes.forEach((m) => byId[m.id].classList.remove("hovered", "adj"));
+              edgesSvg.querySelectorAll(".edge").forEach((e) =>
+                e.classList.remove("lit")
+              );
+            });
+          }
+        });
+
+        edgesSvg.innerHTML = links
+          .map(
+            ([a, b]) =>
+              `<line class="edge" data-a="${a}" data-b="${b}" />`
+          )
+          .join("");
+        const lineEls = [...edgesSvg.querySelectorAll(".edge")];
+
+        let W = 0,
+          H = 0;
+        function measure() {
+          const r = stage.getBoundingClientRect();
+          W = r.width;
+          H = r.height;
+        }
+        function frame(time) {
+          const ts = time || 0;
+          nodes.forEach((n) => {
+            n._bx = n.x * W;
+            n._by = n.y * H;
+            if (reduce) {
+              n._dx = 0;
+              n._dy = 0;
+            } else {
+              n._dx = Math.sin(ts * 0.00018 + n._phx) * n._amp;
+              n._dy = Math.cos(ts * 0.00021 + n._phy) * n._amp;
+            }
+            const el = byId[n.id];
+            el.style.left = n._bx + "px";
+            el.style.top = n._by + "px";
+            el.style.setProperty("--d", n.r * 2 + "px");
+            el.style.transform = `translate(-50%,-50%) translate(${n._dx}px,${n._dy}px)`;
+          });
+          lineEls.forEach((line) => {
+            const a = nodes.find((n) => n.id === line.dataset.a);
+            const b = nodes.find((n) => n.id === line.dataset.b);
+            line.setAttribute("x1", a._bx + a._dx);
+            line.setAttribute("y1", a._by + a._dy);
+            line.setAttribute("x2", b._bx + b._dx);
+            line.setAttribute("y2", b._by + b._dy);
+          });
+          if (!reduce) requestAnimationFrame(frame);
+        }
+        measure();
+        addEventListener("resize", () => {
+          measure();
+          if (reduce) frame(0);
+        });
+        requestAnimationFrame(frame);
+      }
+
+      // starfield
+      (function stars() {
+        const el = document.getElementById("stars");
+        let s = "";
+        for (let i = 0; i < 80; i++) {
+          const sz = Math.random() * 1.6 + 0.4;
+          s += `<div class="star" style="left:${Math.random() * 100}%;top:${
+            Math.random() * 100
+          }%;width:${sz}px;height:${sz}px;opacity:${
+            Math.random() * 0.55 + 0.15
+          }"></div>`;
+        }
+        el.innerHTML = s;
+      })();
+
+      // Hero: a 3D universe of the real products on capable devices (same
+      // renderer + shaders as the product galaxies); the CSS matte galaxy
+      // below is the fallback everywhere else.
+      // Loaded without blocking the product roster below; versioned like the
+      // product pages so an update isn't stuck in the HTTP cache.
+      const cssHero = () =>
+        buildGalaxy(
+          document.getElementById("galaxy"),
+          document.getElementById("edges"),
+          NODES,
+          LINKS
+        );
+      import("./app/js/version.js")
+        .then(({ v }) => import(`./app/js/landing-universe.js${v}`))
+        .then(({ startLandingUniverse }) => {
+          if (!startLandingUniverse(document.getElementById("galaxy"), PRODUCTS)) cssHero();
+        })
+        .catch((err) => {
+          console.warn("[landing] 3D universe unavailable, using CSS hero:", err);
+          cssHero();
+        });
+
+      /* ══════════════════════════════════════════════
+         PRODUCT ROSTER (from manifest)
+         ══════════════════════════════════════════════ */
+      const stat = (label, val) =>
+        `<span class="rstat"><strong>${val}</strong> ${label}</span>`;
+
+      const flagship =
+        PRODUCTS.find((p) => p.id === "nonprofitcloud") || PRODUCTS[0];
+      const rest = PRODUCTS.filter((p) => p !== flagship);
+
+      // featured flagship
+      const fEl = document.getElementById("feature");
+      fEl.href = flagship.id + "/";
+      const fStats = flagship.stats
+        .slice(0, 6)
+        .map(
+          ([l, v]) =>
+            `<div class="stat"><div class="n">${v}</div><div class="l">${l}</div></div>`
+        )
+        .join("");
+      fEl.innerHTML = `
+        <div class="feature-body">
+          <span class="feature-tag">Flagship</span>
+          <div class="feature-name">${flagship.name}</div>
+          <div class="feature-full">${flagship.fullName}</div>
+          <div class="feature-stats">${fStats}</div>
+          <span class="feature-cta">Launch explorer ${svgIco(I.arrow)}</span>
+        </div>
+        <div class="feature-visual">
+          <svg id="fedges"></svg>
+        </div>`;
+
+      // mini drifting galaxy inside the featured panel
+      const fNodes = [
+        { id: "a", c: 0, r: 34, x: 0.4, y: 0.42, ic: I.dollar },
+        { id: "b", c: 0, r: 22, x: 0.27, y: 0.66, ic: I.users },
+        { id: "c", c: 2, r: 24, x: 0.62, y: 0.66, ic: I.upload },
+        { id: "d", c: 1, r: 22, x: 0.68, y: 0.34, ic: I.chart },
+        { id: "e", c: 3, r: 18, x: 0.52, y: 0.22, ic: I.zap },
+      ];
+      const fLinks = [["a", "b"], ["a", "c"], ["a", "d"], ["a", "e"], ["c", "d"]];
+      buildGalaxy(
+        fEl.querySelector(".feature-visual"),
+        fEl.querySelector("#fedges"),
+        fNodes,
+        fLinks,
+        { hover: false }
+      );
+
+      // compact roster
+      const grid = document.getElementById("rosterGrid");
+      const ICONS = [I.dollar, I.refresh, I.layers, I.chart, I.package, I.zap, I.upload, I.users];
+      rest.forEach((p, i) => {
+        const card = document.createElement("a");
+        card.className = "rcard";
+        card.href = p.id + "/";
+        const dotVars = clusterVars(i % 4, 0.4);
+        const dotStyle = Object.entries(dotVars)
+          .map(([k, v]) => `${k}:${v}`)
+          .join(";");
+        const keyStats = p.stats
+          .filter(([l]) => ["Domains", "Components", "Objects"].includes(l))
+          .slice(0, 3)
+          .map(([l, v]) => stat(l, v))
+          .join("");
+        card.innerHTML = `
+          <div class="rcard-top">
+            <span class="rdot" style="${dotStyle}"></span>
+            <div>
+              <div class="rcard-name">${p.name}</div>
+              <div class="rcard-full">${p.fullName}</div>
+            </div>
+          </div>
+          <div class="rcard-stats">${keyStats}</div>
+          <div class="rcard-go">Explore ${svgIco(I.arrow)}</div>`;
+        grid.appendChild(card);
+      });
+
+      /* ══════════════════════════════════════════════
+         Staggered reveal on load
+         ══════════════════════════════════════════════ */
+      if (!reduce) {
+        const items = [...document.querySelectorAll(".reveal")];
+        // hero items reveal immediately, staggered; body items on scroll
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((e) => {
+              if (e.isIntersecting) {
+                e.target.classList.add("in");
+                io.unobserve(e.target);
+              }
+            });
+          },
+          { threshold: 0.12 }
+        );
+        items.forEach((el, i) => {
+          if (el.closest(".hero")) {
+            setTimeout(() => el.classList.add("in"), 90 * i + 80);
+          } else {
+            io.observe(el);
+          }
+        });
+      } else {
+        document
+          .querySelectorAll(".reveal")
+          .forEach((el) => el.classList.add("in"));
+      }
+
+      /* ══════════════════════════════════════════════
+         HERO CINEMA — mouse-parallax depth + scroll recede.
+         Container-level, so it composes with (never fights) the
+         per-planet drift loop. Reduced-motion users get none of it.
+         ══════════════════════════════════════════════ */
+      if (!reduce) {
+        const hero = document.querySelector(".hero");
+        const galaxy = document.getElementById("galaxy");
+        const stars = document.getElementById("stars");
+        const MAX = 16; // px shift of the planet/edge layer at full deflection
+
+        // Mouse-parallax: the planet/edge layer follows the cursor; the
+        // starfield trails it (nets ~0.45x, same direction) so the background
+        // moves less than the foreground = depth. Eased via a self-terminating rAF.
+        let tx = 0,
+          ty = 0,
+          cx = 0,
+          cy = 0,
+          praf = null;
+        function ptick() {
+          cx += (tx - cx) * 0.08;
+          cy += (ty - cy) * 0.08;
+          galaxy.style.transform = `translate(${cx * MAX}px, ${cy * MAX}px)`;
+          // #stars is a CHILD of #galaxy, so its own -0.55 transform COMPOSES
+          // with the parent's +1.0 to net +0.45x on screen: same direction as
+          // the planets, less travel = the background sits "further away".
+          stars.style.transform = `translate(${cx * -MAX * 0.55}px, ${cy * -MAX * 0.55}px)`;
+          if (Math.abs(tx - cx) > 0.001 || Math.abs(ty - cy) > 0.001)
+            praf = requestAnimationFrame(ptick);
+          else praf = null;
+        }
+        hero.addEventListener("pointermove", (e) => {
+          if (e.pointerType && e.pointerType !== "mouse") return; // skip touch
+          const r = hero.getBoundingClientRect();
+          tx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+          ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
+          if (!praf) praf = requestAnimationFrame(ptick);
+        }, { passive: true });
+        hero.addEventListener("pointerleave", () => {
+          tx = 0;
+          ty = 0;
+          if (!praf) praf = requestAnimationFrame(ptick);
+        });
+
+        // Scroll recede: the hero galaxy fades as you scroll into the content,
+        // so the hero -> content hand-off reads cinematic. Opacity only, so it
+        // never contends with the parallax transform above.
+        let sraf = null;
+        const applyFade = () => {
+          const fade = Math.max(0, 1 - window.scrollY / (innerHeight * 0.75));
+          galaxy.style.opacity = fade.toFixed(3);
+        };
+        addEventListener(
+          "scroll",
+          () => {
+            if (sraf) return;
+            sraf = requestAnimationFrame(() => {
+              applyFade();
+              sraf = null;
+            });
+          },
+          { passive: true },
+        );
+        // Recompute on resize and once now, so a restored/non-zero scroll
+        // position or a rotate/resize doesn't leave the hero at stale opacity.
+        addEventListener("resize", applyFade, { passive: true });
+        applyFade();
+      }
+    </script>
+  <a href="https://epugach.github.io/product-explorer/" title="Beta — go to the live site" style="position:fixed;left:12px;bottom:12px;z-index:99999;font:700 11px/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#03111f;background:#ffd166;padding:6px 9px;border-radius:6px;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.35)">Beta</a><script>if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{});</script>
+</body>
+</html>

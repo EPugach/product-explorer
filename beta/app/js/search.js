@@ -1,0 +1,1332 @@
+// ══════════════════════════════════════════════════════════════
+//  SEARCH ENGINE — MiniSearch-powered fuzzy search with overlay + ARIA
+//  Phase 1: BM25+ scoring, fuzzy matching, prefix search, field boosting
+//  CDN fallback: if MiniSearch fails to load, uses substring matching
+// ══════════════════════════════════════════════════════════════
+
+import { track, announce, showToast, copyText } from "./utils.js";
+import { entitySvg, domainSvg } from "./icons.js";
+
+// ── MiniSearch lazy CDN import with fallback ─────────────────
+// Loaded lazily in rebuildSearchIndex() to avoid top-level await
+// which would block DOMContentLoaded and prevent app initialization.
+let MiniSearch = null;
+let _useFallback = false;
+let _miniSearchLoaded = false;
+
+async function ensureMiniSearch() {
+  if (_miniSearchLoaded) return;
+  _miniSearchLoaded = true;
+  try {
+    const mod = await import("../vendor/minisearch.7.2.0.js");
+    MiniSearch = mod.default;
+  } catch {
+    try {
+      const mod =
+        await import("https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/es/index.min.js");
+      MiniSearch = mod.default;
+    } catch {
+      console.warn(
+        "[search] MiniSearch unavailable, using fallback substring search",
+      );
+      _useFallback = true;
+    }
+  }
+}
+
+// ── Salesforce synonym map ───────────────────────────────────
+const SYNONYMS = {
+  tdtm: "table driven trigger management",
+  gau: "general accounting unit",
+  rd: "recurring donation",
+  rd2: "enhanced recurring donation",
+  ocr: "opportunity contact role",
+  crlp: "customizable rollup",
+  bdi: "batch data import",
+  bge: "batch gift entry",
+  npsp: "nonprofit success pack",
+  hh: "household",
+  pmt: "payment",
+  opp: "opportunity",
+  lwc: "lightning web component",
+};
+
+// Build reverse map (full term -> abbreviation) for synonym text on documents
+const REVERSE_SYNONYMS = {};
+for (const [abbr, full] of Object.entries(SYNONYMS)) {
+  if (!REVERSE_SYNONYMS[full]) REVERSE_SYNONYMS[full] = [];
+  REVERSE_SYNONYMS[full].push(abbr);
+}
+
+function expandSynonyms(text) {
+  const lower = text.toLowerCase();
+  const expansions = [];
+  for (const [abbr, full] of Object.entries(SYNONYMS)) {
+    if (lower.includes(abbr)) expansions.push(full);
+  }
+  for (const [full, abbrs] of Object.entries(REVERSE_SYNONYMS)) {
+    if (lower.includes(full)) expansions.push(...abbrs);
+  }
+  return expansions.join(" ");
+}
+
+// ── Product data (injected by main.js) ──────────────────────
+let PRODUCT_DATA = {};
+let _productName = "Product";
+let _packages = {};
+export const setProductData = (data, name) => {
+  PRODUCT_DATA = data;
+  if (name) _productName = name;
+};
+export const setPackages = (packages) => {
+  _packages = packages || {};
+};
+
+// ── Entity link map (injected by main.js after entities load) ─
+let _entityLinkMap = null; // { name: sourceUrl } for all entities
+let _entityLinkNames = null; // sorted longest-first for replacement
+
+export const setEntityLinks = (map) => {
+  _entityLinkMap = map;
+  // Pre-sort names longest-first to prevent partial matches
+  _entityLinkNames = Object.keys(map).sort((a, b) => b.length - a.length);
+};
+
+// ── AI search state ─────────────────────────────────────────
+let _aiEndpoint = "";
+let _aiContext = "";
+let _aiDebounceTimer = null;
+const _aiSessionCache = new Map();
+const AI_CACHE_MAX = 20;
+const _aiInflight = new Map();
+
+export const setAiConfig = (endpoint, context) => {
+  _aiEndpoint = endpoint || "";
+  _aiContext = context || "";
+};
+
+// ── AI feedback state ───────────────────────────────────────
+let _feedbackEndpoint = "";
+const _votedQuestions = new Set(); // prevents double-voting per session
+
+export const setFeedbackEndpoint = (url) => {
+  _feedbackEndpoint = url || "";
+};
+
+// SVG thumb icons (outline, 14px)
+export const THUMB_UP_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22V11l5-9 1.5.5c.8.3 1.5 1.2 1.5 2.1V8h5.5a2 2 0 0 1 2 2.3l-1.6 8A2 2 0 0 1 19.4 20H7z"/><rect x="1" y="11" width="6" height="11" rx="1"/></svg>';
+export const THUMB_DOWN_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2v11l-5 9-1.5-.5c-.8-.3-1.5-1.2-1.5-2.1V16H3.5a2 2 0 0 1-2-2.3l1.6-8A2 2 0 0 1 5.1 4H17z"/><rect x="17" y="2" width="6" height="11" rx="1"/></svg>';
+
+const FEEDBACK_REASONS = ["Inaccurate", "Not helpful", "Outdated", "Too vague"];
+
+// Build feedback buttons HTML (reused by overlay and full results page)
+export function buildFeedbackButtonsHtml() {
+  return (
+    `<span class="ai-feedback-btns">` +
+    `<button class="ai-feedback-btn" data-feedback="up" aria-label="Good answer" title="Good answer">${THUMB_UP_SVG}</button>` +
+    `<button class="ai-feedback-btn" data-feedback="down" aria-label="Bad answer" title="Bad answer">${THUMB_DOWN_SVG}</button>` +
+    `</span>`
+  );
+}
+
+// Build feedback panel HTML (inserted after header, hidden by default)
+export function buildFeedbackPanelHtml() {
+  const labelId = `ai-feedback-label-${Math.random().toString(36).slice(2, 8)}`;
+  const chips = FEEDBACK_REASONS.map(
+    (r) => `<button class="ai-feedback-chip" data-reason="${r}">${r}</button>`,
+  ).join("");
+  return (
+    `<div class="ai-feedback-panel" data-feedback-panel>` +
+    `<label class="ai-feedback-label" id="${labelId}">What went wrong?</label>` +
+    `<div class="ai-feedback-chips">${chips}</div>` +
+    `<div class="ai-feedback-row">` +
+    `<input type="text" class="ai-feedback-input" data-feedback-text aria-labelledby="${labelId}" placeholder="Tell us more (optional)" maxlength="500">` +
+    `<button class="ai-feedback-submit" data-feedback-submit>Submit</button>` +
+    `</div>` +
+    `<div class="ai-feedback-thanks" data-feedback-thanks>Thanks for your feedback!</div>` +
+    `</div>`
+  );
+}
+
+// Wire feedback buttons inside a container element
+export function wireFeedbackButtons(container, question) {
+  if (!container) return;
+  const upBtn = container.querySelector('[data-feedback="up"]');
+  const downBtn = container.querySelector('[data-feedback="down"]');
+  const panel = container.querySelector("[data-feedback-panel]");
+  if (!upBtn || !downBtn) return;
+
+  // Already voted on this question
+  if (_votedQuestions.has(question.trim().toLowerCase())) {
+    upBtn.disabled = true;
+    downBtn.disabled = true;
+    return;
+  }
+
+  upBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    upBtn.classList.add("active-up");
+    downBtn.disabled = true;
+    upBtn.disabled = true;
+    _votedQuestions.add(question.trim().toLowerCase());
+    sendFeedback(question, "up");
+    // Show brief thanks
+    const thanks = container.querySelector("[data-feedback-thanks]");
+    if (thanks) {
+      thanks.classList.add("visible");
+      setTimeout(() => thanks.classList.remove("visible"), 2000);
+    }
+  });
+
+  upBtn.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+  });
+
+  downBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    downBtn.classList.add("active-down");
+    upBtn.disabled = true;
+    if (panel) panel.classList.add("open");
+  });
+
+  downBtn.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+  });
+
+  // Wire chips and submit inside the panel
+  if (panel) {
+    let selectedReason = "";
+    panel.querySelectorAll("[data-reason]").forEach((chip) => {
+      chip.addEventListener("click", (e) => {
+        e.stopPropagation();
+        panel
+          .querySelectorAll("[data-reason]")
+          .forEach((c) => c.classList.remove("selected"));
+        chip.classList.add("selected");
+        selectedReason = chip.dataset.reason;
+      });
+      chip.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      });
+    });
+
+    const submitBtn = panel.querySelector("[data-feedback-submit]");
+    const textInput = panel.querySelector("[data-feedback-text]");
+    if (textInput) {
+      textInput.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+      });
+      textInput.addEventListener("click", (e) => {
+        e.stopPropagation();
+      });
+      textInput.addEventListener("keydown", (e) => {
+        e.stopPropagation();
+        if (e.key === "Enter") {
+          e.preventDefault();
+          doSubmit();
+        }
+      });
+    }
+
+    const doSubmit = () => {
+      const comment = textInput ? textInput.value.trim() : "";
+      if (!selectedReason && !comment) return; // need at least a reason or comment
+      downBtn.disabled = true;
+      _votedQuestions.add(question.trim().toLowerCase());
+      sendFeedback(question, "down", selectedReason, comment);
+      panel.classList.remove("open");
+      const thanks = container.querySelector("[data-feedback-thanks]");
+      if (thanks) {
+        thanks.classList.add("visible");
+        setTimeout(() => thanks.classList.remove("visible"), 3000);
+      }
+    };
+
+    if (submitBtn) {
+      submitBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        doSubmit();
+      });
+      submitBtn.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      });
+    }
+  }
+}
+
+// Fire-and-forget POST to feedback endpoint
+function sendFeedback(question, rating, reason, comment) {
+  if (!_feedbackEndpoint) return;
+  fetch(_feedbackEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      question: question.trim().substring(0, 300),
+      rating,
+      reason: reason || "",
+      comment: comment || "",
+    }),
+  }).catch(() => {}); // silent fail
+}
+
+// ── Navigation callbacks (set after navigation.js loads) ────
+let _enterPlanet = null;
+let _navigateToCore = null;
+let _enterEntity = null;
+let _enterSearchResults = null;
+
+export const setNavigationCallbacks = (
+  enterPlanetFn,
+  navigateToCoreFn,
+  enterEntityFn,
+  enterSearchResultsFn,
+) => {
+  _enterPlanet = enterPlanetFn;
+  _navigateToCore = navigateToCoreFn;
+  _enterEntity = enterEntityFn;
+  _enterSearchResults = enterSearchResultsFn;
+};
+
+export let searchResults = [];
+export let searchIndex = -1;
+
+export const setSearchIndex = (val) => {
+  searchIndex = val;
+};
+
+// ── Index data structures ────────────────────────────────────
+let _miniSearch = null; // MiniSearch instance
+let _itemsById = new Map(); // numeric id -> {action, icon, color, level, type, planetId, componentId, name, desc}
+let _nextId = 0;
+let _fallbackIndex = []; // flat array for substring fallback
+let _pendingDocs = []; // docs waiting for MiniSearch to load
+
+function buildSearchIndex() {
+  const docs = [];
+  _itemsById = new Map();
+  _nextId = 0;
+  const fallbackIdx = [];
+
+  for (const [pid, planet] of Object.entries(PRODUCT_DATA)) {
+    const baseItem = {
+      type: "planet",
+      id: pid,
+      name: planet.name,
+      desc: planet.description,
+      icon: domainSvg(pid, 20),
+      color: planet.color,
+      tags: [],
+      level: _productName || "Product",
+      action: () => {
+        if (_enterPlanet) _enterPlanet(pid);
+      },
+    };
+    const docId = _nextId++;
+    _itemsById.set(docId, baseItem);
+    docs.push({
+      _id: docId,
+      name: planet.name,
+      tagsText: "",
+      desc: planet.description || "",
+      docText: "",
+      synonymText: expandSynonyms(
+        planet.name + " " + (planet.description || ""),
+      ),
+    });
+    fallbackIdx.push(baseItem);
+
+    for (const comp of planet.components) {
+      const allTags = [...(comp.tags || []), ...(comp.triggerTags || [])];
+      const compItem = {
+        type: "component",
+        id: comp.id,
+        planetId: pid,
+        name: comp.name,
+        desc: comp.desc,
+        icon: comp.icon,
+        color: planet.color,
+        tags: allTags,
+        docText: (comp.docs || []).join(" "),
+        level: planet.name,
+        action: () => {
+          if (_navigateToCore) _navigateToCore(pid, comp.id);
+        },
+      };
+      const compDocId = _nextId++;
+      _itemsById.set(compDocId, compItem);
+      const tagsText = allTags.join(" ");
+      const compDocText = (comp.docs || []).join(" ");
+      docs.push({
+        _id: compDocId,
+        name: comp.name,
+        tagsText,
+        desc: comp.desc || "",
+        docText: compDocText,
+        synonymText: expandSynonyms(
+          comp.name + " " + tagsText + " " + (comp.desc || ""),
+        ),
+      });
+      fallbackIdx.push(compItem);
+
+      for (const tag of allTags) {
+        const tagItem = {
+          type: "tag",
+          id: tag,
+          planetId: pid,
+          componentId: comp.id,
+          name: tag,
+          desc: comp.desc,
+          icon: comp.icon,
+          color: planet.color,
+          tags: [],
+          level: `${planet.name} > ${comp.name}`,
+          action: () => {
+            if (_navigateToCore) _navigateToCore(pid, comp.id);
+          },
+        };
+        const tagDocId = _nextId++;
+        _itemsById.set(tagDocId, tagItem);
+        docs.push({
+          _id: tagDocId,
+          name: tag,
+          tagsText: "",
+          desc: comp.desc || "",
+          docText: "",
+          synonymText: expandSynonyms(tag),
+        });
+        fallbackIdx.push(tagItem);
+      }
+
+      // Index entities (classes, objects, triggers, lwcs, metadata)
+      const ents = comp.entities;
+      if (ents) {
+        const entityTypes = [
+          {
+            key: "classes",
+            type: "class",
+            icon: entitySvg("class", 14),
+            color: "var(--tag-class)",
+          },
+          {
+            key: "objects",
+            type: "object",
+            icon: entitySvg("object", 14),
+            color: "var(--tag-object)",
+          },
+          {
+            key: "triggers",
+            type: "trigger",
+            icon: entitySvg("trigger", 14),
+            color: "var(--tag-trigger)",
+          },
+          {
+            key: "lwcs",
+            type: "lwc",
+            icon: entitySvg("lwc", 14),
+            color: "var(--tag-lwc)",
+          },
+          {
+            key: "metadata",
+            type: "metadata",
+            icon: entitySvg("metadata", 14),
+            color: "var(--tag-metadata)",
+          },
+        ];
+        for (const et of entityTypes) {
+          const arr = ents[et.key] || [];
+          for (const entItem of arr) {
+            const entType = et.type;
+            const planetId = pid;
+            const compId = comp.id;
+            const planetName = planet.name;
+            const compName = comp.name;
+
+            let entTags = [];
+            if (entType === "class") {
+              if (entItem.keyMethods)
+                entTags = entTags.concat(entItem.keyMethods);
+              if (entItem.referencedObjects)
+                entTags = entTags.concat(entItem.referencedObjects);
+              if (entItem.extends) entTags.push(entItem.extends);
+              if (entItem.implements) entTags.push(entItem.implements);
+            }
+            const flds = entItem.fields || entItem.keyFields;
+            if (entType === "object" && flds) {
+              for (const f of flds) {
+                entTags.push(f.name);
+                if (f.label) entTags.push(f.label);
+              }
+            }
+            if (entType === "trigger") {
+              if (entItem.object) entTags.push(entItem.object);
+              if (entItem.events) entTags = entTags.concat(entItem.events);
+            }
+            if (entType === "lwc" && entItem.imports) {
+              entTags = entTags.concat(entItem.imports);
+            }
+            if (entType === "metadata" && flds) {
+              if (Array.isArray(flds)) {
+                for (const f of flds) entTags.push(f.name);
+              } else {
+                for (const k of Object.keys(flds)) entTags.push(k);
+              }
+            }
+
+            const docParts = [entItem.description || ""];
+            if (entItem._package && _packages[entItem._package]) {
+              docParts.push(_packages[entItem._package].name);
+            }
+            if (entItem.extends) docParts.push("extends " + entItem.extends);
+            if (entItem.implements)
+              docParts.push("implements " + entItem.implements);
+            if (entItem.keyMethods) docParts.push(entItem.keyMethods.join(" "));
+            if (entItem.referencedObjects)
+              docParts.push(entItem.referencedObjects.join(" "));
+            if (flds) {
+              if (Array.isArray(flds)) {
+                docParts.push(
+                  flds
+                    .map((f) => `${f.name} ${f.label || ""} ${f.type || ""}`)
+                    .join(" "),
+                );
+              } else {
+                docParts.push(
+                  Object.entries(flds)
+                    .map(([k, v]) => `${k} ${v}`)
+                    .join(" "),
+                );
+              }
+            }
+
+            const entItemData = {
+              type: entType,
+              id: `${entItem.name}:${planetId}:${compId}`,
+              planetId,
+              componentId: compId,
+              name: entItem.name,
+              desc: entItem.description || "",
+              icon: et.icon,
+              color: et.color,
+              tags: entTags,
+              docText: docParts.join(" "),
+              level: `${planetName} > ${compName}`,
+              _keyMethods: entItem.keyMethods || [],
+              _referencedObjects: entItem.referencedObjects || [],
+              _extends: entItem.extends || null,
+              _implements: entItem.implements || null,
+              _linesOfCode: entItem.linesOfCode || null,
+              _entType: entItem.type || entItem._type || null,
+              _fields: entType === "object" && flds ? flds.slice(0, 10) : null,
+              action: () => {
+                if (_navigateToCore) _navigateToCore(planetId, compId);
+                setTimeout(() => {
+                  if (_enterEntity)
+                    _enterEntity(planetId, compId, et.key, entItem.name);
+                }, 100);
+              },
+            };
+
+            const entDocId = _nextId++;
+            _itemsById.set(entDocId, entItemData);
+            const entTagsText = entTags.join(" ");
+            const entDocText = docParts.join(" ");
+            docs.push({
+              _id: entDocId,
+              name: entItem.name,
+              tagsText: entTagsText,
+              desc: entItem.description || "",
+              docText: entDocText,
+              synonymText: expandSynonyms(
+                entItem.name +
+                  " " +
+                  entTagsText +
+                  " " +
+                  (entItem.description || ""),
+              ),
+            });
+            fallbackIdx.push(entItemData);
+          }
+        }
+      }
+    }
+  }
+
+  return { docs, fallbackIdx };
+}
+
+export function rebuildSearchIndex() {
+  const { docs, fallbackIdx } = buildSearchIndex();
+  _fallbackIndex = fallbackIdx;
+
+  if (MiniSearch && !_useFallback) {
+    // MiniSearch already loaded, build index immediately
+    _miniSearch = new MiniSearch({
+      idField: "_id",
+      fields: ["name", "tagsText", "desc", "docText", "synonymText"],
+      storeFields: ["_id"],
+      searchOptions: {
+        boost: {
+          name: 3,
+          tagsText: 2,
+          desc: 1.5,
+          docText: 1,
+          synonymText: 0.5,
+        },
+        fuzzy: 0.2,
+        prefix: true,
+      },
+    });
+    _miniSearch.addAll(docs);
+  } else if (!_useFallback) {
+    // MiniSearch not loaded yet, store docs and kick off load
+    _pendingDocs = docs;
+    ensureMiniSearch().then(() => {
+      if (MiniSearch && _pendingDocs.length > 0) {
+        _miniSearch = new MiniSearch({
+          idField: "_id",
+          fields: ["name", "tagsText", "desc", "docText", "synonymText"],
+          storeFields: ["_id"],
+          searchOptions: {
+            boost: {
+              name: 3,
+              tagsText: 2,
+              desc: 1.5,
+              docText: 1,
+              synonymText: 0.5,
+            },
+            fuzzy: 0.2,
+            prefix: true,
+          },
+        });
+        _miniSearch.addAll(_pendingDocs);
+        _pendingDocs = [];
+      }
+    });
+  }
+}
+
+// ── Search functions ─────────────────────────────────────────
+
+function searchWithMiniSearch(query) {
+  if (!_miniSearch || !query.trim()) return [];
+
+  // Expand query synonyms: if user types "GAU", also search "general accounting unit"
+  const q = query.trim();
+  const qLower = q.toLowerCase();
+  const queries = [q];
+  for (const [abbr, full] of Object.entries(SYNONYMS)) {
+    if (
+      qLower === abbr ||
+      qLower.startsWith(abbr + " ") ||
+      qLower.endsWith(" " + abbr)
+    ) {
+      queries.push(q.replace(new RegExp("\\b" + abbr + "\\b", "gi"), full));
+    }
+  }
+
+  // Merge results from all query variants
+  const scoreMap = new Map(); // docId -> best score
+  for (const queryStr of queries) {
+    const results = _miniSearch.search(queryStr);
+    for (const r of results) {
+      const existing = scoreMap.get(r.id);
+      if (!existing || r.score > existing) {
+        scoreMap.set(r.id, r.score);
+      }
+    }
+  }
+
+  // Sort by score descending, map back to item shape
+  const sorted = [...scoreMap.entries()].sort((a, b) => b[1] - a[1]);
+
+  const seen = new Set();
+  const deduped = [];
+  for (const [docId] of sorted) {
+    const item = _itemsById.get(docId);
+    if (!item) continue;
+    const key = `${item.type}:${item.id}${item.planetId || ""}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push({ ...item, score: scoreMap.get(docId) });
+      if (deduped.length >= 50) break;
+    }
+  }
+  return deduped;
+}
+
+function searchProductFallback(query) {
+  if (!query.trim()) return [];
+  const q = query.toLowerCase();
+  const scored = [];
+  for (const item of _fallbackIndex) {
+    let score = 0;
+    const nm = item.name.toLowerCase();
+    const ds = item.desc.toLowerCase();
+    const tgs = item.tags.map((t) => t.toLowerCase());
+    if (nm === q) score += 100;
+    else if (nm.startsWith(q)) score += 80;
+    else if (nm.includes(q)) score += 60;
+    if (ds.includes(q)) score += 30;
+    const dt = (item.docText || "").toLowerCase();
+    if (dt.includes(q)) score += 20;
+    for (const t of tgs) {
+      if (t === q) score += 90;
+      else if (t.includes(q)) score += 50;
+    }
+    if (score > 0) scored.push({ ...item, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  const seen = new Set();
+  const deduped = [];
+  for (const r of scored) {
+    const key = `${r.type}:${r.id}${r.planetId || ""}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(r);
+      if (deduped.length >= 50) break;
+    }
+  }
+  return deduped;
+}
+
+export function searchProduct(query) {
+  if (_useFallback || !_miniSearch) return searchProductFallback(query);
+  return searchWithMiniSearch(query);
+}
+
+// ── AI question detection ────────────────────────────────────
+
+const QUESTION_WORDS =
+  /^(what|how|why|does|is|are|can|will|could|should|would|explain|describe|tell|where|when|which|who)\b/i;
+
+export function isQuestion(query) {
+  if (!query || query.trim().length < 5) return false;
+  const q = query.trim();
+  if (q.endsWith("?")) return true;
+  if (QUESTION_WORDS.test(q)) return true;
+  // 4+ words that aren't all-caps (not an API name like "NPSP_TDTM_HANDLER")
+  const words = q.split(/\s+/);
+  if (words.length >= 4 && q !== q.toUpperCase()) return true;
+  return false;
+}
+
+// ── AI answer fetching ───────────────────────────────────────
+
+export async function askAi(question) {
+  if (!_aiEndpoint) return { error: "AI not configured" };
+
+  const cacheKey = question.trim().toLowerCase();
+  if (_aiSessionCache.has(cacheKey)) {
+    return { answer: _aiSessionCache.get(cacheKey), cached: true };
+  }
+
+  // Deduplicate in-flight requests for the same question
+  if (_aiInflight.has(cacheKey)) {
+    return _aiInflight.get(cacheKey);
+  }
+
+  const promise = (async () => {
+    const searchMatches = searchProduct(question)
+      .slice(0, 5)
+      .map((r) => ({
+        name: r.name,
+        type: r.type,
+        desc: r.desc.substring(0, 100),
+      }));
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
+      const res = await fetch(_aiEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          question: question.trim(),
+          systemContext: _aiContext,
+          searchMatches,
+        }),
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return { error: data.error || `HTTP ${res.status}` };
+      }
+
+      const data = await res.json();
+      if (data.answer) {
+        if (_aiSessionCache.size >= AI_CACHE_MAX) {
+          const firstKey = _aiSessionCache.keys().next().value;
+          _aiSessionCache.delete(firstKey);
+        }
+        _aiSessionCache.set(cacheKey, data.answer);
+      }
+      return data;
+    } catch (err) {
+      if (err.name === "AbortError")
+        return { error: "AI search timed out. Try a simpler question." };
+      return { error: "AI search unavailable. Results shown below." };
+    }
+  })();
+
+  _aiInflight.set(cacheKey, promise);
+  try {
+    return await promise;
+  } finally {
+    _aiInflight.delete(cacheKey);
+  }
+}
+
+// ── Highlight ────────────────────────────────────────────────
+
+export function highlightMatch(text, query) {
+  if (!query) return text;
+  // Try exact substring match first
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp("(" + escaped + ")", "gi");
+  if (re.test(text)) {
+    return text.replace(re, '<span class="sr-match">$1</span>');
+  }
+  // Fallback: highlight individual query terms (for fuzzy matches)
+  const terms = query
+    .trim()
+    .split(/\s+/)
+    .filter((t) => t.length >= 2);
+  if (terms.length === 0) return text;
+  const termPattern = terms
+    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  const termRe = new RegExp("(" + termPattern + ")", "gi");
+  return text.replace(termRe, '<span class="sr-match">$1</span>');
+}
+
+// ── Entity name linkification ─────────────────────────────────
+// Scans escaped text for known entity names and inserts markdown links
+// to their GitHub source URLs. Must be called BEFORE formatAiMarkdown()
+// so that [name](url) syntax is converted to <a> tags by the markdown parser.
+export function linkifyEntityNames(escapedText) {
+  if (!_entityLinkMap || !_entityLinkNames || _entityLinkNames.length === 0)
+    return escapedText;
+
+  // Split into existing markdown links (preserved) and plain text (linkified)
+  const parts = [];
+  let lastIdx = 0;
+  const linkRe = /\[([^\]]+)\]\([^)]+\)/g;
+  let m;
+  while ((m = linkRe.exec(escapedText)) !== null) {
+    if (m.index > lastIdx)
+      parts.push({ text: escapedText.slice(lastIdx, m.index), isLink: false });
+    parts.push({ text: m[0], isLink: true });
+    lastIdx = m.index + m[0].length;
+  }
+  if (lastIdx < escapedText.length)
+    parts.push({ text: escapedText.slice(lastIdx), isLink: false });
+
+  // Only linkify entity names in non-link segments
+  const linked = new Set();
+  for (const name of _entityLinkNames) {
+    if (linked.has(name)) continue;
+    const url = _entityLinkMap[name];
+    const re = new RegExp(
+      "\\b(" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")\\b",
+    );
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i].isLink || linked.has(name)) continue;
+      if (re.exec(parts[i].text)) {
+        parts[i].text = parts[i].text.replace(re, `[$1](${url})`);
+        linked.add(name);
+      }
+    }
+  }
+
+  return parts.map((p) => p.text).join("");
+}
+
+// ── AI answer markdown formatting ─────────────────────────────
+// Lightweight parser for common markdown patterns in AI responses.
+// IMPORTANT: Must be called on ALREADY HTML-ESCAPED text to prevent XSS.
+// The input has &amp; &lt; &gt; — we only convert markdown syntax to HTML tags.
+//
+// Parsing order matters:
+// 1. Code blocks (extract to placeholders first, protect inner content)
+// 2. Tables (multi-line, before inline formatting mangles pipe chars)
+// 3. Headings (before bullets, because # could match bullet patterns)
+// 4. Bold → Italic → Inline code → Links → Bullets → Numbered lists
+// 5. Restore code blocks from placeholders (last)
+export function formatAiMarkdown(escaped) {
+  // ── Step 1: Extract code blocks to placeholders ──
+  const codeBlocks = [];
+  let text = escaped.replace(
+    /(^|\n)```(\w*)\n([\s\S]*?)```/g,
+    (_, pre, lang, code) => {
+      const idx = codeBlocks.length;
+      codeBlocks.push(
+        `<pre class="ai-code-block"><code>${code.replace(/\n$/, "")}</code></pre>`,
+      );
+      return `${pre}\x00CODEBLOCK${idx}\x00`;
+    },
+  );
+
+  // ── Step 2: Parse tables ──
+  text = text.replace(
+    /(^|\n)(\|.+\|)\n(\|[\s:|-]+\|)\n((?:\|.+\|\n?)+)/g,
+    (_, pre, headerRow, _sepRow, bodyBlock) => {
+      const parseRow = (row) =>
+        row
+          .replace(/^\||\|$/g, "")
+          .split("|")
+          .map((c) => c.trim());
+      const headers = parseRow(headerRow);
+      const headHtml = headers.map((h) => `<th>${h}</th>`).join("");
+      const rows = bodyBlock.trim().split("\n");
+      const bodyHtml = rows
+        .map((r) => {
+          const cells = parseRow(r);
+          return `<tr>${cells.map((c) => `<td>${c}</td>`).join("")}</tr>`;
+        })
+        .join("");
+      return `${pre}<table class="ai-table"><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`;
+    },
+  );
+
+  // ── Step 3: Headings (### before ## before #) ──
+  text = text.replace(
+    /(^|\n)###\s+(.+)/g,
+    '$1<h4 class="ai-heading ai-h3">$2</h4>',
+  );
+  text = text.replace(
+    /(^|\n)##\s+(.+)/g,
+    '$1<h3 class="ai-heading ai-h2">$2</h3>',
+  );
+  text = text.replace(
+    /(^|\n)#\s+(.+)/g,
+    '$1<h2 class="ai-heading ai-h1">$2</h2>',
+  );
+
+  // ── Step 4: Inline formatting ──
+  text = text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(?<!<\/?)\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>')
+    .replace(
+      /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+      '<a href="$2" class="ai-link" target="_blank" rel="noopener noreferrer">$1</a>',
+    )
+    .replace(/(^|\n)[*-] (.+)/g, '$1<span class="ai-bullet">$2</span>')
+    .replace(
+      /(^|\n)(\d+)\. (.+)/g,
+      '$1<span class="ai-bullet"><span class="ai-bullet-num">$2.</span> $3</span>',
+    );
+
+  // ── Step 5: Restore code blocks ──
+  codeBlocks.forEach((html, i) => {
+    text = text.replace(`\x00CODEBLOCK${i}\x00`, html);
+  });
+
+  return text;
+}
+
+// ── AI answer copy helper ────────────────────────────────────
+async function copyAiAnswer(btn, text) {
+  if (await copyText(text)) {
+    btn.classList.add("copied");
+    const prev = btn.textContent;
+    btn.textContent = "Copied";
+    setTimeout(() => {
+      btn.textContent = prev;
+      btn.classList.remove("copied");
+    }, 1500);
+    showToast("Copied to clipboard");
+  } else {
+    showToast("Unable to copy");
+    announce("Unable to copy answer");
+  }
+}
+
+let _previewIndex = -1;
+
+// Theme-aware token references (resolve per theme; consumed via color-mix below).
+const TYPE_COLORS = {
+  planet: "var(--tag-class)",
+  component: "var(--tag-class)",
+  tag: "var(--text-dim)",
+  class: "var(--tag-class)",
+  object: "var(--tag-object)",
+  trigger: "var(--tag-trigger)",
+  lwc: "var(--tag-lwc)",
+  metadata: "var(--tag-metadata)",
+};
+
+// NOTE on innerHTML safety: All search data comes from the trusted product data
+// object (app-owned, not user input). The query is escaped via highlightMatch's
+// regex escaping. AI answers are HTML-escaped then formatted via formatAiMarkdown.
+
+// Render master list of results into #searchMaster
+function renderMasterList(results, query) {
+  const el = document.getElementById("searchMaster");
+
+  if (results.length === 0 && query.trim()) {
+    el.textContent = "";
+    const noResults = document.createElement("div");
+    noResults.style.cssText =
+      "text-align:center;padding:24px;color:var(--text-dim);font-size:var(--text-sm)";
+    noResults.textContent = 'No results for "' + query + '"';
+    el.appendChild(noResults);
+    return;
+  }
+
+  const resultsHtml = results
+    .map((r, i) => {
+      const typeColor = TYPE_COLORS[r.type] || "var(--text-dim)";
+      const stagger = i < 10 ? `--stagger-index: ${i};` : "";
+      return (
+        `<div class="search-result${i === searchIndex ? " active" : ""}" ` +
+        `id="sr-opt-${i}" data-idx="${i}" data-search-result="${i}" style="${stagger}--type-color:${typeColor}" ` +
+        `role="option" aria-selected="${i === searchIndex}">` +
+        `<div class="sr-icon" style="background:color-mix(in srgb, ${r.color} 13%, transparent);border:1px solid color-mix(in srgb, ${r.color} 27%, transparent)">${r.icon}</div>` +
+        `<div class="sr-body">` +
+        `<div class="sr-title">${highlightMatch(r.name, query)}</div>` +
+        `<div class="sr-path">${r.level}</div>` +
+        `</div>` +
+        `<span class="sr-type" style="background:color-mix(in srgb, ${typeColor} 13%, transparent);color:${typeColor};border:1px solid color-mix(in srgb, ${typeColor} 27%, transparent)">${r.type}</span>` +
+        `</div>`
+      );
+    })
+    .join("");
+
+  // Safe: app-owned data, query escaped via highlightMatch
+  el.innerHTML = resultsHtml;
+
+  // Attach event listeners for search results
+  el.querySelectorAll("[data-search-result]").forEach((resultEl) => {
+    const idx = parseInt(resultEl.dataset.searchResult, 10);
+    resultEl.addEventListener("click", () => activateResult(idx));
+    resultEl.addEventListener("mouseenter", () => {
+      searchIndex = idx;
+      _previewIndex = idx;
+      highlightActive();
+      renderPreview(
+        searchResults[idx],
+        document.getElementById("searchInput").value,
+      );
+    });
+  });
+}
+
+// Render AI answer section into #aiSection
+// aiState: null | { loading: true } | { answer: string } | { error: string }
+export function renderAiSection(query, aiState) {
+  const el = document.getElementById("aiSection");
+  if (!aiState) {
+    el.textContent = "";
+    return;
+  }
+
+  let html = "";
+  if (aiState.loading) {
+    html =
+      `<div class="ai-section" id="ai-section">` +
+      `<div class="ai-header">AI ANSWER</div>` +
+      `<div class="ai-card">` +
+      `<div class="ai-icon">&#x2728;</div>` +
+      `<div class="ai-body">` +
+      `<div class="ai-skeleton"><div></div><div></div><div></div></div>` +
+      `</div></div></div>`;
+  } else if (aiState.answer) {
+    // Escape HTML in AI answer (AI-generated content), linkify, format markdown
+    const safeAnswer = aiState.answer
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const formattedAnswer = formatAiMarkdown(linkifyEntityNames(safeAnswer));
+    html =
+      `<div class="ai-section" id="ai-section">` +
+      `<div class="ai-header"><span class="ai-header-left">AI ANSWER${buildFeedbackButtonsHtml()}</span><button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
+      buildFeedbackPanelHtml() +
+      `<div class="ai-card">` +
+      `<div class="ai-icon">&#x2728;</div>` +
+      `<div class="ai-body">` +
+      `<div class="ai-answer ai-answer-formatted">${formattedAnswer}</div>` +
+      `<div class="ai-attribution">Based on ${_productName} product data</div>` +
+      `<button class="ai-open-results" data-ai-open-results>Open full results</button>` +
+      `</div></div></div>`;
+  } else if (aiState.error) {
+    html =
+      `<div class="ai-section" id="ai-section">` +
+      `<div class="ai-error">${aiState.error}</div></div>`;
+  }
+
+  // Safe: app-owned data + escaped AI answer
+  el.innerHTML = html;
+
+  // Prevent mousedown on AI section from closing search overlay
+  const aiSection = el.querySelector(".ai-section");
+  if (aiSection) {
+    aiSection.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+    });
+  }
+
+  // Wire copy button
+  const aiCopyBtn = el.querySelector("[data-ai-copy]");
+  if (aiCopyBtn && aiState && aiState.answer) {
+    const rawAnswer = aiState.answer;
+    aiCopyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      copyAiAnswer(aiCopyBtn, rawAnswer);
+    });
+    aiCopyBtn.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+    });
+  }
+
+  // Wire feedback buttons
+  if (aiSection && aiState && aiState.answer) {
+    wireFeedbackButtons(aiSection, query);
+  }
+
+  // Make AI card clickable to open search results page
+  const aiClickable = el.querySelector("[data-ai-open-results]");
+  if (aiClickable && _enterSearchResults) {
+    const openResultsPage = () => {
+      const currentQuery = query;
+      const currentAnswer = aiState.answer;
+      const currentResults = [...searchResults];
+      closeSearch();
+      setTimeout(() => {
+        _enterSearchResults(currentQuery, currentResults, {
+          aiAnswer: currentAnswer,
+        });
+      }, 100);
+    };
+    aiClickable.addEventListener("click", openResultsPage);
+  }
+}
+
+// Render preview pane for a search result into #searchPreview
+// All data is app-owned (product data), query escaped via highlightMatch
+export function renderPreview(item, query) {
+  const el = document.getElementById("searchPreview");
+  if (!item) {
+    el.innerHTML = '<div class="sp-empty">Select a result to preview</div>';
+    return;
+  }
+
+  const typeColor = TYPE_COLORS[item.type] || "var(--text-dim)";
+  let html =
+    `<div class="sp-header">` +
+    `<span class="sp-type-badge" style="background:color-mix(in srgb, ${typeColor} 13%, transparent);color:${typeColor};border:1px solid color-mix(in srgb, ${typeColor} 27%, transparent)">${item.type}</span>` +
+    `<span class="sp-name">${highlightMatch(item.name, query)}</span>` +
+    `</div>`;
+  html += `<div class="sp-domain">${item.level}</div>`;
+
+  if (item.desc) {
+    html += `<div class="sp-desc">${item.desc}</div>`;
+  }
+
+  if (item._keyMethods && item._keyMethods.length > 0) {
+    html += `<div class="sp-section-label">Key Methods</div>`;
+    html += `<div class="sp-pills">${item._keyMethods.map((m) => `<span class="sp-pill">${m}</span>`).join("")}</div>`;
+  }
+
+  if (item._referencedObjects && item._referencedObjects.length > 0) {
+    html += `<div class="sp-section-label">Referenced Objects</div>`;
+    html += `<div class="sp-pills">${item._referencedObjects.map((o) => `<span class="sp-pill">${o}</span>`).join("")}</div>`;
+  }
+
+  if (item._extends) {
+    html += `<div class="sp-section-label">Extends</div>`;
+    html += `<div class="sp-pills"><span class="sp-pill">${item._extends}</span></div>`;
+  }
+
+  if (item._implements) {
+    html += `<div class="sp-section-label">Implements</div>`;
+    html += `<div class="sp-pills"><span class="sp-pill">${item._implements}</span></div>`;
+  }
+
+  if (item._fields && item._fields.length > 0) {
+    html += `<div class="sp-section-label">Fields</div>`;
+    html += `<div class="sp-pills">${item._fields.map((f) => `<span class="sp-pill">${f.name}</span>`).join("")}</div>`;
+  }
+
+  // Safe: app-owned data, query escaped via highlightMatch
+  el.innerHTML = html;
+}
+
+export function highlightActive() {
+  const master = document.getElementById("searchMaster");
+  const input = document.getElementById("searchInput");
+  if (!master) return;
+  master.querySelectorAll(".search-result").forEach((el, i) => {
+    el.classList.toggle("active", i === searchIndex);
+    el.setAttribute("aria-selected", i === searchIndex);
+  });
+  // Update aria-activedescendant so screen readers track the focused option
+  if (searchIndex >= 0) {
+    input?.setAttribute("aria-activedescendant", `sr-opt-${searchIndex}`);
+  } else {
+    input?.removeAttribute("aria-activedescendant");
+  }
+}
+
+export function activateResult(idx) {
+  const r = searchResults[idx];
+  if (r) {
+    track("search_result_click", { name: r.name, type: r.type });
+    closeSearch();
+    setTimeout(() => {
+      r.action();
+    }, 100);
+  }
+}
+
+export function cycleResult(dir) {
+  if (searchResults.length === 0) return;
+  searchIndex =
+    (searchIndex + dir + searchResults.length) % searchResults.length;
+  _previewIndex = searchIndex;
+  highlightActive();
+  const master = document.getElementById("searchMaster");
+  if (master) {
+    const active = master.querySelector(".search-result.active");
+    if (active) active.scrollIntoView({ block: "nearest" });
+  }
+  renderPreview(
+    searchResults[searchIndex],
+    document.getElementById("searchInput").value,
+  );
+}
+
+export function openSearch() {
+  document.getElementById("searchInput").focus();
+}
+
+export function closeSearch() {
+  const shell = document.getElementById("searchShell");
+  const drop = document.getElementById("searchDrop");
+  const scrim = document.getElementById("searchScrim");
+  shell.classList.remove("focused", "typing");
+  drop.classList.remove("open");
+  drop.setAttribute("aria-hidden", "true");
+  drop.setAttribute("inert", "");
+  scrim.classList.remove("visible");
+  searchResults = [];
+  searchIndex = -1;
+  _previewIndex = -1;
+  clearTimeout(_aiDebounceTimer);
+  const input = document.getElementById("searchInput");
+  input.value = "";
+  input.setAttribute("aria-expanded", "false");
+  input.blur();
+  const master = document.getElementById("searchMaster");
+  input.removeAttribute("aria-activedescendant");
+  master.textContent = "";
+  document.getElementById("searchPreview").textContent = "";
+  document.getElementById("aiSection").textContent = "";
+}
+
+let _searchTrackTimer = null;
+let _searchAnnounceTimer = null;
+
+export function expandSearch(query) {
+  const shell = document.getElementById("searchShell");
+  const drop = document.getElementById("searchDrop");
+  const scrim = document.getElementById("searchScrim");
+  shell.classList.remove("focused");
+  shell.classList.add("typing");
+  drop.classList.add("open");
+  drop.setAttribute("aria-hidden", "false");
+  drop.removeAttribute("inert");
+  scrim.classList.add("visible");
+  document.getElementById("searchInput").setAttribute("aria-expanded", "true");
+  if (window.innerWidth > 480) {
+    const dropInner = document.querySelector(".search-drop-inner");
+    const shellRect = shell.getBoundingClientRect();
+    dropInner.style.marginTop = shellRect.bottom + 8 + "px";
+  }
+  searchResults = searchProduct(query);
+  searchIndex = searchResults.length > 0 ? 0 : -1;
+  _previewIndex = searchIndex;
+
+  // Detect question and trigger AI search (min 10 chars to avoid partial queries)
+  const shouldAskAi =
+    _aiEndpoint && query.trim().length >= 10 && isQuestion(query);
+
+  // Render the three panels
+  renderMasterList(searchResults, query);
+  highlightActive();
+  renderAiSection(query, shouldAskAi ? { loading: true } : null);
+  renderPreview(searchResults[searchIndex] || null, query);
+
+  if (shouldAskAi) {
+    clearTimeout(_aiDebounceTimer);
+    _aiDebounceTimer = setTimeout(async () => {
+      const result = await askAi(query);
+      // Only update if search is still showing the same query
+      const currentInput = document.getElementById("searchInput");
+      if (currentInput && currentInput.value === query) {
+        if (result.answer) {
+          renderAiSection(query, { answer: result.answer });
+          announce("AI answer generated");
+        } else if (result.error) {
+          renderAiSection(query, { error: result.error });
+        }
+      }
+    }, 1000);
+  }
+
+  clearTimeout(_searchTrackTimer);
+  if (query.length >= 2) {
+    _searchTrackTimer = setTimeout(() => {
+      track("search_used", {
+        query: query,
+        result_count: searchResults.length,
+        ai: shouldAskAi,
+      });
+    }, 800);
+  }
+  // B5: Debounced screen reader announcement for search results
+  clearTimeout(_searchAnnounceTimer);
+  if (query.length >= 2) {
+    _searchAnnounceTimer = setTimeout(() => {
+      const count = searchResults.length;
+      const msg =
+        count === 0
+          ? "No results found"
+          : `${count} result${count !== 1 ? "s" : ""} found`;
+      announce(shouldAskAi ? msg + ". Loading AI answer." : msg);
+    }, 500);
+  }
+}
+
+export function collapseSearch() {
+  const shell = document.getElementById("searchShell");
+  const drop = document.getElementById("searchDrop");
+  const scrim = document.getElementById("searchScrim");
+  shell.classList.remove("typing");
+  shell.classList.add("focused");
+  drop.classList.remove("open");
+  drop.setAttribute("aria-hidden", "true");
+  drop.setAttribute("inert", "");
+  scrim.classList.remove("visible");
+  document.getElementById("searchInput").setAttribute("aria-expanded", "false");
+  searchResults = [];
+  searchIndex = -1;
+  _previewIndex = -1;
+  const cMaster = document.getElementById("searchMaster");
+  document.getElementById("searchInput").removeAttribute("aria-activedescendant");
+  cMaster.textContent = "";
+  document.getElementById("searchPreview").textContent = "";
+  document.getElementById("aiSection").textContent = "";
+}

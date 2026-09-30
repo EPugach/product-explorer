@@ -102,3 +102,7 @@ scripts/ingest/input/*.pdf
 scripts/ingest/archive/
 scripts/ingest/scratch/
 scripts/ingest/**/_*.mjs
+
+# Beta preview of the redesign (built by scripts/build-beta.mjs)
+!beta/
+!beta/**

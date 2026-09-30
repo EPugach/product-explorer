@@ -1,0 +1,580 @@
+/* ══════════════════════════════════════════════════════════════
+   GALAXY PLANETS — DOM planet nodes, SVG edges, container zoom
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Galaxy Container ── */
+.galaxy-container {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  transform-origin: 0 0;
+  cursor: grab;
+  /* Prevent text selection on planet labels — selections that form during
+     a drag would otherwise persist and trigger HTML5 native drag-and-drop
+     on subsequent mousedowns inside the selection (showing the no-drop
+     cursor and a ghost drag image instead of running our pointer handler). */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* ── WebGL 3D Layer ──
+   Renders luminous-orb spheres positioned to match each .planet-node hit
+   zone. Stays purely cosmetic — pointer events fall through to the DOM
+   planets above. Fly-in/fly-out classes mirror .galaxy-container's so the
+   3D layer animates in lockstep (see galaxy-renderer.js _syncGL3D). */
+#galaxy-3d {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+#galaxy-3d.fly-in {
+  transition:
+    transform 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 200ms ease 400ms;
+}
+#galaxy-3d.fly-out {
+  transition:
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 200ms ease;
+}
+#galaxy-3d.hidden {
+  opacity: 0;
+}
+body.no-webgl #galaxy-3d {
+  display: none;
+}
+.galaxy-container.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.galaxy-container.dragging {
+  cursor: grabbing;
+}
+
+/* ── Planet Nodes ── */
+.planet-node {
+  position: absolute;
+  width: calc(var(--planet-r) * 2);
+  height: calc(var(--planet-r) * 2);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  /* Body is rendered by the WebGL layer (#galaxy-3d). The DOM div remains
+     as the hit zone + label/icon container. Reduced halo composites above
+     the lit sphere without competing with the emissive glow. */
+  background: transparent;
+  box-shadow:
+    0 0 calc(var(--planet-r) * 0.6)
+      color-mix(in srgb, var(--planet-color) 18%, transparent),
+    0 0 calc(var(--planet-r) * 1.2)
+      color-mix(in srgb, var(--planet-color) 10%, transparent);
+  cursor: pointer;
+  /* box-shadow is NOT transitioned here: --planet-r is rewritten every frame
+     during zoom/drag and the glow derives from it, so a steady-state box-shadow
+     transition would restart paint each frame on every node. The glow tracks
+     the sphere 1:1 instead (imperceptible). Hover animates its glow below. */
+  transition:
+    transform 0.2s ease-out,
+    opacity 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: planetFadeIn 400ms ease forwards;
+  animation-delay: calc(var(--entrance-i, 0) * 40ms);
+  opacity: 0;
+}
+
+@keyframes planetFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.planet-node:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+  transition:
+    transform 0.2s ease-out,
+    box-shadow 0.2s ease-out;
+  box-shadow:
+    0 0 calc(var(--planet-r) * 1.2)
+      color-mix(in srgb, var(--planet-color) 45%, transparent),
+    0 0 calc(var(--planet-r) * 2.5)
+      color-mix(in srgb, var(--planet-color) 20%, transparent);
+}
+
+/* Suppress hover scale during drag to prevent visual jumps */
+.galaxy-container.dragging .planet-node:hover {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ── Matte-planet renderer (PRIMARY) ──
+   The DOM planet node IS the visual: a CSS matte sphere with a lit
+   hemisphere → terminator → shadowed side. WebGL is intentionally off
+   (main.js always sets body.no-webgl), so this is the production look,
+   not just a fallback. Solid in both themes, no gloss, no see-through. */
+body.no-webgl .planet-node {
+  background:
+    radial-gradient(
+      circle at 16% 45%,
+      color-mix(in srgb, var(--planet-color) 58%, #f5f9ff) 0%,
+      transparent 25%
+    ),
+    var(--planet-surface, none),
+    radial-gradient(
+      circle at 23% 50%,
+      var(--planet-color) 0%,
+      var(--planet-color) 42%,
+      color-mix(in srgb, var(--planet-color) 68%, #06132d) 76%,
+      color-mix(in srgb, var(--planet-color) 42%, #020819) 100%
+    );
+  background-size: cover;
+  background-position: center;
+  isolation: isolate;
+}
+/* Terminator: soft shadow on the side away from the light source */
+body.no-webgl .planet-node::before {
+  content: "";
+  position: absolute;
+  inset: -4.75px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid
+    color-mix(in srgb, var(--planet-color) 37%, transparent);
+  box-shadow: 0 0 7px
+    color-mix(in srgb, var(--planet-color) 7%, transparent);
+  opacity: 0.22;
+  pointer-events: none;
+  z-index: 4;
+}
+/* Matte planets carry a saturated fill in BOTH themes → icon stays white,
+   and sits above the terminator shadow. */
+body.no-webgl .planet-icon,
+body.no-webgl.theme-light .planet-icon {
+  color: rgba(255, 255, 255, 0.96);
+  position: relative;
+  z-index: 2;
+}
+
+body.no-webgl .planet-node.hovered {
+  background:
+    radial-gradient(
+      circle at 16% 45%,
+      color-mix(in srgb, var(--planet-color) 64%, #f5f9ff) 0%,
+      transparent 27%
+    ),
+    var(--planet-surface-focus, none),
+    radial-gradient(
+      circle at 23% 50%,
+      var(--planet-color) 0%,
+      var(--planet-color) 42%,
+      color-mix(in srgb, var(--planet-color) 68%, #06132d) 76%,
+      color-mix(in srgb, var(--planet-color) 42%, #020819) 100%
+    );
+}
+
+/* Repaint only the upper hemisphere above the rear ring. The separate front
+   arc then crosses the lower hemisphere, so the orbit genuinely wraps. */
+body.no-webgl .planet-node::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 50%;
+  background: inherit;
+  background-size: cover;
+  background-position: center;
+  clip-path: polygon(0 0, 100% 0, 100% 52%, 0 52%);
+  pointer-events: none;
+}
+
+.planet-node.dimmed {
+  opacity: 0.15;
+}
+
+.planet-node.connected {
+  opacity: 0.7;
+}
+
+.planet-node:focus-visible {
+  outline: 3px solid var(--planet-color, var(--glow-primary));
+  outline-offset: 6px;
+  box-shadow:
+    0 0 calc(var(--planet-r) * 1.2)
+      color-mix(in srgb, var(--planet-color) 50%, transparent),
+    0 0 calc(var(--planet-r) * 3)
+      color-mix(in srgb, var(--planet-color) 25%, transparent);
+}
+
+/* Search highlight pulse */
+.planet-node.highlight-pulse {
+  animation: highlightPulse 1.5s ease;
+}
+
+@keyframes highlightPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 calc(var(--planet-r) * 0.8)
+      color-mix(in srgb, var(--planet-color) 30%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 calc(var(--planet-r) * 3)
+      color-mix(in srgb, var(--planet-color) 60%, transparent);
+  }
+}
+
+/* ── Planet Icon ── */
+.planet-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.9);
+  transform: scale(var(--icon-optical-scale, 1));
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.2s ease,
+    color 0.2s ease;
+}
+.planet-icon::before {
+  content: "";
+  position: absolute;
+  inset: -28%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(1, 8, 25, 0.34) 0%,
+    rgba(1, 8, 25, 0.14) 42%,
+    transparent 72%
+  );
+  z-index: -1;
+}
+.planet-node.hovered .planet-icon {
+  color: #f8fbff;
+  transform: scale(calc(var(--icon-optical-scale, 1) * 1.06));
+  filter: drop-shadow(0 1px 2px rgba(0, 8, 25, 0.38)) brightness(1.15);
+}
+.planet-node.hub .planet-icon {
+  transform: scale(calc(var(--icon-optical-scale, 1) * 1.05));
+}
+.planet-node.hub.hovered .planet-icon {
+  transform: scale(calc(var(--icon-optical-scale, 1) * 1.11));
+}
+
+/* Icon SVG scales with planet size (zoom-aware via --planet-r) */
+.planet-icon svg {
+  width: calc(var(--planet-r) * 0.9);
+  height: calc(var(--planet-r) * 0.9);
+  stroke-width: 1.7;
+}
+.planet-node.hub .planet-icon svg {
+  stroke-width: 1.82;
+}
+
+/* ── Planet Label ── */
+.planet-label {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  font: 500 clamp(10px, calc(12px * var(--zoom, 1)), 15px)
+    var(--font-display, -apple-system, BlinkMacSystemFont, sans-serif);
+  color: var(--text-secondary, #94a3b8);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.planet-node:hover .planet-label,
+.planet-node.hovered .planet-label {
+  color: var(--text-primary, #e2e8f0);
+  font-weight: 700;
+}
+.planet-node.connected .planet-label {
+  color: color-mix(in srgb, var(--text-primary, #e2e8f0) 76%, transparent);
+}
+.planet-node.hub .planet-label {
+  color: var(--text-primary, #e2e8f0);
+  font-weight: 700;
+}
+
+/* ── SVG Edges ── */
+.galaxy-edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.galaxy-edge {
+  fill: none;
+  stroke: var(--glow-primary, rgba(100, 140, 255, 0.35));
+  stroke-width: calc(1.5 * var(--zoom, 1));
+  stroke-dasharray: calc(6 * var(--zoom, 1)) calc(5 * var(--zoom, 1));
+  opacity: 0.18;
+  transition:
+    opacity 0.2s ease,
+    stroke-width 0.2s ease;
+  pointer-events: none;
+}
+
+.galaxy-edge-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: calc(12 * var(--zoom, 1));
+  pointer-events: stroke;
+  cursor: default;
+}
+
+.galaxy-edge.edge-connected {
+  opacity: 0.6;
+  stroke-width: calc(2 * var(--zoom, 1));
+  stroke-dasharray: none;
+}
+
+.galaxy-edge.dimmed {
+  opacity: 0.04;
+}
+
+.galaxy-edge-pulse {
+  fill: none;
+  stroke: var(--glow-accent, #00b3ff);
+  stroke-width: calc(3 * var(--zoom, 1));
+  opacity: 0;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+}
+.galaxy-edge-pulse.flow-forward {
+  animation: galaxyEdgeFlowForward 850ms linear 1;
+}
+.galaxy-edge-pulse.flow-reverse {
+  animation: galaxyEdgeFlowReverse 850ms linear 1;
+}
+@keyframes galaxyEdgeFlowForward {
+  0% { opacity: 0; stroke-dasharray: 0 1; stroke-dashoffset: 1; }
+  12% { opacity: 0.95; stroke-dasharray: 0.08 0.92; stroke-dashoffset: 1; }
+  82% { opacity: 0.95; stroke-dasharray: 0.08 0.92; stroke-dashoffset: 0.08; }
+  100% { opacity: 0; stroke-dasharray: 0 1; stroke-dashoffset: 0; }
+}
+@keyframes galaxyEdgeFlowReverse {
+  0% { opacity: 0; stroke-dasharray: 0 1; stroke-dashoffset: -1; }
+  12% { opacity: 0.95; stroke-dasharray: 0.08 0.92; stroke-dashoffset: -1; }
+  82% { opacity: 0.95; stroke-dasharray: 0.08 0.92; stroke-dashoffset: -0.08; }
+  100% { opacity: 0; stroke-dasharray: 0 1; stroke-dashoffset: 0; }
+}
+
+.galaxy-edge.tour-edge {
+  opacity: 0.8;
+  stroke-width: calc(3 * var(--zoom, 1));
+  stroke-dasharray: none;
+}
+
+/* ── Fly-in / Fly-out transitions ── */
+.galaxy-container.fly-in {
+  transition:
+    transform 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 200ms ease 400ms;
+}
+
+/* Edges fade out quickly during fly-in */
+.galaxy-container.fly-in .galaxy-edge {
+  opacity: 0 !important;
+  transition: opacity 200ms ease !important;
+}
+
+.galaxy-container.fly-out {
+  transition:
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 200ms ease;
+}
+
+/* Tour camera pan */
+.galaxy-container.tour-pan {
+  transition: transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .planet-node {
+    animation: none;
+    opacity: 1;
+    transition: none;
+  }
+  .galaxy-edge {
+    transition: none;
+  }
+  .galaxy-edge-pulse {
+    animation: none !important;
+  }
+  .planet-icon {
+    transition: none;
+  }
+  .galaxy-container.fly-in,
+  .galaxy-container.fly-out,
+  .galaxy-container.tour-pan {
+    transition: none;
+  }
+  .galaxy-container.fly-in .galaxy-edge {
+    transition: none !important;
+  }
+}
+
+/* ── Light Theme ── */
+body.theme-light .planet-node {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--planet-color, #0176d3) 38%, transparent),
+    0 8px 22px rgba(2, 18, 46, 0.18),
+    0 2px 6px rgba(2, 18, 46, 0.12);
+}
+body.theme-light .planet-node:hover {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--planet-color, #0176d3) 55%, transparent),
+    0 14px 32px rgba(2, 18, 46, 0.24),
+    0 4px 10px rgba(2, 18, 46, 0.16);
+}
+body.theme-light .planet-icon {
+  color: rgba(0, 0, 0, 0.7);
+}
+body.theme-light .planet-label {
+  color: #444444;
+}
+body.theme-light .planet-node:hover .planet-label {
+  color: #181818;
+}
+body.theme-light .galaxy-edge {
+  stroke: rgba(1, 118, 211, 0.4);
+  opacity: 0.45;
+}
+body.theme-light .galaxy-edge.edge-connected {
+  stroke: #0176d3;
+}
+
+/* ── Edge Tooltip ── */
+.edge-tooltip {
+  position: fixed;
+  z-index: 50;
+  background: var(--depth-3);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity var(--duration-fast),
+    transform var(--duration-fast);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  max-width: 260px;
+}
+.edge-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.et-planets {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.et-arrow {
+  color: var(--text-dim);
+  margin: 0 4px;
+}
+.et-desc {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: var(--space-1);
+}
+body.theme-light .edge-tooltip {
+  background: #ffffff;
+  border-color: #c9c9c9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+@media (prefers-reduced-motion: reduce) {
+  .edge-tooltip {
+    transition: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CINEMATIC WEBGL GALAXY (body.webgl-galaxy, redesign 2026-09)
+   galaxy-3d.js renders planets, atmospheres, moons and energy-stream
+   edges; the DOM keeps the hit zones, labels, icons and edge-hit paths.
+   Dark-only: a light theme sets body.no-webgl, which wins below.
+   ══════════════════════════════════════════════════════════════ */
+body.webgl-galaxy:not(.no-webgl) #starfield,
+body.webgl-galaxy:not(.no-webgl) #particle-canvas {
+  display: none; /* the WebGL scene draws its own nebula, stars and flow */
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node,
+body.webgl-galaxy:not(.no-webgl) .planet-node:hover,
+body.webgl-galaxy:not(.no-webgl) .planet-node:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  /* No hover scale on the hit zone: a growing target shifts its own edge
+     under the cursor and flickers hover on/off (the jitter). */
+  transform: translate(-50%, -50%);
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node:focus-visible {
+  outline: 2px solid #5cc8ff;
+  outline-offset: 6px;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node::before,
+body.webgl-galaxy:not(.no-webgl) .planet-node::after {
+  display: none;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node.dimmed {
+  opacity: 1; /* dimming happens in the shader; the DOM fades only its text */
+}
+body.webgl-galaxy:not(.no-webgl) .planet-node.dimmed .planet-label,
+body.webgl-galaxy:not(.no-webgl) .planet-node.dimmed .planet-icon {
+  opacity: 0.32;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-icon {
+  color: #fff;
+  transition: opacity 0.3s ease;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-icon::before {
+  inset: -34%;
+  background: radial-gradient(
+    circle,
+    rgba(2, 6, 16, 0.62) 0%,
+    rgba(2, 6, 16, 0.42) 52%,
+    transparent 72%
+  );
+}
+body.webgl-galaxy:not(.no-webgl) .planet-icon svg,
+body.webgl-galaxy:not(.no-webgl) .planet-icon svg * {
+  stroke-width: 1.9;
+}
+body.webgl-galaxy:not(.no-webgl) .planet-label,
+body.webgl-galaxy:not(.no-webgl) .planet-node:hover .planet-label,
+body.webgl-galaxy:not(.no-webgl) .planet-node.hovered .planet-label,
+body.webgl-galaxy:not(.no-webgl) .planet-node.hub .planet-label,
+body.webgl-galaxy:not(.no-webgl) .planet-node.connected .planet-label {
+  top: calc(100% + 6px);
+  font: 650 clamp(12px, calc(14px * var(--zoom, 1)), 16px) var(--font-display, sans-serif);
+  color: #fff;
+  background: rgba(3, 7, 18, 0.6);
+  border-radius: 7px;
+  padding: 3px 9px;
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease;
+}
+/* Edges are drawn by WebGL; SVG strokes stay only as invisible hover targets. */
+body.webgl-galaxy:not(.no-webgl) .galaxy-edge,
+body.webgl-galaxy:not(.no-webgl) .galaxy-edge-pulse {
+  display: none;
+}
