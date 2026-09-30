@@ -34,6 +34,7 @@ import {
   resetGalaxyState,
 } from "./galaxy-renderer.js";
 import { showPlanetHero, highlightMoon, pausePlanetHero } from "./planet-hero.js";
+import { renderRelationMap } from "./relation-map.js";
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -1302,13 +1303,22 @@ function renderCoreView(pid, cid) {
       { label: p.name, nav: "planet" },
       { label: c.name },
     ])}
-    <div class="core-header">
-      <span class="icon-svg">${iconHtml(c.icon, 26)}</span>
+    <div class="core-header" style="--core-color:${p.color}">
+      <span class="core-orb" aria-hidden="true"><span class="icon-svg">${iconHtml(c.icon, 22)}</span></span>
       <div>
         <h2>${c.name}</h2>
-        <span class="badge">Trigger level</span>
+        <div class="core-where">Part of <a href="#" class="core-where-link" data-nav="planet">${esc(p.name)}</a> · ${p.components.length} components</div>
       </div>
     </div>
+    <nav class="sibling-strip" aria-label="Other components in ${esc(p.name)}">
+      ${p.components
+        .filter((s) => !s._synthetic)
+        .map(
+          (s) =>
+            `<a href="#/${pid}/${s.id}" class="sibling${s.id === cid ? " is-here" : ""}"${s.id === cid ? ' aria-current="page"' : ""} data-sibling="${s.id}">${esc(s.name)}</a>`,
+        )
+        .join("")}
+    </nav>
     ${tabBar}
     <div id="entity-tab-content" role="tabpanel">${renderOverviewTab(c)}</div>`;
   wireNavLinks(el, {
@@ -1333,6 +1343,32 @@ function renderCoreView(pid, cid) {
       const next = allTabs[(current + direction + allTabs.length) % allTabs.length];
       next.focus();
       next.click();
+    });
+  });
+  el.querySelectorAll("[data-sibling]").forEach((a) =>
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (a.dataset.sibling !== cid) {
+        a.blur();
+        enterCore(pid, a.dataset.sibling);
+      }
+    }),
+  );
+  // Overview tags that name a real entity in this component become links to it.
+  const byName = new Map();
+  for (const [type, list] of Object.entries(c.entities || {}))
+    for (const e of list || []) byName.set(e.name, type);
+  el.querySelectorAll("#entity-tab-content .card-tag").forEach((tag) => {
+    const name = tag.textContent.trim(), type = byName.get(name);
+    if (!type) return;
+    tag.classList.add("card-tag--link");
+    tag.setAttribute("role", "link");
+    tag.tabIndex = 0;
+    tag.setAttribute("aria-label", `Open ${name}`);
+    const go = () => enterEntity(pid, cid, type, name);
+    tag.addEventListener("click", go);
+    tag.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
     });
   });
   attachOverviewListeners(el);
@@ -1627,9 +1663,15 @@ function renderEntityView(pid, cid, rawType, entityName) {
   // aside). Aside is placed AFTER main in DOM so screen-reader / tab order hits
   // the primary content first; CSS grid positions it to the right. Collapses to
   // a single column under 1024px.
+  // Relationship map first: the "where does this sit" picture before the detail.
+  const mapHtml = renderRelationMap(entity, p.color, (name, kind) => {
+    const type = kind === "class" ? "classes" : "objects";
+    const found = findEntityAcrossDomains(name, type);
+    return found ? { pid: found.pid, cid: found.cid, type, name } : null;
+  });
   const h =
     bc +
-    `<div class="detail-shell"><div class="detail-main">${detailHtml}</div>${renderEntityAside(entity, entityType, c)}</div>`;
+    `<div class="detail-shell"><div class="detail-main">${mapHtml}${detailHtml}</div>${renderEntityAside(entity, entityType, c)}</div>`;
   el.innerHTML = h;
   wireNavLinks(el, {
     galaxy: () => navigateTo("galaxy"),
