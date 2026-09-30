@@ -107,7 +107,7 @@ export function renderHtml(cfg, manifestEntry, jsVersion, cssVersion, gaId) {
 
 <!-- Galaxy DOM layer: planets + edges (z3) -->
 <div class="galaxy-container" id="galaxyContainer"
-     role="img" aria-label="Interactive galaxy map of ${name} domains">
+     role="region" aria-label="Interactive galaxy map of ${name} domains">
   <svg class="galaxy-edges" id="galaxyEdges"></svg>
 </div>
 
@@ -121,9 +121,9 @@ export function renderHtml(cfg, manifestEntry, jsVersion, cssVersion, gaId) {
 
 <!-- Navbar -->
 <nav id="navbar" aria-label="Navigation">
-  <div class="nav-brand" id="nav-brand" style="cursor:pointer" role="button" tabindex="0">${title}</div>
-  <button id="tour-btn" class="tour-btn" aria-label="Tour">Tour <span class="tour-btn-icon nav-icon-svg" id="tour-icon"></span></button>
-  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme"><span class="nav-icon-svg" id="theme-icon"></span></button>
+  <a class="nav-brand" id="nav-brand" href="#/">${title}</a>
+  <button id="tour-btn" class="tour-btn" aria-label="Choose a tour" aria-expanded="false" aria-controls="tour-picker">Tour <span class="tour-btn-icon nav-icon-svg" id="tour-icon"></span></button>
+  <button id="theme-toggle" class="theme-toggle" aria-label="Switch to light theme" title="Switch to light theme"><span class="nav-icon-svg" id="theme-icon"></span></button>
   <div id="zoom-indicator" aria-hidden="true">
     <span style="font-size:10px;margin-right:4px">ZOOM</span>
     <div class="zoom-dot active" data-z="1"></div>
@@ -137,7 +137,7 @@ export function renderHtml(cfg, manifestEntry, jsVersion, cssVersion, gaId) {
 <div class="search-scrim" id="searchScrim"></div>
 
 <!-- Floating search dropdown (body-level for clean z-index) -->
-<div class="search-drop" id="searchDrop">
+<div class="search-drop" id="searchDrop" aria-hidden="true" inert>
   <div class="search-drop-inner">
     <div id="aiSection"></div>
     <div class="search-master-detail" id="searchMasterDetail">
@@ -155,7 +155,7 @@ export function renderHtml(cfg, manifestEntry, jsVersion, cssVersion, gaId) {
 </div>
 
 <!-- Stage -->
-<div id="stage">
+<main id="stage" tabindex="-1">
   <!-- GALAXY VIEW (canvas-based, minimal DOM) -->
   <div id="galaxy-view" class="view-layer active">
     <div class="galaxy-title">
@@ -183,25 +183,25 @@ ${renderStats(manifestEntry.stats)}
   </div>
 
   <!-- PLANET VIEW -->
-  <div id="planet-view" class="view-layer">
+  <div id="planet-view" class="view-layer" aria-hidden="true" inert>
     <div class="planet-content" id="planet-content"></div>
   </div>
 
   <!-- CORE VIEW -->
-  <div id="core-view" class="view-layer">
+  <div id="core-view" class="view-layer" aria-hidden="true" inert>
     <div class="core-content" id="core-content"></div>
   </div>
 
   <!-- ENTITY VIEW (Level 4) -->
-  <div id="entity-view" class="view-layer">
+  <div id="entity-view" class="view-layer" aria-hidden="true" inert>
     <div class="entity-content" id="entity-content"></div>
   </div>
 
   <!-- SEARCH RESULTS VIEW (Level 5 - ephemeral, replaces AI answer view) -->
-  <div id="search-results-view" class="view-layer">
+  <div id="search-results-view" class="view-layer" aria-hidden="true" inert>
     <div class="search-results-content" id="search-results-content"></div>
   </div>
-</div>
+</main>
 
 <!-- Version indicator -->
 <div id="version-indicator" aria-label="Data version">${versionIndicator}</div>
@@ -222,7 +222,7 @@ ${renderStats(manifestEntry.stats)}
 
 <!-- Feedback modal -->
 <div class="feedback-scrim" id="feedbackScrim"></div>
-<div class="feedback-modal" id="feedbackModal" role="dialog" aria-labelledby="feedback-title" aria-modal="true"></div>
+<div class="feedback-modal" id="feedbackModal" role="dialog" aria-labelledby="feedback-title" aria-modal="true" aria-hidden="true" inert></div>
 
 <!-- Screen reader announcements -->
 <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>

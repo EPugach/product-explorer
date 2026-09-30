@@ -508,6 +508,8 @@ export function resetGalaxyState() {
 export function setGalaxyVisible(visible) {
   if (_container) {
     _container.classList.toggle("hidden", !visible);
+    _container.toggleAttribute("inert", !visible);
+    _container.setAttribute("aria-hidden", visible ? "false" : "true");
     if (visible) {
       // Ensure pointer-events and opacity are clean when showing
       _container.style.pointerEvents = "";
@@ -601,6 +603,8 @@ export function flyIntoPlanet(node, callback) {
 
     _container.classList.remove("fly-in");
     _container.classList.add("hidden");
+    _container.setAttribute("inert", "");
+    _container.setAttribute("aria-hidden", "true");
     _container.style.transform = "";
     _container.style.opacity = "";
     _container.style.pointerEvents = "";
@@ -658,6 +662,8 @@ export function flyOutFromPlanet(node, callback) {
 
   // Set starting position (zoomed-in, transparent)
   _container.classList.remove("hidden", "fly-in", "fly-out");
+  _container.removeAttribute("inert");
+  _container.setAttribute("aria-hidden", "false");
   _container.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   _container.style.opacity = "0";
   _container.style.pointerEvents = "none"; // Prevent clicks during fly-out

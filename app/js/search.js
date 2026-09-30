@@ -4,7 +4,7 @@
 //  CDN fallback: if MiniSearch fails to load, uses substring matching
 // ══════════════════════════════════════════════════════════════
 
-import { track, announce, showToast } from "./utils.js";
+import { track, announce, showToast, copyText } from "./utils.js";
 import { entitySvg, domainSvg } from "./icons.js";
 
 // ── MiniSearch lazy CDN import with fallback ─────────────────
@@ -133,15 +133,16 @@ export function buildFeedbackButtonsHtml() {
 
 // Build feedback panel HTML (inserted after header, hidden by default)
 export function buildFeedbackPanelHtml() {
+  const labelId = `ai-feedback-label-${Math.random().toString(36).slice(2, 8)}`;
   const chips = FEEDBACK_REASONS.map(
     (r) => `<button class="ai-feedback-chip" data-reason="${r}">${r}</button>`,
   ).join("");
   return (
     `<div class="ai-feedback-panel" data-feedback-panel>` +
-    `<div class="ai-feedback-label">What went wrong?</div>` +
+    `<label class="ai-feedback-label" id="${labelId}">What went wrong?</label>` +
     `<div class="ai-feedback-chips">${chips}</div>` +
     `<div class="ai-feedback-row">` +
-    `<input type="text" class="ai-feedback-input" data-feedback-text placeholder="Tell us more (optional)" maxlength="500">` +
+    `<input type="text" class="ai-feedback-input" data-feedback-text aria-labelledby="${labelId}" placeholder="Tell us more (optional)" maxlength="500">` +
     `<button class="ai-feedback-submit" data-feedback-submit>Submit</button>` +
     `</div>` +
     `<div class="ai-feedback-thanks" data-feedback-thanks>Thanks for your feedback!</div>` +
@@ -159,8 +160,8 @@ export function wireFeedbackButtons(container, question) {
 
   // Already voted on this question
   if (_votedQuestions.has(question.trim().toLowerCase())) {
-    upBtn.classList.add("disabled");
-    downBtn.classList.add("disabled");
+    upBtn.disabled = true;
+    downBtn.disabled = true;
     return;
   }
 
@@ -168,8 +169,8 @@ export function wireFeedbackButtons(container, question) {
     e.stopPropagation();
     e.preventDefault();
     upBtn.classList.add("active-up");
-    downBtn.classList.add("disabled");
-    upBtn.classList.add("disabled");
+    downBtn.disabled = true;
+    upBtn.disabled = true;
     _votedQuestions.add(question.trim().toLowerCase());
     sendFeedback(question, "up");
     // Show brief thanks
@@ -189,7 +190,7 @@ export function wireFeedbackButtons(container, question) {
     e.stopPropagation();
     e.preventDefault();
     downBtn.classList.add("active-down");
-    upBtn.classList.add("disabled");
+    upBtn.disabled = true;
     if (panel) panel.classList.add("open");
   });
 
@@ -237,7 +238,7 @@ export function wireFeedbackButtons(container, question) {
     const doSubmit = () => {
       const comment = textInput ? textInput.value.trim() : "";
       if (!selectedReason && !comment) return; // need at least a reason or comment
-      downBtn.classList.add("disabled");
+      downBtn.disabled = true;
       _votedQuestions.add(question.trim().toLowerCase());
       sendFeedback(question, "down", selectedReason, comment);
       panel.classList.remove("open");
@@ -936,24 +937,19 @@ export function formatAiMarkdown(escaped) {
 }
 
 // ── AI answer copy helper ────────────────────────────────────
-function copyAiAnswer(btn, text) {
-  const onSuccess = () => {
+async function copyAiAnswer(btn, text) {
+  if (await copyText(text)) {
     btn.classList.add("copied");
     const prev = btn.textContent;
-    btn.textContent = "\u2713 Copied";
+    btn.textContent = "Copied";
     setTimeout(() => {
       btn.textContent = prev;
       btn.classList.remove("copied");
     }, 1500);
     showToast("Copied to clipboard");
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard
-      .writeText(text)
-      .then(onSuccess)
-      .catch(() => onSuccess());
   } else {
-    onSuccess();
+    showToast("Unable to copy");
+    announce("Unable to copy answer");
   }
 }
 
@@ -1057,11 +1053,12 @@ export function renderAiSection(query, aiState) {
       `<div class="ai-section" id="ai-section">` +
       `<div class="ai-header"><span class="ai-header-left">AI ANSWER${buildFeedbackButtonsHtml()}</span><button class="ai-copy-btn" data-ai-copy aria-label="Copy answer">Copy</button></div>` +
       buildFeedbackPanelHtml() +
-      `<div class="ai-card ai-card-clickable" role="button" tabindex="0">` +
+      `<div class="ai-card">` +
       `<div class="ai-icon">&#x2728;</div>` +
       `<div class="ai-body">` +
       `<div class="ai-answer ai-answer-formatted">${formattedAnswer}</div>` +
       `<div class="ai-attribution">Based on ${_productName} product data</div>` +
+      `<button class="ai-open-results" data-ai-open-results>Open full results</button>` +
       `</div></div></div>`;
   } else if (aiState.error) {
     html =
@@ -1100,7 +1097,7 @@ export function renderAiSection(query, aiState) {
   }
 
   // Make AI card clickable to open search results page
-  const aiClickable = el.querySelector(".ai-card-clickable");
+  const aiClickable = el.querySelector("[data-ai-open-results]");
   if (aiClickable && _enterSearchResults) {
     const openResultsPage = () => {
       const currentQuery = query;
@@ -1114,12 +1111,6 @@ export function renderAiSection(query, aiState) {
       }, 100);
     };
     aiClickable.addEventListener("click", openResultsPage);
-    aiClickable.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        openResultsPage();
-      }
-    });
   }
 }
 
@@ -1175,6 +1166,7 @@ export function renderPreview(item, query) {
 
 export function highlightActive() {
   const master = document.getElementById("searchMaster");
+  const input = document.getElementById("searchInput");
   if (!master) return;
   master.querySelectorAll(".search-result").forEach((el, i) => {
     el.classList.toggle("active", i === searchIndex);
@@ -1182,9 +1174,9 @@ export function highlightActive() {
   });
   // Update aria-activedescendant so screen readers track the focused option
   if (searchIndex >= 0) {
-    master.setAttribute("aria-activedescendant", `sr-opt-${searchIndex}`);
+    input?.setAttribute("aria-activedescendant", `sr-opt-${searchIndex}`);
   } else {
-    master.removeAttribute("aria-activedescendant");
+    input?.removeAttribute("aria-activedescendant");
   }
 }
 
@@ -1226,6 +1218,8 @@ export function closeSearch() {
   const scrim = document.getElementById("searchScrim");
   shell.classList.remove("focused", "typing");
   drop.classList.remove("open");
+  drop.setAttribute("aria-hidden", "true");
+  drop.setAttribute("inert", "");
   scrim.classList.remove("visible");
   searchResults = [];
   searchIndex = -1;
@@ -1236,7 +1230,7 @@ export function closeSearch() {
   input.setAttribute("aria-expanded", "false");
   input.blur();
   const master = document.getElementById("searchMaster");
-  master.removeAttribute("aria-activedescendant");
+  input.removeAttribute("aria-activedescendant");
   master.textContent = "";
   document.getElementById("searchPreview").textContent = "";
   document.getElementById("aiSection").textContent = "";
@@ -1252,6 +1246,8 @@ export function expandSearch(query) {
   shell.classList.remove("focused");
   shell.classList.add("typing");
   drop.classList.add("open");
+  drop.setAttribute("aria-hidden", "false");
+  drop.removeAttribute("inert");
   scrim.classList.add("visible");
   document.getElementById("searchInput").setAttribute("aria-expanded", "true");
   if (window.innerWidth > 480) {
@@ -1269,6 +1265,7 @@ export function expandSearch(query) {
 
   // Render the three panels
   renderMasterList(searchResults, query);
+  highlightActive();
   renderAiSection(query, shouldAskAi ? { loading: true } : null);
   renderPreview(searchResults[searchIndex] || null, query);
 
@@ -1320,13 +1317,15 @@ export function collapseSearch() {
   shell.classList.remove("typing");
   shell.classList.add("focused");
   drop.classList.remove("open");
+  drop.setAttribute("aria-hidden", "true");
+  drop.setAttribute("inert", "");
   scrim.classList.remove("visible");
   document.getElementById("searchInput").setAttribute("aria-expanded", "false");
   searchResults = [];
   searchIndex = -1;
   _previewIndex = -1;
   const cMaster = document.getElementById("searchMaster");
-  cMaster.removeAttribute("aria-activedescendant");
+  document.getElementById("searchInput").removeAttribute("aria-activedescendant");
   cMaster.textContent = "";
   document.getElementById("searchPreview").textContent = "";
   document.getElementById("aiSection").textContent = "";

@@ -28,30 +28,28 @@ export function esc(str) {
 }
 
 export function breadcrumb(items) {
-  return html`<div class="bc">
+  return html`<nav class="bc" aria-label="Breadcrumb">
     ${items.map((item, i) => {
-      const sep = i > 0 ? html`<span class="bc-sep">❯</span>` : "";
+      const sep = i > 0 ? html`<span class="bc-sep" aria-hidden="true">/</span>` : "";
       if (item.nav)
-        return html`${sep}<span class="bc-link" data-nav="${item.nav}"
-            >${item.label}</span
-          >`;
-      return html`${sep}<span class="bc-here">${item.label}</span>`;
+        return html`${sep}<a class="bc-link" href="#" data-nav="${item.nav}">${esc(item.label)}</a>`;
+      return html`${sep}<span class="bc-here" aria-current="page">${esc(item.label)}</span>`;
     })}
-  </div>`;
+  </nav>`;
 }
 
 export function wireNavLinks(el, callbacks) {
   el.querySelectorAll('[data-nav="galaxy"]').forEach((l) => {
     l.style.cursor = "pointer";
-    l.addEventListener("click", () => callbacks.galaxy());
+    l.addEventListener("click", (event) => { event.preventDefault(); callbacks.galaxy(); });
   });
   el.querySelectorAll('[data-nav="planet"]').forEach((l) => {
     l.style.cursor = "pointer";
-    l.addEventListener("click", () => callbacks.planet());
+    l.addEventListener("click", (event) => { event.preventDefault(); callbacks.planet(); });
   });
   el.querySelectorAll('[data-nav="back"]').forEach((l) => {
     l.style.cursor = "pointer";
-    l.addEventListener("click", () => callbacks.back());
+    l.addEventListener("click", (event) => { event.preventDefault(); callbacks.back(); });
   });
 }
 
@@ -59,7 +57,10 @@ export function wireClickAndEnter(el, selector, handler) {
   el.querySelectorAll(selector).forEach((item) => {
     item.addEventListener("click", () => handler(item));
     item.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") handler(item);
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handler(item);
+      }
     });
   });
 }

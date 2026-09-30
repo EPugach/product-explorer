@@ -69,6 +69,30 @@ export function showToast(message) {
   }, 1500);
 }
 
+export async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Continue to the selection-based fallback.
+    }
+  }
+  const textarea = document.createElement('textarea');
+  const previousFocus = document.activeElement;
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  let copied = false;
+  try { copied = document.execCommand('copy'); } catch { /* no-op */ }
+  textarea.remove();
+  if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true });
+  return copied;
+}
+
 // Hex to RGBA conversion (single source of truth, was duplicated in renderer.js and particles.js)
 export const hexToRgba = (hex, alpha = 1) => {
   if (!hex || hex[0] !== '#') return `rgba(77,139,255,${alpha})`;

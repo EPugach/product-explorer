@@ -43,6 +43,8 @@ import {
   updateAllPositions,
   setGalaxyVisible,
   getSortedPlanetEls,
+  applyHoverState,
+  clearHoverState,
 } from "./galaxy-renderer.js";
 import {
   currentLevel,
@@ -283,6 +285,10 @@ function toggleTheme() {
     light ? "sun" : "moon",
     18,
   );
+  const themeButton = document.getElementById("theme-toggle");
+  const themeAction = light ? "Switch to dark theme" : "Switch to light theme";
+  themeButton.setAttribute("aria-label", themeAction);
+  themeButton.title = themeAction;
   setTheme3D(light ? "light" : "dark");
   // Keep the DOM starfield in sync with the theme. On a light-mode page load the
   // starfield is initialized then immediately paused (see initApp: `if (lightMode)
@@ -575,6 +581,21 @@ setTourAnimationCallbacks(particleTick);
 function setupGalaxyKeyboard() {
   const container = document.getElementById("galaxyContainer");
   if (!container) return;
+  container.addEventListener("focusin", (event) => {
+    const planet = event.target.closest(".planet-node");
+    if (!planet || tourState.active) return;
+    const node = nodeMap[planet.dataset.domain];
+    if (!node) return;
+    applyHoverState(node.id);
+    setParticleHover(node);
+    setHover3D(node.id);
+  });
+  container.addEventListener("focusout", (event) => {
+    if (event.relatedTarget?.closest?.(".planet-node")) return;
+    clearHoverState();
+    setParticleHover(null);
+    setHover3D(null);
+  });
   /* mouse/touch/drag replaced by pointer-events.js — only keyboard nav remains */
   // ── Keyboard planet navigation on container ──
   container.addEventListener("keydown", (e) => {
@@ -933,6 +954,12 @@ async function init() {
   if (lightMode) {
     document.body.classList.add("theme-light");
   }
+  const initialThemeAction = lightMode
+    ? "Switch to dark theme"
+    : "Switch to light theme";
+  const initialThemeButton = document.getElementById("theme-toggle");
+  initialThemeButton.setAttribute("aria-label", initialThemeAction);
+  initialThemeButton.title = initialThemeAction;
 
   // NOTE: innerHTML safe — uiSvg returns trusted app-owned SVG strings
   document.getElementById("search-icon").innerHTML = uiSvg("search", 18);
@@ -1014,13 +1041,10 @@ async function init() {
 
   document
     .getElementById("nav-brand")
-    .addEventListener("click", () => navigateTo("galaxy"));
-  document.getElementById("nav-brand").addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
+    .addEventListener("click", (e) => {
       e.preventDefault();
       navigateTo("galaxy");
-    }
-  });
+    });
 
   document
     .getElementById("tour-btn")

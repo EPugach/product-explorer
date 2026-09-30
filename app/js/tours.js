@@ -3,7 +3,7 @@
 //  State management, camera orchestration, UI rendering
 // ══════════════════════════════════════════════════════════════
 
-import { domainSvg, iconHtml } from './icons.js';
+import { domainSvg, iconHtml, uiSvg } from './icons.js';
 
 // Tour data and product data are injected by main.js
 let TOURS = [];
@@ -76,6 +76,8 @@ export function initTours() {
   picker.className = 'tour-picker';
   picker.setAttribute('role', 'dialog');
   picker.setAttribute('aria-label', 'Choose a tour');
+  picker.setAttribute('aria-hidden', 'true');
+  picker.setAttribute('inert', '');
   // NOTE: innerHTML usage is safe here. All content is from trusted TOURS
   // data object (app-owned tour-data.js), not user input.
   picker.innerHTML = renderTourPicker();
@@ -93,7 +95,7 @@ export function initTours() {
   picker.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
-      picker.classList.remove('open');
+      setPickerOpen(false);
       const btn = document.getElementById('tour-btn');
       if (btn) btn.focus();
       return;
@@ -117,6 +119,8 @@ export function initTours() {
   const card = document.createElement('div');
   card.id = 'tour-card';
   card.className = 'tour-card';
+  card.setAttribute('aria-hidden', 'true');
+  card.setAttribute('inert', '');
   document.body.appendChild(card);
 
   // Close picker when clicking outside, return focus to tour button
@@ -125,7 +129,7 @@ export function initTours() {
     const btn = document.getElementById('tour-btn');
     if (pickerEl && btn && !pickerEl.contains(e.target) && !btn.contains(e.target)) {
       if (pickerEl.classList.contains('open')) {
-        pickerEl.classList.remove('open');
+        setPickerOpen(false);
         btn.focus();
       }
     }
@@ -148,7 +152,7 @@ export function toggleTourPicker() {
   const picker = document.getElementById('tour-picker');
   if (!picker) return;
   const wasOpen = picker.classList.contains('open');
-  picker.classList.toggle('open');
+  setPickerOpen(wasOpen ? false : true);
 
   if (!wasOpen) {
     // Opening: focus first tour item
@@ -162,6 +166,16 @@ export function toggleTourPicker() {
   }
 }
 
+function setPickerOpen(open) {
+  const picker = document.getElementById('tour-picker');
+  const button = document.getElementById('tour-btn');
+  if (!picker) return;
+  picker.classList.toggle('open', open);
+  picker.toggleAttribute('inert', !open);
+  picker.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (button) button.setAttribute('aria-expanded', String(open));
+}
+
 // Note: window.toggleTourPicker no longer needed
 // since inline onclick was replaced with addEventListener in main.js
 
@@ -171,7 +185,7 @@ function startTour(tourId) {
 
   // Close picker
   const picker = document.getElementById('tour-picker');
-  if (picker) picker.classList.remove('open');
+  if (picker) setPickerOpen(false);
 
   // If not on galaxy view, navigate there first
   if (currentLevel !== 'galaxy') {
@@ -204,7 +218,12 @@ function startTour(tourId) {
 
   // Show narration card
   const card = document.getElementById('tour-card');
-  if (card) card.classList.add('visible');
+  if (card) {
+    card.classList.add('visible');
+    card.removeAttribute('inert');
+    card.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => card.querySelector('[data-tour-next], [data-tour-exit]')?.focus());
+  }
 
   track('tour_start', {
     tour_id: tourId,
@@ -321,7 +340,12 @@ export function exitTour() {
 
   // Hide narration card
   const card = document.getElementById('tour-card');
-  if (card) card.classList.remove('visible');
+  if (card) {
+    card.classList.remove('visible');
+    card.setAttribute('aria-hidden', 'true');
+    card.setAttribute('inert', '');
+  }
+  document.getElementById('tour-btn')?.focus();
 
   // Reset camera: animate back to identity zoom/pan (crisp at every frame)
   _animateToIdentity(800);
@@ -383,21 +407,21 @@ function renderNarrationCard(tour, stop, index) {
         `<h3 class="tour-card-title">${content.title}</h3>` +
       `</div>` +
       `<div class="tour-mode-toggle">` +
-        `<button class="tour-mode-btn${tourState.mode === 'admin' ? ' active' : ''}" data-tour-mode="admin">Admin</button>` +
-        `<button class="tour-mode-btn${tourState.mode === 'dev' ? ' active' : ''}" data-tour-mode="dev">Dev</button>` +
+        `<button class="tour-mode-btn${tourState.mode === 'admin' ? ' active' : ''}" data-tour-mode="admin" aria-pressed="${tourState.mode === 'admin'}">Admin</button>` +
+        `<button class="tour-mode-btn${tourState.mode === 'dev' ? ' active' : ''}" data-tour-mode="dev" aria-pressed="${tourState.mode === 'dev'}">Dev</button>` +
       `</div>` +
-      `<button class="tour-exit-btn" data-tour-exit aria-label="Exit tour">\u2715</button>` +
+      `<button class="tour-exit-btn" data-tour-exit aria-label="Exit tour">${uiSvg("close", 16)}</button>` +
     `</div>` +
     `<div class="tour-card-body">` +
       `<p>${content.body}</p>` +
     `</div>` +
     `<div class="tour-card-footer">` +
-      `<button class="tour-nav-btn${isFirst ? ' disabled' : ''}" data-tour-prev${isFirst ? ' disabled' : ''}>\u2190 Prev</button>` +
+      `<button class="tour-nav-btn${isFirst ? ' disabled' : ''}" data-tour-prev${isFirst ? ' disabled' : ''}>${uiSvg("arrow-left", 15)} Prev</button>` +
       `<div class="tour-progress">` +
         `<div class="tour-dots">${dots}</div>` +
         `<span class="tour-counter">${index + 1} / ${tour.stops.length}</span>` +
       `</div>` +
-      `<button class="tour-nav-btn${isLast ? ' disabled' : ''}" data-tour-next${isLast ? ' disabled' : ''}>Next \u2192</button>` +
+      `<button class="tour-nav-btn${isLast ? ' disabled' : ''}" data-tour-next${isLast ? ' disabled' : ''}>Next ${uiSvg("arrow-right", 15)}</button>` +
     `</div>`;
 
   // Attach event listeners for narration card controls

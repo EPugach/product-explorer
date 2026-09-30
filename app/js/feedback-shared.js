@@ -6,6 +6,7 @@
 // ══════════════════════════════════════════════════════════════
 
 import { track, announce } from './utils.js';
+import { uiSvg, iconHtml } from './icons.js';
 
 // ── State ──
 let scriptUrl = '';
@@ -23,6 +24,8 @@ function openModal() {
   isOpen = true;
   scrimEl.classList.add('visible');
   modalEl.classList.add('visible');
+  modalEl.removeAttribute('inert');
+  modalEl.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
   const firstInput = modalEl.querySelector('select, input, textarea');
   if (firstInput) firstInput.focus();
@@ -35,6 +38,8 @@ function closeModal() {
   isOpen = false;
   scrimEl.classList.remove('visible');
   modalEl.classList.remove('visible');
+  modalEl.setAttribute('aria-hidden', 'true');
+  modalEl.setAttribute('inert', '');
   document.body.style.overflow = '';
   const btn = document.getElementById('feedbackBtn');
   if (btn) btn.focus();
@@ -62,7 +67,8 @@ function updateStars(rating) {
   const stars = starsEl.querySelectorAll('.feedback-star');
   stars.forEach((star, i) => {
     star.classList.toggle('active', i < rating);
-    star.setAttribute('aria-checked', i < rating ? 'true' : 'false');
+    star.setAttribute('aria-checked', i === rating - 1 ? 'true' : 'false');
+    star.tabIndex = rating === 0 ? (i === 0 ? 0 : -1) : (i === rating - 1 ? 0 : -1);
   });
 }
 
@@ -185,7 +191,7 @@ function showSuccess() {
   success.className = 'feedback-success';
   const icon = document.createElement('div');
   icon.className = 'feedback-success-icon';
-  icon.textContent = '\u2713';
+  icon.innerHTML = uiSvg('check', 28);
   const title = document.createElement('p');
   title.className = 'feedback-success-title';
   title.textContent = 'Thank you!';
@@ -239,9 +245,10 @@ function buildModalDOM() {
   h2.id = 'feedback-title';
   h2.textContent = 'Send Feedback';
   const closeButton = document.createElement('button');
+  closeButton.type = 'button';
   closeButton.className = 'feedback-close-btn';
   closeButton.setAttribute('aria-label', 'Close feedback form');
-  closeButton.textContent = '\u00D7';
+  closeButton.innerHTML = uiSvg('close', 18);
   header.appendChild(h2);
   header.appendChild(closeButton);
 
@@ -279,7 +286,7 @@ function buildModalDOM() {
     star.setAttribute('aria-checked', 'false');
     star.setAttribute('aria-label', `${i + 1} star${i > 0 ? 's' : ''}`);
     star.tabIndex = i === 0 ? 0 : -1;
-    star.textContent = '\u2605';
+    star.innerHTML = iconHtml('star', 24);
     starsDiv.appendChild(star);
   }
   ratingField.appendChild(starsDiv);
@@ -349,6 +356,12 @@ function createField(labelText, required) {
     label.appendChild(span);
   }
   field.appendChild(label);
+  const controlIds = {
+    Category: 'fb-category',
+    Message: 'fb-message',
+    Email: 'fb-email',
+  };
+  if (controlIds[labelText]) label.htmlFor = controlIds[labelText];
   return field;
 }
 

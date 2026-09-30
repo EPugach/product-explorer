@@ -4,7 +4,7 @@
 //  trusted product data object (app-owned), not user input.
 // ══════════════════════════════════════════════════════════════
 
-import { track, announce, showToast } from "./utils.js";
+import { track, announce, showToast, copyText } from "./utils.js";
 import {
   html,
   esc,
@@ -76,8 +76,8 @@ export function rebuildPlanetMeta() {
 }
 
 // ── Copy current URL to clipboard ──
-export function copyCurrentLink(btn) {
-  navigator.clipboard.writeText(window.location.href).then(() => {
+export async function copyCurrentLink(btn) {
+  if (await copyText(window.location.href)) {
     btn.classList.add("copied");
     // NOTE: innerHTML safe — uiSvg returns trusted app-owned SVG strings
     btn.innerHTML = uiSvg("check", 14);
@@ -89,7 +89,10 @@ export function copyCurrentLink(btn) {
       // NOTE: innerHTML safe — uiSvg returns trusted app-owned SVG strings
       btn.innerHTML = uiSvg("link", 14);
     }, 1500);
-  });
+  } else {
+    announce("Unable to copy link");
+    showToast("Unable to copy link");
+  }
 }
 
 export let currentLevel = "galaxy";
@@ -284,6 +287,9 @@ function getTransitionMs() {
 
 function showView(id, dir) {
   document.querySelectorAll(".view-layer").forEach((v) => {
+    const active = v.id === id;
+    v.toggleAttribute("inert", !active);
+    v.setAttribute("aria-hidden", active ? "false" : "true");
     if (v.classList.contains("active")) {
       v.classList.remove("active");
       v.classList.add(dir === "in" ? "zoom-out" : "zoom-in");
@@ -307,6 +313,9 @@ function showView(id, dir) {
 function showViewDirect(id) {
   document.querySelectorAll(".view-layer").forEach((v) => {
     v.classList.remove("active", "zoom-out", "zoom-in");
+    const active = v.id === id;
+    v.toggleAttribute("inert", !active);
+    v.setAttribute("aria-hidden", active ? "false" : "true");
   });
   document.getElementById(id).classList.add("active");
 }
@@ -1197,7 +1206,7 @@ function renderCoreView(pid, cid) {
   }
   let tabBar = "";
   if (tabs.length > 1)
-    tabBar = `<div class="entity-tab-bar">${tabs.map((t) => `<button class="entity-tab${t.key === "overview" ? " active" : ""}" data-tab="${t.key}" data-entity-tab-pid="${pid}" data-entity-tab-cid="${cid}">${t.label}${t.count !== null ? ` <span class="tab-count">${t.count}</span>` : ""}</button>`).join("")}</div>`;
+    tabBar = `<div class="entity-tab-bar" role="tablist" aria-label="Component sections">${tabs.map((t) => `<button class="entity-tab${t.key === "overview" ? " active" : ""}" role="tab" aria-selected="${t.key === "overview"}" aria-controls="entity-tab-content" tabindex="${t.key === "overview" ? "0" : "-1"}" data-tab="${t.key}" data-entity-tab-pid="${pid}" data-entity-tab-cid="${cid}">${t.label}${t.count !== null ? ` <span class="tab-count">${t.count}</span>` : ""}</button>`).join("")}</div>`;
   else if (!entitiesLoaded)
     tabBar = `<div class="entity-loading-hint" style="padding:8px 0;font-size:12px;color:var(--text-dim,#64748b);opacity:0.7">Loading entity data\u2026</div>`;
   el.innerHTML = html` ${breadcrumb([
@@ -1213,7 +1222,7 @@ function renderCoreView(pid, cid) {
       </div>
     </div>
     ${tabBar}
-    <div id="entity-tab-content">${renderOverviewTab(c)}</div>`;
+    <div id="entity-tab-content" role="tabpanel">${renderOverviewTab(c)}</div>`;
   wireNavLinks(el, {
     galaxy: () => navigateTo("galaxy"),
     planet: () => navigateTo("planet"),
@@ -1227,6 +1236,16 @@ function renderCoreView(pid, cid) {
         tab.dataset.tab,
       ),
     );
+    tab.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      const allTabs = [...el.querySelectorAll(".entity-tab")];
+      const current = allTabs.indexOf(tab);
+      const direction = event.key === "ArrowRight" ? 1 : -1;
+      const next = allTabs[(current + direction + allTabs.length) % allTabs.length];
+      next.focus();
+      next.click();
+    });
   });
   attachOverviewListeners(el);
   updateTabPill();
@@ -1251,7 +1270,10 @@ function updateTabPill() {
 function switchEntityTab(pid, cid, tabKey) {
   track("tab_switch", { tab: tabKey });
   document.querySelectorAll(".entity-tab").forEach((t) => {
-    t.classList.toggle("active", t.dataset.tab === tabKey);
+    const selected = t.dataset.tab === tabKey;
+    t.classList.toggle("active", selected);
+    t.setAttribute("aria-selected", String(selected));
+    t.tabIndex = selected ? 0 : -1;
   });
   updateTabPill();
   const contentEl = document.getElementById("entity-tab-content");
@@ -1348,12 +1370,12 @@ function renderEntityGrid(component, entityType, pid) {
         .map((pkgKey) => {
           const pkg = PRODUCT_PACKAGES[pkgKey];
           return pkg
-            ? `<button class="pkg-pill" data-pkg="${pkgKey}" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>`
+            ? `<button class="pkg-pill" data-pkg="${pkgKey}" aria-pressed="false" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>`
             : "";
         })
         .join("");
       if (pills)
-        html += `<div class="package-filter"><button class="pkg-pill active" data-pkg="all" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
+        html += `<div class="package-filter" aria-label="Package filter"><button class="pkg-pill active" data-pkg="all" aria-pressed="true" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
     }
     let idx = 0;
     for (const groupName of groupOrder) {
@@ -1383,12 +1405,12 @@ function renderEntityGrid(component, entityType, pid) {
       .map((pkgKey) => {
         const pkg = PRODUCT_PACKAGES[pkgKey];
         return pkg
-          ? `<button class="pkg-pill" data-pkg="${pkgKey}" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>`
+          ? `<button class="pkg-pill" data-pkg="${pkgKey}" aria-pressed="false" style="--pkg-color:${pkg.color}">${pkg.abbr} (${counts[pkgKey] || 0})</button>`
           : "";
       })
       .join("");
     if (pills)
-      filterHtml = `<div class="package-filter"><button class="pkg-pill active" data-pkg="all" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
+      filterHtml = `<div class="package-filter" aria-label="Package filter"><button class="pkg-pill active" data-pkg="all" aria-pressed="true" style="--pkg-color:var(--glow-primary)">All</button>${pills}</div>`;
   }
   return (
     filterHtml +
@@ -1418,8 +1440,12 @@ function attachEntityGridListeners(container) {
       const pkg = pill.dataset.pkg;
       container
         .querySelectorAll(".pkg-pill")
-        .forEach((p) => p.classList.remove("active"));
+        .forEach((p) => {
+          p.classList.remove("active");
+          p.setAttribute("aria-pressed", "false");
+        });
       pill.classList.add("active");
+      pill.setAttribute("aria-pressed", "true");
       container.querySelectorAll(".entity-card").forEach((card) => {
         card.style.display =
           pkg === "all" || card.dataset.entityPkg === pkg ? "" : "none";

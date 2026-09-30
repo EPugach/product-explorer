@@ -47,6 +47,15 @@ const UI_PATHS = {
   check:
     '<polyline points="20 6 9 17 4 12"/>',
 
+  close:
+    '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+
+  "arrow-left":
+    '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+
+  "arrow-right":
+    '<path d="m12 5 7 7-7 7"/><path d="M5 12h14"/>',
+
   home:
     '<path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>' +
     '<polyline points="9 22 9 12 15 12 15 22"/>',
@@ -212,7 +221,7 @@ const EMOJI_TO_GLYPH = {
 
 function buildSvg(paths, { color = 'currentColor', size = 24, strokeWidth = 1.5 } = {}) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" ` +
-    `viewBox="0 0 24 24" fill="none" stroke="${color}" ` +
+    `viewBox="0 0 24 24" fill="none" stroke="${color}" aria-hidden="true" focusable="false" ` +
     `stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">` +
     `${paths}</svg>`;
 }
