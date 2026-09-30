@@ -498,6 +498,7 @@ export function renderGalaxy3D() {
   }
 
   _lens.uniforms.uTime.value = reduced ? 0 : _t;
+  _stepFly(now);
   _composer.render(dt);
 
   // Auto quality: step down a tier if the median frame is slow.
@@ -543,6 +544,46 @@ function _applyFocus() {
     o.u.uPulse.value = on || (_focusIds && inSet) ? 1 : 0;
     o.u.uDir.value = _hoverId && o.e.target === _hoverId ? -1 : 1;
   }
+}
+
+// ── Camera fly (replaces CSS-scaling the canvas during fly-in/out) ──
+// The DOM container animates `translate(tx,ty) scale(s)` about its top-left.
+// The matching orthographic camera shows the world region that transform
+// brings on screen: zoom = s, centred on the world point now at screen centre.
+// Timed with the same duration + easing as the CSS so labels and spheres agree.
+let _fly = null; // { from:{x,y,z}, to:{x,y,z}, t0, dur }
+// easeOutExpo-like: the move starts decisively (reads as a dive) and settles softly.
+const _ease = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -9 * t));
+export function flyCamera3D(transform, durationMs) {
+  if (!_initialized) return;
+  const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([-\d.]+)\)/.exec(transform || "");
+  const W = innerWidth, H = innerHeight;
+  let to = { x: 0, y: 0, z: 1 };
+  if (m) {
+    const tx = +m[1], ty = +m[2], s = +m[3];
+    // Screen centre maps back to DOM point ((W/2 - tx)/s, (H/2 - ty)/s); convert to world coords.
+    const dx = (W / 2 - tx) / s, dy = (H / 2 - ty) / s;
+    to = { x: dx - W / 2, y: -(dy - H / 2), z: s };
+  }
+  const from = { x: _camera.position.x, y: _camera.position.y, z: _camera.zoom };
+  if (prefersReducedMotion || !durationMs) {
+    _fly = null;
+    _setCam(to);
+    return;
+  }
+  _fly = { from, to, t0: performance.now(), dur: durationMs };
+}
+function _setCam(c) {
+  _camera.position.x = c.x;
+  _camera.position.y = c.y;
+  _camera.zoom = c.z;
+  _camera.updateProjectionMatrix();
+}
+function _stepFly(now) {
+  if (!_fly) return;
+  const k = Math.min(1, (now - _fly.t0) / _fly.dur), e = _ease(k), f = _fly.from, t = _fly.to;
+  _setCam({ x: f.x + (t.x - f.x) * e, y: f.y + (t.y - f.y) * e, z: f.z + (t.z - f.z) * e });
+  if (k >= 1) _fly = null;
 }
 
 export function setHover3D(id) {
