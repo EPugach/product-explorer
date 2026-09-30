@@ -247,6 +247,68 @@
         pointer-events: none;
         width: 100%;
       }
+
+      /* 3D universe hero (app/js/landing-universe.js) */
+      .universe-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .galaxy.universe-on #stars,
+      .galaxy.universe-on #edges {
+        display: none;
+      }
+      .universe-links {
+        position: absolute;
+        inset: 0;
+        z-index: 1; /* under the headline text; the text column itself is pointer-events:none */
+      }
+      .universe-planet {
+        position: absolute;
+        left: 0;
+        top: 0;
+        border-radius: 50%;
+        will-change: transform;
+      }
+      .universe-planet:focus-visible {
+        outline: 2px solid #5cc8ff;
+        outline-offset: 6px;
+      }
+      .universe-label {
+        position: absolute;
+        left: 50%;
+        top: 100%;
+        transform: translate(-50%, 8px);
+        display: grid;
+        justify-items: center;
+        white-space: nowrap;
+        font: 650 13.5px/1.25 var(--font-display, sans-serif);
+        color: #fff;
+        background: rgba(3, 7, 18, 0.6);
+        border-radius: 8px;
+        padding: 4px 10px;
+        backdrop-filter: blur(4px);
+        transition: opacity 0.25s ease;
+        pointer-events: none;
+      }
+      .universe-label small {
+        font: 500 11px var(--font-body, sans-serif);
+        color: #a9b8d8;
+      }
+      .universe-planet.dim .universe-label,
+      .universe-planet.back .universe-label {
+        opacity: 0.35;
+      }
+      /* Narrow screens: planets are ambient; the product list below is the way in. */
+      .galaxy.universe-narrow .universe-label {
+        display: none;
+      }
+      .universe-planet.back:hover .universe-label,
+      .universe-planet.back:focus-visible .universe-label {
+        opacity: 1;
+      }
       /* left scrim so the headline stays legible over planets */
       .hero::after {
         content: "";
@@ -1102,12 +1164,27 @@
         el.innerHTML = s;
       })();
 
-      buildGalaxy(
-        document.getElementById("galaxy"),
-        document.getElementById("edges"),
-        NODES,
-        LINKS
-      );
+      // Hero: a 3D universe of the real products on capable devices (same
+      // renderer + shaders as the product galaxies); the CSS matte galaxy
+      // below is the fallback everywhere else.
+      // Loaded without blocking the product roster below; versioned like the
+      // product pages so an update isn't stuck in the HTTP cache.
+      const cssHero = () =>
+        buildGalaxy(
+          document.getElementById("galaxy"),
+          document.getElementById("edges"),
+          NODES,
+          LINKS
+        );
+      import("./app/js/version.js")
+        .then(({ v }) => import(`./app/js/landing-universe.js${v}`))
+        .then(({ startLandingUniverse }) => {
+          if (!startLandingUniverse(document.getElementById("galaxy"), PRODUCTS)) cssHero();
+        })
+        .catch((err) => {
+          console.warn("[landing] 3D universe unavailable, using CSS hero:", err);
+          cssHero();
+        });
 
       /* ══════════════════════════════════════════════
          PRODUCT ROSTER (from manifest)

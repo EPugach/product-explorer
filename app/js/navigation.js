@@ -286,10 +286,29 @@ function getTransitionMs() {
   return parseInt(val) || 700;
 }
 
+// A view about to be aria-hidden must not keep focus (browsers block the
+// aria-hidden and warn); drop focus to <body> until the next view focuses its heading.
+function releaseFocusFrom(view) {
+  const a = document.activeElement;
+  if (a && a !== document.body && view.contains(a)) a.blur();
+}
+
+// Focus a view's heading once its view is no longer aria-hidden. Retries a
+// few frames to ride out transition timing; never silently gives up focus.
+function focusWhenVisible(el, tries = 20) {
+  if (!el.isConnected) return;
+  if (!el.closest('[aria-hidden="true"]')) {
+    el.focus({ preventScroll: true });
+  } else if (tries > 0) {
+    requestAnimationFrame(() => focusWhenVisible(el, tries - 1));
+  }
+}
+
 function showView(id, dir) {
   if (id !== "planet-view") pausePlanetHero();
   document.querySelectorAll(".view-layer").forEach((v) => {
     const active = v.id === id;
+    if (!active) releaseFocusFrom(v);
     v.toggleAttribute("inert", !active);
     v.setAttribute("aria-hidden", active ? "false" : "true");
     if (v.classList.contains("active")) {
@@ -317,6 +336,7 @@ function showViewDirect(id) {
   document.querySelectorAll(".view-layer").forEach((v) => {
     v.classList.remove("active", "zoom-out", "zoom-in");
     const active = v.id === id;
+    if (!active) releaseFocusFrom(v);
     v.toggleAttribute("inert", !active);
     v.setAttribute("aria-hidden", active ? "false" : "true");
   });
@@ -393,7 +413,7 @@ export function enterPlanet(id) {
     const heading = document.querySelector("#planet-content h2");
     if (heading) {
       heading.setAttribute("tabindex", "-1");
-      heading.focus({ preventScroll: true });
+      focusWhenVisible(heading);
     }
   }, focusDelay);
 }
@@ -418,7 +438,7 @@ export function enterCore(pid, cid) {
     const heading = document.querySelector("#core-content h2");
     if (heading) {
       heading.setAttribute("tabindex", "-1");
-      heading.focus({ preventScroll: true });
+      focusWhenVisible(heading);
     }
   }, getTransitionMs() + 50);
 }
@@ -445,7 +465,7 @@ export function enterEntity(pid, cid, entityType, entityName) {
     const heading = document.querySelector("#entity-content h2");
     if (heading) {
       heading.setAttribute("tabindex", "-1");
-      heading.focus({ preventScroll: true });
+      focusWhenVisible(heading);
     }
   }, getTransitionMs() + 50);
 }
@@ -889,7 +909,10 @@ export function navigateTo(level) {
       flyOutFromPlanet(lzp, () => {
         if (_particleTick) requestAnimationFrame(_particleTick);
         const container = document.getElementById("galaxyContainer");
-        if (container) container.focus({ preventScroll: true });
+        if (container) {
+          container.setAttribute("tabindex", "-1");
+          focusWhenVisible(container);
+        }
       });
     } else {
       // Instant transition (no previous fly-in or reduced motion)
@@ -901,7 +924,10 @@ export function navigateTo(level) {
       if (_particleTick) requestAnimationFrame(_particleTick);
       setTimeout(() => {
         const container = document.getElementById("galaxyContainer");
-        if (container) container.focus({ preventScroll: true });
+        if (container) {
+          container.setAttribute("tabindex", "-1");
+          focusWhenVisible(container);
+        }
       }, getTransitionMs() + 50);
     }
   } else if (level === "planet") {
@@ -919,7 +945,7 @@ export function navigateTo(level) {
       const heading = document.querySelector("#planet-content h2");
       if (heading) {
         heading.setAttribute("tabindex", "-1");
-        heading.focus({ preventScroll: true });
+        focusWhenVisible(heading);
       }
     }, getTransitionMs() + 50);
   } else if (level === "core") {
@@ -933,7 +959,7 @@ export function navigateTo(level) {
       const heading = document.querySelector("#core-content h2");
       if (heading) {
         heading.setAttribute("tabindex", "-1");
-        heading.focus({ preventScroll: true });
+        focusWhenVisible(heading);
       }
     }, getTransitionMs() + 50);
   }
