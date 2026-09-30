@@ -18,8 +18,10 @@ const root = resolve(import.meta.dirname, "..");
 const out = resolve(process.argv[2] || join(root, "beta"));
 if (out === root) throw new Error("Refusing to build beta into the repo root");
 
-rmSync(out, { recursive: true, force: true });
+// Keep beta/r3f/ (the R3F comparison spike, built separately from the spike/r3f branch)
+// so refreshing /beta/ doesn't silently delete it.
 mkdirSync(out, { recursive: true });
+for (const f of readdirSync(out)) if (f !== "r3f") rmSync(join(out, f), { recursive: true, force: true });
 
 for (const f of ["index.html", "manifest.json", "icon-512.png"]) cpSync(join(root, f), join(out, f));
 for (const d of ["app", "products"]) cpSync(join(root, d), join(out, d), { recursive: true });
