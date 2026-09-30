@@ -45,7 +45,7 @@ let _tier = 0;
 let _frameTimes = [];
 
 // ── Tunables ──
-const LIGHT_VIEW = new THREE.Vector3(-0.62, 0.5, 0.6).normalize(); // key light (view space)
+export const LIGHT_VIEW = new THREE.Vector3(-0.62, 0.5, 0.6).normalize(); // key light (view space)
 const BG = 0x010207;
 const EDGE_REST = 0.065;
 const EDGE_ON = 0.75;
@@ -62,9 +62,9 @@ const GROUP_Z = [80, -40, 0, -110]; // depth per cluster (orthographic: affects 
 
 // Cluster → planet archetype. Groups beyond 3 wrap.
 //   0 ocean world · 1 verdant world · 2 gas giant · 3 industrial rock
-const archetype = (g) => (g == null ? 0 : g % 4);
+export const archetype = (g) => (g == null ? 0 : g % 4);
 
-const _hash = (s) => [...s].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 997, 17) / 997;
+export const _hash = (s) => [...s].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 997, 17) / 997;
 
 // ── Shared GLSL ──
 const NOISE = `
@@ -74,7 +74,7 @@ const NOISE = `
                mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z); }
   float fbm(vec3 p){ float f=0.0,a=.5; for(int i=0;i<5;i++){ f+=a*noise(p); p=p*2.03+3.1; a*=.5; } return f; }`;
 
-const SPHERE_VERT = `
+export const SPHERE_VERT = `
   uniform float uTime, uSpin; varying vec3 vN; varying vec3 vP; varying vec3 vV;
   void main(){
     vN = normalize(normalMatrix * normal);
@@ -84,7 +84,7 @@ const SPHERE_VERT = `
     gl_Position = projectionMatrix * mv;
   }`;
 
-const PLANET_FRAG = `precision highp float; ${NOISE}
+export const PLANET_FRAG = `precision highp float; ${NOISE}
   varying vec3 vN; varying vec3 vP; varying vec3 vV;
   uniform vec3 uColor, uLight, uBg; uniform float uSeed, uHover, uDim, uType, uLights;
   void main(){
@@ -125,7 +125,7 @@ const PLANET_FRAG = `precision highp float; ${NOISE}
     gl_FragColor = vec4(col, 1.0);
   }`;
 
-const CLOUD_FRAG = `precision highp float; ${NOISE}
+export const CLOUD_FRAG = `precision highp float; ${NOISE}
   varying vec3 vN; varying vec3 vP; varying vec3 vV;
   uniform vec3 uLight; uniform float uSeed, uDim, uTime;
   void main(){
@@ -136,7 +136,7 @@ const CLOUD_FRAG = `precision highp float; ${NOISE}
     gl_FragColor = vec4(vec3(1.0) * (diff * 1.05 + .01), c * .6 * (1.0 - uDim * .85));
   }`;
 
-const ATMO_FRAG = `precision highp float; varying vec3 vN; varying vec3 vV; uniform vec3 uColor, uLight; uniform float uHover, uDim;
+export const ATMO_FRAG = `precision highp float; varying vec3 vN; varying vec3 vV; uniform vec3 uColor, uLight; uniform float uHover, uDim;
   void main(){
     vec3 n = normalize(vN);
     float a = pow(clamp(-dot(n, normalize(vV)) / .42, 0.0, 1.0), 2.2);
@@ -146,7 +146,7 @@ const ATMO_FRAG = `precision highp float; varying vec3 vN; varying vec3 vV; unif
     gl_FragColor = vec4(sky * k * 1.5, k);
   }`;
 
-const MOON_VERT = `varying vec3 vN; varying vec3 vC;
+export const MOON_VERT = `varying vec3 vN; varying vec3 vC;
   void main(){
     #ifdef USE_INSTANCING_COLOR
       vC = instanceColor;
@@ -156,7 +156,7 @@ const MOON_VERT = `varying vec3 vN; varying vec3 vC;
     vN = normalize(normalMatrix * mat3(instanceMatrix) * normal);
     gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
   }`;
-const MOON_FRAG = `precision highp float; varying vec3 vN; varying vec3 vC; uniform vec3 uLight;
+export const MOON_FRAG = `precision highp float; varying vec3 vN; varying vec3 vC; uniform vec3 uLight;
   void main(){
     vec3 n = normalize(vN);
     float diff = smoothstep(-.1, 1.0, dot(n, normalize(uLight)));

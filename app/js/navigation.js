@@ -33,6 +33,7 @@ import {
   highlightPlanet,
   resetGalaxyState,
 } from "./galaxy-renderer.js";
+import { showPlanetHero, highlightMoon, pausePlanetHero } from "./planet-hero.js";
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -286,6 +287,7 @@ function getTransitionMs() {
 }
 
 function showView(id, dir) {
+  if (id !== "planet-view") pausePlanetHero();
   document.querySelectorAll(".view-layer").forEach((v) => {
     const active = v.id === id;
     v.toggleAttribute("inert", !active);
@@ -311,6 +313,7 @@ function showView(id, dir) {
 }
 
 function showViewDirect(id) {
+  if (id !== "planet-view") pausePlanetHero();
   document.querySelectorAll(".view-layer").forEach((v) => {
     v.classList.remove("active", "zoom-out", "zoom-in");
     const active = v.id === id;
@@ -1067,11 +1070,36 @@ function renderPlanetView(id) {
     .map((c, i) => renderComponentCard(c, i, id, p))
     .join("");
 
+  // Data flow as a pipeline: each step lights up in order (CSS, --i staggers).
   const flowHtml = p.dataFlow
     .map(
       (n, i) =>
-        (i > 0 ? '<span class="flow-arrow">\u2192</span>' : "") +
-        `<span class="flow-node">${n}</span>`,
+        (i > 0 ? `<span class="flow-arrow" aria-hidden="true" style="--i:${i}">\u2192</span>` : "") +
+        `<span class="flow-node" style="--i:${i}"><span class="flow-step">${i + 1}</span>${n}</span>`,
+    )
+    .join("");
+
+  // Lead with the "why": the first two sentences, full text behind a disclosure.
+  const sentences = p.description.match(/[^.!?]+[.!?]+(\s|$)/g) || [p.description];
+  // Very long lead sentences (e.g. CRLP) would rebuild the wall: cap at one then.
+  const take = sentences[0].length + (sentences[1] || "").length > 260 ? 1 : 2;
+  let summary = sentences.slice(0, take).join("").trim();
+  let rest = sentences.slice(take).join("").trim();
+  if (summary.length > 260) {
+    // One very long sentence: show its opening, keep the whole thing in the disclosure.
+    const cut = summary.lastIndexOf(" ", 220);
+    rest = summary + (rest ? " " + rest : "");
+    summary = summary.slice(0, cut > 0 ? cut : 220).replace(/[,;:(]+$/, "") + "…";
+  }
+  const descHtml = rest
+    ? `<p class="planet-summary">${summary}</p><details class="planet-more"><summary>Read the full description</summary><p>${rest}</p></details>`
+    : `<p class="planet-summary">${summary}</p>`;
+
+  // "What's inside" chips double as the hero's moon legend.
+  const insideHtml = p.components
+    .map(
+      (c, i) =>
+        `<button type="button" class="inside-chip" data-inside="${c.id}" data-moon="${i}">${c.name}</button>`,
     )
     .join("");
 
@@ -1110,16 +1138,23 @@ function renderPlanetView(id) {
     <div class="detail-shell">
       <div class="detail-main">
         <div class="planet-header">
-          <div
-            class="planet-header-orb"
-            style="background:${p.color};box-shadow:0 0 20px ${p.color}"
-          >
-            <span class="icon-svg">${domainSvg(id, 28)}</span>
+          <div class="planet-hero" aria-hidden="true">
+            <canvas class="planet-hero-canvas"></canvas>
+            <div
+              class="planet-header-orb"
+              style="background:${p.color};box-shadow:0 0 20px ${p.color}"
+            >
+              <span class="icon-svg">${domainSvg(id, 28)}</span>
+            </div>
           </div>
-          <div>
+          <div class="planet-intro">
             <h2 style="color:${p.color}">${p.name}</h2>
-            <p>${p.description}</p>
+            ${descHtml}
             ${domainPkgHtml}
+            <div class="inside">
+              <h3 class="inside-title">What's inside</h3>
+              <div class="inside-chips">${insideHtml}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1152,6 +1187,33 @@ function renderPlanetView(id) {
   wireClickAndEnter(el, "[data-connection-planet]", (item) =>
     enterPlanet(item.dataset.connectionPlanet),
   );
+  el.querySelectorAll("[data-inside]").forEach((chip) => {
+    // Blur first so focus isn't left inside the view that's about to be aria-hidden.
+    chip.addEventListener("click", () => {
+      chip.blur();
+      enterCore(id, chip.dataset.inside);
+    });
+    const i = +chip.dataset.moon;
+    chip.addEventListener("pointerenter", () => highlightMoon(i));
+    chip.addEventListener("focus", () => highlightMoon(i));
+    chip.addEventListener("pointerleave", () => highlightMoon(-1));
+    chip.addEventListener("blur", () => highlightMoon(-1));
+  });
+
+  // 3D hero only alongside the cinematic galaxy (same capability + dark theme);
+  // otherwise the flat CSS orb stays.
+  const hero = el.querySelector(".planet-hero");
+  if (document.body.classList.contains("webgl-galaxy") && !document.body.classList.contains("no-webgl")) {
+    const ok = showPlanetHero(hero.querySelector("canvas"), {
+      id,
+      color: p.color,
+      group: PRODUCT_CONFIG.physics && PRODUCT_CONFIG.physics.groups ? PRODUCT_CONFIG.physics.groups[id] : 0,
+      components: p.components,
+    });
+    hero.classList.toggle("is-3d", ok);
+  } else {
+    pausePlanetHero();
+  }
   document.getElementById("planet-view").scrollTop = 0;
 }
 

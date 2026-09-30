@@ -1103,7 +1103,10 @@ async function init() {
   window.addEventListener("resize", onResize);
   requestAnimationFrame(particleTick);
 
-  if (!safeLSGet(lsPrefix + "visited")) {
+  // Only on the galaxy: a deep link straight into a domain shouldn't get
+  // a "click any planet" overlay across its content.
+  const onGalaxy = !location.hash || location.hash === "#/" || location.hash === "#";
+  if (!safeLSGet(lsPrefix + "visited") && onGalaxy) {
     showOnboardingHint();
   }
 
