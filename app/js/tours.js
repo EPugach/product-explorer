@@ -23,6 +23,7 @@ import {
   setHash, updateDocumentTitle
 } from './navigation.js';
 import { setGalaxyVisible, applyTourDimming, clearTourDimming, updateGalaxyTransform } from './galaxy-renderer.js';
+import { isMissionDone, completeMission } from './learning.js';
 
 // Animation callback set by main.js to break circular dependency
 let _particleTick = null;
@@ -83,13 +84,7 @@ export function initTours() {
   picker.innerHTML = renderTourPicker();
   document.body.appendChild(picker);
 
-  // Attach event listeners for tour picker items
-  picker.querySelectorAll('[data-tour-id]').forEach((el) => {
-    el.addEventListener('click', () => startTour(el.dataset.tourId));
-    el.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startTour(el.dataset.tourId); }
-    });
-  });
+  wirePickerItems(picker);
 
   // Focus trap: Tab cycles within picker, Escape closes it
   picker.addEventListener('keydown', (e) => {
@@ -136,6 +131,23 @@ export function initTours() {
   });
 }
 
+function wirePickerItems(picker) {
+  picker.querySelectorAll('[data-tour-id]').forEach((el) => {
+    el.addEventListener('click', () => startTour(el.dataset.tourId));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startTour(el.dataset.tourId); }
+    });
+  });
+}
+
+// Re-render after a tour completes so its ✓ shows next time the picker opens.
+function refreshTourPicker() {
+  const picker = document.getElementById('tour-picker');
+  if (!picker) return;
+  picker.innerHTML = renderTourPicker();
+  wirePickerItems(picker);
+}
+
 function renderTourPicker() {
   return TOURS.map((t) =>
     `<div class="tour-picker-item" data-tour-id="${t.id}" role="button" tabindex="0">` +
@@ -143,7 +155,7 @@ function renderTourPicker() {
       `<div class="tour-picker-info">` +
         `<div class="tour-picker-title">${t.title}</div>` +
         `<div class="tour-picker-desc">${t.desc}</div>` +
-        `<div class="tour-picker-meta">${t.stops.length} stops</div>` +
+        `<div class="tour-picker-meta">${t.stops.length} stops${isMissionDone(t.id) ? ' · <span class="tour-done">✓ Completed</span>' : ""}</div>` +
       `</div></div>`
   ).join('');
 }
@@ -312,6 +324,15 @@ export function exitTour() {
   const stopsViewed = tourState.stopIndex + 1;
   const completed = stopsViewed === totalStops;
   const exitTourId = tourState.tourId;
+  if (completed && exitTourId) {
+    // Never let progress-saving (e.g. storage disabled) block tour cleanup below.
+    try {
+      completeMission(exitTourId);
+      refreshTourPicker();
+    } catch (err) {
+      console.warn("[tours] could not record mission:", err);
+    }
+  }
 
   // Track time on final stop
   if (tourState.stopStartTime && tour) {

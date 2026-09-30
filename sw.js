@@ -1,4 +1,4 @@
-const SHELL_VERSION = 39;
+const SHELL_VERSION = 43;
 const SHELL_CACHE = `pe-shell-v${SHELL_VERSION}`;
 const DATA_CACHE = "pe-data-v9";
 
@@ -28,6 +28,7 @@ const SHELL_URLS = [
   "./app/js/planet-hero.js",
   "./app/js/landing-universe.js",
   "./app/js/relation-map.js",
+  "./app/js/learning.js",
   "./app/js/particles.js",
   "./app/js/starfield.js",
   "./app/js/tours.js",

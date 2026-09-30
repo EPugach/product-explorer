@@ -5037,3 +5037,161 @@ body.tour-active #version-indicator {
   border-color: currentColor;
   outline: none;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   LEARNING LAYER (redesign 2026-09, Phase 5): path finder,
+   follow-the-data, explored stat, completed missions
+   ══════════════════════════════════════════════════════════════ */
+.path-finder {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+.pf-toggle {
+  font: 600 var(--text-xs) var(--font-body);
+  color: var(--text-secondary);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.pf-toggle[aria-expanded="true"],
+.pf-toggle:hover,
+.pf-toggle:focus-visible {
+  color: var(--text-primary);
+  border-color: var(--glow-primary);
+  outline: none;
+}
+.pf-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: min(760px, 92vw);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  border-radius: 12px;
+  padding: 10px 14px;
+  backdrop-filter: blur(10px);
+}
+.pf-panel[hidden] {
+  display: none;
+}
+.pf-panel label {
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pf-panel select {
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--bg-deep);
+  border: 1px solid var(--border-glow);
+  border-radius: 7px;
+  padding: 5px 8px;
+  max-width: 230px;
+}
+.pf-go,
+.pf-clear {
+  font: 600 var(--text-xs) var(--font-body);
+  border-radius: 7px;
+  padding: 6px 12px;
+  cursor: pointer;
+  border: 1px solid var(--glow-primary);
+}
+.pf-go {
+  color: #fff;
+  background: var(--glow-primary);
+}
+.pf-clear {
+  color: var(--text-secondary);
+  background: transparent;
+}
+.pf-clear[hidden] {
+  display: none;
+}
+.pf-steps {
+  flex-basis: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.pf-steps:empty {
+  display: none;
+}
+.pf-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pf-why {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  max-width: 220px;
+}
+.pf-why::before {
+  content: "→ ";
+  color: var(--glow-primary);
+}
+.pf-stop {
+  font: 650 var(--text-xs) var(--font-body);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--glow-primary) 16%, transparent);
+  border: 1px solid var(--glow-primary);
+  border-radius: 999px;
+  padding: 4px 11px;
+  cursor: pointer;
+}
+.pf-none {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.df-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.df-play {
+  font: 600 var(--text-xs) var(--font-body);
+  color: #fff;
+  background: var(--glow-primary);
+  border: 0;
+  border-radius: 7px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.df-caption {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.flow-node.df-on {
+  border-color: var(--glow-primary);
+  background: color-mix(in srgb, var(--glow-primary) 24%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glow-primary) 30%, transparent);
+  transform: translateY(-2px);
+}
+.flow-node.df-done {
+  opacity: 0.6;
+}
+.stat-explored .stat-value {
+  color: var(--glow-success, #2e844a);
+}
+.tour-done {
+  color: var(--glow-success, #2e844a);
+  font-weight: 700;
+}

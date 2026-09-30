@@ -35,6 +35,7 @@ import {
 } from "./galaxy-renderer.js";
 import { showPlanetHero, highlightMoon, pausePlanetHero } from "./planet-hero.js";
 import { renderRelationMap } from "./relation-map.js";
+import { markExplored, enhanceDataFlow } from "./learning.js";
 
 // Product data and config are injected by main.js via setProductData/setProductConfig
 let PRODUCT_DATA = {};
@@ -1241,6 +1242,8 @@ function renderPlanetView(id) {
   } else {
     pausePlanetHero();
   }
+  markExplored(id);
+  enhanceDataFlow(el, prefersReducedMotion);
   document.getElementById("planet-view").scrollTop = 0;
 }
 

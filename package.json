@@ -2,7 +2,7 @@
   "type": "module",
   "scripts": {
     "build:html": "node scripts/generate-product-html.mjs",
-    "test": "node --test scripts/ingest/test/gates.test.mjs scripts/ingest/test/render.test.mjs scripts/ingest/test/autofetch.test.mjs scripts/ingest/test/grounding.test.mjs scripts/ingest/test/promote.test.mjs",
+    "test": "node --test scripts/ingest/test/gates.test.mjs scripts/ingest/test/render.test.mjs scripts/ingest/test/autofetch.test.mjs scripts/ingest/test/grounding.test.mjs scripts/ingest/test/promote.test.mjs tests/learning.test.mjs",
     "check:ui": "node scripts/check-ui-contracts.mjs"
   },
   "devDependencies": {

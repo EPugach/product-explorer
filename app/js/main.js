@@ -45,7 +45,10 @@ import {
   getSortedPlanetEls,
   applyHoverState,
   clearHoverState,
+  applyTourDimming,
+  clearTourDimming,
 } from "./galaxy-renderer.js";
+import { initLearning } from "./learning.js";
 import {
   currentLevel,
   currentPlanet,
@@ -1061,6 +1064,22 @@ async function init() {
     versionEl.replaceWith(link);
   }
 
+  // Exploration layer: explored count, path finder, follow-the-data (learning.js).
+  // Before initTours(): the tour picker reads completed missions as it renders.
+  initLearning({
+    data: PRODUCT_DATA,
+    prefix: lsPrefix,
+    enterPlanet,
+    onFocusPath: (ids, path) => {
+      if (tourState.active) return; // a running tour owns the dimming
+      const keys = new Set();
+      for (let i = 1; i < path.length; i++) keys.add([path[i - 1], path[i]].sort().join("--"));
+      applyTourDimming(null, ids, keys);
+    },
+    onClearPath: () => {
+      if (!tourState.active) clearTourDimming();
+    },
+  });
   initTours();
 
   document
